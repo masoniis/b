@@ -2,7 +2,10 @@
 run *args:
     cargo run {{args}}
 
-# just runc
-# TODO: Runc runs the project with clang using the zig code as a lib
+# Builds the c library
+buildc:
+	cargo build --release
+	mv target/release/libbcraft.a cbridge/
+
 runc *args:
-    zig run src/main.zig {{args}}
+    make
