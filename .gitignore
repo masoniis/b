@@ -1,0 +1,7 @@
+.direnv
+.zig-cache
+
+
+# Added by cargo
+
+/target
