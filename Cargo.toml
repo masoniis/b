@@ -1,0 +1,18 @@
+[package]
+name = "bcraft"
+version = "0.0.1"
+edition = "2024"
+
+[lib]
+crate-type = ["staticlib"]
+
+[[bin]]
+name = "bcraft"
+path = "src/main.rs"
+
+[dependencies]
+gl = "0.14.0"
+glam = "0.30.5"
+glutin = "0.32.3"
+image = "0.25.6"
+noise = "0.9.0"
