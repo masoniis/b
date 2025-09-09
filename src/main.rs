@@ -1,12 +1,17 @@
-use tracing::{error, info, warn};
+use tracing::{error, info};
 
-mod core;
-mod utils;
+pub mod core;
+pub mod graphics;
+pub mod utils;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     utils::logger::attach_logger();
     info!("Logger attached...");
     info!("Running app...");
-    core::window::run_app()?;
+
+    if let Err(e) = core::window::run_app() {
+        error!("App error: {}", e);
+    }
+
     Ok(())
 }

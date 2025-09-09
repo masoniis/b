@@ -1,4 +1,4 @@
-// TODO: Maybe figure out C linking stuff here
-
-// maybe not
-
+pub mod core;
+pub mod ecs;
+pub mod graphics;
+pub mod utils;
