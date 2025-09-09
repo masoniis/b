@@ -1,5 +1,4 @@
-// This is the main library file for your bcraft project.
-pub mod core;
-pub mod ecs;
-pub mod graphics;
-pub mod utils;
+// TODO: Maybe figure out C linking stuff here
+
+// maybe not
+

@@ -17,6 +17,8 @@ glutin = "0.32.3"
 glutin-winit = "0.5.0"
 image = "0.25.6"
 noise = "0.9.0"
+time = { version = "0.3.43", features = ["formatting", "macros"] }
 tracing = "0.1.41"
-tracing-subscriber = "0.3.20"
+tracing-subscriber = { version = "0.3.20", features = ["time", "local-time"] }
+tracing-tree = "0.4.0"
 winit = "0.30.12"
