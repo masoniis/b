@@ -118,7 +118,7 @@ impl ShaderProgram {
     }
 
     /// Activates the shader program for use in the current rendering context.
-    pub fn use_program(&self) {
+    pub fn activate(&self) {
         unsafe {
             gl::UseProgram(self.id);
         }
@@ -131,4 +131,3 @@ impl ShaderProgram {
         }
     }
 }
-
