@@ -24,6 +24,10 @@ pub struct Camera {
     movement_speed: f32,
     mouse_sensitivity: f32,
     zoom: f32,
+
+    // Dirty bits for system to read so they know
+    // they need to update the camera resource.
+    pub projection_dirty: bool,
 }
 
 impl Default for Camera {
@@ -43,6 +47,7 @@ impl Default for Camera {
             movement_speed: 2.5,
             mouse_sensitivity: 0.1,
             zoom: 45.0,
+            projection_dirty: true,
         }
     }
 }
@@ -107,6 +112,7 @@ impl Camera {
         if self.zoom > 45.0 {
             self.zoom = 45.0;
         }
+        self.projection_dirty = true;
     }
 
     fn update_camera_vectors(&mut self) {
