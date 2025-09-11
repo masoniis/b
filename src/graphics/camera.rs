@@ -1,6 +1,5 @@
 use glam::{Mat4, Vec3};
 
-
 pub enum CameraMovement {
     Forward,
     Backward,
@@ -76,7 +75,12 @@ impl Camera {
         }
     }
 
-    pub fn process_mouse_movement(&mut self, mut xoffset: f32, mut yoffset: f32, constrain_pitch: bool) {
+    pub fn process_mouse_movement(
+        &mut self,
+        mut xoffset: f32,
+        mut yoffset: f32,
+        constrain_pitch: bool,
+    ) {
         xoffset *= self.mouse_sensitivity;
         yoffset *= self.mouse_sensitivity;
 
