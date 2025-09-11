@@ -1,6 +1,6 @@
 use crate::ecs::systems::System;
 use crate::ecs::world::World;
-use crate::graphics::camera::CameraMovement;
+use crate::ecs::resources::CameraMovement;
 use winit::keyboard::KeyCode;
 
 pub struct CameraMovementSystem;

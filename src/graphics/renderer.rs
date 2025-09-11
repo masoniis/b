@@ -1,4 +1,4 @@
-use crate::graphics::camera::Camera;
+use crate::ecs::resources::Camera;
 use crate::graphics::shaders::shader_program::ShaderProgram;
 use gl::types::{GLfloat, GLsizeiptr, GLuint};
 use glutin::context::PossiblyCurrentContext;
