@@ -1,11 +1,9 @@
 // INFO: Exposing the apis
-pub mod camera_movement_system;
-pub mod camera_update_system;
+pub mod camera_system;
 pub mod input_system;
 pub mod render_system;
 
-pub use camera_movement_system::CameraMovementSystem;
-pub use camera_update_system::CameraUpdateSystem;
+pub use camera_system::CameraSystem;
 pub use input_system::InputSystem;
 pub use render_system::RenderSystem;
 

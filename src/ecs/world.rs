@@ -1,9 +1,11 @@
-use crate::ecs::resources::input::Input as InputResource;
-use crate::ecs::resources::delta_time::DeltaTime;
 use crate::ecs::resources::camera::Camera;
+use crate::ecs::resources::delta_time::DeltaTime;
+use crate::ecs::resources::input::Input as InputResource;
 use crate::graphics::renderer::Renderer;
 use crate::graphics::shaders::shader_program::ShaderProgram;
 
+/// World is the centralized storage for all resources in the ECS architecture.
+/// In other words, it is the state of the application at any given time.
 pub struct World {
     pub input_resource: InputResource,
     pub delta_time: DeltaTime,

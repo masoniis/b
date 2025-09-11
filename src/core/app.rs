@@ -1,6 +1,4 @@
-use crate::ecs::systems::{
-    CameraMovementSystem, CameraUpdateSystem, InputSystem, RenderSystem, System,
-};
+use crate::ecs::systems::{CameraSystem, InputSystem, RenderSystem, System};
 use crate::ecs::world::World;
 use crate::graphics::renderer::Renderer;
 use crate::graphics::shaders::shader_program::ShaderProgram;
@@ -28,8 +26,7 @@ impl Default for App {
             world: World::default(),
             systems: vec![
                 Box::new(InputSystem),
-                Box::new(CameraUpdateSystem),
-                Box::new(CameraMovementSystem),
+                Box::new(CameraSystem),
                 Box::new(RenderSystem),
             ],
             last_frame_time: Instant::now(),
@@ -114,6 +111,7 @@ impl ApplicationHandler for App {
             }
             WindowEvent::Resized(physical_size) => {
                 self.world.window_size = (physical_size.width, physical_size.height);
+                self.world.camera.projection_dirty = true;
             }
             _ => (),
         }
@@ -128,4 +126,3 @@ impl ApplicationHandler for App {
         }
     }
 }
-
