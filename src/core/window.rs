@@ -6,6 +6,7 @@ use glutin::surface::{Surface, WindowSurface};
 use glutin_winit::GlWindow;
 use std::error::Error;
 use std::ffi::CString;
+use winit::dpi::PhysicalSize;
 use winit::event_loop::{ActiveEventLoop, EventLoop};
 use winit::raw_window_handle::HasWindowHandle;
 use winit::window::Window;
@@ -19,12 +20,16 @@ pub fn run_app() -> Result<(), Box<dyn Error>> {
 
 pub fn create_gl_window(
     event_loop: &ActiveEventLoop,
+    size: (u32, u32),
 ) -> (
     Window,
     Surface<WindowSurface>,
     glutin::context::PossiblyCurrentContext,
 ) {
-    let window_attributes = Window::default_attributes().with_title("🅱️");
+    let window_attributes = Window::default_attributes()
+        .with_title("🅱️")
+        .with_inner_size(PhysicalSize::new(size.0, size.1));
+
     let template = glutin::config::ConfigTemplateBuilder::new();
     let (window, gl_config) = glutin_winit::DisplayBuilder::new()
         .with_window_attributes(Some(window_attributes.clone()))
