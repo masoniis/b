@@ -1,6 +1,5 @@
-use crate::ecs::resources::{DeltaTime, Input as InputResource};
-use crate::ecs::systems::{camera_movement_system, camera_update_system, input_system};
-use crate::graphics::camera::Camera;
+use crate::ecs::systems::{CameraMovementSystem, CameraUpdateSystem, InputSystem, System};
+use crate::ecs::world::World;
 use crate::graphics::renderer::Renderer;
 use crate::graphics::shaders::shader_program::ShaderProgram;
 use std::time::Instant;
@@ -12,15 +11,12 @@ use winit::window::{Window, WindowId};
 
 pub struct App {
     window: Option<Window>,
-    window_size: (u32, u32),
 
     renderer: Option<Renderer>,
     shader_program: Option<ShaderProgram>,
-    camera: Camera,
 
-    // RESOURCES
-    input_resource: InputResource,
-    delta_time: DeltaTime,
+    world: World,
+    systems: Vec<Box<dyn System>>,
 
     last_frame_time: Instant,
     last_mouse_position: Option<(f64, f64)>,
@@ -32,10 +28,12 @@ impl Default for App {
             renderer: None,
             shader_program: None,
             window: None,
-            input_resource: InputResource::new(),
-            camera: Camera::default(),
-            window_size: (800, 600),
-            delta_time: DeltaTime::default(),
+            world: World::default(),
+            systems: vec![
+                Box::new(InputSystem),
+                Box::new(CameraUpdateSystem),
+                Box::new(CameraMovementSystem),
+            ],
             last_frame_time: Instant::now(),
             last_mouse_position: None,
         }
@@ -47,7 +45,7 @@ impl ApplicationHandler for App {
         if self.window.is_none() {
             info!("App resumed, creating window!");
             let (window, gl_surface, gl_context) =
-                crate::core::window::create_gl_window(event_loop, self.window_size);
+                crate::core::window::create_gl_window(event_loop, self.world.window_size);
 
             self.window = Some(window);
 
@@ -80,11 +78,11 @@ impl ApplicationHandler for App {
             .duration_since(self.last_frame_time)
             .as_secs_f32();
         self.last_frame_time = current_time;
-        self.delta_time.0 = delta_time;
+        self.world.delta_time.0 = delta_time;
 
-        let aspect_ratio = self.window_size.0 as f32 / self.window_size.1 as f32;
-        camera_update_system(&mut self.camera, aspect_ratio);
-        camera_movement_system(&mut self.camera, &self.input_resource, self.delta_time.0);
+        for system in &mut self.systems {
+            system.new_events_hook(&mut self.world);
+        }
     }
 
     fn window_event(
@@ -93,8 +91,9 @@ impl ApplicationHandler for App {
         _window_id: WindowId,
         event: WindowEvent,
     ) {
-        // Inform input ECS system of the event
-        input_system(&mut self.input_resource, &event);
+        for system in &mut self.systems {
+            system.window_event_hook(&mut self.world, &event);
+        }
 
         // Handle other overarching events that don't directly effect game state
         // (redraw requests, resizing, closing, etc)
@@ -107,21 +106,24 @@ impl ApplicationHandler for App {
                 if let (Some(renderer), Some(shader_program)) =
                     (&self.renderer, &self.shader_program)
                 {
-                    renderer.set_frame(shader_program, &self.camera);
-                    shader_program.set_mat4("modelView", &self.camera.get_view_matrix());
-                    shader_program.set_mat4("projection", &self.camera.get_projection_matrix());
+                    renderer.set_frame(shader_program, &self.world.camera);
+                    shader_program.set_mat4("modelView", &self.world.camera.get_view_matrix());
+                    shader_program
+                        .set_mat4("projection", &self.world.camera.get_projection_matrix());
                     self.window.as_ref().unwrap().request_redraw();
                 }
             }
             WindowEvent::Resized(physical_size) => {
-                self.window_size = (physical_size.width, physical_size.height);
+                self.world.window_size = (physical_size.width, physical_size.height);
             }
             WindowEvent::CursorMoved { position, .. } => {
                 let (xpos, ypos) = (position.x, position.y);
                 if let Some((last_x, last_y)) = self.last_mouse_position {
                     let xoffset = xpos as f32 - last_x as f32;
                     let yoffset = last_y as f32 - ypos as f32; // Reversed since y-coordinates go from bottom to top
-                    self.camera.process_mouse_movement(xoffset, yoffset, true);
+                    self.world
+                        .camera
+                        .process_mouse_movement(xoffset, yoffset, true);
                 }
 
                 // Re-center the cursor
@@ -141,7 +143,7 @@ impl ApplicationHandler for App {
                     winit::event::MouseScrollDelta::LineDelta(_, y) => y,
                     winit::event::MouseScrollDelta::PixelDelta(p) => p.y as f32,
                 };
-                self.camera.process_mouse_scroll(yoffset);
+                self.world.camera.process_mouse_scroll(yoffset);
             }
             _ => (),
         }
