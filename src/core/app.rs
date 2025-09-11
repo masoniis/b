@@ -7,18 +7,18 @@ use crate::graphics::shaders::shader_program::ShaderProgram;
 use std::time::Instant;
 use tracing::info;
 use winit::application::ApplicationHandler;
-use winit::event::WindowEvent;
+use winit::event::{DeviceEvent, WindowEvent};
 use winit::event_loop::ActiveEventLoop;
 use winit::window::{Window, WindowId};
 
 pub struct App {
+    // OS Interactions
     window: Option<Window>,
+    last_frame_time: Instant,
 
+    // Game logic
     world: World,
     systems: Vec<Box<dyn System>>,
-
-    last_frame_time: Instant,
-    last_mouse_position: Option<(f64, f64)>,
 }
 
 impl Default for App {
@@ -33,7 +33,6 @@ impl Default for App {
                 Box::new(RenderSystem),
             ],
             last_frame_time: Instant::now(),
-            last_mouse_position: None,
         }
     }
 }
@@ -83,6 +82,29 @@ impl ApplicationHandler for App {
         }
     }
 
+    fn device_event(
+        &mut self,
+        _event_loop: &ActiveEventLoop,
+        _device_id: winit::event::DeviceId,
+        event: DeviceEvent,
+    ) {
+        match event {
+            DeviceEvent::MouseMotion { delta } => {
+                self.world
+                    .camera
+                    .process_mouse_movement(delta.0 as f32, -(delta.1 as f32), true);
+            }
+            DeviceEvent::MouseWheel { delta, .. } => {
+                let yoffset = match delta {
+                    winit::event::MouseScrollDelta::LineDelta(_, y) => y,
+                    winit::event::MouseScrollDelta::PixelDelta(p) => p.y as f32,
+                };
+                self.world.camera.process_mouse_scroll(yoffset);
+            }
+            _ => (),
+        }
+    }
+
     fn window_event(
         &mut self,
         event_loop: &ActiveEventLoop,
@@ -105,35 +127,6 @@ impl ApplicationHandler for App {
             WindowEvent::Resized(physical_size) => {
                 self.world.window_size = (physical_size.width, physical_size.height);
             }
-            WindowEvent::CursorMoved { position, .. } => {
-                let (xpos, ypos) = (position.x, position.y);
-                if let Some((last_x, last_y)) = self.last_mouse_position {
-                    let xoffset = xpos as f32 - last_x as f32;
-                    let yoffset = last_y as f32 - ypos as f32; // Reversed since y-coordinates go from bottom to top
-                    self.world
-                        .camera
-                        .process_mouse_movement(xoffset, yoffset, true);
-                }
-
-                // Re-center the cursor
-                if let Some(window_ref) = self.window.as_ref() {
-                    let window_size = window_ref.inner_size();
-                    let center_x = window_size.width as f64 / 2.0;
-                    let center_y = window_size.height as f64 / 2.0;
-                    let _ = window_ref
-                        .set_cursor_position(winit::dpi::PhysicalPosition::new(center_x, center_y));
-                    self.last_mouse_position = Some((center_x, center_y));
-                } else {
-                    self.last_mouse_position = Some((xpos, ypos));
-                }
-            }
-            WindowEvent::MouseWheel { delta, .. } => {
-                let yoffset = match delta {
-                    winit::event::MouseScrollDelta::LineDelta(_, y) => y,
-                    winit::event::MouseScrollDelta::PixelDelta(p) => p.y as f32,
-                };
-                self.world.camera.process_mouse_scroll(yoffset);
-            }
             _ => (),
         }
     }
@@ -147,3 +140,4 @@ impl ApplicationHandler for App {
         }
     }
 }
+
