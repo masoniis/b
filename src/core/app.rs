@@ -88,20 +88,8 @@ impl ApplicationHandler for App {
         _device_id: winit::event::DeviceId,
         event: DeviceEvent,
     ) {
-        match event {
-            DeviceEvent::MouseMotion { delta } => {
-                self.world
-                    .camera
-                    .process_mouse_movement(delta.0 as f32, -(delta.1 as f32), true);
-            }
-            DeviceEvent::MouseWheel { delta, .. } => {
-                let yoffset = match delta {
-                    winit::event::MouseScrollDelta::LineDelta(_, y) => y,
-                    winit::event::MouseScrollDelta::PixelDelta(p) => p.y as f32,
-                };
-                self.world.camera.process_mouse_scroll(yoffset);
-            }
-            _ => (),
+        for system in &mut self.systems {
+            system.device_event_hook(&mut self.world, &event);
         }
     }
 
@@ -140,4 +128,3 @@ impl ApplicationHandler for App {
         }
     }
 }
-
