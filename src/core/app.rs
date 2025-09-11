@@ -2,9 +2,6 @@ use crate::ecs::resources::Input as InputResource;
 use crate::ecs::systems::input_system;
 use crate::graphics::renderer::Renderer;
 use crate::graphics::shaders::shader_program::ShaderProgram;
-use glutin::context::PossiblyCurrentContext;
-use glutin::prelude::GlSurface;
-use glutin::surface::Surface;
 use tracing::info;
 use winit::application::ApplicationHandler;
 use winit::event::{Event, WindowEvent};
@@ -16,8 +13,6 @@ pub struct App {
     shader_program: Option<ShaderProgram>,
     window: Option<Window>,
     input_resource: InputResource,
-    gl_surface: Option<Surface<glutin::surface::WindowSurface>>,
-    gl_context: Option<PossiblyCurrentContext>,
 }
 
 impl Default for App {
@@ -27,8 +22,6 @@ impl Default for App {
             shader_program: None,
             window: None,
             input_resource: InputResource::new(),
-            gl_surface: None,
-            gl_context: None,
         }
     }
 }
@@ -41,8 +34,6 @@ impl ApplicationHandler for App {
                 crate::core::window::create_gl_window(event_loop);
 
             self.window = Some(window);
-            self.gl_surface = Some(gl_surface);
-            self.gl_context = Some(gl_context);
 
             self.shader_program = Some(
                 ShaderProgram::new(
@@ -51,7 +42,7 @@ impl ApplicationHandler for App {
                 )
                 .unwrap(),
             );
-            self.renderer = Some(Renderer::new());
+            self.renderer = Some(Renderer::new(gl_surface, gl_context));
         }
     }
 
@@ -65,6 +56,7 @@ impl ApplicationHandler for App {
         _window_id: WindowId,
         event: WindowEvent,
     ) {
+        // Inform input system of the event
         input_system(
             &mut self.input_resource,
             &Event::WindowEvent {
@@ -79,21 +71,13 @@ impl ApplicationHandler for App {
                 event_loop.exit();
             }
             WindowEvent::RedrawRequested => {
-                if let (Some(renderer), Some(shader_program), Some(gl_surface), Some(gl_context)) = (
-                    &self.renderer,
-                    &self.shader_program,
-                    &self.gl_surface,
-                    &self.gl_context,
-                ) {
-                    unsafe {
-                        gl::ClearColor(0.2, 0.3, 0.3, 1.0);
-                        gl::Clear(gl::COLOR_BUFFER_BIT);
-                    }
-
+                if let (Some(renderer), Some(shader_program)) =
+                    (&self.renderer, &self.shader_program)
+                {
+                    renderer.begin_frame();
                     shader_program.activate();
-                    renderer.draw_triangle();
+                    renderer.end_frame();
 
-                    gl_surface.swap_buffers(gl_context).unwrap();
                     self.window.as_ref().unwrap().request_redraw();
                 }
             }
