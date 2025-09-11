@@ -1,3 +1,5 @@
+use crate::graphics::camera::Camera;
+use crate::graphics::shaders::shader_program::ShaderProgram;
 use gl::types::{GLfloat, GLsizeiptr, GLuint};
 use glutin::context::PossiblyCurrentContext;
 use glutin::prelude::GlSurface;
@@ -59,19 +61,22 @@ impl Renderer {
         }
     }
 
-    pub fn begin_frame(&self) {
+    pub fn set_frame(&self, shader_program: &ShaderProgram, camera: &Camera) {
         unsafe {
             // Clear previous buffer
             gl::ClearColor(0.2, 0.3, 0.3, 1.0);
             gl::Clear(gl::COLOR_BUFFER_BIT);
 
+            // Use the shader program and set camera uniforms
+            shader_program.activate(); // Ensure shader is active
+            shader_program.set_mat4("modelView", &camera.get_view_matrix());
+            shader_program.set_mat4("projection", &camera.get_projection_matrix());
+
             // Add the triangle
             gl::BindVertexArray(self.vao);
             gl::DrawArrays(gl::TRIANGLES, 0, 3);
         }
-    }
 
-    pub fn end_frame(&self) {
         self.gl_surface.swap_buffers(&self.gl_context).unwrap();
     }
 

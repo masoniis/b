@@ -1,5 +1,6 @@
 use gl::types::{GLchar, GLenum, GLint, GLuint};
-use tracing::{error, info};
+use glam::Mat4;
+use tracing::{error, info, warn};
 
 use std::{ffi::CString, fs::File, io::Read, ptr, str};
 
@@ -128,6 +129,23 @@ impl ShaderProgram {
     pub fn delete(&self) {
         unsafe {
             gl::DeleteProgram(self.id);
+        }
+    }
+
+    // INFO: -----------------
+    //         UNIFORMS
+    // -----------------------
+
+    /// Sets a Mat4 uniform in the shader program.
+    pub fn set_mat4(&self, name: &str, matrix: &Mat4) {
+        unsafe {
+            let c_name = CString::new(name).unwrap();
+            let location = gl::GetUniformLocation(self.id, c_name.as_ptr());
+            if location == -1 {
+                warn!("Uniform {:?} not found.", name);
+                return;
+            }
+            gl::UniformMatrix4fv(location, 1, gl::FALSE, matrix.as_ref().as_ptr());
         }
     }
 }

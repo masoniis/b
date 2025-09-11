@@ -15,3 +15,11 @@ impl Input {
         self.pressed_keys.contains(&key_code)
     }
 }
+
+pub struct DeltaTime(pub f32);
+
+impl Default for DeltaTime {
+    fn default() -> Self {
+        Self(0.0)
+    }
+}
