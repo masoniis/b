@@ -2,18 +2,19 @@ use crate::ecs::world::World;
 use crate::graphics::camera::CameraMovement;
 use winit::event::WindowEvent;
 use winit::keyboard::{KeyCode, PhysicalKey};
+use winit::window::Window;
 
 pub trait System {
     /// A hook that enables the system to perform actions BEFORE any events
     /// are processed. Useful for once-per frame actions like clock updates.
     fn new_events_hook(&mut self, _world: &mut World) {}
     /// A hook that enables a system to take action in response to events.
-    fn window_event_hook(&mut self, _world: &mut World, _event: &WindowEvent) {}
+    fn window_event_hook(&mut self, _world: &mut World, _event: &WindowEvent, _window: &Window) {}
 }
 
 pub struct InputSystem;
 impl System for InputSystem {
-    fn window_event_hook(&mut self, world: &mut World, event: &WindowEvent) {
+    fn window_event_hook(&mut self, world: &mut World, event: &WindowEvent, _window: &Window) {
         if let WindowEvent::KeyboardInput {
             event: key_event, ..
         } = event
@@ -63,6 +64,21 @@ impl System for CameraMovementSystem {
             world
                 .camera
                 .process_keyboard(CameraMovement::Right, world.delta_time.0);
+        }
+    }
+}
+
+pub struct RenderSystem;
+impl System for RenderSystem {
+    fn window_event_hook(&mut self, world: &mut World, event: &WindowEvent, window: &Window) {
+        if let WindowEvent::RedrawRequested = event {
+            if let (Some(renderer), Some(shader_program)) = (&world.renderer, &world.shader_program)
+            {
+                renderer.set_frame(shader_program, &world.camera);
+                shader_program.set_mat4("modelView", &world.camera.get_view_matrix());
+                shader_program.set_mat4("projection", &world.camera.get_projection_matrix());
+                window.request_redraw();
+            }
         }
     }
 }
