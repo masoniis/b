@@ -1,5 +1,6 @@
-use crate::ecs::resources::{DeltaTime, Input as InputResource};
-use crate::ecs::resources::Camera;
+use crate::ecs::resources::input::Input as InputResource;
+use crate::ecs::resources::delta_time::DeltaTime;
+use crate::ecs::resources::camera::Camera;
 use crate::graphics::renderer::Renderer;
 use crate::graphics::shaders::shader_program::ShaderProgram;
 
