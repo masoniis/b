@@ -1,5 +1,6 @@
 use crate::ecs::systems::{
-    CameraMovementSystem, CameraUpdateSystem, InputSystem, RenderSystem, System,
+    camera_movement_system::CameraMovementSystem, camera_update_system::CameraUpdateSystem,
+    input_system::InputSystem, render_system::RenderSystem, System,
 };
 use crate::ecs::world::World;
 use crate::graphics::renderer::Renderer;
@@ -128,3 +129,4 @@ impl ApplicationHandler for App {
         }
     }
 }
+
