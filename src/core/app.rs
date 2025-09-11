@@ -1,4 +1,6 @@
-use crate::ecs::systems::{CameraMovementSystem, CameraUpdateSystem, InputSystem, System};
+use crate::ecs::systems::{
+    CameraMovementSystem, CameraUpdateSystem, InputSystem, RenderSystem, System,
+};
 use crate::ecs::world::World;
 use crate::graphics::renderer::Renderer;
 use crate::graphics::shaders::shader_program::ShaderProgram;
@@ -12,9 +14,6 @@ use winit::window::{Window, WindowId};
 pub struct App {
     window: Option<Window>,
 
-    renderer: Option<Renderer>,
-    shader_program: Option<ShaderProgram>,
-
     world: World,
     systems: Vec<Box<dyn System>>,
 
@@ -25,14 +24,13 @@ pub struct App {
 impl Default for App {
     fn default() -> Self {
         Self {
-            renderer: None,
-            shader_program: None,
             window: None,
             world: World::default(),
             systems: vec![
                 Box::new(InputSystem),
                 Box::new(CameraUpdateSystem),
                 Box::new(CameraMovementSystem),
+                Box::new(RenderSystem),
             ],
             last_frame_time: Instant::now(),
             last_mouse_position: None,
@@ -59,14 +57,14 @@ impl ApplicationHandler for App {
                 }
             }
 
-            self.shader_program = Some(
+            self.world.shader_program = Some(
                 ShaderProgram::new(
                     "src/assets/shaders/simple.vert",
                     "src/assets/shaders/triangle.frag",
                 )
                 .unwrap(),
             );
-            self.renderer = Some(Renderer::new(gl_surface, gl_context));
+            self.world.renderer = Some(Renderer::new(gl_surface, gl_context));
         }
     }
 
@@ -91,8 +89,10 @@ impl ApplicationHandler for App {
         _window_id: WindowId,
         event: WindowEvent,
     ) {
-        for system in &mut self.systems {
-            system.window_event_hook(&mut self.world, &event);
+        if let Some(window) = self.window.as_ref() {
+            for system in &mut self.systems {
+                system.window_event_hook(&mut self.world, &event, window);
+            }
         }
 
         // Handle other overarching events that don't directly effect game state
@@ -101,17 +101,6 @@ impl ApplicationHandler for App {
             WindowEvent::CloseRequested => {
                 info!("Close button was pressed, exiting.");
                 event_loop.exit();
-            }
-            WindowEvent::RedrawRequested => {
-                if let (Some(renderer), Some(shader_program)) =
-                    (&self.renderer, &self.shader_program)
-                {
-                    renderer.set_frame(shader_program, &self.world.camera);
-                    shader_program.set_mat4("modelView", &self.world.camera.get_view_matrix());
-                    shader_program
-                        .set_mat4("projection", &self.world.camera.get_projection_matrix());
-                    self.window.as_ref().unwrap().request_redraw();
-                }
             }
             WindowEvent::Resized(physical_size) => {
                 self.world.window_size = (physical_size.width, physical_size.height);
@@ -150,7 +139,9 @@ impl ApplicationHandler for App {
     }
 
     fn exiting(&mut self, _event_loop: &ActiveEventLoop) {
-        if let (Some(renderer), Some(shader_program)) = (&self.renderer, &self.shader_program) {
+        if let (Some(renderer), Some(shader_program)) =
+            (&self.world.renderer, &self.world.shader_program)
+        {
             renderer.cleanup();
             shader_program.delete();
         }
