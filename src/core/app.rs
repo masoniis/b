@@ -1,6 +1,5 @@
 use crate::ecs::systems::{
-    camera_movement_system::CameraMovementSystem, camera_update_system::CameraUpdateSystem,
-    input_system::InputSystem, render_system::RenderSystem, System,
+    CameraMovementSystem, CameraUpdateSystem, InputSystem, RenderSystem, System,
 };
 use crate::ecs::world::World;
 use crate::graphics::renderer::Renderer;
