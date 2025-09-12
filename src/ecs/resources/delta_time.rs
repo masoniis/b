@@ -1,7 +1,9 @@
-pub struct DeltaTime(pub f32);
+pub struct DeltaTimeResource {
+    pub seconds: f32,
+}
 
-impl Default for DeltaTime {
+impl Default for DeltaTimeResource {
     fn default() -> Self {
-        Self(0.0)
+        Self { seconds: 0.0 }
     }
 }

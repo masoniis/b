@@ -1,4 +1,5 @@
 use crate::core::app::App;
+use glam::Vec2;
 use glutin::context::{ContextAttributesBuilder, NotCurrentGlContext};
 use glutin::display::GetGlDisplay;
 use glutin::prelude::GlDisplay;
@@ -13,14 +14,14 @@ use winit::window::Window;
 
 pub fn run_app() -> Result<(), Box<dyn Error>> {
     let event_loop = EventLoop::new()?;
-    let mut app = App::default();
+    let mut app = App::new();
     event_loop.run_app(&mut app)?;
     Ok(())
 }
 
 pub fn create_gl_window(
     event_loop: &ActiveEventLoop,
-    size: (u32, u32),
+    size: Vec2,
 ) -> (
     Window,
     Surface<WindowSurface>,
@@ -28,7 +29,7 @@ pub fn create_gl_window(
 ) {
     let window_attributes = Window::default_attributes()
         .with_title("🅱️")
-        .with_inner_size(PhysicalSize::new(size.0, size.1));
+        .with_inner_size(PhysicalSize::new(size.x, size.y));
 
     let template = glutin::config::ConfigTemplateBuilder::new();
     let (window, gl_config) = glutin_winit::DisplayBuilder::new()
