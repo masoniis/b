@@ -1,8 +1,9 @@
+use bevy_ecs::prelude::Resource;
 use glam::{DVec2, Vec2};
 use std::collections::HashSet;
 use winit::keyboard::KeyCode;
 
-#[derive(Default, Debug)]
+#[derive(Default, Debug, Resource)]
 pub struct InputResource {
     pub pressed_keys: HashSet<KeyCode>,
     pub mouse_delta: DVec2,

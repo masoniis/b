@@ -1,5 +1,5 @@
+use bevy_ecs::world::World;
 use glam::{DVec2, Vec2};
-use shred::World;
 use winit::event::{DeviceEvent, ElementState, WindowEvent};
 use winit::keyboard::PhysicalKey;
 
@@ -11,7 +11,7 @@ pub struct InputSystem;
 impl InputSystem {
     /// Resets per-frame input state.
     pub fn new_events_hook(&mut self, world: &mut World) {
-        let mut input = world.fetch_mut::<InputResource>();
+        let mut input = world.resource_mut::<InputResource>();
         input.mouse_delta = DVec2::ZERO;
         input.scroll_delta = Vec2::ZERO;
     }
@@ -22,7 +22,7 @@ impl InputSystem {
             event: key_event, ..
         } = event
         {
-            let mut input = world.fetch_mut::<InputResource>();
+            let mut input = world.resource_mut::<InputResource>();
             match key_event.state {
                 ElementState::Pressed => {
                     if let PhysicalKey::Code(key_code) = key_event.physical_key {
@@ -40,7 +40,7 @@ impl InputSystem {
 
     /// Processes device-agnostic events, like raw mouse motion.
     pub fn device_event_hook(&mut self, world: &mut World, event: &DeviceEvent) {
-        let mut input = world.fetch_mut::<InputResource>();
+        let mut input = world.resource_mut::<InputResource>();
         match event {
             DeviceEvent::MouseMotion { delta } => {
                 input.mouse_delta.x += delta.0;
