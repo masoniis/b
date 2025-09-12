@@ -1,32 +1,29 @@
 use crate::core::input::InputSystem;
-use crate::ecs::resources::{Camera, DeltaTimeResource, InputResource, WindowResource};
+use crate::ecs::resources::{Camera, InputResource, TimeResource, WindowResource};
 use crate::ecs::systems::camera_system::CameraSystem;
+use crate::ecs::systems::time_system::TimeSystem;
 use crate::graphics::renderer::Renderer;
 use crate::graphics::shaders::shader_program::ShaderProgram;
 use glam::Vec2;
 use shred::World;
 use shred::{Dispatcher, DispatcherBuilder};
-use std::time::Instant;
 use tracing::info;
 use winit::application::ApplicationHandler;
 use winit::event::{DeviceEvent, StartCause, WindowEvent};
 use winit::event_loop::ActiveEventLoop;
 use winit::window::{Window, WindowId};
 
-// The App struct is now generic over the lifetimes 'a and 'b required by the Dispatcher.
 pub struct App<'a, 'b> {
     // OS Interactions
     window: Option<Window>,
-    last_frame_time: Instant,
 
     // Display logic
     renderer: Option<Renderer>,
     shader_program: Option<ShaderProgram>,
 
     // ECS and Game Logic
-    world: World,
-    // The `systems` vector is replaced with specific handlers and a dispatcher.
     input_system: InputSystem,
+    world: World,
     game_logic_dispatcher: Dispatcher<'a, 'b>,
 }
 
@@ -34,14 +31,14 @@ impl<'a, 'b> App<'a, 'b> {
     pub fn new() -> Self {
         let mut world = World::empty();
         world.insert(InputResource::new());
-        world.insert(DeltaTimeResource::default());
+        world.insert(TimeResource::default());
         world.insert(Camera::default());
         world.insert(WindowResource::default());
 
-        // The dispatcher is built once, when the app is created.
         // All data-driven systems are registered here.
         let dispatcher = DispatcherBuilder::new()
-            .with(CameraSystem, "camera_system", &[])
+            .with(TimeSystem, "time_system", &[])
+            .with(CameraSystem, "camera_system", &["time_system"])
             .build();
 
         Self {
@@ -51,7 +48,6 @@ impl<'a, 'b> App<'a, 'b> {
             game_logic_dispatcher: dispatcher,
             renderer: None,
             shader_program: None,
-            last_frame_time: Instant::now(),
         }
     }
 }
@@ -119,18 +115,10 @@ impl<'a, 'b> ApplicationHandler for App<'a, 'b> {
                 window_size.height = physical_size.height;
             }
             WindowEvent::RedrawRequested => {
-                // 2. Update DeltaTime resource
-                let current_time = Instant::now();
-                let delta_time = current_time
-                    .duration_since(self.last_frame_time)
-                    .as_secs_f32();
-                self.last_frame_time = current_time;
-                self.world.fetch_mut::<DeltaTimeResource>().seconds = delta_time;
-
-                // 3. Run all data-driven systems in parallel (where possible)
+                // Run all data-driven systems in parallel
                 self.game_logic_dispatcher.dispatch(&mut self.world);
 
-                // 4. Render the scene
+                // Render the scene
                 let camera = self.world.fetch::<Camera>();
 
                 if let (Some(window), Some(renderer), Some(shader_program)) = (
