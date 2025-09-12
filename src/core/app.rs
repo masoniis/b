@@ -1,6 +1,6 @@
 use crate::core::input::InputSystem;
 use crate::ecs::resources::{Camera, InputResource, TimeResource, WindowResource};
-use crate::ecs::systems::camera_system::CameraSystem;
+use crate::ecs::systems::camera_control_system::CameraControlSystem;
 use crate::ecs::systems::time_system::TimeSystem;
 use crate::graphics::renderer::Renderer;
 use crate::graphics::shaders::shader_program::ShaderProgram;
@@ -38,7 +38,11 @@ impl<'a, 'b> App<'a, 'b> {
         // All data-driven systems are registered here.
         let dispatcher = DispatcherBuilder::new()
             .with(TimeSystem, "time_system", &[])
-            .with(CameraSystem, "camera_system", &["time_system"])
+            .with(
+                CameraControlSystem,
+                "camera_control_system",
+                &["time_system"],
+            )
             .build();
 
         Self {
