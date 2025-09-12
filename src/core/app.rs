@@ -1,19 +1,19 @@
 use crate::core::input::InputSystem;
 use crate::ecs::resources::{Camera, InputResource, TimeResource, WindowResource};
-use crate::ecs::systems::camera_control_system::CameraControlSystem;
-use crate::ecs::systems::time_system::TimeSystem;
+use crate::ecs::systems::camera_control_system::camera_control_system;
+use crate::ecs::systems::time_system::time_system;
 use crate::graphics::renderer::Renderer;
 use crate::graphics::shaders::shader_program::ShaderProgram;
+use bevy_ecs::schedule::Schedule;
+use bevy_ecs::world::World;
 use glam::Vec2;
-use shred::World;
-use shred::{Dispatcher, DispatcherBuilder};
 use tracing::info;
 use winit::application::ApplicationHandler;
 use winit::event::{DeviceEvent, StartCause, WindowEvent};
 use winit::event_loop::ActiveEventLoop;
 use winit::window::{Window, WindowId};
 
-pub struct App<'a, 'b> {
+pub struct App {
     // OS Interactions
     window: Option<Window>,
 
@@ -24,39 +24,32 @@ pub struct App<'a, 'b> {
     // ECS and Game Logic
     input_system: InputSystem,
     world: World,
-    game_logic_dispatcher: Dispatcher<'a, 'b>,
+    schedule: Schedule,
 }
 
-impl<'a, 'b> App<'a, 'b> {
+impl App {
     pub fn new() -> Self {
-        let mut world = World::empty();
-        world.insert(InputResource::new());
-        world.insert(TimeResource::default());
-        world.insert(Camera::default());
-        world.insert(WindowResource::default());
+        let mut world = World::new();
+        world.insert_resource(InputResource::new());
+        world.insert_resource(TimeResource::default());
+        world.insert_resource(Camera::default());
+        world.insert_resource(WindowResource::default());
 
-        // All data-driven systems are registered here.
-        let dispatcher = DispatcherBuilder::new()
-            .with(TimeSystem, "time_system", &[])
-            .with(
-                CameraControlSystem,
-                "camera_control_system",
-                &["time_system"],
-            )
-            .build();
+        let mut schedule = Schedule::default();
+        schedule.add_systems((time_system, camera_control_system));
 
         Self {
             window: None,
             world: world,
             input_system: InputSystem,
-            game_logic_dispatcher: dispatcher,
+            schedule: schedule,
             renderer: None,
             shader_program: None,
         }
     }
 }
 
-impl<'a, 'b> ApplicationHandler for App<'a, 'b> {
+impl ApplicationHandler for App {
     fn resumed(&mut self, event_loop: &winit::event_loop::ActiveEventLoop) {
         if self.window.is_none() {
             info!("App resumed, creating window!");
@@ -74,12 +67,10 @@ impl<'a, 'b> ApplicationHandler for App<'a, 'b> {
                 }
             }
 
-            // The Renderer and ShaderProgram are now stored on the App struct,
-            // NOT in the ECS World. This avoids the Send + Sync issue.
             self.shader_program = Some(
                 ShaderProgram::new(
                     "src/assets/shaders/simple.vert",
-                    "src/assets/shaders/triangle.frag",
+                    "src/assets/shaders/simple.frag",
                 )
                 .unwrap(),
             );
@@ -114,16 +105,16 @@ impl<'a, 'b> ApplicationHandler for App<'a, 'b> {
                 event_loop.exit();
             }
             WindowEvent::Resized(physical_size) => {
-                let mut window_size = self.world.fetch_mut::<WindowResource>();
+                let mut window_size = self.world.resource_mut::<WindowResource>();
                 window_size.width = physical_size.width;
                 window_size.height = physical_size.height;
             }
             WindowEvent::RedrawRequested => {
                 // Run all data-driven systems in parallel
-                self.game_logic_dispatcher.dispatch(&mut self.world);
+                self.schedule.run(&mut self.world);
 
                 // Render the scene
-                let camera = self.world.fetch::<Camera>();
+                let camera = self.world.resource::<Camera>();
 
                 if let (Some(window), Some(renderer), Some(shader_program)) = (
                     self.window.as_ref(),

@@ -1,4 +1,6 @@
-#[derive(Debug)]
+use bevy_ecs::prelude::Resource;
+
+#[derive(Debug, Resource)]
 pub struct WindowResource {
     pub width: u32,
     pub height: u32,

@@ -1,5 +1,7 @@
+use bevy_ecs::prelude::Resource;
 use std::time::Instant;
 
+#[derive(Resource)]
 pub struct TimeResource {
     pub delta_seconds: f32,
     pub last_update: Instant,

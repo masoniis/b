@@ -1,5 +1,7 @@
+use bevy_ecs::prelude::Resource;
 use glam::{Mat4, Vec3};
 
+#[derive(Resource)]
 pub struct Camera {
     pub position: Vec3,
     pub front: Vec3,
