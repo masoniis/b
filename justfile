@@ -2,6 +2,9 @@
 run *args:
     cargo run {{args}}
 
+check *args:
+    cargo check {{args}}
+
 # Builds the c library
 buildc:
 	cargo build --release

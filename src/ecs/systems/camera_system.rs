@@ -1,40 +1,57 @@
-use crate::ecs::resources::camera::CameraMovement;
-use crate::ecs::systems::System;
-use crate::ecs::world::World;
+use crate::ecs::resources::{
+    Camera, DeltaTimeResource, WindowResource, camera::CameraMovement, input::InputResource,
+};
+use shred::{Read, System, SystemData, Write};
 use winit::keyboard::KeyCode;
+
+#[derive(SystemData)]
+pub struct CameraSystemData<'a> {
+    input: Read<'a, InputResource>,
+    delta_time: Read<'a, DeltaTimeResource>,
+    window: Read<'a, WindowResource>,
+    camera: Write<'a, Camera>,
+}
 
 pub struct CameraSystem;
 
-impl System for CameraSystem {
-    fn new_events_hook(&mut self, world: &mut World) {
-        // Camera movement logic
-        if world.input_resource.pressed_keys.contains(&KeyCode::KeyW) {
-            world
-                .camera
-                .process_keyboard(CameraMovement::Forward, world.delta_time.0);
+impl<'a> System<'a> for CameraSystem {
+    type SystemData = CameraSystemData<'a>;
+
+    fn run(&mut self, mut data: Self::SystemData) {
+        // Camera movement
+        if data.input.pressed_keys.contains(&KeyCode::KeyW) {
+            data.camera
+                .process_keyboard(CameraMovement::Forward, data.delta_time.seconds);
         }
-        if world.input_resource.pressed_keys.contains(&KeyCode::KeyS) {
-            world
-                .camera
-                .process_keyboard(CameraMovement::Backward, world.delta_time.0);
+        if data.input.pressed_keys.contains(&KeyCode::KeyS) {
+            data.camera
+                .process_keyboard(CameraMovement::Backward, data.delta_time.seconds);
         }
-        if world.input_resource.pressed_keys.contains(&KeyCode::KeyA) {
-            world
-                .camera
-                .process_keyboard(CameraMovement::Left, world.delta_time.0);
+        if data.input.pressed_keys.contains(&KeyCode::KeyA) {
+            data.camera
+                .process_keyboard(CameraMovement::Left, data.delta_time.seconds);
         }
-        if world.input_resource.pressed_keys.contains(&KeyCode::KeyD) {
-            world
-                .camera
-                .process_keyboard(CameraMovement::Right, world.delta_time.0);
+        if data.input.pressed_keys.contains(&KeyCode::KeyD) {
+            data.camera
+                .process_keyboard(CameraMovement::Right, data.delta_time.seconds);
         }
 
-        // Camera math updates
-        world.camera.update_view_matrix();
-        if world.camera.projection_dirty {
-            let aspect_ratio = world.window_size.0 as f32 / world.window_size.1 as f32;
-            world.camera.update_projection_matrix(aspect_ratio);
-            world.camera.projection_dirty = false;
+        // Camera rotation
+        data.camera.process_mouse_movement(
+            data.input.mouse_delta.x as f32,
+            -data.input.mouse_delta.y as f32,
+            true,
+        );
+
+        // Camera zoom (only vertical)
+        data.camera.process_mouse_scroll(data.input.scroll_delta.y);
+
+        // Update the camera math AFTER all the above is decided
+        data.camera.update_view_matrix();
+        if data.camera.projection_dirty {
+            data.camera
+                .update_projection_matrix(data.window.aspect_ratio());
+            data.camera.projection_dirty = false;
         }
     }
 }
