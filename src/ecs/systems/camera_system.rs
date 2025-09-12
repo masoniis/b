@@ -1,5 +1,5 @@
 use crate::ecs::resources::{
-    Camera, DeltaTimeResource, WindowResource, camera::CameraMovement, input::InputResource,
+    camera::CameraMovement, input::InputResource, Camera, TimeResource, WindowResource,
 };
 use shred::{Read, System, SystemData, Write};
 use winit::keyboard::KeyCode;
@@ -7,7 +7,7 @@ use winit::keyboard::KeyCode;
 #[derive(SystemData)]
 pub struct CameraSystemData<'a> {
     input: Read<'a, InputResource>,
-    delta_time: Read<'a, DeltaTimeResource>,
+    time: Read<'a, TimeResource>,
     window: Read<'a, WindowResource>,
     camera: Write<'a, Camera>,
 }
@@ -21,19 +21,19 @@ impl<'a> System<'a> for CameraSystem {
         // Camera movement
         if data.input.pressed_keys.contains(&KeyCode::KeyW) {
             data.camera
-                .process_keyboard(CameraMovement::Forward, data.delta_time.seconds);
+                .process_keyboard(CameraMovement::Forward, data.time.delta_seconds);
         }
         if data.input.pressed_keys.contains(&KeyCode::KeyS) {
             data.camera
-                .process_keyboard(CameraMovement::Backward, data.delta_time.seconds);
+                .process_keyboard(CameraMovement::Backward, data.time.delta_seconds);
         }
         if data.input.pressed_keys.contains(&KeyCode::KeyA) {
             data.camera
-                .process_keyboard(CameraMovement::Left, data.delta_time.seconds);
+                .process_keyboard(CameraMovement::Left, data.time.delta_seconds);
         }
         if data.input.pressed_keys.contains(&KeyCode::KeyD) {
             data.camera
-                .process_keyboard(CameraMovement::Right, data.delta_time.seconds);
+                .process_keyboard(CameraMovement::Right, data.time.delta_seconds);
         }
 
         // Camera rotation
