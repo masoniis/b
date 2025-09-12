@@ -1,3 +1,4 @@
 pub mod buffers;
 pub mod renderer;
-pub mod shaders;
+pub mod shader_program;
+pub mod textures;

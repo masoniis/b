@@ -1,4 +1,6 @@
-#[derive(Debug)]
+use bevy_ecs::prelude::Resource;
+
+#[derive(Debug, Resource)]
 pub struct WindowResource {
     pub width: u32,
     pub height: u32,
@@ -17,8 +19,8 @@ impl WindowResource {
 impl Default for WindowResource {
     fn default() -> Self {
         Self {
-            width: 800,
-            height: 600,
+            width: 1800,
+            height: 1600,
         }
     }
 }
