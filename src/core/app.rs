@@ -1,9 +1,9 @@
 use crate::{
     ecs::{
-        resources::{Camera, TextureManager},
         resources::input::InputResource,
         resources::time::TimeResource,
         resources::window::WindowResource,
+        resources::{Camera, TextureManager},
         systems::{
             camera_control_system, render_system, setup_chunk_system, time_system, InputSystem,
         },
@@ -15,7 +15,7 @@ use bevy_ecs::{
     world::World,
 };
 use glam::Vec2;
-use tracing::{info, warn};
+use tracing::{error, info};
 use winit::{
     application::ApplicationHandler,
     event::{DeviceEvent, StartCause, WindowEvent},
@@ -93,7 +93,7 @@ impl ApplicationHandler for App {
                 if let Err(err) =
                     window_ref.set_cursor_grab(winit::window::CursorGrabMode::Confined)
                 {
-                    warn!("Failed to grab cursor: {:?}", err);
+                    error!("Failed to grab cursor: {:?}", err);
                 }
             }
 

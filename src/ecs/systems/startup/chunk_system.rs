@@ -18,8 +18,8 @@ pub fn setup_chunk_system(mut commands: Commands, mut texture_manager: ResMut<Te
     let uv_max = Vec2::new(1.0, 1.0);
 
     // A 16x16 chunk of simple blocks
-    for x in 0..16 {
-        for z in 0..16 {
+    for x in 0..100 {
+        for z in 0..100 {
             commands.spawn((
                 Mesh::new_cube(atlas_id.clone(), uv_min, uv_max),
                 Transform {
