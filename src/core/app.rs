@@ -5,11 +5,14 @@ use crate::{
         resources::window::WindowResource,
         resources::{Camera, TextureManager},
         systems::{
-            camera_control_system, render_system, setup_chunk_system, time_system, InputSystem,
+            camera_control_system, finalize_render_system, render_3d_scene_system,
+            render_text_system, setup_chunk_system, setup_render_system, time_system, InputSystem,
         },
     },
     graphics::{renderer::Renderer, shader_program::ShaderProgram},
 };
+
+use bevy_ecs::prelude::*;
 use bevy_ecs::{
     schedule::{Schedule, ScheduleLabel},
     world::World,
@@ -59,7 +62,15 @@ impl App {
         startup_scheduler.add_systems(setup_chunk_system);
 
         let mut render_scheduler = Schedule::new(Schedules::Render);
-        render_scheduler.add_systems(render_system);
+        render_scheduler.add_systems(
+            (
+                setup_render_system,
+                render_3d_scene_system,
+                render_text_system,
+                finalize_render_system,
+            )
+                .chain(),
+        );
 
         let mut main_scheduler = Schedule::new(Schedules::Main);
         main_scheduler.add_systems((time_system, camera_control_system));
