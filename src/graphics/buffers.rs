@@ -5,16 +5,20 @@ use std::ptr;
 pub struct Buffer {
     pub vao: GLuint,
     pub vbo: GLuint,
+    pub ebo: GLuint,
+    pub index_count: GLuint,
 }
 
 impl Buffer {
-    pub fn new(vertices: &[GLfloat]) -> Self {
+    pub fn new(vertices: &[GLfloat], indices: &[GLuint]) -> Self {
         let mut vao = 0;
         let mut vbo = 0;
+        let mut ebo = 0;
 
         unsafe {
             gl::GenVertexArrays(1, &mut vao);
             gl::GenBuffers(1, &mut vbo);
+            gl::GenBuffers(1, &mut ebo);
 
             gl::BindVertexArray(vao);
 
@@ -23,6 +27,14 @@ impl Buffer {
                 gl::ARRAY_BUFFER,
                 (vertices.len() * std::mem::size_of::<GLfloat>()) as GLsizeiptr,
                 vertices.as_ptr() as *const c_void,
+                gl::STATIC_DRAW,
+            );
+
+            gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, ebo);
+            gl::BufferData(
+                gl::ELEMENT_ARRAY_BUFFER,
+                (indices.len() * std::mem::size_of::<GLuint>()) as GLsizeiptr,
+                indices.as_ptr() as *const c_void,
                 gl::STATIC_DRAW,
             );
 
@@ -40,13 +52,19 @@ impl Buffer {
             gl::BindVertexArray(0);
         }
 
-        Buffer { vao, vbo }
+        Buffer {
+            vao,
+            vbo,
+            ebo,
+            index_count: indices.len() as GLuint,
+        }
     }
 
     pub fn cleanup(&self) {
         unsafe {
             gl::DeleteVertexArrays(1, &self.vao);
             gl::DeleteBuffers(1, &self.vbo);
+            gl::DeleteBuffers(1, &self.ebo);
         }
     }
 }

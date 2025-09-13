@@ -71,7 +71,6 @@ pub fn camera_control_system(
     }
     camera.projection_dirty = true;
 
-    // Update math
     camera.view_matrix =
         Mat4::look_at_rh(camera.position, camera.position + camera.front, camera.up);
 
