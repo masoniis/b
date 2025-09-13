@@ -13,6 +13,9 @@ impl Renderer {
             gl::Enable(gl::DEPTH_TEST);
             gl::Enable(gl::CULL_FACE);
             gl::CullFace(gl::BACK);
+            // These are for blending the text/scene
+            gl::Enable(gl::BLEND);
+            gl::BlendFunc(gl::SRC_ALPHA, gl::ONE_MINUS_SRC_ALPHA);
         }
 
         Renderer {

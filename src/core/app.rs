@@ -3,13 +3,17 @@ use crate::{
         resources::input::InputResource,
         resources::time::TimeResource,
         resources::window::WindowResource,
-        resources::{Camera, TextureManager},
+        resources::{Camera, ShaderManager, TextureManager},
         systems::{
-            camera_control_system, render_system, setup_chunk_system, time_system, InputSystem,
+            camera_control_system, finalize_render_system, font_loader_system,
+            render_3d_scene_system, render_text_system, setup_chunk_system, setup_render_system,
+            time_system, update_text_mesh_system, InputSystem,
         },
     },
-    graphics::{renderer::Renderer, shader_program::ShaderProgram},
+    graphics::renderer::Renderer,
 };
+
+use bevy_ecs::prelude::*;
 use bevy_ecs::{
     schedule::{Schedule, ScheduleLabel},
     world::World,
@@ -37,7 +41,7 @@ pub struct App {
 
     // Display logic
     renderer: Option<Renderer>,
-    shader_program: Option<ShaderProgram>,
+    shader_manager: Option<ShaderManager>,
 
     // Game Logic
     world: World,
@@ -53,13 +57,28 @@ impl App {
         world.insert_resource(TimeResource::default());
         world.insert_resource(Camera::default());
         world.insert_resource(WindowResource::default());
-        world.insert_resource(TextureManager::default());
+        world.insert_non_send_resource(TextureManager::default());
 
         let mut startup_scheduler = Schedule::new(Schedules::Startup);
-        startup_scheduler.add_systems(setup_chunk_system);
+        startup_scheduler.add_systems(
+            (
+                setup_chunk_system,
+                font_loader_system,
+                update_text_mesh_system,
+            )
+                .chain(),
+        );
 
         let mut render_scheduler = Schedule::new(Schedules::Render);
-        render_scheduler.add_systems(render_system);
+        render_scheduler.add_systems(
+            (
+                setup_render_system,
+                render_3d_scene_system,
+                render_text_system,
+                finalize_render_system,
+            )
+                .chain(),
+        );
 
         let mut main_scheduler = Schedule::new(Schedules::Main);
         main_scheduler.add_systems((time_system, camera_control_system));
@@ -69,7 +88,7 @@ impl App {
             input_system: InputSystem,
 
             renderer: None,
-            shader_program: None,
+            shader_manager: None,
 
             world: world,
             startup_scheduler,
@@ -97,14 +116,11 @@ impl ApplicationHandler for App {
                 }
             }
 
-            let shader_program = ShaderProgram::new(
-                "src/assets/shaders/simple.vert",
-                "src/assets/shaders/simple.frag",
-            )
-            .unwrap();
+            let shader_manager = ShaderManager::new().expect("Failed to create ShaderManager!!!");
+
             let renderer = Renderer::new(gl_surface, gl_context);
 
-            self.shader_program = Some(shader_program);
+            self.shader_manager = Some(shader_manager);
             self.renderer = Some(renderer);
 
             info!("Running startup systems...");
@@ -148,22 +164,21 @@ impl ApplicationHandler for App {
                 window_size.height = physical_size.height;
             }
             WindowEvent::RedrawRequested => {
-                if let (Some(window), Some(renderer), Some(shader_program)) = (
+                if let (Some(window), Some(renderer), Some(shader_manager)) = (
                     self.window.as_ref(),
-                    // Take ownership from from App for renderer and shader_program
                     self.renderer.take(),
-                    self.shader_program.take(),
+                    self.shader_manager.take(),
                 ) {
                     // 1. Temporarily insert the main-thread data as NonSend resources
                     self.world.insert_non_send_resource(renderer);
-                    self.world.insert_non_send_resource(shader_program);
+                    self.world.insert_non_send_resource(shader_manager);
 
                     // 2. Run the render schedule. Bevy will pass the resources to the system.
                     self.render_scheduler.run(&mut self.world);
 
                     // 3. Remove the resources and give them back to the App.
                     self.renderer = self.world.remove_non_send_resource::<Renderer>();
-                    self.shader_program = self.world.remove_non_send_resource::<ShaderProgram>();
+                    self.shader_manager = self.world.remove_non_send_resource::<ShaderManager>();
 
                     // (request redraw to keep loop running)
                     window.request_redraw();
@@ -174,8 +189,8 @@ impl ApplicationHandler for App {
     }
 
     fn exiting(&mut self, _event_loop: &ActiveEventLoop) {
-        if let Some(shader_program) = &self.shader_program {
-            shader_program.delete();
+        if let Some(shader_manager) = &self.shader_manager {
+            shader_manager.delete();
         }
     }
 }
