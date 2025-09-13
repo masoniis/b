@@ -9,7 +9,7 @@ pub fn setup_chunk_system(mut commands: Commands) {
     for x in 0..16 {
         for z in 0..16 {
             commands.spawn((
-                Mesh::new_cube(),
+                Mesh::new_cube("src/assets/textures/grass_16x16.png"),
                 Transform {
                     position: Vec3::new((x * 2) as f32, 0.0, (z * 2) as f32),
                     ..Default::default()

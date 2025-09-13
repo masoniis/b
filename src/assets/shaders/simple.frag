@@ -11,7 +11,5 @@ uniform sampler2D u_texture;
 
 void main()
 {
-		// TODO: texture properly
-    // FragColor = texture(u_texture, v_tex_coord);
-    FragColor = vec4(1.0, 0.0, 0.0, 1.0); // Output solid red color
+		FragColor = texture(u_texture, v_tex_coord);
 }
