@@ -1,6 +1,7 @@
 use gl::types::*;
 use image::{self, GenericImageView};
 use std::ffi::c_void;
+use tracing::info;
 
 pub struct Texture {
     id: GLuint,
@@ -10,6 +11,7 @@ pub struct Texture {
 
 impl Texture {
     pub fn new(path: &str) -> Result<Self, String> {
+        info!("Loading texture from {}", path);
         let img = image::open(path)
             .map_err(|e| format!("Failed to load texture {}: {}", path, e))?
             .flipv(); // OpenGL expects textures to be upside down
