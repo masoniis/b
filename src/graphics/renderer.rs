@@ -9,6 +9,12 @@ pub struct Renderer {
 
 impl Renderer {
     pub fn new(gl_surface: Surface<WindowSurface>, gl_context: PossiblyCurrentContext) -> Self {
+        unsafe {
+            gl::Enable(gl::DEPTH_TEST);
+            gl::Enable(gl::CULL_FACE);
+            gl::CullFace(gl::BACK);
+        }
+
         Renderer {
             gl_surface,
             gl_context,
@@ -18,7 +24,7 @@ impl Renderer {
     pub fn clear_frame(&self) {
         unsafe {
             gl::ClearColor(0.1, 0.1, 0.1, 1.0);
-            gl::Clear(gl::COLOR_BUFFER_BIT);
+            gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
         }
     }
 

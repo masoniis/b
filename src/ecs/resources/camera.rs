@@ -28,7 +28,7 @@ pub struct Camera {
 impl Default for Camera {
     fn default() -> Self {
         Self {
-            position: Vec3::new(0.0, 0.0, 3.0),
+            position: Vec3::new(0.0, 4.0, 3.0),
             front: Vec3::new(0.0, 0.0, -1.0),
             up: Vec3::new(0.0, 1.0, 0.0),
             right: Vec3::new(1.0, 0.0, 0.0),

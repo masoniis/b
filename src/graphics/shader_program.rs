@@ -148,4 +148,23 @@ impl ShaderProgram {
             gl::UniformMatrix4fv(location, 1, gl::FALSE, matrix.as_ref().as_ptr());
         }
     }
+
+    /// Sets an integer uniform in the shader program.
+    pub fn set_int(&self, name: &str, value: i32) {
+        unsafe {
+            let c_name = CString::new(name).unwrap();
+            let location = gl::GetUniformLocation(self.id, c_name.as_ptr());
+            if location == -1 {
+                warn!("Uniform {:?} not found.", name);
+                return;
+            }
+            gl::Uniform1i(location, value);
+        }
+    }
+}
+
+impl Drop for ShaderProgram {
+    fn drop(&mut self) {
+        self.delete();
+    }
 }

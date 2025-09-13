@@ -38,15 +38,29 @@ impl Buffer {
                 gl::STATIC_DRAW,
             );
 
+            let stride = 5 * std::mem::size_of::<GLfloat>() as i32;
+
+            // Position attribute
             gl::VertexAttribPointer(
                 0, // layout (location = 0)
                 3, // size of vertex attribute
                 gl::FLOAT,
                 gl::FALSE,
-                3 * std::mem::size_of::<GLfloat>() as i32,
+                stride,
                 ptr::null(),
             );
             gl::EnableVertexAttribArray(0);
+
+            // Texture coordinate attribute
+            gl::VertexAttribPointer(
+                1, // layout (location = 1)
+                2, // size of vertex attribute
+                gl::FLOAT,
+                gl::FALSE,
+                stride,
+                (3 * std::mem::size_of::<GLfloat>()) as *const c_void,
+            );
+            gl::EnableVertexAttribArray(1);
 
             gl::BindBuffer(gl::ARRAY_BUFFER, 0);
             gl::BindVertexArray(0);

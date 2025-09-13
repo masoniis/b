@@ -18,6 +18,12 @@ pub fn render_system(
 
     for (mesh, transform) in &query {
         shader_program.set_mat4("model", &transform.to_matrix());
+
+        if let Some(ref texture) = mesh.texture {
+            texture.bind(0); // Bind to texture unit 0
+            shader_program.set_int("u_texture", 0);
+        }
+
         unsafe {
             gl::BindVertexArray(mesh.buffer.vao);
             gl::DrawElements(
@@ -26,6 +32,7 @@ pub fn render_system(
                 gl::UNSIGNED_INT,
                 std::ptr::null(),
             );
+            gl::BindVertexArray(0);
         }
     }
 
