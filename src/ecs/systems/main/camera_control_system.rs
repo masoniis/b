@@ -12,20 +12,24 @@ pub fn camera_control_system(
     // Update camera position
     let velocity = camera.movement_speed * time.delta_seconds;
     let front = camera.front;
+    let mut multiplier = 1.0;
+    if input.pressed_keys.contains(&KeyCode::ShiftLeft) {
+        multiplier = 2.5;
+    }
     if input.pressed_keys.contains(&KeyCode::KeyW) {
-        camera.position += front * velocity;
+        camera.position += front * velocity * multiplier;
     }
     let front = camera.front;
     if input.pressed_keys.contains(&KeyCode::KeyS) {
-        camera.position -= front * velocity;
+        camera.position -= front * velocity * multiplier;
     }
     let right = camera.right;
     if input.pressed_keys.contains(&KeyCode::KeyA) {
-        camera.position -= right * velocity;
+        camera.position -= right * velocity * multiplier;
     }
     let right = camera.right;
     if input.pressed_keys.contains(&KeyCode::KeyD) {
-        camera.position += right * velocity;
+        camera.position += right * velocity * multiplier;
     }
 
     // Update camera pitch
