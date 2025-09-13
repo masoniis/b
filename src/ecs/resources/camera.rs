@@ -28,13 +28,13 @@ pub struct Camera {
 impl Default for Camera {
     fn default() -> Self {
         Self {
-            position: Vec3::new(0.0, 4.0, 3.0),
+            position: Vec3::new(0.0, 2.0, 0.0),
             front: Vec3::new(0.0, 0.0, -1.0),
             up: Vec3::new(0.0, 1.0, 0.0),
             right: Vec3::new(1.0, 0.0, 0.0),
             world_up: Vec3::new(0.0, 1.0, 0.0),
 
-            yaw: -90.0,
+            yaw: -135.0,
             pitch: 0.0,
 
             view_matrix: Mat4::IDENTITY,

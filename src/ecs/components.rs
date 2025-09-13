@@ -1,38 +1,41 @@
 use crate::graphics::buffers::Buffer;
-use crate::graphics::textures::Texture;
 use bevy_ecs::prelude::Component;
-use glam::{Mat4, Quat, Vec3};
+use glam::{Mat4, Quat, Vec2, Vec3};
 
 #[derive(Component)]
 pub struct Mesh {
     pub buffer: Buffer,
-    pub texture: Option<Texture>,
+    pub atlas_id: String,
+    pub uv_min: Vec2,
+    pub uv_max: Vec2,
 }
 
 impl Mesh {
     /// Creates a new mesh from raw vertex and index data.
-    pub fn new(vertices: &[f32], indices: &[u32], texture: Option<Texture>) -> Self {
+    pub fn new(vertices: &[f32], indices: &[u32], atlas_id: String, uv_min: Vec2, uv_max: Vec2) -> Self {
         Self {
             buffer: Buffer::new(vertices, indices),
-            texture,
+            atlas_id,
+            uv_min,
+            uv_max,
         }
     }
 
     /// Creates a new mesh with the geometry of a 1x1x1 cube centered at the origin.
-    pub fn new_cube(texture_path: &str) -> Self {
+    pub fn new_cube(atlas_id: String, uv_min: Vec2, uv_max: Vec2) -> Self {
         // Define the 8 vertices of the cube with position and texture coordinates
         let vertices: &[f32] = &[
             // positions      // texture coords
             // Front face
-            -0.5, -0.5, 0.5, 0.0, 0.0, // 0
-            0.5, -0.5, 0.5, 1.0, 0.0, // 1
-            0.5, 0.5, 0.5, 1.0, 1.0, // 2
-            -0.5, 0.5, 0.5, 0.0, 1.0, // 3
+            -0.5, -0.5, 0.5, uv_min.x, uv_min.y, // 0
+            0.5, -0.5, 0.5, uv_max.x, uv_min.y, // 1
+            0.5, 0.5, 0.5, uv_max.x, uv_max.y, // 2
+            -0.5, 0.5, 0.5, uv_min.x, uv_max.y, // 3
             // Back face (order changed to match Python)
-            0.5, -0.5, -0.5, 0.0, 0.0, // 4
-            -0.5, -0.5, -0.5, 1.0, 0.0, // 5
-            -0.5, 0.5, -0.5, 1.0, 1.0, // 6
-            0.5, 0.5, -0.5, 0.0, 1.0, // 7
+            0.5, -0.5, -0.5, uv_min.x, uv_min.y, // 4
+            -0.5, -0.5, -0.5, uv_max.x, uv_min.y, // 5
+            -0.5, 0.5, -0.5, uv_max.x, uv_max.y, // 6
+            0.5, 0.5, -0.5, uv_min.x, uv_max.y, // 7
         ];
 
         let indices: &[u32] = &[
@@ -45,12 +48,11 @@ impl Mesh {
             5, 0, 3, 3, 6, 5,
         ];
 
-        let texture = crate::graphics::textures::Texture::new(texture_path)
-            .expect("Failed to load texture for cube");
-
         return Self {
             buffer: Buffer::new(vertices, indices),
-            texture: Some(texture),
+            atlas_id,
+            uv_min,
+            uv_max,
         };
     }
 }

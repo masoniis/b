@@ -1,4 +1,4 @@
-use crate::ecs::resources::{Camera, TimeResource, WindowResource, input::InputResource};
+use crate::ecs::resources::{Camera, InputResource, TimeResource, WindowResource};
 use bevy_ecs::prelude::*;
 use glam::{Mat4, Vec3};
 use winit::keyboard::KeyCode;

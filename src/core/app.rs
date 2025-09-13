@@ -1,6 +1,9 @@
 use crate::{
     ecs::{
-        resources::{Camera, InputResource, TimeResource, WindowResource},
+        resources::{Camera, TextureManager},
+        resources::input::InputResource,
+        resources::time::TimeResource,
+        resources::window::WindowResource,
         systems::{
             camera_control_system, render_system, setup_chunk_system, time_system, InputSystem,
         },
@@ -50,6 +53,7 @@ impl App {
         world.insert_resource(TimeResource::default());
         world.insert_resource(Camera::default());
         world.insert_resource(WindowResource::default());
+        world.insert_resource(TextureManager::default());
 
         let mut startup_scheduler = Schedule::new(Schedules::Startup);
         startup_scheduler.add_systems(setup_chunk_system);
