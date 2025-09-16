@@ -10,7 +10,7 @@ pub fn setup_chunk_system(mut commands: Commands, mut texture_manager: NonSendMu
 
     // Load the grass texture once and add it to the TextureManager
     let grass_texture =
-        Texture::new("src/assets/textures/grass_16x16.png").expect("Failed to load grass texture");
+        Texture::new("src/assets/textures/missing.png").expect("Failed to load grass texture");
     texture_manager.add_atlas("main_atlas".to_string(), grass_texture);
 
     let atlas_id = "main_atlas".to_string();
