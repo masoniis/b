@@ -1,11 +1,11 @@
-use crate::ecs::components::{Mesh, Transform};
+use crate::ecs::components::{MeshComponent, TransformComponent};
 use crate::ecs::resources::TextureManager;
 use crate::graphics::textures::Texture;
 use bevy_ecs::prelude::{Commands, NonSendMut};
 use glam::{Vec2, Vec3};
 use tracing::info;
 
-pub fn setup_chunk_system(mut commands: Commands, mut texture_manager: NonSendMut<TextureManager>) {
+pub fn chunk_init_system(mut commands: Commands, mut texture_manager: NonSendMut<TextureManager>) {
     info!("Generating initial chunk...");
 
     // Load the grass texture once and add it to the TextureManager
@@ -17,12 +17,12 @@ pub fn setup_chunk_system(mut commands: Commands, mut texture_manager: NonSendMu
     let uv_min = Vec2::new(0.0, 0.0);
     let uv_max = Vec2::new(1.0, 1.0);
 
-    // A 16x16 chunk of simple blocks
+    // An array of cubes
     for x in 0..100 {
         for z in 0..100 {
             commands.spawn((
-                Mesh::new_cube(atlas_id.clone(), uv_min, uv_max),
-                Transform {
+                MeshComponent::new_cube(atlas_id.clone(), uv_min, uv_max),
+                TransformComponent {
                     position: Vec3::new((x * -2) as f32, 0.0, (z * -2) as f32),
                     ..Default::default()
                 },

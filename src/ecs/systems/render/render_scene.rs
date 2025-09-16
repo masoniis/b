@@ -1,10 +1,11 @@
-use crate::ecs::components::{Mesh, Transform};
+use crate::ecs::components::{MeshComponent, TransformComponent};
 use crate::ecs::resources::{Camera, ShaderManager, ShaderType, TextureManager};
 use bevy_ecs::prelude::{NonSend, NonSendMut, Query, Res};
 
-pub fn render_3d_scene_system(
+/// System responsible for facilitating the rendering of the 3D scene
+pub fn render_scene_system(
     camera: Res<Camera>,
-    query: Query<(&Mesh, &Transform)>,
+    query: Query<(&MeshComponent, &TransformComponent)>,
     mut shader_manager: NonSendMut<ShaderManager>,
     texture_manager: NonSend<TextureManager>,
 ) {

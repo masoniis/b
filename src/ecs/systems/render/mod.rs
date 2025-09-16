@@ -1,11 +1,11 @@
-pub mod scene_3d_system;
-pub use scene_3d_system::render_3d_scene_system;
+pub mod render_scene;
+pub use render_scene::render_scene_system;
 
-pub mod text_2d_system;
-pub use text_2d_system::{render_text_system, update_text_mesh_system};
+pub mod render_text;
+pub use render_text::render_text_system;
 
-pub mod setup_system;
-pub use setup_system::setup_render_system;
+pub mod begin_frame;
+pub use begin_frame::begin_frame_system;
 
-pub mod finalize_system;
-pub use finalize_system::finalize_render_system;
+pub mod finish_frame;
+pub use finish_frame::finish_frame_system;

@@ -1,5 +1,8 @@
-pub mod camera_control_system;
-pub use camera_control_system::camera_control_system;
+pub mod camera_control;
+pub use camera_control::camera_control_system;
 
-pub mod time_system;
-pub use time_system::time_system;
+pub mod text_meshing;
+pub use text_meshing::update_text_mesh_system;
+
+pub mod time;
+pub use time::time_system;
