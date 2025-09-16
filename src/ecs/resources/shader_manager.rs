@@ -7,11 +7,11 @@ pub enum ShaderType {
     Text,
 }
 
-pub struct ShaderManager {
+pub struct ShaderManagerResource {
     shaders: HashMap<ShaderType, ShaderProgram>,
 }
 
-impl ShaderManager {
+impl ShaderManagerResource {
     pub fn new() -> Result<Self, String> {
         let mut shaders = HashMap::new();
 
@@ -27,7 +27,7 @@ impl ShaderManager {
         )?;
         shaders.insert(ShaderType::Text, text_shader);
 
-        Ok(ShaderManager { shaders })
+        Ok(ShaderManagerResource { shaders })
     }
 
     pub fn get(&self, shader_type: ShaderType) -> Option<&ShaderProgram> {

@@ -1,4 +1,4 @@
-use crate::ecs::resources::TextureManager;
+use crate::ecs::resources::TextureManagerResource;
 use crate::graphics::textures::Texture;
 use bevy_ecs::prelude::{Commands, NonSendMut, Resource};
 use fontdue::Font;
@@ -7,7 +7,7 @@ use std::collections::HashMap;
 
 const FONT_ATLAS_ID: &str = "font_atlas";
 
-use crate::ecs::systems::render::text_2d_system::Text;
+use crate::ecs::components::ScreenTextComponent;
 
 #[derive(Resource)]
 pub struct FontAtlas {
@@ -16,7 +16,10 @@ pub struct FontAtlas {
     pub texture_id: String,
 }
 
-pub fn font_loader_system(mut commands: Commands, mut texture_manager: NonSendMut<TextureManager>) {
+pub fn font_loader_system(
+    mut commands: Commands,
+    mut texture_manager: NonSendMut<TextureManagerResource>,
+) {
     const FONT_SIZE: f32 = 48.0;
     const CHARACTERS: &str = " !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~";
 
@@ -86,9 +89,15 @@ pub fn font_loader_system(mut commands: Commands, mut texture_manager: NonSendMu
     commands.insert_resource(font_atlas);
 
     // Spawn a "Hello World" text entity for later use
-    commands.spawn(Text {
+    commands.spawn(ScreenTextComponent {
         text: "Hello World".to_string(),
         position: vec2(100.0, 100.0),
+        font_size: FONT_SIZE,
+    });
+
+    commands.spawn(ScreenTextComponent {
+        text: "000000".to_string(),
+        position: vec2(700.0, 100.0),
         font_size: FONT_SIZE,
     });
 }

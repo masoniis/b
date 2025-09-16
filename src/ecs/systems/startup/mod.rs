@@ -1,5 +1,5 @@
-pub mod chunk_system;
-pub use chunk_system::setup_chunk_system;
+pub mod chunk_init;
+pub use chunk_init::chunk_init_system;
 
-pub mod font_loader_system;
-pub use font_loader_system::font_loader_system;
+pub mod font_loader;
+pub use font_loader::font_loader_system;
