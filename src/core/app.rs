@@ -1,13 +1,13 @@
 use crate::{
     ecs::{
-        resources::input::InputResource,
-        resources::time::TimeResource,
-        resources::window::WindowResource,
-        resources::{Camera, ShaderManager, TextureManager},
+        resources::{
+            input::InputResource, time::TimeResource, window::WindowResource, Camera,
+            ShaderManager, TextureManager,
+        },
         systems::{
-            camera_control_system, finalize_render_system, font_loader_system,
-            render_3d_scene_system, render_text_system, setup_chunk_system, setup_render_system,
-            time_system, update_text_mesh_system, InputSystem,
+            begin_frame_system, camera_control_system, chunk_init_system, finish_frame_system,
+            font_loader_system, render_scene_system, render_text_system, time_system,
+            update_text_mesh_system, InputSystem,
         },
     },
     graphics::renderer::Renderer,
@@ -62,7 +62,7 @@ impl App {
         let mut startup_scheduler = Schedule::new(Schedules::Startup);
         startup_scheduler.add_systems(
             (
-                setup_chunk_system,
+                chunk_init_system,
                 font_loader_system,
                 update_text_mesh_system,
             )
@@ -72,10 +72,10 @@ impl App {
         let mut render_scheduler = Schedule::new(Schedules::Render);
         render_scheduler.add_systems(
             (
-                setup_render_system,
-                render_3d_scene_system,
+                begin_frame_system,
+                render_scene_system,
                 render_text_system,
-                finalize_render_system,
+                finish_frame_system,
             )
                 .chain(),
         );

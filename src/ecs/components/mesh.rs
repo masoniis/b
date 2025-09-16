@@ -1,16 +1,16 @@
 use crate::graphics::buffers::Buffer;
 use bevy_ecs::prelude::Component;
-use glam::{Mat4, Quat, Vec2, Vec3};
+use glam::Vec2;
 
 #[derive(Component)]
-pub struct Mesh {
+pub struct MeshComponent {
     pub buffer: Buffer,
     pub atlas_id: String,
     pub uv_min: Vec2,
     pub uv_max: Vec2,
 }
 
-impl Mesh {
+impl MeshComponent {
     /// Creates a new mesh from raw vertex and index data.
     pub fn new(
         vertices: &[f32],
@@ -60,28 +60,5 @@ impl Mesh {
             uv_min,
             uv_max,
         };
-    }
-}
-
-#[derive(Component)]
-pub struct Transform {
-    pub position: Vec3,
-    pub rotation: Quat,
-    pub scale: Vec3,
-}
-
-impl Default for Transform {
-    fn default() -> Self {
-        Self {
-            position: Vec3::ZERO,
-            rotation: Quat::IDENTITY,
-            scale: Vec3::ONE,
-        }
-    }
-}
-
-impl Transform {
-    pub fn to_matrix(&self) -> Mat4 {
-        Mat4::from_scale_rotation_translation(self.scale, self.rotation, self.position)
     }
 }
