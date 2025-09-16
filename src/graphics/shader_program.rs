@@ -4,6 +4,10 @@ use tracing::{error, info, warn};
 
 use std::{ffi::CString, fs::File, io::Read, ptr, str};
 
+// INFO: --------------------------
+//         Shader superclass
+// --------------------------------
+
 /// Represents a compiled and linked shader program.
 pub struct ShaderProgram {
     pub id: GLuint,
@@ -159,6 +163,19 @@ impl ShaderProgram {
                 return;
             }
             gl::Uniform1i(location, value);
+        }
+    }
+
+    /// Sets a Vec4 uniform in the shader program.
+    pub fn set_vec4(&self, name: &str, vector: &glam::Vec4) {
+        unsafe {
+            let c_name = CString::new(name).unwrap();
+            let location = gl::GetUniformLocation(self.id, c_name.as_ptr());
+            if location == -1 {
+                warn!("Uniform {:?} not found.", name);
+                return;
+            }
+            gl::Uniform4fv(location, 1, vector.as_ref().as_ptr());
         }
     }
 }

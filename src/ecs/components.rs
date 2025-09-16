@@ -12,7 +12,13 @@ pub struct Mesh {
 
 impl Mesh {
     /// Creates a new mesh from raw vertex and index data.
-    pub fn new(vertices: &[f32], indices: &[u32], atlas_id: String, uv_min: Vec2, uv_max: Vec2) -> Self {
+    pub fn new(
+        vertices: &[f32],
+        indices: &[u32],
+        atlas_id: String,
+        uv_min: Vec2,
+        uv_max: Vec2,
+    ) -> Self {
         Self {
             buffer: Buffer::new(vertices, indices),
             atlas_id,
