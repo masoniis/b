@@ -1,6 +1,6 @@
 use crate::ecs::components::{MeshComponent, ScreenTextComponent};
-use crate::ecs::resources::shader_manager::{ShaderManager, ShaderType};
-use crate::ecs::resources::texture_manager::TextureManager;
+use crate::ecs::resources::shader_manager::{ShaderManagerResource, ShaderType};
+use crate::ecs::resources::texture_manager::TextureManagerResource;
 use crate::ecs::resources::window::WindowResource;
 use bevy_ecs::prelude::{NonSend, Query, Res};
 use glam::{Mat4, Vec4};
@@ -10,8 +10,8 @@ const FONT_ATLAS_ID: &str = "font_atlas";
 /// System responsible for facilitating the rendering of the 2D text entities
 pub fn render_text_system(
     query: Query<(&MeshComponent, &ScreenTextComponent)>,
-    shader_manager: NonSend<ShaderManager>,
-    texture_manager: NonSend<TextureManager>,
+    shader_manager: NonSend<ShaderManagerResource>,
+    texture_manager: NonSend<TextureManagerResource>,
     window_size: Res<WindowResource>,
 ) {
     let shader = shader_manager.get(ShaderType::Text).unwrap();

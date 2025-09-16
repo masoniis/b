@@ -1,13 +1,16 @@
 use crate::ecs::components::{MeshComponent, TransformComponent};
-use crate::ecs::resources::{Camera, ShaderManager, ShaderType, TextureManager};
+use crate::ecs::resources::{
+    CameraResource, ShaderManagerResource, ShaderType, TextureManagerResource,
+};
 use bevy_ecs::prelude::{NonSend, NonSendMut, Query, Res};
+use tracing::error;
 
 /// System responsible for facilitating the rendering of the 3D scene
 pub fn render_scene_system(
-    camera: Res<Camera>,
+    camera: Res<CameraResource>,
     query: Query<(&MeshComponent, &TransformComponent)>,
-    mut shader_manager: NonSendMut<ShaderManager>,
-    texture_manager: NonSend<TextureManager>,
+    mut shader_manager: NonSendMut<ShaderManagerResource>,
+    texture_manager: NonSend<TextureManagerResource>,
 ) {
     if let Some(shader) = shader_manager.get_mut(ShaderType::Scene) {
         shader.activate();
@@ -19,8 +22,7 @@ pub fn render_scene_system(
             main_atlas.bind(0); // Bind to texture unit 0
             shader.set_int("u_texture", 0);
         } else {
-            // Handle error: main_atlas not found
-            eprintln!("Error: 'main_atlas' not found in TextureManager!");
+            error!("Error: 'main_atlas' not found in TextureManager!");
             return;
         }
 

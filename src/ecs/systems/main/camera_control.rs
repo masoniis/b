@@ -1,4 +1,4 @@
-use crate::ecs::resources::{Camera, InputResource, TimeResource, WindowResource};
+use crate::ecs::resources::{CameraResource, InputResource, TimeResource, WindowResource};
 use bevy_ecs::prelude::*;
 use glam::{Mat4, Vec3};
 use winit::keyboard::KeyCode;
@@ -7,7 +7,7 @@ pub fn camera_control_system(
     input: Res<InputResource>,
     time: Res<TimeResource>,
     window: Res<WindowResource>,
-    mut camera: ResMut<Camera>,
+    mut camera: ResMut<CameraResource>,
 ) {
     // Update camera position
     let velocity = camera.movement_speed * time.delta_seconds;

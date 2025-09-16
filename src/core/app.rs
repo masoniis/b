@@ -1,13 +1,13 @@
 use crate::{
     ecs::{
         resources::{
-            input::InputResource, time::TimeResource, window::WindowResource, Camera,
-            ShaderManager, TextureManager,
+            CameraResource, ShaderManagerResource, TextureManagerResource, input::InputResource,
+            time::TimeResource, window::WindowResource,
         },
         systems::{
-            begin_frame_system, camera_control_system, chunk_init_system, finish_frame_system,
-            font_loader_system, render_scene_system, render_text_system, time_system,
-            update_text_mesh_system, InputSystem,
+            InputSystem, begin_frame_system, camera_control_system, chunk_init_system,
+            finish_frame_system, font_loader_system, render_scene_system, render_text_system,
+            time_system, update_text_mesh_system,
         },
     },
     graphics::renderer::Renderer,
@@ -41,7 +41,7 @@ pub struct App {
 
     // Display logic
     renderer: Option<Renderer>,
-    shader_manager: Option<ShaderManager>,
+    shader_manager: Option<ShaderManagerResource>,
 
     // Game Logic
     world: World,
@@ -55,9 +55,9 @@ impl App {
         let mut world = World::new();
         world.insert_resource(InputResource::new());
         world.insert_resource(TimeResource::default());
-        world.insert_resource(Camera::default());
+        world.insert_resource(CameraResource::default());
         world.insert_resource(WindowResource::default());
-        world.insert_non_send_resource(TextureManager::default());
+        world.insert_non_send_resource(TextureManagerResource::default());
 
         let mut startup_scheduler = Schedule::new(Schedules::Startup);
         startup_scheduler.add_systems(
@@ -116,7 +116,8 @@ impl ApplicationHandler for App {
                 }
             }
 
-            let shader_manager = ShaderManager::new().expect("Failed to create ShaderManager!!!");
+            let shader_manager =
+                ShaderManagerResource::new().expect("Failed to create ShaderManager!!!");
 
             let renderer = Renderer::new(gl_surface, gl_context);
 
@@ -178,7 +179,9 @@ impl ApplicationHandler for App {
 
                     // 3. Remove the resources and give them back to the App.
                     self.renderer = self.world.remove_non_send_resource::<Renderer>();
-                    self.shader_manager = self.world.remove_non_send_resource::<ShaderManager>();
+                    self.shader_manager = self
+                        .world
+                        .remove_non_send_resource::<ShaderManagerResource>();
 
                     // (request redraw to keep loop running)
                     window.request_redraw();
