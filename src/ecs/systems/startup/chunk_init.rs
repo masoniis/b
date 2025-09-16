@@ -1,11 +1,14 @@
 use crate::ecs::components::{MeshComponent, TransformComponent};
-use crate::ecs::resources::TextureManager;
+use crate::ecs::resources::TextureManagerResource;
 use crate::graphics::textures::Texture;
 use bevy_ecs::prelude::{Commands, NonSendMut};
 use glam::{Vec2, Vec3};
 use tracing::info;
 
-pub fn chunk_init_system(mut commands: Commands, mut texture_manager: NonSendMut<TextureManager>) {
+pub fn chunk_init_system(
+    mut commands: Commands,
+    mut texture_manager: NonSendMut<TextureManagerResource>,
+) {
     info!("Generating initial chunk...");
 
     // Load the grass texture once and add it to the TextureManager

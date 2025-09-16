@@ -1,4 +1,4 @@
-use crate::ecs::resources::TextureManager;
+use crate::ecs::resources::TextureManagerResource;
 use crate::graphics::textures::Texture;
 use bevy_ecs::prelude::{Commands, NonSendMut, Resource};
 use fontdue::Font;
@@ -16,7 +16,10 @@ pub struct FontAtlas {
     pub texture_id: String,
 }
 
-pub fn font_loader_system(mut commands: Commands, mut texture_manager: NonSendMut<TextureManager>) {
+pub fn font_loader_system(
+    mut commands: Commands,
+    mut texture_manager: NonSendMut<TextureManagerResource>,
+) {
     const FONT_SIZE: f32 = 48.0;
     const CHARACTERS: &str = " !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~";
 
@@ -89,6 +92,12 @@ pub fn font_loader_system(mut commands: Commands, mut texture_manager: NonSendMu
     commands.spawn(ScreenTextComponent {
         text: "Hello World".to_string(),
         position: vec2(100.0, 100.0),
+        font_size: FONT_SIZE,
+    });
+
+    commands.spawn(ScreenTextComponent {
+        text: "000000".to_string(),
+        position: vec2(700.0, 100.0),
         font_size: FONT_SIZE,
     });
 }

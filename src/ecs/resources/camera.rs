@@ -2,7 +2,7 @@ use bevy_ecs::prelude::Resource;
 use glam::{Mat4, Vec3};
 
 #[derive(Resource)]
-pub struct Camera {
+pub struct CameraResource {
     pub position: Vec3,
     pub front: Vec3,
     pub up: Vec3,
@@ -25,7 +25,7 @@ pub struct Camera {
     pub projection_dirty: bool,
 }
 
-impl Default for Camera {
+impl Default for CameraResource {
     fn default() -> Self {
         Self {
             position: Vec3::new(0.0, 2.0, 0.0),
@@ -49,7 +49,7 @@ impl Default for Camera {
     }
 }
 
-impl Camera {
+impl CameraResource {
     pub fn get_view_matrix(&self) -> Mat4 {
         self.view_matrix
     }
