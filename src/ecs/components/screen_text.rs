@@ -7,3 +7,10 @@ pub struct ScreenTextComponent {
     pub position: Vec2,
     pub font_size: f32,
 }
+
+// INFO: --------------------------
+//         Component markers
+// --------------------------------
+
+#[derive(Component)]
+pub struct FpsCounterScreenTextMarker;
