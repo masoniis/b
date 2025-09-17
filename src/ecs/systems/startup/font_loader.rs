@@ -1,8 +1,10 @@
-use crate::ecs::resources::TextureManagerResource;
+use crate::ecs::{
+    components::screen_text::FpsCounterScreenTextMarker, resources::TextureManagerResource,
+};
 use crate::graphics::textures::Texture;
 use bevy_ecs::prelude::{Commands, NonSendMut, Resource};
 use fontdue::Font;
-use glam::{Vec2, vec2};
+use glam::{vec2, Vec2};
 use std::collections::HashMap;
 
 const FONT_ATLAS_ID: &str = "font_atlas";
@@ -95,9 +97,12 @@ pub fn font_loader_system(
         font_size: FONT_SIZE,
     });
 
-    commands.spawn(ScreenTextComponent {
-        text: "000000".to_string(),
-        position: vec2(700.0, 100.0),
-        font_size: FONT_SIZE,
-    });
+    commands.spawn((
+        ScreenTextComponent {
+            text: "FPS: 0".to_string(),
+            position: vec2(700.0, 100.0),
+            font_size: FONT_SIZE,
+        },
+        FpsCounterScreenTextMarker,
+    ));
 }
