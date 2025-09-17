@@ -4,8 +4,10 @@ use std::time::Instant;
 
 pub fn time_system(mut time: ResMut<TimeResource>) {
     let current_time = Instant::now();
-    let delta = current_time.duration_since(time.last_update).as_secs_f32();
+    let since_last_update = current_time.duration_since(time.current);
 
-    time.delta_seconds = delta;
-    time.last_update = current_time;
+    time.current = current_time;
+    time.since_last_update = since_last_update;
+    time.total_elapse += since_last_update;
+    time.frame_duration_history.push_back(since_last_update);
 }

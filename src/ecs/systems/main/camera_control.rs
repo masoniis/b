@@ -10,7 +10,7 @@ pub fn camera_control_system(
     mut camera: ResMut<CameraResource>,
 ) {
     // Update camera position
-    let velocity = camera.movement_speed * time.delta_seconds;
+    let velocity = camera.movement_speed * time.since_last_update.as_secs_f32();
     let front = camera.front;
     let mut multiplier = 1.0;
     if input.pressed_keys.contains(&KeyCode::ShiftLeft) {
