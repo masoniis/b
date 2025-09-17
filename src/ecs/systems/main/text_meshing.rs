@@ -5,7 +5,6 @@ use crate::graphics::buffers::Buffer;
 use bevy_ecs::prelude::{Commands, Entity, Query, Res};
 use fontdue::layout::{CoordinateSystem, Layout, LayoutSettings, TextStyle};
 use glam::Vec2;
-use tracing::info;
 
 const FONT_ATLAS_ID: &str = "font_atlas";
 
@@ -65,10 +64,6 @@ pub fn update_text_mesh_system(
         }
 
         if !vertices.is_empty() {
-            info!(
-                "Updating text mesh for entity {:?}: '{}'",
-                entity, text.text
-            );
             let buffer = Buffer::new_2d(&vertices, &indices);
             commands.entity(entity).insert(MeshComponent {
                 buffer,

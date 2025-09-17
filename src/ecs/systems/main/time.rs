@@ -9,5 +9,5 @@ pub fn time_system(mut time: ResMut<TimeResource>) {
     time.current = current_time;
     time.since_last_update = since_last_update;
     time.total_elapse += since_last_update;
-    time.frame_duration_history.push_back(since_last_update);
+    time.update_fps();
 }

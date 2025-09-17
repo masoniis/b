@@ -1,13 +1,14 @@
+use crate::guard;
 use crate::{
     ecs::{
         resources::{
-            CameraResource, ShaderManagerResource, TextureManagerResource, input::InputResource,
-            time::TimeResource, window::WindowResource,
+            input::InputResource, time::TimeResource, window::WindowResource, CameraResource,
+            ShaderManagerResource, TextureManagerResource,
         },
         systems::{
-            InputSystem, begin_frame_system, camera_control_system, chunk_init_system,
-            finish_frame_system, font_loader_system, render_scene_system, render_text_system,
-            time_system, update_text_mesh_system,
+            begin_frame_system, camera_control_system, chunk_init_system, finish_frame_system,
+            font_loader_system, render_scene_system, render_text_system, screen_diagnostics_system,
+            time_system, update_text_mesh_system, InputSystem,
         },
     },
     graphics::renderer::Renderer,
@@ -48,6 +49,9 @@ pub struct App {
     startup_scheduler: Schedule,
     render_scheduler: Schedule,
     main_scheduler: Schedule,
+
+    startup_done: bool,
+    main_done: bool, // just for the first main run
 }
 
 impl App {
@@ -60,14 +64,7 @@ impl App {
         world.insert_non_send_resource(TextureManagerResource::default());
 
         let mut startup_scheduler = Schedule::new(Schedules::Startup);
-        startup_scheduler.add_systems(
-            (
-                chunk_init_system,
-                font_loader_system,
-                update_text_mesh_system,
-            )
-                .chain(),
-        );
+        startup_scheduler.add_systems((chunk_init_system, font_loader_system).chain());
 
         let mut render_scheduler = Schedule::new(Schedules::Render);
         render_scheduler.add_systems(
@@ -81,7 +78,12 @@ impl App {
         );
 
         let mut main_scheduler = Schedule::new(Schedules::Main);
-        main_scheduler.add_systems((time_system, camera_control_system));
+        main_scheduler.add_systems((
+            time_system.before(screen_diagnostics_system),
+            update_text_mesh_system.before(screen_diagnostics_system),
+            screen_diagnostics_system,
+            camera_control_system,
+        ));
 
         Self {
             window: None,
@@ -94,6 +96,10 @@ impl App {
             startup_scheduler,
             render_scheduler,
             main_scheduler,
+
+            // State for schedulers
+            startup_done: false,
+            main_done: false,
         }
     }
 }
@@ -126,11 +132,20 @@ impl ApplicationHandler for App {
 
             info!("Running startup systems...");
             self.startup_scheduler.run(&mut self.world);
+            self.startup_done = true;
         }
     }
 
     fn new_events(&mut self, _event_loop: &ActiveEventLoop, _: StartCause) {
+        guard!(self.startup_done);
+
         self.main_scheduler.run(&mut self.world);
+
+        self.main_done = true;
+
+        if let Some(window) = self.window.as_ref() {
+            window.request_redraw(); // begin the drawing loop
+        }
 
         // We run this AFTER the schedule as this is responsible for cleaning up
         // the input system deltas so it makes sense to run it last.
@@ -143,6 +158,8 @@ impl ApplicationHandler for App {
         _device_id: winit::event::DeviceId,
         event: DeviceEvent,
     ) {
+        guard!(self.startup_done);
+
         self.input_system.device_event_hook(&mut self.world, &event);
     }
 
@@ -152,6 +169,8 @@ impl ApplicationHandler for App {
         _window_id: WindowId,
         event: WindowEvent,
     ) {
+        guard!(self.startup_done && self.main_done);
+
         self.input_system.window_event_hook(&mut self.world, &event);
 
         match event {
