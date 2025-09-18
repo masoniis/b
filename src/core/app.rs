@@ -2,17 +2,15 @@ use crate::guard;
 use crate::{
     ecs::{
         resources::{
-            input::InputResource, time::TimeResource, window::WindowResource, CameraResource,
-            ShaderManagerResource, TextureManagerResource,
+            CameraResource, TextureManagerResource, input::InputResource, time::TimeResource,
+            window::WindowResource,
         },
         systems::{
-            begin_frame_system, camera_control_system, chunk_generation_system,
-            finish_frame_system, font_loader_system, init_screen_diagnostics_system,
-            render_scene_system, render_text_system, screen_diagnostics_system, time_system,
-            update_text_mesh_system, InputSystem,
+            InputSystem, camera_control_system, init_screen_diagnostics_system,
+            screen_diagnostics_system, time_system, webgpu_render_system,
         },
     },
-    graphics::renderer::Renderer,
+    graphics::webgpu_renderer::WebGpuRenderer,
 };
 
 use bevy_ecs::prelude::*;
@@ -20,7 +18,6 @@ use bevy_ecs::{
     schedule::{Schedule, ScheduleLabel},
     world::World,
 };
-use glam::Vec2;
 use tracing::{error, info};
 use winit::{
     application::ApplicationHandler,
@@ -36,14 +33,13 @@ pub enum Schedules {
     Render,
 }
 
-pub struct App {
+pub struct App<'a> {
     // OS Interactions
-    window: Option<Window>,
+    window: Option<&'a Window>,
     input_system: InputSystem,
 
     // Display logic
-    renderer: Option<Renderer>,
-    shader_manager: Option<ShaderManagerResource>,
+    webgpu_renderer: Option<WebGpuRenderer<'a>>,
 
     // Game Logic
     world: World,
@@ -55,8 +51,8 @@ pub struct App {
     main_done: bool, // just for the first main run
 }
 
-impl App {
-    pub fn new() -> Self {
+impl<'a> App<'a> {
+    pub fn new(window: &'a Window) -> Self {
         let mut world = World::new();
         world.insert_resource(InputResource::new());
         world.insert_resource(TimeResource::default());
@@ -66,36 +62,27 @@ impl App {
 
         let mut startup_scheduler = Schedule::new(Schedules::Startup);
         startup_scheduler.add_systems((
-            chunk_generation_system,
-            font_loader_system,
+            // chunk_generation_system,
+            // font_loader_system,
             init_screen_diagnostics_system,
         ));
 
         let mut render_scheduler = Schedule::new(Schedules::Render);
-        render_scheduler.add_systems(
-            (
-                begin_frame_system,
-                render_scene_system,
-                render_text_system,
-                finish_frame_system,
-            )
-                .chain(),
-        );
+        render_scheduler.add_systems(webgpu_render_system);
 
         let mut main_scheduler = Schedule::new(Schedules::Main);
         main_scheduler.add_systems((
             time_system.before(screen_diagnostics_system),
-            update_text_mesh_system.before(screen_diagnostics_system),
+            // update_text_mesh_system.before(screen_diagnostics_system),
             screen_diagnostics_system,
             camera_control_system,
         ));
 
         Self {
-            window: None,
+            window: Some(window),
             input_system: InputSystem,
 
-            renderer: None,
-            shader_manager: None,
+            webgpu_renderer: None,
 
             world: world,
             startup_scheduler,
@@ -109,36 +96,32 @@ impl App {
     }
 }
 
-impl ApplicationHandler for App {
-    fn resumed(&mut self, event_loop: &winit::event_loop::ActiveEventLoop) {
+impl<'a> ApplicationHandler for App<'a> {
+    fn resumed(&mut self, _event_loop: &winit::event_loop::ActiveEventLoop) {
         if self.window.is_none() {
-            info!("App resumed, creating window!");
-            let (window, gl_surface, gl_context) =
-                crate::core::window::create_gl_window(event_loop, Vec2::new(1800.0, 1500.0));
-
-            self.window = Some(window);
-
-            if let Some(window_ref) = self.window.as_ref() {
-                window_ref.set_cursor_visible(false);
-                if let Err(err) =
-                    window_ref.set_cursor_grab(winit::window::CursorGrabMode::Confined)
-                {
-                    error!("Failed to grab cursor: {:?}", err);
-                }
-            }
-
-            let shader_manager =
-                ShaderManagerResource::new().expect("Failed to create ShaderManager!!!");
-
-            let renderer = Renderer::new(gl_surface, gl_context);
-
-            self.shader_manager = Some(shader_manager);
-            self.renderer = Some(renderer);
-
-            info!("Running startup systems...");
-            self.startup_scheduler.run(&mut self.world);
-            self.startup_done = true;
+            info!("App resumed, window should be set by main!");
+            // The window is now created in main.rs and passed to App::new.
+            // So, self.window should already be Some here.
+            // This block should ideally not be reached if the window is always passed.
+            // For now, we'll panic if it's None, as it indicates an unexpected state.
+            panic!("Window not set in App::resumed!");
         }
+
+        // Initialize WebGpuRenderer
+        let window_ref = self.window.unwrap();
+        window_ref.set_cursor_visible(false);
+        if let Err(err) = window_ref.set_cursor_grab(winit::window::CursorGrabMode::Confined) {
+            error!("Failed to grab cursor: {:?}", err);
+        }
+
+        // We need to block here because resumed is not async, but WebGpuRenderer::new is.
+        // In a real application, you might want to defer this initialization or use a different pattern.
+        let webgpu_renderer = pollster::block_on(WebGpuRenderer::new(window_ref));
+        self.webgpu_renderer = Some(webgpu_renderer);
+
+        info!("Running startup systems...");
+        self.startup_scheduler.run(&mut self.world);
+        self.startup_done = true;
     }
 
     fn new_events(&mut self, _event_loop: &ActiveEventLoop, _: StartCause) {
@@ -148,7 +131,7 @@ impl ApplicationHandler for App {
 
         self.main_done = true;
 
-        if let Some(window) = self.window.as_ref() {
+        if let Some(window) = self.window {
             window.request_redraw(); // begin the drawing loop
         }
 
@@ -187,28 +170,21 @@ impl ApplicationHandler for App {
                 let mut window_size = self.world.resource_mut::<WindowResource>();
                 window_size.width = physical_size.width;
                 window_size.height = physical_size.height;
+                if let Some(renderer) = self.webgpu_renderer.as_mut() {
+                    renderer.resize(physical_size);
+                }
             }
             WindowEvent::RedrawRequested => {
-                if let (Some(window), Some(renderer), Some(shader_manager)) = (
-                    self.window.as_ref(),
-                    self.renderer.take(),
-                    self.shader_manager.take(),
-                ) {
-                    // 1. Temporarily insert the main-thread data as NonSend resources
-                    self.world.insert_non_send_resource(renderer);
-                    self.world.insert_non_send_resource(shader_manager);
-
-                    // 2. Run the render schedule. Bevy will pass the resources to the system.
-                    self.render_scheduler.run(&mut self.world);
-
-                    // 3. Remove the resources and give them back to the App.
-                    self.renderer = self.world.remove_non_send_resource::<Renderer>();
-                    self.shader_manager = self
-                        .world
-                        .remove_non_send_resource::<ShaderManagerResource>();
-
-                    // (request redraw to keep loop running)
-                    window.request_redraw();
+                if let Some(renderer) = self.webgpu_renderer.as_mut() {
+                    match renderer.render() {
+                        Ok(_) => {}
+                        Err(wgpu::SurfaceError::Lost) => {
+                            renderer.resize(self.window.unwrap().inner_size())
+                        }
+                        Err(wgpu::SurfaceError::OutOfMemory) => event_loop.exit(),
+                        Err(e) => eprintln!("{:?}", e),
+                    }
+                    self.window.unwrap().request_redraw();
                 }
             }
             _ => (),
@@ -216,8 +192,6 @@ impl ApplicationHandler for App {
     }
 
     fn exiting(&mut self, _event_loop: &ActiveEventLoop) {
-        if let Some(shader_manager) = &self.shader_manager {
-            shader_manager.delete();
-        }
+        // No shader_manager to delete for WebGPU
     }
 }
