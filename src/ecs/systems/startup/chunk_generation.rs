@@ -5,7 +5,7 @@ use bevy_ecs::prelude::{Commands, NonSendMut};
 use glam::{Vec2, Vec3};
 use tracing::info;
 
-pub fn chunk_init_system(
+pub fn chunk_generation_system(
     mut commands: Commands,
     mut texture_manager: NonSendMut<TextureManagerResource>,
 ) {

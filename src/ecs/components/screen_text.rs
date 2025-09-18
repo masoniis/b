@@ -14,3 +14,8 @@ pub struct ScreenTextComponent {
 
 #[derive(Component)]
 pub struct FpsCounterScreenTextMarker;
+
+/// A component marker for any UI in the
+/// diagnostic screen (eg, the fps counter)
+#[derive(Component)]
+pub struct DiagnosticUiElementMarker;
