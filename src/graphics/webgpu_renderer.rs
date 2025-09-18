@@ -1,6 +1,6 @@
 use wgpu::{
-    Adapter, Buffer, Device, Instance, PresentMode, Queue, RenderPipeline, Surface,
-    SurfaceConfiguration, util::DeviceExt,
+    util::DeviceExt, Adapter, Buffer, Device, Instance, PresentMode, Queue, RenderPipeline,
+    Surface, SurfaceConfiguration,
 };
 use winit::window::Window;
 
@@ -37,17 +37,9 @@ pub struct WebGpuRenderer<'a> {
     vertex_buffer: Buffer,
 }
 
-const SHADER: &str = r#"
-    @vertex
-    fn vs_main(@location(0) in_position: vec3<f32>, @location(1) in_color: vec3<f32>) -> @builtin(position) vec4<f32> {
-        return vec4<f32>(in_position, 1.0);
-    }
+use std::fs;
 
-    @fragment
-    fn fs_main(@builtin(position) in_position: vec4<f32>) -> @location(0) vec4<f32> {
-        return vec4<f32>(in_position.x, in_position.y, in_position.z, 1.0);
-    }
-"#;
+const SHADER_PATH: &str = "src/assets/shaders/scene/simple.wgsl";
 
 impl<'a> WebGpuRenderer<'a> {
     pub async fn new(window: &'a Window) -> Self {
@@ -104,9 +96,10 @@ impl<'a> WebGpuRenderer<'a> {
         };
         surface.configure(&device, &config);
 
+        let shader_source = fs::read_to_string(SHADER_PATH).expect("Failed to read shader file");
         let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("Shader"),
-            source: wgpu::ShaderSource::Wgsl(SHADER.into()),
+            source: wgpu::ShaderSource::Wgsl(shader_source.into()),
         });
 
         let render_pipeline_layout =
