@@ -26,12 +26,12 @@ impl InputSystem {
             match key_event.state {
                 ElementState::Pressed => {
                     if let PhysicalKey::Code(key_code) = key_event.physical_key {
-                        input.pressed_keys.insert(key_code);
+                        input.current_keys.insert(key_code);
                     }
                 }
                 ElementState::Released => {
                     if let PhysicalKey::Code(key_code) = key_event.physical_key {
-                        input.pressed_keys.remove(&key_code);
+                        input.current_keys.remove(&key_code);
                     }
                 }
             }
