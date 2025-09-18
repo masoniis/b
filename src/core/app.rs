@@ -6,9 +6,10 @@ use crate::{
             ShaderManagerResource, TextureManagerResource,
         },
         systems::{
-            begin_frame_system, camera_control_system, chunk_init_system, finish_frame_system,
-            font_loader_system, render_scene_system, render_text_system, screen_diagnostics_system,
-            time_system, update_text_mesh_system, InputSystem,
+            begin_frame_system, camera_control_system, chunk_generation_system,
+            finish_frame_system, font_loader_system, init_screen_diagnostics_system,
+            render_scene_system, render_text_system, screen_diagnostics_system, time_system,
+            update_text_mesh_system, InputSystem,
         },
     },
     graphics::renderer::Renderer,
@@ -64,7 +65,11 @@ impl App {
         world.insert_non_send_resource(TextureManagerResource::default());
 
         let mut startup_scheduler = Schedule::new(Schedules::Startup);
-        startup_scheduler.add_systems((chunk_init_system, font_loader_system).chain());
+        startup_scheduler.add_systems((
+            chunk_generation_system,
+            font_loader_system,
+            init_screen_diagnostics_system,
+        ));
 
         let mut render_scheduler = Schedule::new(Schedules::Render);
         render_scheduler.add_systems(

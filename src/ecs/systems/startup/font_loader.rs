@@ -1,6 +1,4 @@
-use crate::ecs::{
-    components::screen_text::FpsCounterScreenTextMarker, resources::TextureManagerResource,
-};
+use crate::ecs::resources::TextureManagerResource;
 use crate::graphics::textures::Texture;
 use bevy_ecs::prelude::{Commands, NonSendMut, Resource};
 use fontdue::Font;
@@ -8,8 +6,6 @@ use glam::{vec2, Vec2};
 use std::collections::HashMap;
 
 const FONT_ATLAS_ID: &str = "font_atlas";
-
-use crate::ecs::components::ScreenTextComponent;
 
 #[derive(Resource)]
 pub struct FontAtlas {
@@ -89,20 +85,4 @@ pub fn font_loader_system(
     };
 
     commands.insert_resource(font_atlas);
-
-    // Spawn a "Hello World" text entity for later use
-    commands.spawn(ScreenTextComponent {
-        text: "Hello World".to_string(),
-        position: vec2(100.0, 100.0),
-        font_size: FONT_SIZE,
-    });
-
-    commands.spawn((
-        ScreenTextComponent {
-            text: "FPS: 0".to_string(),
-            position: vec2(700.0, 100.0),
-            font_size: FONT_SIZE,
-        },
-        FpsCounterScreenTextMarker,
-    ));
 }
