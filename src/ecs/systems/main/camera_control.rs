@@ -13,22 +13,22 @@ pub fn camera_control_system(
     let velocity = camera.movement_speed * time.since_last_update.as_secs_f32();
     let front = camera.front;
     let mut multiplier = 1.0;
-    if input.pressed_keys.contains(&KeyCode::ShiftLeft) {
+    if input.is_key_down(KeyCode::ShiftLeft) {
         multiplier = 2.5;
     }
-    if input.pressed_keys.contains(&KeyCode::KeyW) {
+    if input.is_key_down(KeyCode::KeyW) {
         camera.position += front * velocity * multiplier;
     }
     let front = camera.front;
-    if input.pressed_keys.contains(&KeyCode::KeyS) {
+    if input.is_key_down(KeyCode::KeyS) {
         camera.position -= front * velocity * multiplier;
     }
     let right = camera.right;
-    if input.pressed_keys.contains(&KeyCode::KeyA) {
+    if input.is_key_down(KeyCode::KeyA) {
         camera.position -= right * velocity * multiplier;
     }
     let right = camera.right;
-    if input.pressed_keys.contains(&KeyCode::KeyD) {
+    if input.is_key_down(KeyCode::KeyD) {
         camera.position += right * velocity * multiplier;
     }
 
