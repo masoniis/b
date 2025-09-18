@@ -7,4 +7,9 @@
     prettier.enable = true;
     rustfmt.enable = true;
   };
+
+  settings.formatter.wgslfmt = {
+    command = "wgslfmt";
+    includes = [ "*.wgsl" ];
+  };
 }

@@ -10,8 +10,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     info!("Logger attached...");
     info!("Running app...");
 
-    if let Err(e) = core::window::run_app() {
+    if let Err(e) = core::runner::run_app() {
         error!("App error: {}", e);
+    } else {
+        info!("App runner finished without errors!");
     }
 
     Ok(())
