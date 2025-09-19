@@ -1,4 +1,4 @@
-use wgpu::{util::DeviceExt, Device, Queue, RenderPipeline};
+use wgpu::{Device, Queue, RenderPipeline, util::DeviceExt};
 
 #[repr(C)]
 #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]

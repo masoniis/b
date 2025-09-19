@@ -1,12 +1,12 @@
 use crate::{
     ecs::{
         resources::{
-            input::InputResource, time::TimeResource, window::WindowResource, CameraResource,
-            TextureManagerResource,
+            CameraResource, TextureManagerResource, input::InputResource, time::TimeResource,
+            window::WindowResource,
         },
         systems::{
-            camera_control_system, init_screen_diagnostics_system, screen_diagnostics_system,
-            time_system, triangle_render_system, InputSystem,
+            InputSystem, camera_control_system, init_screen_diagnostics_system,
+            screen_diagnostics_system, time_system, triangle_render_system,
         },
     },
     graphics::webgpu_renderer::WebGpuRenderer,
@@ -41,7 +41,7 @@ pub struct App {
 
     // Display logic
     instance: Option<Instance>,
-    surface: Option<Surface<'static>>, // lifetime managed by the Arc
+    surface: Option<Surface<'static>>, // lifetime managed by window Arc
     config: Option<SurfaceConfiguration>,
     adapter: Option<Adapter>,
     device: Option<Device>,
@@ -232,7 +232,7 @@ impl ApplicationHandler for App {
 
         match event {
             WindowEvent::CloseRequested => {
-                info!("Close button was pressed, exiting.");
+                info!("Window close requested, exiting app event loop.");
                 event_loop.exit();
             }
 
