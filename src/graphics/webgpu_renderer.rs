@@ -22,11 +22,17 @@ impl Vertex {
     }
 }
 
+pub struct QueuedDraw {
+    // TODO: Implement me with necessary stuff that the ECS modules will use to queue a draw in the renderer
+}
+
 pub struct WebGpuRenderer {
     device: Device,
     queue: Queue,
     render_pipeline: RenderPipeline,
     vertex_buffer: Buffer,
+
+    draw_queue: Vec<QueuedDraw>,
 }
 
 use std::fs;
@@ -112,8 +118,37 @@ impl WebGpuRenderer {
             queue,
             render_pipeline,
             vertex_buffer,
+            draw_queue: Vec::new(),
         }
     }
+
+    /// Queue a draw call that the renderer pipeline will process during rendering phase.
+    pub fn queue_draw(&mut self, draw: QueuedDraw) {
+        self.draw_queue.push(draw);
+    }
+
+    /// Clear the current render queue. Should be used to clear queue before the next frame.
+    pub fn clear_queue(&mut self) {
+        self.draw_queue.clear();
+    }
+
+    // TODO: Render pipeline processes queue like so
+    //     pub fn render(&self, view: &wgpu::TextureView) -> Result<(), wgpu::SurfaceError> {
+    //     let mut encoder = self.device.create_command_encoder(...);
+    //     {
+    //         let mut render_pass = encoder.begin_render_pass(...);
+    //
+    //         // Process all the prepared draw calls
+    //         for draw in &self.draw_queue {
+    //             // Set pipeline, bind groups, buffers from `draw`
+    //             render_pass.set_pipeline(&self.render_pipeline);
+    //             render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
+    //             render_pass.draw(0..6, 0..1);
+    //         }
+    //     }
+    //     self.queue.submit(std::iter::once(encoder.finish()));
+    //     Ok(())
+    // }
 
     pub fn render(&self, view: &wgpu::TextureView) -> Result<(), wgpu::SurfaceError> {
         let mut encoder = self
@@ -126,7 +161,7 @@ impl WebGpuRenderer {
             let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: Some("Render Pass"),
                 color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                    view, // <-- Use the passed-in view
+                    view,
                     resolve_target: None,
                     depth_slice: None,
                     ops: wgpu::Operations {
@@ -134,7 +169,7 @@ impl WebGpuRenderer {
                             r: 0.0075,
                             g: 0.0125,
                             b: 0.0250,
-                            a: 1.0,
+                            a: 1.0000,
                         }),
                         store: wgpu::StoreOp::Store,
                     },

@@ -6,5 +6,6 @@
 
 @fragment fn fs_main(@builtin(position) in_position : vec4<f32>) ->
     @location(0) vec4<f32> {
-  return vec4<f32>(in_position.x, in_position.y, in_position.z, 1.0);
+  return vec4<f32>(in_position.x / 1000, in_position.y / 1000, in_position.z,
+                   1.0);
 }

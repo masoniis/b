@@ -1,4 +1,3 @@
-use crate::guard;
 use crate::{
     ecs::{
         resources::{
@@ -11,12 +10,10 @@ use crate::{
         },
     },
     graphics::webgpu_renderer::WebGpuRenderer,
+    guard,
 };
-
-use winit::dpi::PhysicalSize;
-
-use bevy_ecs::prelude::*;
 use bevy_ecs::{
+    prelude::*,
     schedule::{Schedule, ScheduleLabel},
     world::World,
 };
@@ -25,6 +22,7 @@ use tracing::{error, info};
 use wgpu::{Adapter, Device, Instance, Queue, Surface, SurfaceConfiguration};
 use winit::{
     application::ApplicationHandler,
+    dpi::PhysicalSize,
     event::{DeviceEvent, StartCause, WindowEvent},
     event_loop::ActiveEventLoop,
     window::{Window, WindowId},
@@ -34,7 +32,6 @@ use winit::{
 pub enum Schedules {
     Startup,
     Main,
-    Render,
 }
 
 pub struct App {
@@ -44,7 +41,7 @@ pub struct App {
 
     // Display logic
     instance: Option<Instance>,
-    surface: Option<Surface<'static>>, // The lifetime is now managed by the Arc
+    surface: Option<Surface<'static>>, // lifetime managed by the Arc
     config: Option<SurfaceConfiguration>,
     adapter: Option<Adapter>,
     device: Option<Device>,
@@ -56,7 +53,6 @@ pub struct App {
     // Game Logic
     world: World,
     startup_scheduler: Schedule,
-    render_scheduler: Schedule,
     main_scheduler: Schedule,
 
     startup_done: bool,
@@ -79,9 +75,6 @@ impl App {
             init_screen_diagnostics_system,
         ));
 
-        let mut render_scheduler = Schedule::new(Schedules::Render);
-        // render_scheduler.add_systems(webgpu_render_system);
-
         let mut main_scheduler = Schedule::new(Schedules::Main);
         main_scheduler.add_systems((
             time_system.before(screen_diagnostics_system),
@@ -91,9 +84,12 @@ impl App {
         ));
 
         Self {
+            // Device and window
             window: None,
             input_system: InputSystem,
 
+            // Webgpu state and renderer
+            webgpu_renderer: None,
             instance: None,
             surface: None,
             config: None,
@@ -101,11 +97,9 @@ impl App {
             device: None,
             queue: None,
 
-            webgpu_renderer: None,
-
+            // ECS state
             world: world,
             startup_scheduler,
-            render_scheduler,
             main_scheduler,
 
             // State for schedulers
@@ -252,7 +246,7 @@ impl ApplicationHandler for App {
                     window_size.width = physical_size.width;
                     window_size.height = physical_size.height;
 
-                    // The App is now responsible for resizing the surface
+                    // Update the surface configuration for webgpu
                     if let (Some(config), Some(surface), Some(device)) = (
                         self.config.as_mut(),
                         self.surface.as_ref(),
@@ -309,9 +303,5 @@ impl ApplicationHandler for App {
             }
             _ => (),
         }
-    }
-
-    fn exiting(&mut self, _event_loop: &ActiveEventLoop) {
-        // No shader_manager to delete for WebGPU
     }
 }
