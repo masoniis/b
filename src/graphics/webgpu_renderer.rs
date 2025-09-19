@@ -1,10 +1,10 @@
-use wgpu::{util::DeviceExt, Buffer, Device, Queue, RenderPipeline};
+use wgpu::{util::DeviceExt, Device, Queue, RenderPipeline};
 
 #[repr(C)]
 #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
-struct Vertex {
-    position: [f32; 3],
-    color: [f32; 3],
+pub struct Vertex {
+    pub position: [f32; 3],
+    pub color: [f32; 3],
 }
 
 impl Vertex {
@@ -23,19 +23,22 @@ impl Vertex {
 }
 
 pub struct QueuedDraw {
-    // TODO: Implement me with necessary stuff that the ECS modules will use to queue a draw in the renderer
+    pub vertices: Vec<Vertex>,
+    pub indices: Option<Vec<u32>>,
+    pub instance_count: u32,
 }
 
+#[derive(Resource)]
 pub struct WebGpuRenderer {
     device: Device,
     queue: Queue,
     render_pipeline: RenderPipeline,
-    vertex_buffer: Buffer,
 
     draw_queue: Vec<QueuedDraw>,
 }
 
 use std::fs;
+use bevy_ecs::prelude::Resource;
 
 const SHADER_PATH: &str = "src/assets/shaders/scene/simple.wgsl";
 
@@ -96,28 +99,11 @@ impl WebGpuRenderer {
             multiview: None,
         });
 
-        #[rustfmt::skip]
-    let vertices = [
-        Vertex { position: [-1.0, 1.0, 0.0], color: [1.0, 0.0, 0.0] },
-        Vertex { position: [-1.0, 0.9, 0.0], color: [0.0, 1.0, 0.0] },
-        Vertex { position: [-0.9, 1.0, 0.0], color: [0.0, 0.0, 1.0] },
-        Vertex { position: [0.0, 0.5, 0.0], color: [1.0, 0.0, 0.0] },
-        Vertex { position: [-0.5, -0.5, 0.0], color: [0.0, 1.0, 0.0] },
-        Vertex { position: [0.5, -0.5, 0.0], color: [0.0, 0.0, 1.0] },
-    ];
-
-        let vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: Some("Vertex Buffer"),
-            contents: bytemuck::cast_slice(&vertices),
-            usage: wgpu::BufferUsages::VERTEX,
-        });
-
         // The final struct no longer contains the surface, adapter, etc.
         Self {
             device,
             queue,
             render_pipeline,
-            vertex_buffer,
             draw_queue: Vec::new(),
         }
     }
@@ -131,24 +117,6 @@ impl WebGpuRenderer {
     pub fn clear_queue(&mut self) {
         self.draw_queue.clear();
     }
-
-    // TODO: Render pipeline processes queue like so
-    //     pub fn render(&self, view: &wgpu::TextureView) -> Result<(), wgpu::SurfaceError> {
-    //     let mut encoder = self.device.create_command_encoder(...);
-    //     {
-    //         let mut render_pass = encoder.begin_render_pass(...);
-    //
-    //         // Process all the prepared draw calls
-    //         for draw in &self.draw_queue {
-    //             // Set pipeline, bind groups, buffers from `draw`
-    //             render_pass.set_pipeline(&self.render_pipeline);
-    //             render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
-    //             render_pass.draw(0..6, 0..1);
-    //         }
-    //     }
-    //     self.queue.submit(std::iter::once(encoder.finish()));
-    //     Ok(())
-    // }
 
     pub fn render(&self, view: &wgpu::TextureView) -> Result<(), wgpu::SurfaceError> {
         let mut encoder = self
@@ -179,9 +147,33 @@ impl WebGpuRenderer {
                 occlusion_query_set: None,
             });
 
-            render_pass.set_pipeline(&self.render_pipeline);
-            render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
-            render_pass.draw(0..6, 0..1);
+            // Process all the prepared draw calls
+            for draw in &self.draw_queue {
+                let vertex_buffer =
+                    self.device
+                        .create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                            label: Some("Queued Draw Vertex Buffer"),
+                            contents: bytemuck::cast_slice(&draw.vertices),
+                            usage: wgpu::BufferUsages::VERTEX,
+                        });
+
+                render_pass.set_pipeline(&self.render_pipeline);
+                render_pass.set_vertex_buffer(0, vertex_buffer.slice(..));
+
+                if let Some(indices) = &draw.indices {
+                    let index_buffer =
+                        self.device
+                            .create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                                label: Some("Queued Draw Index Buffer"),
+                                contents: bytemuck::cast_slice(indices),
+                                usage: wgpu::BufferUsages::INDEX,
+                            });
+                    render_pass.set_index_buffer(index_buffer.slice(..), wgpu::IndexFormat::Uint32);
+                    render_pass.draw_indexed(0..indices.len() as u32, 0, 0..draw.instance_count);
+                } else {
+                    render_pass.draw(0..draw.vertices.len() as u32, 0..draw.instance_count);
+                }
+            }
         }
 
         self.queue.submit(std::iter::once(encoder.finish()));
@@ -189,3 +181,4 @@ impl WebGpuRenderer {
         Ok(())
     }
 }
+

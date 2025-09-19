@@ -9,3 +9,6 @@ pub use text_meshing::update_text_mesh_system;
 
 pub mod time;
 pub use time::time_system;
+
+pub mod triangle_renderer;
+pub use triangle_renderer::triangle_render_system;

@@ -6,7 +6,7 @@ use crate::{
         },
         systems::{
             camera_control_system, init_screen_diagnostics_system, screen_diagnostics_system,
-            time_system, InputSystem,
+            time_system, triangle_render_system, InputSystem,
         },
     },
     graphics::webgpu_renderer::WebGpuRenderer,
@@ -47,9 +47,6 @@ pub struct App {
     device: Option<Device>,
     queue: Option<Queue>,
 
-    // The decoupled renderer
-    webgpu_renderer: Option<WebGpuRenderer>,
-
     // Game Logic
     world: World,
     startup_scheduler: Schedule,
@@ -81,6 +78,7 @@ impl App {
             // update_text_mesh_system.before(screen_diagnostics_system),
             screen_diagnostics_system,
             camera_control_system,
+            triangle_render_system,
         ));
 
         Self {
@@ -89,7 +87,6 @@ impl App {
             input_system: InputSystem,
 
             // Webgpu state and renderer
-            webgpu_renderer: None,
             instance: None,
             surface: None,
             config: None,
@@ -180,6 +177,7 @@ impl ApplicationHandler for App {
 
             // --- 3. Create the Decoupled Renderer ---
             let webgpu_renderer = WebGpuRenderer::new(device.clone(), queue.clone(), &config);
+            self.world.insert_resource(webgpu_renderer);
 
             // --- 4. Store Everything in self ---
             self.window = Some(window);
@@ -189,7 +187,6 @@ impl ApplicationHandler for App {
             self.config = Some(config);
             self.device = Some(device);
             self.queue = Some(queue);
-            self.webgpu_renderer = Some(webgpu_renderer);
 
             info!("Running startup systems...");
             self.startup_scheduler.run(&mut self.world);
@@ -261,7 +258,7 @@ impl ApplicationHandler for App {
 
             WindowEvent::RedrawRequested => {
                 let surface = self.surface.as_ref().unwrap();
-                let renderer = self.webgpu_renderer.as_ref().unwrap();
+                let renderer = self.world.get_resource_mut::<WebGpuRenderer>().unwrap();
 
                 match surface.get_current_texture() {
                     Ok(output) => {
