@@ -1,4 +1,5 @@
 use crate::ecs::resources::{CameraResource, InputResource, TimeResource, WindowResource};
+use crate::graphics::webgpu_renderer::WebGpuRenderer;
 use bevy_ecs::prelude::*;
 use glam::{Mat4, Vec3};
 use winit::keyboard::KeyCode;
@@ -8,6 +9,7 @@ pub fn camera_control_system(
     time: Res<TimeResource>,
     window: Res<WindowResource>,
     mut camera: ResMut<CameraResource>,
+    mut renderer: ResMut<WebGpuRenderer>,
 ) {
     // Update camera position
     let velocity = camera.movement_speed * time.since_last_update.as_secs_f32();
@@ -84,4 +86,6 @@ pub fn camera_control_system(
             Mat4::perspective_rh_gl(camera.zoom.to_radians(), window.aspect_ratio(), 0.1, 100.0);
         camera.projection_dirty = false;
     }
+
+    renderer.update_camera(camera.projection_matrix * camera.view_matrix);
 }

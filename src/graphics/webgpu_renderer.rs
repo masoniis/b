@@ -1,4 +1,4 @@
-use wgpu::{Device, Queue, RenderPipeline, util::DeviceExt};
+use wgpu::{util::DeviceExt, Device, Queue, RenderPipeline};
 
 #[repr(C)]
 #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
@@ -22,6 +22,25 @@ impl Vertex {
     }
 }
 
+#[repr(C)]
+#[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
+struct CameraUniform {
+    view_proj: [[f32; 4]; 4],
+}
+
+impl CameraUniform {
+    fn new() -> Self {
+        use glam::Mat4;
+        Self {
+            view_proj: Mat4::IDENTITY.to_cols_array_2d(),
+        }
+    }
+
+    fn update_view_proj(&mut self, proj: glam::Mat4) {
+        self.view_proj = proj.to_cols_array_2d();
+    }
+}
+
 pub struct QueuedDraw {
     pub vertices: Vec<Vertex>,
     pub indices: Option<Vec<u32>>,
@@ -30,11 +49,18 @@ pub struct QueuedDraw {
 
 #[derive(Resource)]
 pub struct WebGpuRenderer {
+    // Core
     device: Device,
     queue: Queue,
     render_pipeline: RenderPipeline,
 
+    // Public API
     draw_queue: Vec<QueuedDraw>,
+
+    // Uniforms
+    camera_uniform: CameraUniform,
+    camera_buffer: wgpu::Buffer,
+    camera_bind_group: wgpu::BindGroup,
 }
 
 use bevy_ecs::prelude::Resource;
@@ -44,8 +70,36 @@ const SHADER_PATH: &str = "src/assets/shaders/scene/simple.wgsl";
 
 impl WebGpuRenderer {
     pub fn new(device: Device, queue: Queue, config: &wgpu::SurfaceConfiguration) -> Self {
-        // All logic related to surface, adapter, and creating the config
-        // has been removed, as that is now handled by the App.
+        let camera_uniform = CameraUniform::new();
+        let camera_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("Camera Buffer"),
+            contents: bytemuck::cast_slice(&[camera_uniform]),
+            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+        });
+
+        let camera_bind_group_layout =
+            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                entries: &[wgpu::BindGroupLayoutEntry {
+                    binding: 0,
+                    visibility: wgpu::ShaderStages::VERTEX,
+                    ty: wgpu::BindingType::Buffer {
+                        ty: wgpu::BufferBindingType::Uniform,
+                        has_dynamic_offset: false,
+                        min_binding_size: None,
+                    },
+                    count: None,
+                }],
+                label: Some("camera_bind_group_layout"),
+            });
+
+        let camera_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+            layout: &camera_bind_group_layout,
+            entries: &[wgpu::BindGroupEntry {
+                binding: 0,
+                resource: camera_buffer.as_entire_binding(),
+            }],
+            label: Some("camera_bind_group"),
+        });
 
         let shader_source = fs::read_to_string(SHADER_PATH).expect("Failed to read shader file");
         let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
@@ -56,7 +110,7 @@ impl WebGpuRenderer {
         let render_pipeline_layout =
             device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                 label: Some("Render Pipeline Layout"),
-                bind_group_layouts: &[],
+                bind_group_layouts: &[&camera_bind_group_layout],
                 push_constant_ranges: &[],
             });
 
@@ -74,7 +128,6 @@ impl WebGpuRenderer {
                 module: &shader,
                 entry_point: Some("fs_main"),
                 targets: &[Some(wgpu::ColorTargetState {
-                    // We correctly use the format from the config that was passed in.
                     format: config.format,
                     blend: Some(wgpu::BlendState::REPLACE),
                     write_mask: wgpu::ColorWrites::ALL,
@@ -99,13 +152,24 @@ impl WebGpuRenderer {
             multiview: None,
         });
 
-        // The final struct no longer contains the surface, adapter, etc.
         Self {
             device,
             queue,
             render_pipeline,
             draw_queue: Vec::new(),
+            camera_uniform,
+            camera_buffer,
+            camera_bind_group,
         }
+    }
+
+    pub fn update_camera(&mut self, proj: glam::Mat4) {
+        self.camera_uniform.update_view_proj(proj);
+        self.queue.write_buffer(
+            &self.camera_buffer,
+            0,
+            bytemuck::cast_slice(&[self.camera_uniform]),
+        );
     }
 
     /// Queue a draw call that the renderer pipeline will process during rendering phase.
@@ -147,6 +211,9 @@ impl WebGpuRenderer {
                 occlusion_query_set: None,
             });
 
+            render_pass.set_pipeline(&self.render_pipeline);
+            render_pass.set_bind_group(0, &self.camera_bind_group, &[]);
+
             // Process all the prepared draw calls
             for draw in &self.draw_queue {
                 let vertex_buffer =
@@ -157,7 +224,6 @@ impl WebGpuRenderer {
                             usage: wgpu::BufferUsages::VERTEX,
                         });
 
-                render_pass.set_pipeline(&self.render_pipeline);
                 render_pass.set_vertex_buffer(0, vertex_buffer.slice(..));
 
                 if let Some(indices) = &draw.indices {

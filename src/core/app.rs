@@ -1,12 +1,12 @@
 use crate::{
     ecs::{
         resources::{
-            CameraResource, TextureManagerResource, input::InputResource, time::TimeResource,
-            window::WindowResource,
+            input::InputResource, time::TimeResource, window::WindowResource, CameraResource,
+            TextureManagerResource,
         },
         systems::{
-            InputSystem, camera_control_system, init_screen_diagnostics_system,
-            screen_diagnostics_system, time_system, triangle_render_system,
+            camera_control_system, init_screen_diagnostics_system, screen_diagnostics_system,
+            time_system, triangle_render_system, InputSystem,
         },
     },
     graphics::webgpu_renderer::WebGpuRenderer,
@@ -205,7 +205,7 @@ impl ApplicationHandler for App {
         }
 
         // We run this AFTER the schedule as this is responsible for cleaning up
-        // the input system deltas so it makes sense to run it last.
+        // the input system deltas (if we run it first, input would always be empty)
         self.input_system.new_events_hook(&mut self.world);
     }
 
