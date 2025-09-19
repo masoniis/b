@@ -25,7 +25,7 @@ winit = { version = "0.30.12", features = ["rwh_06"] }
 fontdue = "0.9.3"
 # game
 bevy_ecs = "0.16.1"
-wgpu = "0.20"
 tokio = { version = "1", features = ["full"] }
 pollster = "0.3"
 bytemuck = { version = "1.13", features = ["derive"] }
+wgpu = "26.0.1"

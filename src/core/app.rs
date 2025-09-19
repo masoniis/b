@@ -2,23 +2,27 @@ use crate::guard;
 use crate::{
     ecs::{
         resources::{
-            CameraResource, TextureManagerResource, input::InputResource, time::TimeResource,
-            window::WindowResource,
+            input::InputResource, time::TimeResource, window::WindowResource, CameraResource,
+            TextureManagerResource,
         },
         systems::{
-            InputSystem, camera_control_system, init_screen_diagnostics_system,
-            screen_diagnostics_system, time_system, webgpu_render_system,
+            camera_control_system, init_screen_diagnostics_system, screen_diagnostics_system,
+            time_system, InputSystem,
         },
     },
     graphics::webgpu_renderer::WebGpuRenderer,
 };
+
+use winit::dpi::PhysicalSize;
 
 use bevy_ecs::prelude::*;
 use bevy_ecs::{
     schedule::{Schedule, ScheduleLabel},
     world::World,
 };
+use std::sync::Arc;
 use tracing::{error, info};
+use wgpu::{Adapter, Device, Instance, Queue, Surface, SurfaceConfiguration};
 use winit::{
     application::ApplicationHandler,
     event::{DeviceEvent, StartCause, WindowEvent},
@@ -33,13 +37,21 @@ pub enum Schedules {
     Render,
 }
 
-pub struct App<'a> {
+pub struct App {
     // OS Interactions
-    window: Option<&'a Window>,
+    window: Option<Arc<Window>>,
     input_system: InputSystem,
 
     // Display logic
-    webgpu_renderer: Option<WebGpuRenderer<'a>>,
+    instance: Option<Instance>,
+    surface: Option<Surface<'static>>, // The lifetime is now managed by the Arc
+    config: Option<SurfaceConfiguration>,
+    adapter: Option<Adapter>,
+    device: Option<Device>,
+    queue: Option<Queue>,
+
+    // The decoupled renderer
+    webgpu_renderer: Option<WebGpuRenderer>,
 
     // Game Logic
     world: World,
@@ -51,8 +63,8 @@ pub struct App<'a> {
     main_done: bool, // just for the first main run
 }
 
-impl<'a> App<'a> {
-    pub fn new(window: &'a Window) -> Self {
+impl App {
+    pub fn new() -> Self {
         let mut world = World::new();
         world.insert_resource(InputResource::new());
         world.insert_resource(TimeResource::default());
@@ -68,7 +80,7 @@ impl<'a> App<'a> {
         ));
 
         let mut render_scheduler = Schedule::new(Schedules::Render);
-        render_scheduler.add_systems(webgpu_render_system);
+        // render_scheduler.add_systems(webgpu_render_system);
 
         let mut main_scheduler = Schedule::new(Schedules::Main);
         main_scheduler.add_systems((
@@ -79,8 +91,15 @@ impl<'a> App<'a> {
         ));
 
         Self {
-            window: Some(window),
+            window: None,
             input_system: InputSystem,
+
+            instance: None,
+            surface: None,
+            config: None,
+            adapter: None,
+            device: None,
+            queue: None,
 
             webgpu_renderer: None,
 
@@ -96,34 +115,93 @@ impl<'a> App<'a> {
     }
 }
 
-impl<'a> ApplicationHandler for App<'a> {
-    fn resumed(&mut self, _event_loop: &winit::event_loop::ActiveEventLoop) {
+impl ApplicationHandler for App {
+    fn resumed(&mut self, event_loop: &winit::event_loop::ActiveEventLoop) {
         if self.window.is_none() {
-            info!("App resumed, window should be set by main!");
-            // The window is now created in main.rs and passed to App::new.
-            // So, self.window should already be Some here.
-            // This block should ideally not be reached if the window is always passed.
-            // For now, we'll panic if it's None, as it indicates an unexpected state.
-            panic!("Window not set in App::resumed!");
+            info!("App resumed, creating window and renderer...");
+
+            // --- 1. Window Creation ---
+            let window_attributes = Window::default_attributes()
+                .with_title("🅱️")
+                .with_inner_size(PhysicalSize::new(1800, 1500));
+            let window = Arc::new(
+                event_loop
+                    .create_window(window_attributes)
+                    .expect("Failed to create window"),
+            );
+
+            window.set_cursor_visible(false);
+            if let Err(err) = window.set_cursor_grab(winit::window::CursorGrabMode::Confined) {
+                error!("Failed to grab cursor: {:?}", err);
+            }
+
+            // --- 2. WGPU Initialization ---
+            // We do all the async setup in this block and wait for it to finish.
+            let (instance, surface, adapter, device, queue, config) = pollster::block_on(async {
+                // The instance is the entry point to WGPU
+                let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor::default());
+
+                // The surface is the part of the window we draw to.
+                // By using an Arc<Window>, we can create the surface safely.
+                let surface = instance.create_surface(window.clone()).unwrap();
+
+                // The adapter is a handle to a physical graphics card.
+                let adapter = instance
+                    .request_adapter(&wgpu::RequestAdapterOptions {
+                        power_preference: wgpu::PowerPreference::default(),
+                        compatible_surface: Some(&surface),
+                        force_fallback_adapter: false,
+                    })
+                    .await
+                    .unwrap();
+
+                // The device and queue are our primary interface to the GPU.
+                let (device, queue) = adapter
+                    .request_device(&wgpu::DeviceDescriptor::default())
+                    .await
+                    .unwrap();
+
+                // The surface configuration defines how the surface creates its textures.
+                let surface_caps = surface.get_capabilities(&adapter);
+                let surface_format = surface_caps
+                    .formats
+                    .iter()
+                    .copied()
+                    .find(|f| f.is_srgb())
+                    .unwrap_or(surface_caps.formats[0]);
+                let config = wgpu::SurfaceConfiguration {
+                    usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
+                    format: surface_format,
+                    width: window.inner_size().width,
+                    height: window.inner_size().height,
+                    present_mode: wgpu::PresentMode::Fifo,
+                    alpha_mode: surface_caps.alpha_modes[0],
+                    view_formats: vec![],
+                    desired_maximum_frame_latency: 2,
+                };
+                surface.configure(&device, &config);
+
+                (instance, surface, adapter, device, queue, config)
+            });
+
+            // --- 3. Create the Decoupled Renderer ---
+            let webgpu_renderer = WebGpuRenderer::new(device.clone(), queue.clone(), &config);
+
+            // --- 4. Store Everything in self ---
+            self.window = Some(window);
+            self.instance = Some(instance);
+            self.surface = Some(surface);
+            self.adapter = Some(adapter);
+            self.config = Some(config);
+            self.device = Some(device);
+            self.queue = Some(queue);
+            self.webgpu_renderer = Some(webgpu_renderer);
+
+            info!("Running startup systems...");
+            self.startup_scheduler.run(&mut self.world);
+            self.startup_done = true;
         }
-
-        // Initialize WebGpuRenderer
-        let window_ref = self.window.unwrap();
-        window_ref.set_cursor_visible(false);
-        if let Err(err) = window_ref.set_cursor_grab(winit::window::CursorGrabMode::Confined) {
-            error!("Failed to grab cursor: {:?}", err);
-        }
-
-        // We need to block here because resumed is not async, but WebGpuRenderer::new is.
-        // In a real application, you might want to defer this initialization or use a different pattern.
-        let webgpu_renderer = pollster::block_on(WebGpuRenderer::new(window_ref));
-        self.webgpu_renderer = Some(webgpu_renderer);
-
-        info!("Running startup systems...");
-        self.startup_scheduler.run(&mut self.world);
-        self.startup_done = true;
     }
-
     fn new_events(&mut self, _event_loop: &ActiveEventLoop, _: StartCause) {
         guard!(self.startup_done);
 
@@ -131,7 +209,7 @@ impl<'a> ApplicationHandler for App<'a> {
 
         self.main_done = true;
 
-        if let Some(window) = self.window {
+        if let Some(window) = &self.window {
             window.request_redraw(); // begin the drawing loop
         }
 
@@ -166,26 +244,68 @@ impl<'a> ApplicationHandler for App<'a> {
                 info!("Close button was pressed, exiting.");
                 event_loop.exit();
             }
+
             WindowEvent::Resized(physical_size) => {
-                let mut window_size = self.world.resource_mut::<WindowResource>();
-                window_size.width = physical_size.width;
-                window_size.height = physical_size.height;
-                if let Some(renderer) = self.webgpu_renderer.as_mut() {
-                    renderer.resize(physical_size);
+                if physical_size.width > 0 && physical_size.height > 0 {
+                    // Update the ECS resource for window size
+                    let mut window_size = self.world.resource_mut::<WindowResource>();
+                    window_size.width = physical_size.width;
+                    window_size.height = physical_size.height;
+
+                    // The App is now responsible for resizing the surface
+                    if let (Some(config), Some(surface), Some(device)) = (
+                        self.config.as_mut(),
+                        self.surface.as_ref(),
+                        self.device.as_ref(),
+                    ) {
+                        config.width = physical_size.width;
+                        config.height = physical_size.height;
+                        surface.configure(device, config);
+                    }
                 }
             }
+
             WindowEvent::RedrawRequested => {
-                if let Some(renderer) = self.webgpu_renderer.as_mut() {
-                    match renderer.render() {
-                        Ok(_) => {}
-                        Err(wgpu::SurfaceError::Lost) => {
-                            renderer.resize(self.window.unwrap().inner_size())
+                let surface = self.surface.as_ref().unwrap();
+                let renderer = self.webgpu_renderer.as_ref().unwrap();
+
+                match surface.get_current_texture() {
+                    Ok(output) => {
+                        let view = output
+                            .texture
+                            .create_view(&wgpu::TextureViewDescriptor::default());
+
+                        // Call the renderer's updated render method, passing the texture view
+                        if let Err(e) = renderer.render(&view) {
+                            eprintln!("Renderer error: {:?}", e);
                         }
-                        Err(wgpu::SurfaceError::OutOfMemory) => event_loop.exit(),
-                        Err(e) => eprintln!("{:?}", e),
+
+                        // Present the frame to the screen
+                        output.present();
                     }
-                    self.window.unwrap().request_redraw();
+                    Err(wgpu::SurfaceError::Lost) => {
+                        // This means the surface is outdated and needs to be reconfigured.
+                        let size = self.window.as_ref().unwrap().inner_size();
+                        if let (Some(config), Some(surface), Some(device)) = (
+                            self.config.as_mut(),
+                            self.surface.as_ref(),
+                            self.device.as_ref(),
+                        ) {
+                            config.width = size.width;
+                            config.height = size.height;
+                            surface.configure(device, config);
+                        }
+                    }
+                    Err(wgpu::SurfaceError::OutOfMemory) => {
+                        error!("WGPU SurfaceError::OutOfMemory, exiting.");
+                        event_loop.exit();
+                    }
+                    Err(e) => {
+                        eprintln!("Error acquiring next texture: {:?}", e);
+                    }
                 }
+                // After drawing, request another redraw to keep the animation loop going.
+                self.window.as_ref().unwrap().request_redraw();
             }
             _ => (),
         }
