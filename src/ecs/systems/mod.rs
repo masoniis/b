@@ -10,12 +10,6 @@ pub use external::*;
 mod main;
 pub use main::*;
 
-// INFO: ---------------
-//         RENDER
-// ---------------------
-mod render;
-pub use render::*;
-
 // INFO: ----------------
 //         STARTUP
 // ----------------------

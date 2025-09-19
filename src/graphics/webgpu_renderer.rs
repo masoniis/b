@@ -1,4 +1,4 @@
-use wgpu::{util::DeviceExt, Device, Queue, RenderPipeline};
+use wgpu::{Device, Queue, RenderPipeline, util::DeviceExt};
 
 #[repr(C)]
 #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
@@ -37,8 +37,8 @@ pub struct WebGpuRenderer {
     draw_queue: Vec<QueuedDraw>,
 }
 
-use std::fs;
 use bevy_ecs::prelude::Resource;
+use std::fs;
 
 const SHADER_PATH: &str = "src/assets/shaders/scene/simple.wgsl";
 
@@ -181,4 +181,3 @@ impl WebGpuRenderer {
         Ok(())
     }
 }
-

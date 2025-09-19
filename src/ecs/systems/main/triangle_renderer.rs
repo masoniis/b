@@ -21,4 +21,3 @@ pub fn triangle_render_system(mut renderer: ResMut<WebGpuRenderer>) {
 
     renderer.queue_draw(triangle_draw);
 }
-
