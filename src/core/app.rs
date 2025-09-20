@@ -74,6 +74,8 @@ impl App {
             chunk_generation_system,
             // font_loader_system,
             init_screen_diagnostics_system,
+            // triangle_render_system,
+            mesh_render_system.after(chunk_generation_system),
         ));
 
         let mut main_scheduler = Schedule::new(Schedules::Main);
@@ -82,9 +84,9 @@ impl App {
             // update_text_mesh_system.before(screen_diagnostics_system),
             screen_diagnostics_system,
             camera_control_system,
-            clear_previous_frame_system,
-            triangle_render_system.after(clear_previous_frame_system),
-            mesh_render_system.after(clear_previous_frame_system),
+            // clear_previous_frame_system,
+            // triangle_render_system.after(clear_previous_frame_system),
+            // mesh_render_system.after(clear_previous_frame_system),
         ));
 
         Self {

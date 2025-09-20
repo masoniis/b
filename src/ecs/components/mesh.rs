@@ -1,6 +1,6 @@
+use crate::graphics::webgpu_renderer::Vertex;
 use bevy_ecs::prelude::Component;
 use glam::Vec2;
-use crate::graphics::webgpu_renderer::Vertex;
 
 #[derive(Component)]
 pub struct MeshComponent {
@@ -23,11 +23,7 @@ impl MeshComponent {
         let mut webgpu_vertices: Vec<Vertex> = Vec::new();
         for i in (0..vertices.len()).step_by(5) {
             webgpu_vertices.push(Vertex {
-                position: [
-                    vertices[i],
-                    vertices[i + 1],
-                    vertices[i + 2],
-                ],
+                position: [vertices[i], vertices[i + 1], vertices[i + 2]],
                 color: [1.0, 1.0, 1.0],
             });
         }
@@ -71,11 +67,7 @@ impl MeshComponent {
         let mut webgpu_vertices: Vec<Vertex> = Vec::new();
         for i in (0..vertices.len()).step_by(5) {
             webgpu_vertices.push(Vertex {
-                position: [
-                    vertices[i],
-                    vertices[i + 1],
-                    vertices[i + 2],
-                ],
+                position: [vertices[i], vertices[i + 1], vertices[i + 2]],
                 color: [1.0, 1.0, 1.0],
             });
         }

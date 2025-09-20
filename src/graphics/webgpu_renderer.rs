@@ -41,10 +41,25 @@ impl CameraUniform {
     }
 }
 
+#[repr(C)]
+#[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
+struct TransformUniform {
+    transform: [[f32; 4]; 4],
+}
+
+impl TransformUniform {
+    fn new(transform: glam::Mat4) -> Self {
+        Self {
+            transform: transform.to_cols_array_2d(),
+        }
+    }
+}
+
 pub struct QueuedDraw {
     pub vertices: Vec<Vertex>,
     pub indices: Option<Vec<u32>>,
     pub instance_count: u32,
+    pub transform: glam::Mat4,
 }
 
 #[derive(Resource)]
@@ -61,6 +76,7 @@ pub struct WebGpuRenderer {
     camera_uniform: CameraUniform,
     camera_buffer: wgpu::Buffer,
     camera_bind_group: wgpu::BindGroup,
+    transform_bind_group_layout: wgpu::BindGroupLayout,
 }
 
 use bevy_ecs::prelude::Resource;
@@ -107,10 +123,25 @@ impl WebGpuRenderer {
             source: wgpu::ShaderSource::Wgsl(shader_source.into()),
         });
 
-        let render_pipeline_layout =
+        let transform_bind_group_layout = 
+            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                entries: &[wgpu::BindGroupLayoutEntry {
+                    binding: 0,
+                    visibility: wgpu::ShaderStages::VERTEX,
+                    ty: wgpu::BindingType::Buffer {
+                        ty: wgpu::BufferBindingType::Uniform,
+                        has_dynamic_offset: false,
+                        min_binding_size: None,
+                    },
+                    count: None,
+                }],
+                label: Some("transform_bind_group_layout"),
+            });
+
+        let render_pipeline_layout = 
             device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                 label: Some("Render Pipeline Layout"),
-                bind_group_layouts: &[&camera_bind_group_layout],
+                bind_group_layouts: &[&camera_bind_group_layout, &transform_bind_group_layout],
                 push_constant_ranges: &[],
             });
 
@@ -160,6 +191,7 @@ impl WebGpuRenderer {
             camera_uniform,
             camera_buffer,
             camera_bind_group,
+            transform_bind_group_layout,
         }
     }
 
@@ -216,6 +248,22 @@ impl WebGpuRenderer {
 
             // Process all the prepared draw calls
             for draw in &self.draw_queue {
+                let transform_uniform = TransformUniform::new(draw.transform);
+                let transform_buffer = self.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                    label: Some("Transform Buffer"),
+                    contents: bytemuck::cast_slice(&[transform_uniform]),
+                    usage: wgpu::BufferUsages::UNIFORM,
+                });
+
+                let transform_bind_group = self.device.create_bind_group(&wgpu::BindGroupDescriptor {
+                    layout: &self.transform_bind_group_layout,
+                    entries: &[wgpu::BindGroupEntry {
+                        binding: 0,
+                        resource: transform_buffer.as_entire_binding(),
+                    }],
+                    label: Some("transform_bind_group"),
+                });
+
                 let vertex_buffer =
                     self.device
                         .create_buffer_init(&wgpu::util::BufferInitDescriptor {
@@ -225,6 +273,7 @@ impl WebGpuRenderer {
                         });
 
                 render_pass.set_vertex_buffer(0, vertex_buffer.slice(..));
+                render_pass.set_bind_group(1, &transform_bind_group, &[]);
 
                 if let Some(indices) = &draw.indices {
                     let index_buffer =

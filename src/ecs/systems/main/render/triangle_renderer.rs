@@ -1,5 +1,6 @@
 use crate::graphics::webgpu_renderer::{QueuedDraw, Vertex, WebGpuRenderer};
 use bevy_ecs::prelude::ResMut;
+use glam::Mat4;
 
 pub fn triangle_render_system(mut renderer: ResMut<WebGpuRenderer>) {
     #[rustfmt::skip]
@@ -17,6 +18,7 @@ pub fn triangle_render_system(mut renderer: ResMut<WebGpuRenderer>) {
         vertices,
         indices: None,
         instance_count: 1,
+        transform: Mat4::IDENTITY,
     };
 
     renderer.queue_draw(triangle_draw);
