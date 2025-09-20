@@ -1,11 +1,15 @@
 use crate::{
     ecs::{
         resources::{
-            CameraResource, TextureManagerResource, input::InputResource, time::TimeResource,
+            CameraResource,
+            // TextureManagerResource,
+            input::InputResource,
+            time::TimeResource,
             window::WindowResource,
         },
         systems::{
-            InputSystem, camera_control_system, init_screen_diagnostics_system,
+            InputSystem, camera_control_system, chunk_generation_system,
+            clear_previous_frame_system, init_screen_diagnostics_system, mesh_render_system,
             screen_diagnostics_system, time_system, triangle_render_system,
         },
     },
@@ -63,11 +67,11 @@ impl App {
         world.insert_resource(TimeResource::default());
         world.insert_resource(CameraResource::default());
         world.insert_resource(WindowResource::default());
-        world.insert_non_send_resource(TextureManagerResource::default());
+        // world.insert_non_send_resource(TextureManagerResource::default());
 
         let mut startup_scheduler = Schedule::new(Schedules::Startup);
         startup_scheduler.add_systems((
-            // chunk_generation_system,
+            chunk_generation_system,
             // font_loader_system,
             init_screen_diagnostics_system,
         ));
@@ -78,7 +82,9 @@ impl App {
             // update_text_mesh_system.before(screen_diagnostics_system),
             screen_diagnostics_system,
             camera_control_system,
-            triangle_render_system,
+            clear_previous_frame_system,
+            triangle_render_system.after(clear_previous_frame_system),
+            mesh_render_system.after(clear_previous_frame_system),
         ));
 
         Self {
