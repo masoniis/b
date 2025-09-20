@@ -1,6 +1,4 @@
-use crate::ecs::resources::TextureManagerResource;
-use crate::graphics::textures::Texture;
-use bevy_ecs::prelude::{Commands, NonSendMut, Resource};
+use bevy_ecs::prelude::{Commands, Resource};
 use fontdue::Font;
 use glam::{Vec2, vec2};
 use std::collections::HashMap;
@@ -11,12 +9,12 @@ const FONT_ATLAS_ID: &str = "font_atlas";
 pub struct FontAtlas {
     pub fonts: HashMap<String, Font>,
     pub glyph_cache: HashMap<(char, u32), (Vec2, Vec2)>, // (char, size) -> (uv_min, uv_max)
-    pub texture_id: String,
+                                                         // pub texture_id: String, // Removed for now, as OpenGL textures are not used
 }
 
 pub fn font_loader_system(
     mut commands: Commands,
-    mut texture_manager: NonSendMut<TextureManagerResource>,
+    // mut texture_manager: NonSendMut<TextureManagerResource>, // Removed for now
 ) {
     const FONT_SIZE: f32 = 48.0;
     const CHARACTERS: &str = " !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~";
@@ -68,20 +66,20 @@ pub fn font_loader_system(
         }
     }
 
-    let texture =
-        Texture::from_bytes(&atlas_data, atlas_width as u32, atlas_height as u32).unwrap();
+    // let texture =
+    //     Texture::from_bytes(&atlas_data, atlas_width as u32, atlas_height as u32).unwrap();
 
-    // Dump the atlas to a file for debugging
-    if let Err(e) = texture.dump_to_file("./src/assets/fonts/font_atlas.png") {
-        tracing::error!("Failed to dump font atlas: {}", e);
-    }
+    // // Dump the atlas to a file for debugging
+    // if let Err(e) = texture.dump_to_file("./src/assets/fonts/font_atlas.png") {
+    //     tracing::error!("Failed to dump font atlas: {}", e);
+    // }
 
-    texture_manager.add_atlas(FONT_ATLAS_ID.to_string(), texture);
+    // texture_manager.add_atlas(FONT_ATLAS_ID.to_string(), texture);
 
     let font_atlas = FontAtlas {
         fonts,
         glyph_cache,
-        texture_id: FONT_ATLAS_ID.to_string(),
+        // texture_id: FONT_ATLAS_ID.to_string(),
     };
 
     commands.insert_resource(font_atlas);

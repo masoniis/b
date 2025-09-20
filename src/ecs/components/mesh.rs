@@ -1,10 +1,11 @@
-use crate::graphics::buffers::Buffer;
 use bevy_ecs::prelude::Component;
 use glam::Vec2;
+use crate::graphics::webgpu_renderer::Vertex;
 
 #[derive(Component)]
 pub struct MeshComponent {
-    pub buffer: Buffer,
+    pub webgpu_vertices: Vec<Vertex>,
+    pub webgpu_indices: Vec<u32>,
     pub atlas_id: String,
     pub uv_min: Vec2,
     pub uv_max: Vec2,
@@ -19,8 +20,21 @@ impl MeshComponent {
         uv_min: Vec2,
         uv_max: Vec2,
     ) -> Self {
+        let mut webgpu_vertices: Vec<Vertex> = Vec::new();
+        for i in (0..vertices.len()).step_by(5) {
+            webgpu_vertices.push(Vertex {
+                position: [
+                    vertices[i],
+                    vertices[i + 1],
+                    vertices[i + 2],
+                ],
+                color: [1.0, 1.0, 1.0],
+            });
+        }
+
         Self {
-            buffer: Buffer::new(vertices, indices),
+            webgpu_vertices,
+            webgpu_indices: indices.to_vec(),
             atlas_id,
             uv_min,
             uv_max,
@@ -30,7 +44,7 @@ impl MeshComponent {
     /// Creates a new mesh with the geometry of a 1x1x1 cube centered at the origin.
     pub fn new_cube(atlas_id: String, uv_min: Vec2, uv_max: Vec2) -> Self {
         // Define the 8 vertices of the cube with position and texture coordinates
-        let vertices: &[f32] = &[
+        let vertices: Vec<f32> = vec![
             // positions      // texture coords
             // Front face
             -0.5, -0.5, 0.5, uv_min.x, uv_min.y, // 0
@@ -44,7 +58,7 @@ impl MeshComponent {
             0.5, 0.5, -0.5, uv_min.x, uv_max.y, // 7
         ];
 
-        let indices: &[u32] = &[
+        let indices: Vec<u32> = vec![
             // Front face
             0, 1, 2, 2, 3, 0, // Back face
             4, 5, 6, 6, 7, 4, // Top face
@@ -54,8 +68,21 @@ impl MeshComponent {
             5, 0, 3, 3, 6, 5,
         ];
 
+        let mut webgpu_vertices: Vec<Vertex> = Vec::new();
+        for i in (0..vertices.len()).step_by(5) {
+            webgpu_vertices.push(Vertex {
+                position: [
+                    vertices[i],
+                    vertices[i + 1],
+                    vertices[i + 2],
+                ],
+                color: [1.0, 1.0, 1.0],
+            });
+        }
+
         return Self {
-            buffer: Buffer::new(vertices, indices),
+            webgpu_vertices,
+            webgpu_indices: indices,
             atlas_id,
             uv_min,
             uv_max,
