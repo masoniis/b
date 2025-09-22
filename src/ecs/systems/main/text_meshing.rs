@@ -1,23 +1,15 @@
-use crate::ecs::components::MeshComponent;
 use crate::ecs::components::ScreenTextComponent;
 use crate::ecs::systems::startup::font_loader::FontAtlas;
 use crate::graphics::webgpu_renderer::Vertex;
 
-use bevy_ecs::prelude::{Commands, Entity, Query, Res};
+use bevy_ecs::prelude::{Query, Res};
 use fontdue::layout::{CoordinateSystem, Layout, LayoutSettings, TextStyle};
-use glam::Vec2;
-
-const FONT_ATLAS_ID: &str = "font_atlas";
 
 /// System to generate/update meshes for text entities
-pub fn update_text_mesh_system(
-    mut commands: Commands,
-    query: Query<(Entity, &ScreenTextComponent)>,
-    font_atlas: Res<FontAtlas>,
-) {
+pub fn update_text_mesh_system(query: Query<&ScreenTextComponent>, font_atlas: Res<FontAtlas>) {
     // TODO: It is unnecessary to redo this every frame, perhaps use a dirty bit for text meshing?
 
-    for (entity, text) in &query {
+    for text in &query {
         let font = font_atlas.fonts.get("Inter").unwrap();
         let mut layout = Layout::new(CoordinateSystem::PositiveYDown);
         layout.reset(&LayoutSettings {
@@ -78,13 +70,13 @@ pub fn update_text_mesh_system(
                 });
             }
 
-            commands.entity(entity).insert(MeshComponent {
-                webgpu_vertices,
-                webgpu_indices: indices,
-                atlas_id: FONT_ATLAS_ID.to_string(),
-                uv_min: Vec2::ZERO, // Not used for text meshes
-                uv_max: Vec2::ONE,  // Not used for text meshes
-            });
+            // commands.entity(entity).insert(MeshComponent {
+            //     webgpu_vertices,
+            //     webgpu_indices: indices,
+            //     atlas_id: FONT_ATLAS_ID.to_string(),
+            //     uv_min: Vec2::ZERO, // Not used for text meshes
+            //     uv_max: Vec2::ONE,  // Not used for text meshes
+            // });
         }
     }
 }

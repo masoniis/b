@@ -9,8 +9,8 @@ use crate::{
         },
         systems::{
             InputSystem, camera_control_system, chunk_generation_system,
-            clear_previous_frame_system, init_screen_diagnostics_system, mesh_render_system,
-            screen_diagnostics_system, time_system, triangle_render_system,
+            init_screen_diagnostics_system, mesh_render_system, screen_diagnostics_system,
+            time_system,
         },
     },
     graphics::webgpu_renderer::WebGpuRenderer,
@@ -84,8 +84,6 @@ impl App {
             // update_text_mesh_system.before(screen_diagnostics_system),
             screen_diagnostics_system,
             camera_control_system,
-            // clear_previous_frame_system,
-            // triangle_render_system.after(clear_previous_frame_system),
             // mesh_render_system.after(clear_previous_frame_system),
         ));
 

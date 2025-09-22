@@ -1,3 +1,5 @@
+use crate::graphics::GpuMesh;
+use std::sync::Arc;
 use wgpu::{Device, Queue, RenderPipeline, util::DeviceExt};
 
 #[repr(C)]
@@ -56,8 +58,7 @@ impl TransformUniform {
 }
 
 pub struct QueuedDraw {
-    pub vertices: Vec<Vertex>,
-    pub indices: Option<Vec<u32>>,
+    pub gpu_mesh: Arc<GpuMesh>,
     pub instance_count: u32,
     pub transform: glam::Mat4,
 }
@@ -123,7 +124,7 @@ impl WebGpuRenderer {
             source: wgpu::ShaderSource::Wgsl(shader_source.into()),
         });
 
-        let transform_bind_group_layout = 
+        let transform_bind_group_layout =
             device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
                 entries: &[wgpu::BindGroupLayoutEntry {
                     binding: 0,
@@ -138,7 +139,7 @@ impl WebGpuRenderer {
                 label: Some("transform_bind_group_layout"),
             });
 
-        let render_pipeline_layout = 
+        let render_pipeline_layout =
             device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                 label: Some("Render Pipeline Layout"),
                 bind_group_layouts: &[&camera_bind_group_layout, &transform_bind_group_layout],
@@ -195,6 +196,10 @@ impl WebGpuRenderer {
         }
     }
 
+    pub fn get_device(&self) -> &Device {
+        &self.device
+    }
+
     pub fn update_camera(&mut self, proj: glam::Mat4) {
         self.camera_uniform.update_view_proj(proj);
         self.queue.write_buffer(
@@ -249,45 +254,31 @@ impl WebGpuRenderer {
             // Process all the prepared draw calls
             for draw in &self.draw_queue {
                 let transform_uniform = TransformUniform::new(draw.transform);
-                let transform_buffer = self.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-                    label: Some("Transform Buffer"),
-                    contents: bytemuck::cast_slice(&[transform_uniform]),
-                    usage: wgpu::BufferUsages::UNIFORM,
-                });
-
-                let transform_bind_group = self.device.create_bind_group(&wgpu::BindGroupDescriptor {
-                    layout: &self.transform_bind_group_layout,
-                    entries: &[wgpu::BindGroupEntry {
-                        binding: 0,
-                        resource: transform_buffer.as_entire_binding(),
-                    }],
-                    label: Some("transform_bind_group"),
-                });
-
-                let vertex_buffer =
+                let transform_buffer =
                     self.device
                         .create_buffer_init(&wgpu::util::BufferInitDescriptor {
-                            label: Some("Queued Draw Vertex Buffer"),
-                            contents: bytemuck::cast_slice(&draw.vertices),
-                            usage: wgpu::BufferUsages::VERTEX,
+                            label: Some("Transform Buffer"),
+                            contents: bytemuck::cast_slice(&[transform_uniform]),
+                            usage: wgpu::BufferUsages::UNIFORM,
                         });
 
-                render_pass.set_vertex_buffer(0, vertex_buffer.slice(..));
-                render_pass.set_bind_group(1, &transform_bind_group, &[]);
+                let transform_bind_group =
+                    self.device.create_bind_group(&wgpu::BindGroupDescriptor {
+                        layout: &self.transform_bind_group_layout,
+                        entries: &[wgpu::BindGroupEntry {
+                            binding: 0,
+                            resource: transform_buffer.as_entire_binding(),
+                        }],
+                        label: Some("transform_bind_group"),
+                    });
 
-                if let Some(indices) = &draw.indices {
-                    let index_buffer =
-                        self.device
-                            .create_buffer_init(&wgpu::util::BufferInitDescriptor {
-                                label: Some("Queued Draw Index Buffer"),
-                                contents: bytemuck::cast_slice(indices),
-                                usage: wgpu::BufferUsages::INDEX,
-                            });
-                    render_pass.set_index_buffer(index_buffer.slice(..), wgpu::IndexFormat::Uint32);
-                    render_pass.draw_indexed(0..indices.len() as u32, 0, 0..draw.instance_count);
-                } else {
-                    render_pass.draw(0..draw.vertices.len() as u32, 0..draw.instance_count);
-                }
+                render_pass.set_vertex_buffer(0, draw.gpu_mesh.vertex_buffer.slice(..));
+                render_pass.set_index_buffer(
+                    draw.gpu_mesh.index_buffer.slice(..),
+                    wgpu::IndexFormat::Uint32,
+                );
+                render_pass.set_bind_group(1, &transform_bind_group, &[]);
+                render_pass.draw_indexed(0..draw.gpu_mesh.index_count, 0, 0..draw.instance_count);
             }
         }
 

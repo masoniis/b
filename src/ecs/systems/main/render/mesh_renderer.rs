@@ -10,8 +10,7 @@ pub fn mesh_render_system(
         let model_matrix = transform_comp.to_matrix();
 
         let queued_draw = QueuedDraw {
-            vertices: mesh_comp.webgpu_vertices.clone(),
-            indices: Some(mesh_comp.webgpu_indices.clone()),
+            gpu_mesh: mesh_comp.gpu_mesh.clone(),
             instance_count: 1,
             transform: model_matrix,
         };

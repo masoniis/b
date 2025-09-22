@@ -3,8 +3,6 @@ use fontdue::Font;
 use glam::{Vec2, vec2};
 use std::collections::HashMap;
 
-const FONT_ATLAS_ID: &str = "font_atlas";
-
 #[derive(Resource)]
 pub struct FontAtlas {
     pub fonts: HashMap<String, Font>,
