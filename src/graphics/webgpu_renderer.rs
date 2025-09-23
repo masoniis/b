@@ -1,6 +1,6 @@
 use crate::graphics::{GpuMesh, Vertex};
 use std::sync::Arc;
-use wgpu::{util::DeviceExt, Device, Queue, RenderPipeline};
+use wgpu::{Device, Queue, RenderPipeline, util::DeviceExt};
 
 #[repr(C)]
 #[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]

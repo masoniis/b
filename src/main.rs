@@ -5,13 +5,12 @@ pub mod ecs;
 pub mod graphics;
 pub mod utils;
 
-#[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
+fn main() -> Result<(), Box<dyn std::error::Error>> {
     utils::logger::attach_logger();
     info!("Logger attached...");
     info!("Running app...");
 
-    if let Err(e) = core::runner::run_app().await {
+    if let Err(e) = core::runner::run_app() {
         error!("App error: {}", e);
     } else {
         info!("App runner finished without errors!");

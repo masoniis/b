@@ -1,5 +1,5 @@
-use crate::graphics::webgpu_renderer::{QueuedDraw, WebGpuRenderer};
 use crate::graphics::Vertex;
+use crate::graphics::webgpu_renderer::{QueuedDraw, WebGpuRenderer};
 use bevy_ecs::prelude::ResMut;
 use glam::Mat4;
 use std::sync::Arc;
