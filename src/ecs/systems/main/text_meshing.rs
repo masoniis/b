@@ -1,6 +1,6 @@
 use crate::ecs::components::ScreenTextComponent;
 use crate::ecs::systems::startup::font_loader::FontAtlas;
-use crate::graphics::webgpu_renderer::Vertex;
+use crate::graphics::Vertex;
 
 use bevy_ecs::prelude::{Query, Res};
 use fontdue::layout::{CoordinateSystem, Layout, LayoutSettings, TextStyle};

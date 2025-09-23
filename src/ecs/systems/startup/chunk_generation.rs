@@ -1,5 +1,6 @@
 use crate::ecs::components::{MeshComponent, TransformComponent, create_gpu_mesh_from_data};
-use crate::graphics::webgpu_renderer::{Vertex, WebGpuRenderer};
+use crate::graphics::webgpu_renderer::WebGpuRenderer;
+use crate::graphics::Vertex;
 use bevy_ecs::prelude::Commands;
 use bevy_ecs::prelude::ResMut;
 use glam::{Vec2, Vec3};

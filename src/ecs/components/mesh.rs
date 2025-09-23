@@ -1,5 +1,5 @@
 use crate::graphics::GpuMesh;
-use crate::graphics::webgpu_renderer::Vertex;
+use crate::graphics::Vertex;
 use bevy_ecs::prelude::Component;
 use glam::Vec2;
 use std::sync::Arc;
