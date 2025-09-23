@@ -9,6 +9,3 @@ pub use time::TimeResource;
 
 pub mod window;
 pub use window::WindowResource;
-
-pub mod shader_manager;
-pub use shader_manager::{ShaderManagerResource, ShaderType};
