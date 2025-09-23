@@ -1,6 +1,9 @@
 use crate::graphics::{GpuMesh, Vertex};
 use std::sync::Arc;
+use tracing::warn;
 use wgpu::{util::DeviceExt, Device, Queue, RenderPipeline};
+
+use glam::Mat4;
 
 #[repr(C)]
 #[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
@@ -10,7 +13,6 @@ struct CameraUniform {
 
 impl CameraUniform {
     fn new() -> Self {
-        use glam::Mat4;
         Self {
             view_proj: Mat4::IDENTITY.to_cols_array_2d(),
         }
@@ -22,15 +24,39 @@ impl CameraUniform {
 }
 
 #[repr(C)]
-#[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
-struct TransformUniform {
-    transform: [[f32; 4]; 4],
+#[derive(Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
+struct InstanceRaw {
+    model_matrix: [[f32; 4]; 4],
 }
 
-impl TransformUniform {
-    fn new(transform: glam::Mat4) -> Self {
-        Self {
-            transform: transform.to_cols_array_2d(),
+impl InstanceRaw {
+    fn desc() -> wgpu::VertexBufferLayout<'static> {
+        use std::mem;
+        wgpu::VertexBufferLayout {
+            array_stride: mem::size_of::<InstanceRaw>() as wgpu::BufferAddress,
+            step_mode: wgpu::VertexStepMode::Instance,
+            attributes: &[
+                wgpu::VertexAttribute {
+                    offset: 0,
+                    shader_location: 2, // model_row_0
+                    format: wgpu::VertexFormat::Float32x4,
+                },
+                wgpu::VertexAttribute {
+                    offset: mem::size_of::<[f32; 4]>() as wgpu::BufferAddress,
+                    shader_location: 3, // model_row_1
+                    format: wgpu::VertexFormat::Float32x4,
+                },
+                wgpu::VertexAttribute {
+                    offset: (mem::size_of::<[f32; 4]>() * 2) as wgpu::BufferAddress,
+                    shader_location: 4, // model_row_2
+                    format: wgpu::VertexFormat::Float32x4,
+                },
+                wgpu::VertexAttribute {
+                    offset: (mem::size_of::<[f32; 4]>() * 3) as wgpu::BufferAddress,
+                    shader_location: 5, // model_row_3
+                    format: wgpu::VertexFormat::Float32x4,
+                },
+            ],
         }
     }
 }
@@ -56,15 +82,14 @@ pub struct WebGpuRenderer {
     camera_buffer: wgpu::Buffer,
     camera_bind_group: wgpu::BindGroup,
 
-    transform_buffer: wgpu::Buffer,
-    transform_bind_group: wgpu::BindGroup,
+    instance_buffer: wgpu::Buffer,
 }
 
 use bevy_ecs::prelude::Resource;
 use std::fs;
 
 const SHADER_PATH: &str = "src/assets/shaders/scene/simple.wgsl";
-const MAX_TRANSFORMS: u64 = 4096;
+const MAX_TRANSFORMS: u64 = 100000;
 
 impl WebGpuRenderer {
     pub fn new(device: Device, queue: Queue, config: &wgpu::SurfaceConfiguration) -> Self {
@@ -105,47 +130,17 @@ impl WebGpuRenderer {
             source: wgpu::ShaderSource::Wgsl(shader_source.into()),
         });
 
-        let transform_bind_group_layout =
-            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-                entries: &[wgpu::BindGroupLayoutEntry {
-                    binding: 0,
-                    visibility: wgpu::ShaderStages::VERTEX,
-                    ty: wgpu::BindingType::Buffer {
-                        ty: wgpu::BufferBindingType::Uniform,
-                        has_dynamic_offset: true,
-                        min_binding_size: wgpu::BufferSize::new(
-                            std::mem::size_of::<TransformUniform>() as _,
-                        ),
-                    },
-                    count: None,
-                }],
-                label: Some("transform_bind_group_layout"),
-            });
-
-        let transform_buffer = device.create_buffer(&wgpu::BufferDescriptor {
-            label: Some("Transform Buffer"),
-            size: MAX_TRANSFORMS * 256, // 256 is a safe alignment for dynamic uniforms
-            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+        let instance_buffer = device.create_buffer(&wgpu::BufferDescriptor {
+            label: Some("Instance Buffer"),
+            size: (MAX_TRANSFORMS * std::mem::size_of::<InstanceRaw>() as u64),
+            usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
             mapped_at_creation: false,
-        });
-
-        let transform_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
-            layout: &transform_bind_group_layout,
-            entries: &[wgpu::BindGroupEntry {
-                binding: 0,
-                resource: wgpu::BindingResource::Buffer(wgpu::BufferBinding {
-                    buffer: &transform_buffer,
-                    offset: 0,
-                    size: wgpu::BufferSize::new(std::mem::size_of::<TransformUniform>() as _),
-                }),
-            }],
-            label: Some("transform_bind_group"),
         });
 
         let render_pipeline_layout =
             device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                 label: Some("Render Pipeline Layout"),
-                bind_group_layouts: &[&camera_bind_group_layout, &transform_bind_group_layout],
+                bind_group_layouts: &[&camera_bind_group_layout], // Removed transform_bind_group_layout
                 push_constant_ranges: &[],
             });
 
@@ -156,7 +151,7 @@ impl WebGpuRenderer {
             vertex: wgpu::VertexState {
                 module: &shader,
                 entry_point: Some("vs_main"),
-                buffers: &[Vertex::desc()],
+                buffers: &[Vertex::desc(), InstanceRaw::desc()], // Added InstanceRaw::desc()
                 compilation_options: Default::default(),
             },
             fragment: Some(wgpu::FragmentState {
@@ -195,8 +190,7 @@ impl WebGpuRenderer {
             camera_uniform,
             camera_buffer,
             camera_bind_group,
-            transform_buffer,
-            transform_bind_group,
+            instance_buffer,
         }
     }
 
@@ -224,31 +218,25 @@ impl WebGpuRenderer {
     }
 
     pub fn render(&self, view: &wgpu::TextureView) -> Result<(), wgpu::SurfaceError> {
-        if self.draw_queue.len() > MAX_TRANSFORMS as usize {
-            tracing::warn!(
-                "Number of draw calls ({}) exceeds the maximum number of transforms ({}). Some objects will not be rendered.",
-                self.draw_queue.len(),
+        let num_queued_draws = self.draw_queue.len();
+        if num_queued_draws > MAX_TRANSFORMS as usize {
+            warn!(
+                "Number of queued draws ({}) exceeds MAX_TRANSFORMS ({}). Only rendering the first {} transforms.",
+                num_queued_draws,
+                MAX_TRANSFORMS,
                 MAX_TRANSFORMS
             );
         }
 
-        let uniform_alignment =
-            self.device.limits().min_uniform_buffer_offset_alignment as wgpu::BufferAddress;
-
-        for (i, draw) in self
-            .draw_queue
-            .iter()
-            .enumerate()
-            .take(MAX_TRANSFORMS as usize)
-        {
-            let transform_uniform = TransformUniform::new(draw.transform);
-            let offset = (i as wgpu::BufferAddress) * uniform_alignment;
-            self.queue.write_buffer(
-                &self.transform_buffer,
-                offset,
-                bytemuck::cast_slice(&[transform_uniform]),
-            );
+        let mut instances = Vec::with_capacity(num_queued_draws.min(MAX_TRANSFORMS as usize));
+        for draw in self.draw_queue.iter().take(MAX_TRANSFORMS as usize) {
+            instances.push(InstanceRaw {
+                model_matrix: draw.transform.to_cols_array_2d(),
+            });
         }
+
+        self.queue
+            .write_buffer(&self.instance_buffer, 0, bytemuck::cast_slice(&instances));
 
         let mut encoder = self
             .device
@@ -280,23 +268,19 @@ impl WebGpuRenderer {
 
             render_pass.set_pipeline(&self.render_pipeline);
             render_pass.set_bind_group(0, &self.camera_bind_group, &[]);
+            render_pass.set_vertex_buffer(0, self.draw_queue[0].gpu_mesh.vertex_buffer.slice(..));
+            render_pass.set_index_buffer(
+                self.draw_queue[0].gpu_mesh.index_buffer.slice(..),
+                wgpu::IndexFormat::Uint32,
+            );
+            render_pass.set_vertex_buffer(1, self.instance_buffer.slice(..)); // Bind instance buffer
 
-            for (i, draw) in self
-                .draw_queue
-                .iter()
-                .enumerate()
-                .take(MAX_TRANSFORMS as usize)
-            {
-                let offset = (i as u32) * uniform_alignment as u32;
-
-                render_pass.set_vertex_buffer(0, draw.gpu_mesh.vertex_buffer.slice(..));
-                render_pass.set_index_buffer(
-                    draw.gpu_mesh.index_buffer.slice(..),
-                    wgpu::IndexFormat::Uint32,
-                );
-                render_pass.set_bind_group(1, &self.transform_bind_group, &[offset]);
-                render_pass.draw_indexed(0..draw.gpu_mesh.index_count, 0, 0..draw.instance_count);
-            }
+            // Draw all instances in one call
+            render_pass.draw_indexed(
+                0..self.draw_queue[0].gpu_mesh.index_count,
+                0,
+                0..instances.len() as u32,
+            );
         }
 
         self.queue.submit(std::iter::once(encoder.finish()));

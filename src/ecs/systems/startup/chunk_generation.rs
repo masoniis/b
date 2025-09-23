@@ -50,8 +50,8 @@ pub fn chunk_generation_system(mut commands: Commands, renderer: ResMut<WebGpuRe
     let gpu_mesh = create_gpu_mesh_from_data(renderer.get_device(), &vertices, &indices);
 
     // An array of cubes
-    for x in 0..50 {
-        for z in 0..50 {
+    for x in 0..100 {
+        for z in 0..100 {
             commands.spawn((
                 MeshComponent::new(&gpu_mesh, atlas_id.clone(), uv_min, uv_max),
                 TransformComponent {
