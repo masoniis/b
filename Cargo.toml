@@ -14,7 +14,11 @@ path = "src/main.rs"
 # logging
 time = { version = "0.3.43", features = ["formatting", "macros"] }
 tracing = "0.1.41"
-tracing-subscriber = { version = "0.3.20", features = ["time", "local-time"] }
+tracing-subscriber = { version = "0.3.20", features = [
+  "time",
+  "local-time",
+  "env-filter",
+] }
 # graphics
 gl = "0.14.0"
 glam = "0.30.5"
