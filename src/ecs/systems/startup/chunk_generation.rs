@@ -21,8 +21,8 @@ pub fn chunk_generation_system(
     let uv_max = Vec2::new(1.0, 1.0);
 
     // An array of cubes
-    for x in 0..50 {
-        for z in 0..50 {
+    for x in 0..100 {
+        for z in 0..100 {
             commands.spawn((
                 MeshComponent::new_cube(atlas_id.clone(), uv_min, uv_max),
                 TransformComponent {
