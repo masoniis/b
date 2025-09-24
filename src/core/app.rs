@@ -1,11 +1,7 @@
 use crate::{
     ecs::{
         resources::{
-            // TextureManagerResource,
-            input::InputResource,
-            time::TimeResource,
-            window::WindowResource,
-            CameraResource,
+            input::InputResource, time::TimeResource, window::WindowResource, CameraResource,
         },
         systems::{
             camera_control_system, chunk_generation_system, init_screen_diagnostics_system,
@@ -13,7 +9,7 @@ use crate::{
             InputSystem,
         },
     },
-    graphics::webgpu_renderer::WebGpuRenderer,
+    graphics::WebGpuRenderer,
     guard,
 };
 use bevy_ecs::{
@@ -56,8 +52,8 @@ pub struct App {
     startup_scheduler: Schedule,
     main_scheduler: Schedule,
 
-    startup_done: bool,
-    main_done: bool, // just for the first main run
+    startup_done: bool, // boolean toggled AFTER the very first (and only) startup schedule run
+    main_done: bool,    // boolean toggled AFTER the very first main schedule run
 }
 
 impl App {
@@ -67,23 +63,20 @@ impl App {
         world.insert_resource(TimeResource::default());
         world.insert_resource(CameraResource::default());
         world.insert_resource(WindowResource::default());
-        // world.insert_non_send_resource(TextureManagerResource::default());
 
         let mut startup_scheduler = Schedule::new(Schedules::Startup);
         startup_scheduler.add_systems((
             chunk_generation_system,
             init_screen_diagnostics_system,
             mesh_render_system.after(chunk_generation_system),
-            screen_text_render_system,
+            screen_text_render_system.after(init_screen_diagnostics_system),
         ));
 
         let mut main_scheduler = Schedule::new(Schedules::Main);
         main_scheduler.add_systems((
             time_system.before(screen_diagnostics_system),
-            // update_text_mesh_system.before(screen_diagnostics_system),
             screen_diagnostics_system,
             camera_control_system,
-            // mesh_render_system.after(clear_previous_frame_system),
         ));
 
         Self {
@@ -116,7 +109,7 @@ impl ApplicationHandler for App {
         if self.window.is_none() {
             info!("App resumed, creating window and renderer...");
 
-            // --- 1. Window Creation ---
+            // Window creation
             let window_attributes = Window::default_attributes()
                 .with_title("🅱️")
                 .with_inner_size(PhysicalSize::new(1800, 1500));
@@ -131,14 +124,15 @@ impl ApplicationHandler for App {
                 error!("Failed to grab cursor: {:?}", err);
             }
 
-            // --- 2. WGPU Initialization ---
-            // We do all the async setup in this block and wait for it to finish.
+            // Set up wgpu, app holds all of the state
             let (instance, surface, adapter, device, queue, config) = pollster::block_on(async {
-                // The instance is the entry point to WGPU
                 let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor::default());
 
-                // The surface is the part of the window we draw to.
-                // By using an Arc<Window>, we can create the surface safely.
+                // I was a bit confused by Arc at first so leaving this here. By cloning
+                // the Arc<Window>, we incrememnt a reference counter. When this reference
+                // counter is greater than zero, Window will stay alive, but if it hits 0
+                // it will be garbage collected. This works asynchronously too, and ensures
+                // that our surface's reference to window will remain valid for it's life
                 let surface = instance.create_surface(window.clone()).unwrap();
 
                 // The adapter is a handle to a physical graphics card.
@@ -183,6 +177,13 @@ impl ApplicationHandler for App {
             // --- 3. Create the Decoupled Renderer ---
             let webgpu_renderer = WebGpuRenderer::new(device.clone(), queue.clone(), &config);
             self.world.insert_resource(webgpu_renderer);
+
+            let text_renderer = crate::graphics::text_renderer::GlyphonRenderer::new(
+                &device,
+                &queue,
+                config.format,
+            );
+            self.world.insert_resource(text_renderer);
 
             // --- 4. Store Everything in self ---
             self.window = Some(window);
