@@ -8,10 +8,10 @@ pub fn attach_logger() {
 
     tracing_subscriber::fmt()
         .with_env_filter(env_filter)
-        .with_target(false)
+        .with_target(true)
         .with_line_number(false)
         .with_thread_names(false)
-        .with_file(true)
+        .with_file(false)
         .with_timer(timer)
         .compact()
         .init();

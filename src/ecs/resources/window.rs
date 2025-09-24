@@ -1,4 +1,5 @@
 use bevy_ecs::prelude::Resource;
+use winit::dpi::PhysicalSize;
 
 #[derive(Debug, Resource)]
 pub struct WindowResource {
@@ -7,20 +8,14 @@ pub struct WindowResource {
 }
 
 impl WindowResource {
-    pub fn new(width: u32, height: u32) -> Self {
-        Self { width, height }
+    pub fn new(size: PhysicalSize<u32>) -> Self {
+        Self {
+            width: size.width,
+            height: size.height,
+        }
     }
 
     pub fn aspect_ratio(&self) -> f32 {
         self.width as f32 / self.height as f32
-    }
-}
-
-impl Default for WindowResource {
-    fn default() -> Self {
-        Self {
-            width: 1800,
-            height: 1600,
-        }
     }
 }

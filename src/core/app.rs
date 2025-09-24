@@ -9,7 +9,7 @@ use crate::{
             InputSystem,
         },
     },
-    graphics::WebGpuRenderer,
+    graphics::{GlyphonRenderer, WebGpuRenderer},
     guard,
 };
 use bevy_ecs::{
@@ -18,11 +18,11 @@ use bevy_ecs::{
     world::World,
 };
 use std::sync::Arc;
-use tracing::{error, info};
+use tracing::{debug, error, info};
 use wgpu::{Adapter, Device, Instance, Queue, Surface, SurfaceConfiguration};
 use winit::{
     application::ApplicationHandler,
-    dpi::PhysicalSize,
+    dpi::LogicalSize,
     event::{DeviceEvent, StartCause, WindowEvent},
     event_loop::ActiveEventLoop,
     window::{Window, WindowId},
@@ -44,8 +44,8 @@ pub struct App {
     surface: Option<Surface<'static>>, // lifetime managed by window Arc
     config: Option<SurfaceConfiguration>,
     adapter: Option<Adapter>,
-    device: Option<Device>,
-    queue: Option<Queue>,
+    device: Option<Arc<Device>>,
+    queue: Option<Arc<Queue>>,
 
     // Game Logic
     world: World,
@@ -62,7 +62,6 @@ impl App {
         world.insert_resource(InputResource::new());
         world.insert_resource(TimeResource::default());
         world.insert_resource(CameraResource::default());
-        world.insert_resource(WindowResource::default());
 
         let mut startup_scheduler = Schedule::new(Schedules::Startup);
         startup_scheduler.add_systems((
@@ -77,6 +76,7 @@ impl App {
             time_system.before(screen_diagnostics_system),
             screen_diagnostics_system,
             camera_control_system,
+            screen_text_render_system.after(screen_diagnostics_system),
         ));
 
         Self {
@@ -112,12 +112,16 @@ impl ApplicationHandler for App {
             // Window creation
             let window_attributes = Window::default_attributes()
                 .with_title("🅱️")
-                .with_inner_size(PhysicalSize::new(1800, 1500));
+                .with_inner_size(LogicalSize::new(1280, 720));
+
             let window = Arc::new(
                 event_loop
                     .create_window(window_attributes)
                     .expect("Failed to create window"),
             );
+
+            self.world
+                .insert_resource(WindowResource::new(window.inner_size()));
 
             window.set_cursor_visible(false);
             if let Err(err) = window.set_cursor_grab(winit::window::CursorGrabMode::Confined) {
@@ -133,7 +137,9 @@ impl ApplicationHandler for App {
                 // counter is greater than zero, Window will stay alive, but if it hits 0
                 // it will be garbage collected. This works asynchronously too, and ensures
                 // that our surface's reference to window will remain valid for it's life
-                let surface = instance.create_surface(window.clone()).unwrap();
+                let surface = instance
+                    .create_surface(window.clone())
+                    .expect("Failed to create surface from window (is the window still alive?)");
 
                 // The adapter is a handle to a physical graphics card.
                 let adapter = instance
@@ -171,7 +177,32 @@ impl ApplicationHandler for App {
                 };
                 surface.configure(&device, &config);
 
-                (instance, surface, adapter, device, queue, config)
+                debug!(
+                    target: "wgpu_init",
+                    "\nAdapter: '{}'\n\
+                    Backend: {:?}\n\
+                    Surface Format: {:?}\n\
+                    Present Mode: {:?}\n\
+                    Alpha Mode: {:?}\n\
+                    Enabled Device Features: {:?}\n\
+                    Device Limits: {:#?}",
+                    adapter.get_info().name,
+                    adapter.get_info().backend,
+                    config.format,
+                    config.present_mode,
+                    config.alpha_mode,
+                    device.features(),
+                    device.limits()
+                );
+
+                (
+                    instance,
+                    surface,
+                    adapter,
+                    Arc::new(device),
+                    Arc::new(queue),
+                    config,
+                )
             });
 
             // --- 3. Create the Decoupled Renderer ---
@@ -260,47 +291,72 @@ impl ApplicationHandler for App {
                         surface.configure(device, config);
                     }
                 }
+
+                if let Some(mut renderer) = self.world.get_resource_mut::<WebGpuRenderer>() {
+                    renderer.resize(physical_size);
+                }
+
+                self.world
+                    .resource_scope(|_world, mut text_renderer: Mut<GlyphonRenderer>| {
+                        text_renderer.viewport.update(
+                            self.queue.as_ref().unwrap(),
+                            glyphon::Resolution {
+                                width: physical_size.width,
+                                height: physical_size.height,
+                            },
+                        );
+                    });
             }
 
             WindowEvent::RedrawRequested => {
                 let surface = self.surface.as_ref().unwrap();
-                let renderer = self.world.get_resource_mut::<WebGpuRenderer>().unwrap();
+                self.world
+                    .resource_scope(|world, mut renderer: Mut<WebGpuRenderer>| {
+                        world.resource_scope(|_world, mut text_renderer: Mut<GlyphonRenderer>| {
+                            text_renderer
+                                .prepare_texts(
+                                    self.device.as_ref().unwrap(),
+                                    self.queue.as_ref().unwrap(),
+                                )
+                                .unwrap();
 
-                match surface.get_current_texture() {
-                    Ok(output) => {
-                        let view = output
-                            .texture
-                            .create_view(&wgpu::TextureViewDescriptor::default());
+                            match surface.get_current_texture() {
+                                Ok(output) => {
+                                    let view = output
+                                        .texture
+                                        .create_view(&wgpu::TextureViewDescriptor::default());
 
-                        // Call the renderer's updated render method, passing the texture view
-                        if let Err(e) = renderer.render(&view) {
-                            eprintln!("Renderer error: {:?}", e);
-                        }
+                                    // Call the renderer's updated render method, passing the texture view
+                                    if let Err(e) = renderer.render(&view, &mut text_renderer) {
+                                        eprintln!("Renderer error: {:?}", e);
+                                    }
 
-                        // Present the frame to the screen
-                        output.present();
-                    }
-                    Err(wgpu::SurfaceError::Lost) => {
-                        // This means the surface is outdated and needs to be reconfigured.
-                        let size = self.window.as_ref().unwrap().inner_size();
-                        if let (Some(config), Some(surface), Some(device)) = (
-                            self.config.as_mut(),
-                            self.surface.as_ref(),
-                            self.device.as_ref(),
-                        ) {
-                            config.width = size.width;
-                            config.height = size.height;
-                            surface.configure(device, config);
-                        }
-                    }
-                    Err(wgpu::SurfaceError::OutOfMemory) => {
-                        error!("WGPU SurfaceError::OutOfMemory, exiting.");
-                        event_loop.exit();
-                    }
-                    Err(e) => {
-                        eprintln!("Error acquiring next texture: {:?}", e);
-                    }
-                }
+                                    // Present the frame to the screen
+                                    output.present();
+                                }
+                                Err(wgpu::SurfaceError::Lost) => {
+                                    // This means the surface is outdated and needs to be reconfigured.
+                                    let size = self.window.as_ref().unwrap().inner_size();
+                                    if let (Some(config), Some(surface), Some(device)) = (
+                                        self.config.as_mut(),
+                                        self.surface.as_ref(),
+                                        self.device.as_ref(),
+                                    ) {
+                                        config.width = size.width;
+                                        config.height = size.height;
+                                        surface.configure(device, config);
+                                    }
+                                }
+                                Err(wgpu::SurfaceError::OutOfMemory) => {
+                                    error!("WGPU SurfaceError::OutOfMemory, exiting event loop.");
+                                    event_loop.exit();
+                                }
+                                Err(e) => {
+                                    eprintln!("Error acquiring next texture: {:?}", e);
+                                }
+                            }
+                        });
+                    });
                 // After drawing, request another redraw to keep the animation loop going.
                 self.window.as_ref().unwrap().request_redraw();
             }
