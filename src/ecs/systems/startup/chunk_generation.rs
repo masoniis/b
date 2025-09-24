@@ -1,6 +1,6 @@
-use crate::ecs::components::{MeshComponent, TransformComponent, create_gpu_mesh_from_data};
-use crate::graphics::Vertex;
+use crate::ecs::components::{create_gpu_mesh_from_data, MeshComponent, TransformComponent};
 use crate::graphics::webgpu_renderer::WebGpuRenderer;
+use crate::graphics::Vertex;
 use bevy_ecs::prelude::Commands;
 use bevy_ecs::prelude::ResMut;
 use glam::{Vec2, Vec3};
@@ -9,7 +9,7 @@ use tracing::info;
 pub fn chunk_generation_system(mut commands: Commands, renderer: ResMut<WebGpuRenderer>) {
     info!("Generating initial chunk...");
 
-    let atlas_id = "main_atlas".to_string(); // This will be unused for now
+    let atlas_id = "main_atlas".to_string(); // unused for now
     let uv_min = Vec2::new(0.0, 0.0);
     let uv_max = Vec2::new(1.0, 1.0);
 
