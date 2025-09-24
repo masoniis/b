@@ -1,7 +1,7 @@
 use crate::graphics::{GpuMesh, Vertex};
 use std::sync::Arc;
 use tracing::warn;
-use wgpu::{util::DeviceExt, Device, Queue, RenderPipeline};
+use wgpu::{Device, Queue, RenderPipeline, util::DeviceExt};
 
 use glam::Mat4;
 
@@ -222,9 +222,7 @@ impl WebGpuRenderer {
         if num_queued_draws > MAX_TRANSFORMS as usize {
             warn!(
                 "Number of queued draws ({}) exceeds MAX_TRANSFORMS ({}). Only rendering the first {} transforms.",
-                num_queued_draws,
-                MAX_TRANSFORMS,
-                MAX_TRANSFORMS
+                num_queued_draws, MAX_TRANSFORMS, MAX_TRANSFORMS
             );
         }
 

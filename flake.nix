@@ -23,6 +23,7 @@
           packages = with pkgs; [
             just
             cargo
+            wgsl-analyzer # provides wgsl-format
           ];
         };
       }

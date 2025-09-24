@@ -2,12 +2,14 @@
 {
   projectRootFile = "flake.nix";
   programs = {
-    clang-format = {
-      enable = true;
-      includes = [ "*.wgsl" ];
-    };
+    clang-format.enable = true;
     nixfmt.enable = true;
     prettier.enable = true;
     rustfmt.enable = true;
+  };
+
+  settings.formatter.wgslfmt = {
+    command = "wgslfmt";
+    includes = [ "*.wgsl" ];
   };
 }
