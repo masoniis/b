@@ -1,5 +1,6 @@
 use crate::ecs::components::{MeshComponent, TransformComponent};
-use crate::graphics::webgpu_renderer::{QueuedDraw, WebGpuRenderer};
+use crate::graphics::WebGpuRenderer;
+use crate::graphics::main_renderer::QueuedDraw;
 use bevy_ecs::prelude::{Query, ResMut};
 
 pub fn mesh_render_system(

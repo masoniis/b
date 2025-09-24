@@ -1,5 +1,5 @@
 use crate::ecs::resources::{CameraResource, InputResource, TimeResource, WindowResource};
-use crate::graphics::webgpu_renderer::WebGpuRenderer;
+use crate::graphics::WebGpuRenderer;
 use bevy_ecs::prelude::*;
 use glam::{Mat4, Vec3};
 use winit::keyboard::KeyCode;
