@@ -27,7 +27,7 @@ impl InputResource {
         self.current_keys.contains(&key_code) && !self.previous_keys.contains(&key_code)
     }
 
-    /// Is this key currently held down? (distinct from just being pressed)
+    /// Is this key currently held down? (a key can be held down and "just pressed")
     pub fn is_key_down(&self, key_code: KeyCode) -> bool {
         self.current_keys.contains(&key_code)
     }

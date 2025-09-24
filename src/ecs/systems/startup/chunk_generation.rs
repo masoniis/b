@@ -1,6 +1,6 @@
-use crate::ecs::components::{create_gpu_mesh_from_data, MeshComponent, TransformComponent};
-use crate::graphics::webgpu_renderer::WebGpuRenderer;
+use crate::ecs::components::{MeshComponent, TransformComponent, create_gpu_mesh_from_data};
 use crate::graphics::Vertex;
+use crate::graphics::WebGpuRenderer;
 use bevy_ecs::prelude::Commands;
 use bevy_ecs::prelude::ResMut;
 use glam::{Vec2, Vec3};
@@ -47,7 +47,7 @@ pub fn chunk_generation_system(mut commands: Commands, renderer: ResMut<WebGpuRe
         5, 0, 3, 3, 6, 5,
     ];
 
-    let gpu_mesh = create_gpu_mesh_from_data(renderer.get_device(), &vertices, &indices);
+    let gpu_mesh = create_gpu_mesh_from_data(&renderer.get_device(), &vertices, &indices);
 
     // An array of cubes
     for x in 0..100 {

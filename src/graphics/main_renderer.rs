@@ -1,7 +1,10 @@
-use crate::graphics::{GpuMesh, Vertex};
+use crate::{
+    ecs::resources::RenderQueueResource,
+    graphics::{GlyphonRenderer, GpuMesh, Vertex},
+};
 use std::sync::Arc;
 use tracing::warn;
-use wgpu::{Device, Queue, RenderPipeline, util::DeviceExt};
+use wgpu::{util::DeviceExt, Device, Queue, RenderPipeline};
 
 use glam::Mat4;
 
@@ -70,19 +73,18 @@ pub struct QueuedDraw {
 #[derive(Resource)]
 pub struct WebGpuRenderer {
     // Core
-    device: Device,
-    queue: Queue,
+    device: Arc<Device>,
+    queue: Arc<Queue>,
     render_pipeline: RenderPipeline,
 
-    // Public API
-    draw_queue: Vec<QueuedDraw>,
+    // Buffers
+    depth_texture_view: wgpu::TextureView,
+    instance_buffer: wgpu::Buffer,
 
     // Uniforms
     camera_uniform: CameraUniform,
     camera_buffer: wgpu::Buffer,
     camera_bind_group: wgpu::BindGroup,
-
-    instance_buffer: wgpu::Buffer,
 }
 
 use bevy_ecs::prelude::Resource;
@@ -90,9 +92,14 @@ use std::fs;
 
 const SHADER_PATH: &str = "src/assets/shaders/scene/simple.wgsl";
 const MAX_TRANSFORMS: u64 = 100000;
+pub const DEPTH_FORMAT: wgpu::TextureFormat = wgpu::TextureFormat::Depth32Float;
 
 impl WebGpuRenderer {
-    pub fn new(device: Device, queue: Queue, config: &wgpu::SurfaceConfiguration) -> Self {
+    pub fn new(
+        device: Arc<Device>,
+        queue: Arc<Queue>,
+        config: &wgpu::SurfaceConfiguration,
+    ) -> Self {
         let camera_uniform = CameraUniform::new();
         let camera_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Camera Buffer"),
@@ -137,6 +144,22 @@ impl WebGpuRenderer {
             mapped_at_creation: false,
         });
 
+        let depth_texture = device.create_texture(&wgpu::TextureDescriptor {
+            label: Some("Depth Texture"),
+            size: wgpu::Extent3d {
+                width: config.width,
+                height: config.height,
+                depth_or_array_layers: 1,
+            },
+            mip_level_count: 1,
+            sample_count: 1,
+            dimension: wgpu::TextureDimension::D2,
+            format: DEPTH_FORMAT,
+            usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
+            view_formats: &[DEPTH_FORMAT],
+        });
+        let depth_texture_view = depth_texture.create_view(&wgpu::TextureViewDescriptor::default());
+
         let render_pipeline_layout =
             device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                 label: Some("Render Pipeline Layout"),
@@ -173,7 +196,13 @@ impl WebGpuRenderer {
                 unclipped_depth: false,
                 conservative: false,
             },
-            depth_stencil: None,
+            depth_stencil: Some(wgpu::DepthStencilState {
+                format: DEPTH_FORMAT,
+                depth_write_enabled: true,
+                depth_compare: wgpu::CompareFunction::Less, // Standard depth comparison
+                stencil: wgpu::StencilState::default(),
+                bias: wgpu::DepthBiasState::default(),
+            }),
             multisample: wgpu::MultisampleState {
                 count: 1,
                 mask: !0,
@@ -186,16 +215,16 @@ impl WebGpuRenderer {
             device,
             queue,
             render_pipeline,
-            draw_queue: Vec::new(),
             camera_uniform,
             camera_buffer,
             camera_bind_group,
             instance_buffer,
+            depth_texture_view,
         }
     }
 
-    pub fn get_device(&self) -> &Device {
-        &self.device
+    pub fn get_device(&self) -> Arc<Device> {
+        self.device.clone()
     }
 
     pub fn update_camera(&mut self, proj: glam::Mat4) {
@@ -207,27 +236,48 @@ impl WebGpuRenderer {
         );
     }
 
-    /// Queue a draw call that the renderer pipeline will process during rendering phase.
-    pub fn queue_draw(&mut self, draw: QueuedDraw) {
-        self.draw_queue.push(draw);
+    pub fn resize(&mut self, new_size: winit::dpi::PhysicalSize<u32>) {
+        if new_size.width > 0 && new_size.height > 0 {
+            let depth_texture = self.device.create_texture(&wgpu::TextureDescriptor {
+                label: Some("Depth Texture"),
+                size: wgpu::Extent3d {
+                    width: new_size.width,
+                    height: new_size.height,
+                    depth_or_array_layers: 1,
+                },
+                mip_level_count: 1,
+                sample_count: 1,
+                dimension: wgpu::TextureDimension::D2,
+                format: DEPTH_FORMAT, // The const we added earlier
+                usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
+                view_formats: &[DEPTH_FORMAT],
+            });
+            self.depth_texture_view =
+                depth_texture.create_view(&wgpu::TextureViewDescriptor::default());
+        }
     }
 
-    /// Clear the current render queue. Should be used to clear queue before the next frame.
-    pub fn clear_queue(&mut self) {
-        self.draw_queue.clear();
-    }
-
-    pub fn render(&self, view: &wgpu::TextureView) -> Result<(), wgpu::SurfaceError> {
-        let num_queued_draws = self.draw_queue.len();
+    pub fn render(
+        &mut self,
+        view: &wgpu::TextureView,
+        text_renderer: &mut GlyphonRenderer,
+        ecs_render_queue: &RenderQueueResource,
+    ) -> Result<(), wgpu::SurfaceError> {
+        // --- Instance Buffer Preparation (same as before) ---
+        let num_queued_draws = ecs_render_queue.get_scene_objects().len();
         if num_queued_draws > MAX_TRANSFORMS as usize {
             warn!(
-                "Number of queued draws ({}) exceeds MAX_TRANSFORMS ({}). Only rendering the first {} transforms.",
-                num_queued_draws, MAX_TRANSFORMS, MAX_TRANSFORMS
-            );
+            "Number of queued draws ({}) exceeds MAX_TRANSFORMS ({}). Only rendering the first {} transforms.",
+            num_queued_draws, MAX_TRANSFORMS, MAX_TRANSFORMS
+        );
         }
 
         let mut instances = Vec::with_capacity(num_queued_draws.min(MAX_TRANSFORMS as usize));
-        for draw in self.draw_queue.iter().take(MAX_TRANSFORMS as usize) {
+        for draw in ecs_render_queue
+            .get_scene_objects()
+            .iter()
+            .take(MAX_TRANSFORMS as usize)
+        {
             instances.push(InstanceRaw {
                 model_matrix: draw.transform.to_cols_array_2d(),
             });
@@ -242,45 +292,89 @@ impl WebGpuRenderer {
                 label: Some("Render Encoder"),
             });
 
+        // --- Pass 1: Render the 3D Scene ---
         {
-            let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                label: Some("Render Pass"),
+            let mut scene_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                label: Some("Scene Render Pass"),
                 color_attachments: &[Some(wgpu::RenderPassColorAttachment {
                     view,
                     resolve_target: None,
-                    depth_slice: None,
                     ops: wgpu::Operations {
+                        // Clear the screen with the background color
                         load: wgpu::LoadOp::Clear(wgpu::Color {
                             r: 0.0075,
                             g: 0.0125,
                             b: 0.0250,
                             a: 1.0000,
                         }),
+                        // Store the result to be used by the next pass
                         store: wgpu::StoreOp::Store,
                     },
+                    depth_slice: None,
                 })],
+                // Use the depth buffer
+                depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
+                    view: &self.depth_texture_view,
+                    depth_ops: Some(wgpu::Operations {
+                        load: wgpu::LoadOp::Clear(1.0), // Clear depth to 1.0
+                        store: wgpu::StoreOp::Store,
+                    }),
+                    stencil_ops: None,
+                }),
+                timestamp_writes: None,
+                occlusion_query_set: None,
+            });
+
+            scene_pass.set_pipeline(&self.render_pipeline);
+            scene_pass.set_bind_group(0, &self.camera_bind_group, &[]);
+            scene_pass.set_vertex_buffer(
+                0,
+                ecs_render_queue.get_scene_objects()[0]
+                    .gpu_mesh
+                    .vertex_buffer
+                    .slice(..),
+            );
+            scene_pass.set_index_buffer(
+                ecs_render_queue.get_scene_objects()[0]
+                    .gpu_mesh
+                    .index_buffer
+                    .slice(..),
+                wgpu::IndexFormat::Uint32,
+            );
+            scene_pass.set_vertex_buffer(1, self.instance_buffer.slice(..));
+
+            scene_pass.draw_indexed(
+                0..ecs_render_queue.get_scene_objects()[0].gpu_mesh.index_count,
+                0,
+                0..instances.len() as u32,
+            );
+        } // The `scene_pass` is dropped here, ending the first render pass
+
+        // --- Pass 2: Render the Text Overlay ---
+        {
+            let mut text_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                label: Some("Text Render Pass"),
+                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                    view,
+                    resolve_target: None,
+                    ops: wgpu::Operations {
+                        // LOAD the contents of the previous pass
+                        load: wgpu::LoadOp::Load,
+                        // Store the results of this pass (the text on top of the scene)
+                        store: wgpu::StoreOp::Store,
+                    },
+                    depth_slice: None,
+                })],
+                // No depth buffer for the UI pass
                 depth_stencil_attachment: None,
                 timestamp_writes: None,
                 occlusion_query_set: None,
             });
 
-            render_pass.set_pipeline(&self.render_pipeline);
-            render_pass.set_bind_group(0, &self.camera_bind_group, &[]);
-            render_pass.set_vertex_buffer(0, self.draw_queue[0].gpu_mesh.vertex_buffer.slice(..));
-            render_pass.set_index_buffer(
-                self.draw_queue[0].gpu_mesh.index_buffer.slice(..),
-                wgpu::IndexFormat::Uint32,
-            );
-            render_pass.set_vertex_buffer(1, self.instance_buffer.slice(..)); // Bind instance buffer
+            text_renderer.render(&mut text_pass).unwrap();
+        } // The `text_pass` is dropped here, ending the second render pass
 
-            // Draw all instances in one call
-            render_pass.draw_indexed(
-                0..self.draw_queue[0].gpu_mesh.index_count,
-                0,
-                0..instances.len() as u32,
-            );
-        }
-
+        // Submit the command encoder containing both passes to the queue
         self.queue.submit(std::iter::once(encoder.finish()));
 
         Ok(())
