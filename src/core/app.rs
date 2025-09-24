@@ -1,16 +1,16 @@
 use crate::{
     ecs::{
         resources::{
-            CameraResource,
             // TextureManagerResource,
             input::InputResource,
             time::TimeResource,
             window::WindowResource,
+            CameraResource,
         },
         systems::{
-            InputSystem, camera_control_system, chunk_generation_system,
-            init_screen_diagnostics_system, mesh_render_system, screen_diagnostics_system,
-            time_system,
+            camera_control_system, chunk_generation_system, init_screen_diagnostics_system,
+            mesh_render_system, screen_diagnostics_system, screen_text_render_system, time_system,
+            InputSystem,
         },
     },
     graphics::webgpu_renderer::WebGpuRenderer,
@@ -72,10 +72,9 @@ impl App {
         let mut startup_scheduler = Schedule::new(Schedules::Startup);
         startup_scheduler.add_systems((
             chunk_generation_system,
-            // font_loader_system,
             init_screen_diagnostics_system,
-            // triangle_render_system,
             mesh_render_system.after(chunk_generation_system),
+            screen_text_render_system,
         ));
 
         let mut main_scheduler = Schedule::new(Schedules::Main);
