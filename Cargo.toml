@@ -14,14 +14,21 @@ path = "src/main.rs"
 # logging
 time = { version = "0.3.43", features = ["formatting", "macros"] }
 tracing = "0.1.41"
-tracing-subscriber = { version = "0.3.20", features = ["time", "local-time"] }
+tracing-subscriber = { version = "0.3.20", features = [
+  "time",
+  "local-time",
+  "env-filter",
+] }
 # graphics
 gl = "0.14.0"
 glam = "0.30.5"
 glutin = "0.32.3"
 glutin-winit = "0.5.0"
 image = "0.25.6"
-winit = "0.30.12"
+winit = { version = "0.30.12", features = ["rwh_06"] }
 fontdue = "0.9.3"
 # game
 bevy_ecs = "0.16.1"
+pollster = "0.3"
+bytemuck = { version = "1.13", features = ["derive"] }
+wgpu = "26.0.1"
