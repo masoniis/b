@@ -1,22 +1,15 @@
-use crate::ecs::components::MeshComponent;
 use crate::ecs::components::ScreenTextComponent;
 use crate::ecs::systems::startup::font_loader::FontAtlas;
-use crate::graphics::buffers::Buffer;
-use bevy_ecs::prelude::{Commands, Entity, Query, Res};
-use fontdue::layout::{CoordinateSystem, Layout, LayoutSettings, TextStyle};
-use glam::Vec2;
+use crate::graphics::Vertex;
 
-const FONT_ATLAS_ID: &str = "font_atlas";
+use bevy_ecs::prelude::{Query, Res};
+use fontdue::layout::{CoordinateSystem, Layout, LayoutSettings, TextStyle};
 
 /// System to generate/update meshes for text entities
-pub fn update_text_mesh_system(
-    mut commands: Commands,
-    query: Query<(Entity, &ScreenTextComponent)>,
-    font_atlas: Res<FontAtlas>,
-) {
+pub fn update_text_mesh_system(query: Query<&ScreenTextComponent>, font_atlas: Res<FontAtlas>) {
     // TODO: It is unnecessary to redo this every frame, perhaps use a dirty bit for text meshing?
 
-    for (entity, text) in &query {
+    for text in &query {
         let font = font_atlas.fonts.get("Inter").unwrap();
         let mut layout = Layout::new(CoordinateSystem::PositiveYDown);
         layout.reset(&LayoutSettings {
@@ -24,7 +17,7 @@ pub fn update_text_mesh_system(
         });
         layout.append(&[font], &TextStyle::new(&text.text, text.font_size, 0));
 
-        let mut vertices: Vec<f32> = Vec::new();
+        let mut raw_vertices: Vec<f32> = Vec::new(); // Renamed to avoid confusion
         let mut indices: Vec<u32> = Vec::new();
         let mut index_offset = 0;
 
@@ -43,13 +36,13 @@ pub fn update_text_mesh_system(
                 // 3 --- 2
 
                 // 0: top-left
-                vertices.extend_from_slice(&[x, y, uv_min.x, uv_min.y]);
+                raw_vertices.extend_from_slice(&[x, y, uv_min.x, uv_min.y]);
                 // 1: top-right
-                vertices.extend_from_slice(&[x + w, y, uv_max.x, uv_min.y]);
+                raw_vertices.extend_from_slice(&[x + w, y, uv_max.x, uv_min.y]);
                 // 2: bottom-right
-                vertices.extend_from_slice(&[x + w, y + h, uv_max.x, uv_max.y]);
+                raw_vertices.extend_from_slice(&[x + w, y + h, uv_max.x, uv_max.y]);
                 // 3: bottom-left
-                vertices.extend_from_slice(&[x, y + h, uv_min.x, uv_max.y]);
+                raw_vertices.extend_from_slice(&[x, y + h, uv_min.x, uv_max.y]);
 
                 indices.extend_from_slice(&[
                     index_offset,
@@ -63,14 +56,27 @@ pub fn update_text_mesh_system(
             }
         }
 
-        if !vertices.is_empty() {
-            let buffer = Buffer::new_2d(&vertices, &indices);
-            commands.entity(entity).insert(MeshComponent {
-                buffer,
-                atlas_id: FONT_ATLAS_ID.to_string(),
-                uv_min: Vec2::ZERO, // Not used for text meshes
-                uv_max: Vec2::ONE,  // Not used for text meshes
-            });
+        if !raw_vertices.is_empty() {
+            let mut webgpu_vertices: Vec<Vertex> = Vec::new();
+            // Each raw_vertex is [x, y, uv_x, uv_y]
+            for i in (0..raw_vertices.len()).step_by(4) {
+                webgpu_vertices.push(Vertex {
+                    position: [
+                        raw_vertices[i],
+                        raw_vertices[i + 1],
+                        0.0, // Z-coordinate for 2D text
+                    ],
+                    color: [1.0, 1.0, 1.0], // Default white color for text
+                });
+            }
+
+            // commands.entity(entity).insert(MeshComponent {
+            //     webgpu_vertices,
+            //     webgpu_indices: indices,
+            //     atlas_id: FONT_ATLAS_ID.to_string(),
+            //     uv_min: Vec2::ZERO, // Not used for text meshes
+            //     uv_max: Vec2::ONE,  // Not used for text meshes
+            // });
         }
     }
 }

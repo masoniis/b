@@ -35,7 +35,7 @@ pub fn render_text_system(
         gl::BindTexture(gl::TEXTURE_2D, font_atlas_texture.id());
     }
     shader.set_int("u_texture", 0);
-    shader.set_vec4("u_textColor", &Vec4::new(1.0, 1.0, 1.0, 1.0)); // Set default text color to white
+    shader.set_vec4("u_textColor", &Vec4::new(1.0, 1.0, 1.0, 1.0)); // default white text
 
     for (mesh, _text, visibility) in query.iter() {
         if *visibility == VisibilityComponent::Visible {
