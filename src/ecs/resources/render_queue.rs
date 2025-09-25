@@ -1,6 +1,10 @@
 use bevy_ecs::prelude::Resource;
+use std::collections::HashMap;
 
-use crate::graphics::{main_renderer::QueuedDraw, text_renderer::QueuedText};
+use crate::{
+    ecs::resources::asset_storage::{Handle, MeshAsset},
+    graphics::{rendercore::QueuedDraw, renderpass::text_renderpass::QueuedText},
+};
 
 #[derive(Resource, Default)]
 pub struct RenderQueueResource {
@@ -43,5 +47,13 @@ impl RenderQueueResource {
 
     pub fn get_screen_texts(&self) -> &Vec<QueuedText> {
         &self.screen_text_queue
+    }
+
+    pub fn iter_by_mesh(&self) -> HashMap<Handle<MeshAsset>, Vec<&QueuedDraw>> {
+        let mut map: HashMap<Handle<MeshAsset>, Vec<&QueuedDraw>> = HashMap::new();
+        for draw in &self.scene_object_queue {
+            map.entry(draw.mesh_handle).or_default().push(draw);
+        }
+        map
     }
 }

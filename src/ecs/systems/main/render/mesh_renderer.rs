@@ -1,6 +1,6 @@
 use crate::ecs::components::{MeshComponent, TransformComponent};
 use crate::ecs::resources::RenderQueueResource;
-use crate::graphics::main_renderer::QueuedDraw;
+use crate::graphics::rendercore::QueuedDraw;
 use bevy_ecs::prelude::{Query, ResMut};
 
 pub fn mesh_render_system(
@@ -11,7 +11,7 @@ pub fn mesh_render_system(
         let model_matrix = transform_comp.to_matrix();
 
         let queued_draw = QueuedDraw {
-            gpu_mesh: mesh_comp.gpu_mesh.clone(),
+            mesh_handle: mesh_comp.mesh_handle,
             instance_count: 1,
             transform: model_matrix,
         };

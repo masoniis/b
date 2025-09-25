@@ -1,5 +1,5 @@
 pub mod mesh;
-pub use mesh::{MeshComponent, create_gpu_mesh_from_data};
+pub use mesh::MeshComponent;
 
 pub mod screen_text;
 pub use screen_text::{DiagnosticUiElementMarker, FpsCounterScreenTextMarker, ScreenTextComponent};
