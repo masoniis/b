@@ -10,7 +10,6 @@ use tracing::info;
 
 pub fn chunk_generation_system(
     mut commands: Commands,
-    renderer: ResMut<WebGpuRenderer>,
     mut mesh_assets: ResMut<AssetStorageResource<MeshAsset>>,
 ) {
     info!("Generating initial chunk...");
@@ -61,14 +60,14 @@ pub fn chunk_generation_system(
     // 2. Add the asset to the central storage and get a handle.
     let mesh_handle = mesh_assets.add(cube_mesh_asset);
 
-    let gpu_mesh = create_gpu_mesh_from_data(&renderer.get_device(), &vertices, &indices);
+    // let gpu_mesh = create_gpu_mesh_from_data(&renderer.get_device(), &vertices, &indices);
 
     // An array of cubes
     for x in 0..100 {
         for z in 0..100 {
             commands.spawn((
                 MeshComponent::new(
-                    &gpu_mesh,
+                    // &gpu_mesh,
                     atlas_id.clone(),
                     uv_min,
                     uv_max,
