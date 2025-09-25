@@ -24,8 +24,6 @@ pub struct GlyphonRenderer {
     pub cache: SwashCache,
     pub atlas: TextAtlas,
     pub viewport: Viewport,
-
-    queued_texts: Vec<QueuedText>,
 }
 
 impl GlyphonRenderer {
@@ -43,7 +41,6 @@ impl GlyphonRenderer {
             atlas,
             renderer,
             viewport,
-            queued_texts: Vec::new(),
         }
     }
 
