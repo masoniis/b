@@ -1,10 +1,10 @@
 use crate::ecs::components::{MeshComponent, TransformComponent};
-use crate::graphics::WebGpuRenderer;
+use crate::ecs::resources::RenderQueueResource;
 use crate::graphics::main_renderer::QueuedDraw;
 use bevy_ecs::prelude::{Query, ResMut};
 
 pub fn mesh_render_system(
-    mut renderer: ResMut<WebGpuRenderer>,
+    mut render_queue: ResMut<RenderQueueResource>,
     query: Query<(&MeshComponent, &TransformComponent)>,
 ) {
     for (mesh_comp, transform_comp) in &query {
@@ -16,6 +16,6 @@ pub fn mesh_render_system(
             transform: model_matrix,
         };
 
-        renderer.queue_draw(queued_draw);
+        render_queue.add_scene_object(queued_draw);
     }
 }

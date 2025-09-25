@@ -5,6 +5,8 @@ use glyphon::{
 };
 use wgpu::{Device, MultisampleState, Queue, TextureFormat};
 
+use crate::ecs::resources::RenderQueueResource;
+
 pub struct QueuedText {
     pub buffer: Buffer,
     pub left: f32,
@@ -45,17 +47,14 @@ impl GlyphonRenderer {
         }
     }
 
-    pub fn queue_text(&mut self, text: QueuedText) {
-        self.queued_texts.push(text);
-    }
-
     pub fn prepare_texts(
         &mut self,
         device: &Device,
         queue: &Queue,
+        render_queue: &RenderQueueResource,
     ) -> Result<(), glyphon::PrepareError> {
-        let text_areas = self
-            .queued_texts
+        let text_areas = render_queue
+            .get_screen_texts()
             .iter()
             .map(|text| TextArea {
                 buffer: &text.buffer,
@@ -77,8 +76,6 @@ impl GlyphonRenderer {
             text_areas,
             &mut self.cache,
         );
-
-        self.queued_texts.clear();
 
         result
     }

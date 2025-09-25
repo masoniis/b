@@ -1,4 +1,7 @@
-use crate::graphics::{GlyphonRenderer, GpuMesh, Vertex};
+use crate::{
+    ecs::resources::RenderQueueResource,
+    graphics::{GlyphonRenderer, GpuMesh, Vertex},
+};
 use std::sync::Arc;
 use tracing::warn;
 use wgpu::{util::DeviceExt, Device, Queue, RenderPipeline};
@@ -77,9 +80,6 @@ pub struct WebGpuRenderer {
     // Buffers
     depth_texture_view: wgpu::TextureView,
     instance_buffer: wgpu::Buffer,
-
-    // Public API
-    draw_queue: Vec<QueuedDraw>,
 
     // Uniforms
     camera_uniform: CameraUniform,
@@ -215,7 +215,6 @@ impl WebGpuRenderer {
             device,
             queue,
             render_pipeline,
-            draw_queue: Vec::new(),
             camera_uniform,
             camera_buffer,
             camera_bind_group,
@@ -235,16 +234,6 @@ impl WebGpuRenderer {
             0,
             bytemuck::cast_slice(&[self.camera_uniform]),
         );
-    }
-
-    /// Queue a draw call that the renderer pipeline will process during rendering phase.
-    pub fn queue_draw(&mut self, draw: QueuedDraw) {
-        self.draw_queue.push(draw);
-    }
-
-    /// Clear the current render queue. Should be used to clear queue before the next frame.
-    pub fn clear_queue(&mut self) {
-        self.draw_queue.clear();
     }
 
     pub fn resize(&mut self, new_size: winit::dpi::PhysicalSize<u32>) {
@@ -272,9 +261,10 @@ impl WebGpuRenderer {
         &mut self,
         view: &wgpu::TextureView,
         text_renderer: &mut GlyphonRenderer,
+        ecs_render_queue: &RenderQueueResource,
     ) -> Result<(), wgpu::SurfaceError> {
         // --- Instance Buffer Preparation (same as before) ---
-        let num_queued_draws = self.draw_queue.len();
+        let num_queued_draws = ecs_render_queue.get_scene_objects().len();
         if num_queued_draws > MAX_TRANSFORMS as usize {
             warn!(
             "Number of queued draws ({}) exceeds MAX_TRANSFORMS ({}). Only rendering the first {} transforms.",
@@ -283,7 +273,11 @@ impl WebGpuRenderer {
         }
 
         let mut instances = Vec::with_capacity(num_queued_draws.min(MAX_TRANSFORMS as usize));
-        for draw in self.draw_queue.iter().take(MAX_TRANSFORMS as usize) {
+        for draw in ecs_render_queue
+            .get_scene_objects()
+            .iter()
+            .take(MAX_TRANSFORMS as usize)
+        {
             instances.push(InstanceRaw {
                 model_matrix: draw.transform.to_cols_array_2d(),
             });
@@ -333,15 +327,24 @@ impl WebGpuRenderer {
 
             scene_pass.set_pipeline(&self.render_pipeline);
             scene_pass.set_bind_group(0, &self.camera_bind_group, &[]);
-            scene_pass.set_vertex_buffer(0, self.draw_queue[0].gpu_mesh.vertex_buffer.slice(..));
+            scene_pass.set_vertex_buffer(
+                0,
+                ecs_render_queue.get_scene_objects()[0]
+                    .gpu_mesh
+                    .vertex_buffer
+                    .slice(..),
+            );
             scene_pass.set_index_buffer(
-                self.draw_queue[0].gpu_mesh.index_buffer.slice(..),
+                ecs_render_queue.get_scene_objects()[0]
+                    .gpu_mesh
+                    .index_buffer
+                    .slice(..),
                 wgpu::IndexFormat::Uint32,
             );
             scene_pass.set_vertex_buffer(1, self.instance_buffer.slice(..));
 
             scene_pass.draw_indexed(
-                0..self.draw_queue[0].gpu_mesh.index_count,
+                0..ecs_render_queue.get_scene_objects()[0].gpu_mesh.index_count,
                 0,
                 0..instances.len() as u32,
             );
