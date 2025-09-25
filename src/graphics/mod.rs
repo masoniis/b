@@ -1,8 +1,9 @@
-pub mod main_renderer;
-pub use main_renderer::WebGpuRenderer;
+pub mod rendercore;
+pub use rendercore::*;
 
-pub mod text_renderer;
-pub use text_renderer::GlyphonRenderer;
+pub mod renderpass;
+pub use renderpass::RenderPass;
+pub use renderpass::*;
 
 pub mod types;
 pub use types::{GpuMesh, Vertex};
