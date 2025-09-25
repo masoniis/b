@@ -1,8 +1,8 @@
 use crate::{
     ecs::{
         resources::{
-            input::InputResource, time::TimeResource, window::WindowResource, CameraResource,
-            RenderQueueResource,
+            asset_storage::MeshAsset, input::InputResource, time::TimeResource,
+            window::WindowResource, AssetStorageResource, CameraResource, RenderQueueResource,
         },
         systems::{
             camera_control_system, chunk_generation_system, init_screen_diagnostics_system,
@@ -19,7 +19,8 @@ use bevy_ecs::{
     world::World,
 };
 use std::sync::Arc;
-use tracing::{debug, error, info};
+use tracing::{debug, error, info, warn};
+use tracing_subscriber::util::SubscriberInitExt;
 use wgpu::{Adapter, Device, Instance, Queue, Surface, SurfaceConfiguration};
 use winit::{
     application::ApplicationHandler,
@@ -41,6 +42,7 @@ pub struct App {
     input_system: InputSystem,
 
     // Display logic
+    webgpu_renderer: Option<WebGpuRenderer>,
     instance: Option<Instance>,
     surface: Option<Surface<'static>>, // lifetime managed by window Arc
     config: Option<SurfaceConfiguration>,
@@ -65,6 +67,8 @@ impl App {
         world.insert_resource(CameraResource::default());
         world.insert_resource(RenderQueueResource::default());
 
+        world.insert_resource(AssetStorageResource::<MeshAsset>::default());
+
         let mut startup_scheduler = Schedule::new(Schedules::Startup);
         startup_scheduler.add_systems((
             chunk_generation_system,
@@ -87,6 +91,7 @@ impl App {
             input_system: InputSystem,
 
             // Webgpu state and renderer
+            webgpu_renderer: None,
             instance: None,
             surface: None,
             config: None,
@@ -209,7 +214,7 @@ impl ApplicationHandler for App {
 
             // --- 3. Create the Decoupled Renderer ---
             let webgpu_renderer = WebGpuRenderer::new(device.clone(), queue.clone(), &config);
-            self.world.insert_resource(webgpu_renderer);
+            self.webgpu_renderer = Some(webgpu_renderer);
 
             let text_renderer = crate::graphics::text_renderer::GlyphonRenderer::new(
                 &device,
@@ -294,7 +299,7 @@ impl ApplicationHandler for App {
                     }
                 }
 
-                if let Some(mut renderer) = self.world.get_resource_mut::<WebGpuRenderer>() {
+                if let Some(renderer) = self.webgpu_renderer.as_mut() {
                     renderer.resize(physical_size);
                 }
 
@@ -311,66 +316,71 @@ impl ApplicationHandler for App {
             }
 
             WindowEvent::RedrawRequested => {
-                let surface = self.surface.as_ref().unwrap();
-                self.world
-                    .resource_scope(|world, mut renderer: Mut<WebGpuRenderer>| {
-                        world.resource_scope(|world, mut text_renderer: Mut<GlyphonRenderer>| {
-                            world.resource_scope(|_world, mut rq: Mut<RenderQueueResource>| {
-                                text_renderer
-                                    .prepare_texts(
-                                        self.device.as_ref().unwrap(),
-                                        self.queue.as_ref().unwrap(),
-                                        &rq,
-                                    )
-                                    .unwrap();
-                                rq.clear_text_queue();
+                // All the stuff we borrow from app for the redraw
+                let App {
+                    surface,
+                    webgpu_renderer,
+                    world,
+                    device,
+                    queue,
+                    config,
+                    window,
+                    ..
+                } = self;
 
-                                match surface.get_current_texture() {
-                                    Ok(output) => {
-                                        let view = output
-                                            .texture
-                                            .create_view(&wgpu::TextureViewDescriptor::default());
+                let surface = surface.as_ref().unwrap();
 
-                                        // Call the renderer's updated render method, passing the texture view
-                                        if let Err(e) =
-                                            renderer.render(&view, &mut text_renderer, &rq)
-                                        {
-                                            eprintln!("Renderer error: {:?}", e);
-                                        }
+                // Handle potential surface errors
+                let output = match surface.get_current_texture() {
+                    Ok(output) => output,
+                    Err(wgpu::SurfaceError::Lost) => {
+                        warn!("WGPU SurfaceError::Lost, reconfiguring surface.");
+                        let size = window.as_ref().unwrap().inner_size();
+                        // We can now safely borrow `config` mutably because `webgpu_renderer` isn't borrowed yet.
+                        if let (Some(config), Some(device)) = (config.as_mut(), device.as_ref()) {
+                            config.width = size.width;
+                            config.height = size.height;
+                            surface.configure(device, config);
+                        }
+                        window.as_ref().unwrap().request_redraw(); // Request another frame to try again
+                        return;
+                    }
+                    Err(wgpu::SurfaceError::OutOfMemory) => {
+                        error!("WGPU SurfaceError::OutOfMemory, exiting event loop.");
+                        event_loop.exit();
+                        return;
+                    }
+                    Err(e) => {
+                        eprintln!("Error acquiring next texture: {:?}", e);
+                        return;
+                    }
+                };
 
-                                        // Present the frame to the screen
-                                        output.present();
-                                    }
-                                    Err(wgpu::SurfaceError::Lost) => {
-                                        // This means the surface is outdated and needs to be reconfigured.
-                                        let size = self.window.as_ref().unwrap().inner_size();
-                                        if let (Some(config), Some(surface), Some(device)) = (
-                                            self.config.as_mut(),
-                                            self.surface.as_ref(),
-                                            self.device.as_ref(),
-                                        ) {
-                                            config.width = size.width;
-                                            config.height = size.height;
-                                            surface.configure(device, config);
-                                        }
-                                    }
-                                    Err(wgpu::SurfaceError::OutOfMemory) => {
-                                        error!(
-                                            "WGPU SurfaceError::OutOfMemory, exiting event loop."
-                                        );
-                                        event_loop.exit();
-                                    }
-                                    Err(e) => {
-                                        eprintln!("Error acquiring next texture: {:?}", e);
-                                    }
-                                }
-                            });
-                        });
+                let view = output
+                    .texture
+                    .create_view(&wgpu::TextureViewDescriptor::default());
+
+                // Now, perform the render using the borrowed fields
+                world.resource_scope(|world, mut text_renderer: Mut<GlyphonRenderer>| {
+                    world.resource_scope(|_world, mut rq: Mut<RenderQueueResource>| {
+                        let webgpu_renderer = webgpu_renderer.as_mut().unwrap();
+                        let device = device.as_ref().unwrap();
+                        let queue = queue.as_ref().unwrap();
+
+                        text_renderer.prepare_texts(device, queue, &rq).unwrap();
+
+                        if let Err(e) = webgpu_renderer.render(&view, &mut text_renderer, &rq) {
+                            eprintln!("Renderer error: {:?}", e);
+                        }
+
+                        rq.clear_text_queue();
                     });
-                // After drawing, request another redraw to keep the animation loop going.
-                self.window.as_ref().unwrap().request_redraw();
+                });
+
+                output.present();
+                window.as_ref().unwrap().request_redraw();
             }
-            _ => (),
+            _ => { /* pass rest of events */ }
         }
     }
 }

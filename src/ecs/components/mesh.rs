@@ -1,3 +1,5 @@
+use crate::ecs::resources::asset_storage::Handle;
+use crate::ecs::resources::asset_storage::MeshAsset;
 use crate::graphics::GpuMesh;
 use crate::graphics::Vertex;
 use bevy_ecs::prelude::Component;
@@ -7,7 +9,8 @@ use wgpu::util::DeviceExt;
 
 #[derive(Component)]
 pub struct MeshComponent {
-    pub gpu_mesh: Arc<GpuMesh>,
+    // pub gpu_mesh: Arc<GpuMesh>,
+    pub mesh_handle: Handle<MeshAsset>,
 
     pub atlas_id: String,
     pub uv_min: Vec2,
@@ -16,12 +19,19 @@ pub struct MeshComponent {
 
 impl MeshComponent {
     /// Creates a new mesh from raw vertex and index data.
-    pub fn new(gpu_mesh: &Arc<GpuMesh>, atlas_id: String, uv_min: Vec2, uv_max: Vec2) -> Self {
+    pub fn new(
+        // gpu_mesh: &Arc<GpuMesh>,
+        atlas_id: String,
+        uv_min: Vec2,
+        uv_max: Vec2,
+        mesh_handle: Handle<MeshAsset>,
+    ) -> Self {
         Self {
-            gpu_mesh: Arc::clone(gpu_mesh),
+            // gpu_mesh: Arc::clone(gpu_mesh),
             atlas_id,
             uv_min,
             uv_max,
+            mesh_handle,
         }
     }
 }
