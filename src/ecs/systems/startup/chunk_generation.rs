@@ -1,4 +1,6 @@
-use crate::ecs::components::{MeshComponent, TransformComponent, create_gpu_mesh_from_data};
+use crate::ecs::components::{create_gpu_mesh_from_data, MeshComponent, TransformComponent};
+use crate::ecs::resources::asset_storage::MeshAsset;
+use crate::ecs::resources::AssetStorageResource;
 use crate::graphics::Vertex;
 use crate::graphics::WebGpuRenderer;
 use bevy_ecs::prelude::Commands;
@@ -6,7 +8,11 @@ use bevy_ecs::prelude::ResMut;
 use glam::{Vec2, Vec3};
 use tracing::info;
 
-pub fn chunk_generation_system(mut commands: Commands, renderer: ResMut<WebGpuRenderer>) {
+pub fn chunk_generation_system(
+    mut commands: Commands,
+    renderer: ResMut<WebGpuRenderer>,
+    mut mesh_assets: ResMut<AssetStorageResource<MeshAsset>>,
+) {
     info!("Generating initial chunk...");
 
     let atlas_id = "main_atlas".to_string(); // unused for now
@@ -47,13 +53,27 @@ pub fn chunk_generation_system(mut commands: Commands, renderer: ResMut<WebGpuRe
         5, 0, 3, 3, 6, 5,
     ];
 
+    let cube_mesh_asset = MeshAsset {
+        vertices: vertices.clone(),
+        indices: indices.to_vec(),
+    };
+
+    // 2. Add the asset to the central storage and get a handle.
+    let mesh_handle = mesh_assets.add(cube_mesh_asset);
+
     let gpu_mesh = create_gpu_mesh_from_data(&renderer.get_device(), &vertices, &indices);
 
     // An array of cubes
     for x in 0..100 {
         for z in 0..100 {
             commands.spawn((
-                MeshComponent::new(&gpu_mesh, atlas_id.clone(), uv_min, uv_max),
+                MeshComponent::new(
+                    &gpu_mesh,
+                    atlas_id.clone(),
+                    uv_min,
+                    uv_max,
+                    mesh_handle.clone(),
+                ),
                 TransformComponent {
                     position: Vec3::new((x * -2) as f32, 0.0, (z * -2) as f32),
                     ..Default::default()
