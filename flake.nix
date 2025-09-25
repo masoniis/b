@@ -24,6 +24,7 @@
             just
             cargo
             wgsl-analyzer # provides wgsl-format
+            ripgrep # used in justfile
           ];
         };
       }
