@@ -2,7 +2,8 @@ use crate::{
     ecs::{
         resources::{
             asset_storage::MeshAsset, input::InputResource, time::TimeResource,
-            window::WindowResource, AssetStorageResource, CameraResource, RenderQueueResource,
+            window::WindowResource, AssetStorageResource, CameraResource, CameraUniformResource,
+            RenderQueueResource,
         },
         systems::{
             camera_control_system, chunk_generation_system, init_screen_diagnostics_system,
@@ -10,17 +11,17 @@ use crate::{
             InputSystem,
         },
     },
-    graphics::{GlyphonRenderer, WebGpuRenderer},
+    graphics::{SceneRenderPass, TextRenderPass, WebGpuRenderer},
     guard,
 };
 use bevy_ecs::{
     prelude::*,
     schedule::{Schedule, ScheduleLabel},
+    system::SystemState,
     world::World,
 };
 use std::sync::Arc;
 use tracing::{debug, error, info, warn};
-use tracing_subscriber::util::SubscriberInitExt;
 use wgpu::{Adapter, Device, Instance, Queue, Surface, SurfaceConfiguration};
 use winit::{
     application::ApplicationHandler,
@@ -43,12 +44,21 @@ pub struct App {
 
     // Display logic
     webgpu_renderer: Option<WebGpuRenderer>,
+    text_render_pass: Option<TextRenderPass>,
+    scene_render_pass: Option<SceneRenderPass>,
     instance: Option<Instance>,
     surface: Option<Surface<'static>>, // lifetime managed by window Arc
     config: Option<SurfaceConfiguration>,
     adapter: Option<Adapter>,
     device: Option<Arc<Device>>,
     queue: Option<Arc<Queue>>,
+
+    // ECS state required by our main system
+    render_state: SystemState<(
+        ResMut<'static, RenderQueueResource>,
+        Res<'static, AssetStorageResource<MeshAsset>>,
+        Res<'static, CameraUniformResource>,
+    )>,
 
     // Game Logic
     world: World,
@@ -66,8 +76,11 @@ impl App {
         world.insert_resource(TimeResource::default());
         world.insert_resource(CameraResource::default());
         world.insert_resource(RenderQueueResource::default());
+        world.insert_resource(CameraUniformResource::default());
 
         world.insert_resource(AssetStorageResource::<MeshAsset>::default());
+
+        let render_state = SystemState::new(&mut world);
 
         let mut startup_scheduler = Schedule::new(Schedules::Startup);
         startup_scheduler.add_systems((
@@ -92,6 +105,8 @@ impl App {
 
             // Webgpu state and renderer
             webgpu_renderer: None,
+            text_render_pass: None,
+            scene_render_pass: None,
             instance: None,
             surface: None,
             config: None,
@@ -101,6 +116,7 @@ impl App {
 
             // ECS state
             world: world,
+            render_state,
             startup_scheduler,
             main_scheduler,
 
@@ -213,15 +229,15 @@ impl ApplicationHandler for App {
             });
 
             // --- 3. Create the Decoupled Renderer ---
-            let webgpu_renderer = WebGpuRenderer::new(device.clone(), queue.clone(), &config);
+            let webgpu_renderer =
+                crate::graphics::WebGpuRenderer::new(device.clone(), queue.clone(), &config);
             self.webgpu_renderer = Some(webgpu_renderer);
 
-            let text_renderer = crate::graphics::text_renderer::GlyphonRenderer::new(
-                &device,
-                &queue,
-                config.format,
-            );
-            self.world.insert_resource(text_renderer);
+            let text_render_pass = TextRenderPass::new(&device, &queue, config.format);
+            self.text_render_pass = Some(text_render_pass);
+
+            let scene_render_pass = SceneRenderPass::new(device.clone(), queue.clone());
+            self.scene_render_pass = Some(scene_render_pass);
 
             // --- 4. Store Everything in self ---
             self.window = Some(window);
@@ -303,26 +319,22 @@ impl ApplicationHandler for App {
                     renderer.resize(physical_size);
                 }
 
-                self.world
-                    .resource_scope(|_world, mut text_renderer: Mut<GlyphonRenderer>| {
-                        text_renderer.viewport.update(
-                            self.queue.as_ref().unwrap(),
-                            glyphon::Resolution {
-                                width: physical_size.width,
-                                height: physical_size.height,
-                            },
-                        );
-                    });
+                if let Some(text_renderer) = self.text_render_pass.as_mut() {
+                    text_renderer.viewport.update(
+                        self.queue.as_ref().unwrap(),
+                        glyphon::Resolution {
+                            width: physical_size.width,
+                            height: physical_size.height,
+                        },
+                    );
+                }
             }
 
             WindowEvent::RedrawRequested => {
                 // All the stuff we borrow from app for the redraw
                 let App {
                     surface,
-                    webgpu_renderer,
-                    world,
                     device,
-                    queue,
                     config,
                     window,
                     ..
@@ -360,22 +372,39 @@ impl ApplicationHandler for App {
                     .texture
                     .create_view(&wgpu::TextureViewDescriptor::default());
 
-                // Now, perform the render using the borrowed fields
-                world.resource_scope(|world, mut text_renderer: Mut<GlyphonRenderer>| {
-                    world.resource_scope(|_world, mut rq: Mut<RenderQueueResource>| {
-                        let webgpu_renderer = webgpu_renderer.as_mut().unwrap();
-                        let device = device.as_ref().unwrap();
-                        let queue = queue.as_ref().unwrap();
+                // Get all the resources needed for rendering from the ecs world
+                let (mut render_queue, mesh_assets, camera_uniform) =
+                    self.render_state.get_mut(&mut self.world);
 
-                        text_renderer.prepare_texts(device, queue, &rq).unwrap();
+                // Borrow the variables necessary for rendering
+                let webgpu_renderer = self.webgpu_renderer.as_mut().unwrap();
+                let text_renderer = self.text_render_pass.as_mut().unwrap();
+                let scene_render_pass = self.scene_render_pass.as_mut().unwrap();
+                let device = self.device.as_ref().unwrap();
+                let queue = self.queue.as_ref().unwrap();
 
-                        if let Err(e) = webgpu_renderer.render(&view, &mut text_renderer, &rq) {
-                            eprintln!("Renderer error: {:?}", e);
-                        }
+                let mut render_passes: Vec<
+                    &mut dyn crate::graphics::renderpass::render_pass::RenderPass,
+                > = vec![scene_render_pass, text_renderer];
 
-                        rq.clear_text_queue();
-                    });
-                });
+                for pass in render_passes.iter_mut() {
+                    pass.prepare(device, queue, &render_queue, &mesh_assets, &camera_uniform);
+                }
+
+                if let Err(e) = webgpu_renderer.render(
+                    &view,
+                    &render_passes.iter().map(|p| &**p).collect::<Vec<_>>(),
+                    &render_queue,
+                    &mesh_assets,
+                    &camera_uniform,
+                ) {
+                    eprintln!("Renderer error: {:?}", e);
+                }
+
+                render_queue.clear_text_queue();
+
+                // Apply any deferred changes.
+                self.render_state.apply(&mut self.world);
 
                 output.present();
                 window.as_ref().unwrap().request_redraw();

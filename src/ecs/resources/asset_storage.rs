@@ -4,7 +4,7 @@ use std::marker::PhantomData;
 
 use crate::graphics::Vertex;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq, Hash)]
 pub struct MeshAsset {
     pub vertices: Vec<Vertex>,
     pub indices: Vec<u32>,
@@ -66,5 +66,9 @@ impl<T> AssetStorageResource<T> {
         self.storage.insert(id, asset);
         self.next_id += 1;
         Handle::new(id)
+    }
+
+    pub fn get(&self, handle: Handle<T>) -> Option<&T> {
+        self.storage.get(&handle.id)
     }
 }
