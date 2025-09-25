@@ -2,6 +2,7 @@ use crate::{
     ecs::{
         resources::{
             input::InputResource, time::TimeResource, window::WindowResource, CameraResource,
+            RenderQueueResource,
         },
         systems::{
             camera_control_system, chunk_generation_system, init_screen_diagnostics_system,
@@ -62,6 +63,7 @@ impl App {
         world.insert_resource(InputResource::new());
         world.insert_resource(TimeResource::default());
         world.insert_resource(CameraResource::default());
+        world.insert_resource(RenderQueueResource::default());
 
         let mut startup_scheduler = Schedule::new(Schedules::Startup);
         startup_scheduler.add_systems((
@@ -312,49 +314,57 @@ impl ApplicationHandler for App {
                 let surface = self.surface.as_ref().unwrap();
                 self.world
                     .resource_scope(|world, mut renderer: Mut<WebGpuRenderer>| {
-                        world.resource_scope(|_world, mut text_renderer: Mut<GlyphonRenderer>| {
-                            text_renderer
-                                .prepare_texts(
-                                    self.device.as_ref().unwrap(),
-                                    self.queue.as_ref().unwrap(),
-                                )
-                                .unwrap();
+                        world.resource_scope(|world, mut text_renderer: Mut<GlyphonRenderer>| {
+                            world.resource_scope(|_world, mut rq: Mut<RenderQueueResource>| {
+                                text_renderer
+                                    .prepare_texts(
+                                        self.device.as_ref().unwrap(),
+                                        self.queue.as_ref().unwrap(),
+                                        &rq,
+                                    )
+                                    .unwrap();
+                                rq.clear_text_queue();
 
-                            match surface.get_current_texture() {
-                                Ok(output) => {
-                                    let view = output
-                                        .texture
-                                        .create_view(&wgpu::TextureViewDescriptor::default());
+                                match surface.get_current_texture() {
+                                    Ok(output) => {
+                                        let view = output
+                                            .texture
+                                            .create_view(&wgpu::TextureViewDescriptor::default());
 
-                                    // Call the renderer's updated render method, passing the texture view
-                                    if let Err(e) = renderer.render(&view, &mut text_renderer) {
-                                        eprintln!("Renderer error: {:?}", e);
+                                        // Call the renderer's updated render method, passing the texture view
+                                        if let Err(e) =
+                                            renderer.render(&view, &mut text_renderer, &rq)
+                                        {
+                                            eprintln!("Renderer error: {:?}", e);
+                                        }
+
+                                        // Present the frame to the screen
+                                        output.present();
                                     }
-
-                                    // Present the frame to the screen
-                                    output.present();
-                                }
-                                Err(wgpu::SurfaceError::Lost) => {
-                                    // This means the surface is outdated and needs to be reconfigured.
-                                    let size = self.window.as_ref().unwrap().inner_size();
-                                    if let (Some(config), Some(surface), Some(device)) = (
-                                        self.config.as_mut(),
-                                        self.surface.as_ref(),
-                                        self.device.as_ref(),
-                                    ) {
-                                        config.width = size.width;
-                                        config.height = size.height;
-                                        surface.configure(device, config);
+                                    Err(wgpu::SurfaceError::Lost) => {
+                                        // This means the surface is outdated and needs to be reconfigured.
+                                        let size = self.window.as_ref().unwrap().inner_size();
+                                        if let (Some(config), Some(surface), Some(device)) = (
+                                            self.config.as_mut(),
+                                            self.surface.as_ref(),
+                                            self.device.as_ref(),
+                                        ) {
+                                            config.width = size.width;
+                                            config.height = size.height;
+                                            surface.configure(device, config);
+                                        }
+                                    }
+                                    Err(wgpu::SurfaceError::OutOfMemory) => {
+                                        error!(
+                                            "WGPU SurfaceError::OutOfMemory, exiting event loop."
+                                        );
+                                        event_loop.exit();
+                                    }
+                                    Err(e) => {
+                                        eprintln!("Error acquiring next texture: {:?}", e);
                                     }
                                 }
-                                Err(wgpu::SurfaceError::OutOfMemory) => {
-                                    error!("WGPU SurfaceError::OutOfMemory, exiting event loop.");
-                                    event_loop.exit();
-                                }
-                                Err(e) => {
-                                    eprintln!("Error acquiring next texture: {:?}", e);
-                                }
-                            }
+                            });
                         });
                     });
                 // After drawing, request another redraw to keep the animation loop going.
