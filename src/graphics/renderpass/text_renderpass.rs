@@ -28,11 +28,23 @@ pub struct TextRenderPass {
 }
 
 impl TextRenderPass {
-    pub fn new(device: &Device, queue: &Queue, target_format: TextureFormat) -> Self {
+    pub fn new(
+        device: &Device,
+        queue: &Queue,
+        target_format: TextureFormat,
+        size: winit::dpi::PhysicalSize<u32>,
+    ) -> Self {
         let font_system = FontSystem::new();
         let cache = SwashCache::new();
         let viewport_cache = Cache::new(device);
-        let viewport = Viewport::new(device, &viewport_cache);
+        let mut viewport = Viewport::new(device, &viewport_cache);
+        viewport.update(
+            queue,
+            glyphon::Resolution {
+                width: size.width,
+                height: size.height,
+            },
+        );
         let mut atlas = TextAtlas::new(device, queue, &viewport_cache, target_format);
         let renderer = TextRenderer::new(&mut atlas, device, MultisampleState::default(), None);
 
