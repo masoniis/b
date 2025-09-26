@@ -189,7 +189,8 @@ impl ApplicationHandler for App {
                     format: surface_format,
                     width: window.inner_size().width,
                     height: window.inner_size().height,
-                    present_mode: wgpu::PresentMode::Fifo,
+                    present_mode: wgpu::PresentMode::Immediate, // uncapped
+                    // present_mode: wgpu::PresentMode::Fifo, // vsync
                     alpha_mode: surface_caps.alpha_modes[0],
                     view_formats: vec![],
                     desired_maximum_frame_latency: 2,
