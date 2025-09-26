@@ -20,7 +20,7 @@ pub fn init_screen_diagnostics_system(mut commands: Commands) {
 
     commands.spawn((
         ScreenTextComponent {
-            text: "Debug Stats".to_string(),
+            text: "Debug stats".to_string(),
             position: vec2(24.0, 24.0),
             font_size: FONT_SIZE,
         },

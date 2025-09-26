@@ -4,6 +4,7 @@ use crate::graphics::{
     SceneRenderPass, TextRenderPass, Vertex,
 };
 use std::{collections::HashMap, fs, sync::Arc};
+use winit::dpi::PhysicalSize;
 
 impl WebGpuRenderer {
     pub fn new(
@@ -93,7 +94,12 @@ impl WebGpuRenderer {
             multiview: None,
         });
 
-        let text_render_pass = TextRenderPass::new(&device, &queue, config.format);
+        let text_render_pass = TextRenderPass::new(
+            &device,
+            &queue,
+            config.format,
+            PhysicalSize::new(config.width, config.height),
+        );
         let scene_render_pass = SceneRenderPass::new(device.clone(), queue.clone());
 
         let passes = vec![
