@@ -1,14 +1,16 @@
 use crate::{
     ecs::resources::{
-        asset_storage::MeshAsset, AssetStorageResource, CameraUniformResource, RenderQueueResource,
+        asset_storage::{AssetId, MeshAsset},
+        AssetStorageResource, CameraUniformResource, RenderQueueResource,
     },
-    graphics::{rendercore::WebGpuRenderer, renderpass::render_pass::RenderPass},
+    graphics::{renderpass::render_pass::RenderPass, GpuMesh},
 };
 use glyphon::{
     cosmic_text::{Attrs, Family, Metrics, Shaping},
     Buffer, Cache, Color, FontSystem, SwashCache, TextArea, TextAtlas, TextBounds, TextRenderer,
     Viewport,
 };
+use std::{collections::HashMap, sync::Arc};
 use wgpu::{Device, MultisampleState, Queue, TextureFormat};
 
 pub struct QueuedText {
@@ -19,7 +21,7 @@ pub struct QueuedText {
 }
 
 pub struct TextRenderPass {
-    pub renderer: TextRenderer,
+    pub glyphon_renderer: TextRenderer,
 
     pub font_system: FontSystem,
     pub cache: SwashCache,
@@ -29,27 +31,26 @@ pub struct TextRenderPass {
 
 impl TextRenderPass {
     pub fn new(device: &Device, queue: &Queue, target_format: TextureFormat) -> Self {
+        // Set up all the systems Glyphon relies on that is unique to the text renderer
         let font_system = FontSystem::new();
         let cache = SwashCache::new();
         let viewport_cache = Cache::new(device);
         let viewport = Viewport::new(device, &viewport_cache);
         let mut atlas = TextAtlas::new(device, queue, &viewport_cache, target_format);
-        let renderer = TextRenderer::new(&mut atlas, device, MultisampleState::default(), None);
+        let glyphon_renderer =
+            TextRenderer::new(&mut atlas, device, MultisampleState::default(), None);
 
         Self {
             font_system,
             cache,
             atlas,
-            renderer,
+            glyphon_renderer,
             viewport,
         }
     }
 }
 
 impl RenderPass for TextRenderPass {
-    /// Method to run just before the rendering phase begins.
-    /// Necessary for some renderpasses that require preprocessing
-    /// and can be used to create buffers as well.
     fn prepare(
         &mut self,
         device: &wgpu::Device,
@@ -92,7 +93,7 @@ impl RenderPass for TextRenderPass {
             })
             .collect::<Vec<_>>();
 
-        self.renderer
+        self.glyphon_renderer
             .prepare(
                 device,
                 queue,
@@ -109,31 +110,35 @@ impl RenderPass for TextRenderPass {
         &self,
         encoder: &mut wgpu::CommandEncoder,
         view: &wgpu::TextureView,
-        _renderer: &mut WebGpuRenderer,
         _render_queue: &RenderQueueResource,
         _mesh_assets: &AssetStorageResource<MeshAsset>,
         _camera_uniform: &CameraUniformResource,
+        _depth_texture_view: &wgpu::TextureView,
+        _camera_buffer: &wgpu::Buffer,
+        _instance_buffer: &wgpu::Buffer,
+        _render_pipeline: &wgpu::RenderPipeline,
+        _camera_bind_group: &wgpu::BindGroup,
+        _gpu_meshes: &mut HashMap<AssetId, Arc<GpuMesh>>,
     ) {
+        // The text render pass is a pretty plain pass
+        // with no depth buffer to ensure text is on top
         let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             label: Some("Text Render Pass"),
             color_attachments: &[Some(wgpu::RenderPassColorAttachment {
                 view,
                 resolve_target: None,
                 ops: wgpu::Operations {
-                    // LOAD the contents of the previous pass
-                    load: wgpu::LoadOp::Load,
-                    // Store the results of this pass (the text on top of the scene)
+                    load: wgpu::LoadOp::Load, // loads contents of previous pass
                     store: wgpu::StoreOp::Store,
                 },
                 depth_slice: None,
             })],
-            // No depth buffer for the UI pass
             depth_stencil_attachment: None,
             timestamp_writes: None,
             occlusion_query_set: None,
         });
 
-        self.renderer
+        self.glyphon_renderer
             .render(&self.atlas, &self.viewport, &mut render_pass)
             .unwrap();
     }

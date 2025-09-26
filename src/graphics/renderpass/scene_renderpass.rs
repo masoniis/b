@@ -1,6 +1,4 @@
-use crate::graphics::rendercore::types::{
-    CameraUniform, InstanceRaw, WebGpuRenderer, MAX_TRANSFORMS,
-};
+use crate::graphics::rendercore::types::{CameraUniform, InstanceRaw, MAX_TRANSFORMS};
 use crate::{
     ecs::resources::{
         asset_storage::{AssetStorageResource, MeshAsset},
@@ -8,7 +6,7 @@ use crate::{
     },
     graphics::{renderpass::render_pass::RenderPass, GpuMesh, Vertex},
 };
-use std::sync::Arc;
+use std::{collections::HashMap, sync::Arc};
 use wgpu::util::DeviceExt;
 
 pub struct SceneRenderPass {
@@ -38,10 +36,15 @@ impl RenderPass for SceneRenderPass {
         &self,
         encoder: &mut wgpu::CommandEncoder,
         view: &wgpu::TextureView,
-        renderer: &mut WebGpuRenderer,
         ecs_render_queue: &RenderQueueResource,
         mesh_assets: &AssetStorageResource<MeshAsset>,
         camera_uniform: &CameraUniformResource,
+        depth_texture_view: &wgpu::TextureView,
+        camera_buffer: &wgpu::Buffer,
+        instance_buffer: &wgpu::Buffer,
+        render_pipeline: &wgpu::RenderPipeline,
+        camera_bind_group: &wgpu::BindGroup,
+        gpu_meshes: &mut HashMap<crate::ecs::resources::asset_storage::AssetId, Arc<GpuMesh>>,
     ) {
         let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             label: Some("Scene Render Pass"),
@@ -63,7 +66,7 @@ impl RenderPass for SceneRenderPass {
             })],
             // Use the depth buffer
             depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
-                view: &renderer.depth_texture_view,
+                view: depth_texture_view,
                 depth_ops: Some(wgpu::Operations {
                     load: wgpu::LoadOp::Clear(1.0), // Clear depth to 1.0
                     store: wgpu::StoreOp::Store,
@@ -76,8 +79,8 @@ impl RenderPass for SceneRenderPass {
 
         let mut camera_uniform_gpu = CameraUniform::new();
         camera_uniform_gpu.update_view_proj(camera_uniform.view_proj_matrix);
-        renderer.queue.write_buffer(
-            &renderer.camera_buffer,
+        self.queue.write_buffer(
+            camera_buffer,
             0,
             bytemuck::cast_slice(&[camera_uniform_gpu]),
         );
@@ -102,29 +105,19 @@ impl RenderPass for SceneRenderPass {
             });
         }
 
-        renderer.queue.write_buffer(
-            &renderer.instance_buffer,
-            0,
-            bytemuck::cast_slice(&instances),
-        );
+        self.queue
+            .write_buffer(instance_buffer, 0, bytemuck::cast_slice(&instances));
 
-        render_pass.set_pipeline(&renderer.render_pipeline);
-        render_pass.set_bind_group(0, &renderer.camera_bind_group, &[]);
-        render_pass.set_vertex_buffer(1, renderer.instance_buffer.slice(..));
+        render_pass.set_pipeline(render_pipeline);
+        render_pass.set_bind_group(0, camera_bind_group, &[]);
+        render_pass.set_vertex_buffer(1, instance_buffer.slice(..));
 
         let mut current_offset = 0;
         for (mesh_handle, draws) in ecs_render_queue.iter_by_mesh() {
-            let gpu_mesh = renderer
-                .gpu_meshes
-                .entry(mesh_handle.id())
-                .or_insert_with(|| {
-                    let mesh_asset = mesh_assets.get(mesh_handle).unwrap();
-                    create_gpu_mesh_from_data(
-                        &renderer.device,
-                        &mesh_asset.vertices,
-                        &mesh_asset.indices,
-                    )
-                });
+            let gpu_mesh = gpu_meshes.entry(mesh_handle.id()).or_insert_with(|| {
+                let mesh_asset = mesh_assets.get(mesh_handle).unwrap();
+                create_gpu_mesh_from_data(&self.device, &mesh_asset.vertices, &mesh_asset.indices)
+            });
 
             render_pass.set_vertex_buffer(0, gpu_mesh.vertex_buffer.slice(..));
             render_pass
