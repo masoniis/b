@@ -19,14 +19,35 @@
         pkgs = nixpkgs.legacyPackages.${system};
       in
       {
-        devShell = pkgs.mkShell {
-          packages = with pkgs; [
-            just
-            cargo
-            wgsl-analyzer # provides wgsl-format
-            ripgrep # used in justfile
-          ];
-        };
+        devShell =
+          with pkgs;
+          mkShell (
+            {
+              buildInputs = [
+                cargo
+                just
+                wgsl-analyzer
+                ripgrep
+              ]
+              ++ (lib.optionals stdenv.isLinux [
+                libGL
+                libxkbcommon
+                wayland
+                pkg-config
+                mesa
+              ]);
+
+            }
+            // (lib.optionalAttrs stdenv.isLinux {
+              RUST_SRC_PATH = "${pkgs.rust.packages.stable.rustPlatform.rustLibSrc}";
+
+              LD_LIBRARY_PATH = lib.makeLibraryPath [
+                libGL
+                libxkbcommon
+                wayland
+              ];
+            })
+          );
       }
     )
     // (
