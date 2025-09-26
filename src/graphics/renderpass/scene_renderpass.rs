@@ -1,10 +1,10 @@
-use crate::graphics::rendercore::types::{CameraUniform, InstanceRaw, MAX_TRANSFORMS};
+use crate::graphics::rendercore::types::{ISceneRenderPass, InstanceRaw, MAX_TRANSFORMS};
 use crate::{
     ecs::resources::{
         asset_storage::{AssetStorageResource, MeshAsset},
         CameraUniformResource, RenderQueueResource,
     },
-    graphics::{renderpass::render_pass::RenderPass, GpuMesh, Vertex},
+    graphics::{GpuMesh, RenderContext, Vertex},
 };
 use std::{collections::HashMap, sync::Arc};
 use wgpu::util::DeviceExt;
@@ -20,7 +20,7 @@ impl SceneRenderPass {
     }
 }
 
-impl RenderPass for SceneRenderPass {
+impl ISceneRenderPass for SceneRenderPass {
     fn prepare(
         &mut self,
         _device: &wgpu::Device,
@@ -32,24 +32,20 @@ impl RenderPass for SceneRenderPass {
         // No actual preparation needed here for SceneRenderPass, as it's done in render
     }
 
-    fn render(
-        &self,
+    fn render<'a>(
+        &'a self,
         encoder: &mut wgpu::CommandEncoder,
-        view: &wgpu::TextureView,
+        context: RenderContext<'a>,
         ecs_render_queue: &RenderQueueResource,
         mesh_assets: &AssetStorageResource<MeshAsset>,
-        camera_uniform: &CameraUniformResource,
-        depth_texture_view: &wgpu::TextureView,
-        camera_buffer: &wgpu::Buffer,
         instance_buffer: &wgpu::Buffer,
-        render_pipeline: &wgpu::RenderPipeline,
-        camera_bind_group: &wgpu::BindGroup,
         gpu_meshes: &mut HashMap<crate::ecs::resources::asset_storage::AssetId, Arc<GpuMesh>>,
+        render_pipeline: &wgpu::RenderPipeline,
     ) {
         let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             label: Some("Scene Render Pass"),
             color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                view,
+                view: context.view,
                 resolve_target: None,
                 ops: wgpu::Operations {
                     // Clear the screen with the background color
@@ -66,7 +62,7 @@ impl RenderPass for SceneRenderPass {
             })],
             // Use the depth buffer
             depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
-                view: depth_texture_view,
+                view: context.depth_texture_view,
                 depth_ops: Some(wgpu::Operations {
                     load: wgpu::LoadOp::Clear(1.0), // Clear depth to 1.0
                     store: wgpu::StoreOp::Store,
@@ -76,14 +72,6 @@ impl RenderPass for SceneRenderPass {
             timestamp_writes: None,
             occlusion_query_set: None,
         });
-
-        let mut camera_uniform_gpu = CameraUniform::new();
-        camera_uniform_gpu.update_view_proj(camera_uniform.view_proj_matrix);
-        self.queue.write_buffer(
-            camera_buffer,
-            0,
-            bytemuck::cast_slice(&[camera_uniform_gpu]),
-        );
 
         // --- Instance Buffer Preparation (same as before) ---
         let num_queued_draws = ecs_render_queue.get_scene_objects().len();
@@ -109,7 +97,7 @@ impl RenderPass for SceneRenderPass {
             .write_buffer(instance_buffer, 0, bytemuck::cast_slice(&instances));
 
         render_pass.set_pipeline(render_pipeline);
-        render_pass.set_bind_group(0, camera_bind_group, &[]);
+        render_pass.set_bind_group(0, &context.shared_data.camera_bind_group, &[]);
         render_pass.set_vertex_buffer(1, instance_buffer.slice(..));
 
         let mut current_offset = 0;

@@ -43,7 +43,7 @@ pub struct App {
     input_system: InputSystem,
 
     // Display logic
-    webgpu_renderer: Option<WebGpuRenderer>,
+    renderer: Option<WebGpuRenderer>,
     instance: Option<Instance>,
     surface: Option<Surface<'static>>, // lifetime managed by window Arc
     config: Option<SurfaceConfiguration>,
@@ -102,7 +102,7 @@ impl App {
             input_system: InputSystem,
 
             // Webgpu state and renderer
-            webgpu_renderer: None,
+            renderer: None,
             instance: None,
             surface: None,
             config: None,
@@ -227,7 +227,7 @@ impl ApplicationHandler for App {
             // --- 3. Create the Decoupled Renderer ---
             let webgpu_renderer =
                 crate::graphics::WebGpuRenderer::new(device.clone(), queue.clone(), &config);
-            self.webgpu_renderer = Some(webgpu_renderer);
+            self.renderer = Some(webgpu_renderer);
 
             // --- 4. Store Everything in self ---
             self.window = Some(window);
@@ -305,7 +305,7 @@ impl ApplicationHandler for App {
                     }
                 }
 
-                if let Some(renderer) = self.webgpu_renderer.as_mut() {
+                if let Some(renderer) = self.renderer.as_mut() {
                     renderer.resize(physical_size);
                 }
             }
@@ -357,7 +357,7 @@ impl ApplicationHandler for App {
                     self.render_state.get_mut(&mut self.world);
 
                 if let Err(e) = self
-                    .webgpu_renderer
+                    .renderer
                     .as_mut()
                     .expect("WebGPU Renderer missing")
                     .render(&view, &render_queue, &mesh_assets, &camera_uniform)
