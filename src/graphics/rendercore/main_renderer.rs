@@ -30,33 +30,71 @@ impl WebGpuRenderer {
             });
             self.depth_texture_view =
                 depth_texture.create_view(&wgpu::TextureViewDescriptor::default());
+
+            self.text_render_pass.viewport.update(
+                &self.queue,
+                glyphon::Resolution {
+                    width: new_size.width,
+                    height: new_size.height,
+                },
+            );
         }
     }
 
     pub fn render(
         &mut self,
         view: &wgpu::TextureView,
-        render_passes: &[&dyn RenderPass],
         render_queue: &RenderQueueResource,
         mesh_assets: &AssetStorageResource<MeshAsset>,
         camera_uniform: &CameraUniformResource,
     ) -> Result<(), wgpu::SurfaceError> {
+        self.scene_render_pass.prepare(
+            &self.device,
+            &self.queue,
+            render_queue,
+            mesh_assets,
+            camera_uniform,
+        );
+        self.text_render_pass.prepare(
+            &self.device,
+            &self.queue,
+            render_queue,
+            mesh_assets,
+            camera_uniform,
+        );
+
         let mut encoder = self
             .device
             .create_command_encoder(&wgpu::CommandEncoderDescriptor {
                 label: Some("Render Encoder"),
             });
 
-        for pass in render_passes {
-            pass.render(
-                &mut encoder,
-                view,
-                self,
-                render_queue,
-                mesh_assets,
-                camera_uniform,
-            );
-        }
+        self.scene_render_pass.render(
+            &mut encoder,
+            view,
+            render_queue,
+            mesh_assets,
+            camera_uniform,
+            &self.depth_texture_view,
+            &self.camera_buffer,
+            &self.instance_buffer,
+            &self.render_pipeline,
+            &self.camera_bind_group,
+            &mut self.gpu_meshes,
+        );
+        self.text_render_pass.render(
+            &mut encoder,
+            view,
+            render_queue,
+            mesh_assets,
+            camera_uniform,
+            &self.depth_texture_view,
+            &self.camera_buffer,
+            &self.instance_buffer,
+            &self.render_pipeline,
+            &self.camera_bind_group,
+            &mut self.gpu_meshes,
+        );
 
         // Submit the command encoder containing both passes to the queue
         self.queue.submit(std::iter::once(encoder.finish()));

@@ -1,7 +1,7 @@
 use super::types::{
     CameraUniform, InstanceRaw, WebGpuRenderer, DEPTH_FORMAT, MAX_TRANSFORMS, SHADER_PATH,
 };
-use crate::graphics::Vertex;
+use crate::graphics::{SceneRenderPass, TextRenderPass, Vertex};
 use std::{collections::HashMap, fs, sync::Arc};
 use wgpu::util::DeviceExt;
 
@@ -121,6 +121,9 @@ impl WebGpuRenderer {
             multiview: None,
         });
 
+        let text_render_pass = TextRenderPass::new(&device, &queue, config.format);
+        let scene_render_pass = SceneRenderPass::new(device.clone(), queue.clone());
+
         Self {
             device,
             queue,
@@ -130,6 +133,8 @@ impl WebGpuRenderer {
             instance_buffer,
             depth_texture_view,
             gpu_meshes: HashMap::new(),
+            text_render_pass,
+            scene_render_pass,
         }
     }
 }

@@ -11,7 +11,7 @@ use crate::{
             InputSystem,
         },
     },
-    graphics::{SceneRenderPass, TextRenderPass, WebGpuRenderer},
+    graphics::WebGpuRenderer,
     guard,
 };
 use bevy_ecs::{
@@ -44,8 +44,6 @@ pub struct App {
 
     // Display logic
     webgpu_renderer: Option<WebGpuRenderer>,
-    text_render_pass: Option<TextRenderPass>,
-    scene_render_pass: Option<SceneRenderPass>,
     instance: Option<Instance>,
     surface: Option<Surface<'static>>, // lifetime managed by window Arc
     config: Option<SurfaceConfiguration>,
@@ -105,8 +103,6 @@ impl App {
 
             // Webgpu state and renderer
             webgpu_renderer: None,
-            text_render_pass: None,
-            scene_render_pass: None,
             instance: None,
             surface: None,
             config: None,
@@ -233,12 +229,6 @@ impl ApplicationHandler for App {
                 crate::graphics::WebGpuRenderer::new(device.clone(), queue.clone(), &config);
             self.webgpu_renderer = Some(webgpu_renderer);
 
-            let text_render_pass = TextRenderPass::new(&device, &queue, config.format);
-            self.text_render_pass = Some(text_render_pass);
-
-            let scene_render_pass = SceneRenderPass::new(device.clone(), queue.clone());
-            self.scene_render_pass = Some(scene_render_pass);
-
             // --- 4. Store Everything in self ---
             self.window = Some(window);
             self.instance = Some(instance);
@@ -318,16 +308,6 @@ impl ApplicationHandler for App {
                 if let Some(renderer) = self.webgpu_renderer.as_mut() {
                     renderer.resize(physical_size);
                 }
-
-                if let Some(text_renderer) = self.text_render_pass.as_mut() {
-                    text_renderer.viewport.update(
-                        self.queue.as_ref().unwrap(),
-                        glyphon::Resolution {
-                            width: physical_size.width,
-                            height: physical_size.height,
-                        },
-                    );
-                }
             }
 
             WindowEvent::RedrawRequested => {
@@ -376,28 +356,12 @@ impl ApplicationHandler for App {
                 let (mut render_queue, mesh_assets, camera_uniform) =
                     self.render_state.get_mut(&mut self.world);
 
-                // Borrow the variables necessary for rendering
-                let webgpu_renderer = self.webgpu_renderer.as_mut().unwrap();
-                let text_renderer = self.text_render_pass.as_mut().unwrap();
-                let scene_render_pass = self.scene_render_pass.as_mut().unwrap();
-                let device = self.device.as_ref().unwrap();
-                let queue = self.queue.as_ref().unwrap();
-
-                let mut render_passes: Vec<
-                    &mut dyn crate::graphics::renderpass::render_pass::RenderPass,
-                > = vec![scene_render_pass, text_renderer];
-
-                for pass in render_passes.iter_mut() {
-                    pass.prepare(device, queue, &render_queue, &mesh_assets, &camera_uniform);
-                }
-
-                if let Err(e) = webgpu_renderer.render(
-                    &view,
-                    &render_passes.iter().map(|p| &**p).collect::<Vec<_>>(),
-                    &render_queue,
-                    &mesh_assets,
-                    &camera_uniform,
-                ) {
+                if let Err(e) = self
+                    .webgpu_renderer
+                    .as_mut()
+                    .expect("WebGPU Renderer missing")
+                    .render(&view, &render_queue, &mesh_assets, &camera_uniform)
+                {
                     eprintln!("Renderer error: {:?}", e);
                 }
 

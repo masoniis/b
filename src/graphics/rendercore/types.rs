@@ -1,6 +1,6 @@
 use crate::{
     ecs::resources::asset_storage::{AssetId, Handle, MeshAsset},
-    graphics::GpuMesh,
+    graphics::{GpuMesh, SceneRenderPass, TextRenderPass},
 };
 use glam::Mat4;
 use std::{collections::HashMap, sync::Arc};
@@ -15,6 +15,10 @@ pub struct WebGpuRenderer {
     pub device: Arc<Device>,
     pub queue: Arc<Queue>,
     pub render_pipeline: RenderPipeline,
+
+    // Render Passes
+    pub scene_render_pass: SceneRenderPass,
+    pub text_render_pass: TextRenderPass,
 
     // Buffers
     pub depth_texture_view: wgpu::TextureView,
