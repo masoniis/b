@@ -184,16 +184,26 @@ impl ApplicationHandler for App {
                     .copied()
                     .find(|f| f.is_srgb())
                     .unwrap_or(surface_caps.formats[0]);
+
+                let present_mode = if surface_caps
+                    .present_modes
+                    .contains(&wgpu::PresentMode::Immediate)
+                {
+                    wgpu::PresentMode::Immediate // uncapped fps
+                } else {
+                    wgpu::PresentMode::AutoNoVsync // tries to find a no vsync mode but willing to default to whatever is available
+                };
+
                 let config = wgpu::SurfaceConfiguration {
                     usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
-                    format: surface_format,
                     width: window.inner_size().width,
                     height: window.inner_size().height,
-                    present_mode: wgpu::PresentMode::Immediate, // uncapped
-                    // present_mode: wgpu::PresentMode::Fifo, // vsync
-                    alpha_mode: surface_caps.alpha_modes[0],
                     view_formats: vec![],
                     desired_maximum_frame_latency: 2,
+                    // Adaptive device-specific config
+                    format: surface_format,
+                    present_mode,
+                    alpha_mode: surface_caps.alpha_modes[0],
                 };
                 surface.configure(&device, &config);
 
