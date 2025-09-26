@@ -2,7 +2,6 @@ use crate::ecs::components::ScreenTextComponent;
 use crate::ecs::resources::RenderQueueResource;
 use crate::graphics::renderpass::text_renderpass::QueuedText;
 use bevy_ecs::prelude::{Query, ResMut};
-use glyphon::cosmic_text::Color;
 use tracing::debug;
 
 pub fn screen_text_render_system(
@@ -13,7 +12,7 @@ pub fn screen_text_render_system(
         let queued_text = QueuedText {
             text: component.text.clone(),
             position: component.position,
-            color: Color::rgb(255, 130, 255),
+            color: component.color,
             font_size: component.font_size,
         };
 
