@@ -1,8 +1,13 @@
 use crate::{
-    ecs::resources::asset_storage::{AssetId, Handle, MeshAsset},
-    graphics::{GpuMesh, SceneRenderPass, TextRenderPass},
+    ecs::resources::{
+        asset_storage::{AssetId, Handle, MeshAsset},
+        AssetStorageResource, CameraUniformResource, RenderQueueResource,
+    },
+    graphics::{
+        renderpass::{RenderContext, SharedRenderData},
+        GpuMesh,
+    },
 };
-use glam::Mat4;
 use std::{collections::HashMap, sync::Arc};
 use wgpu::{Device, Queue, RenderPipeline};
 
@@ -17,37 +22,17 @@ pub struct WebGpuRenderer {
     pub render_pipeline: RenderPipeline,
 
     // Render Passes
-    pub scene_render_pass: SceneRenderPass,
-    pub text_render_pass: TextRenderPass,
+    pub passes: Vec<crate::graphics::renderpass::RenderPass>,
+
+    // Shared Data
+    pub shared_data: SharedRenderData,
 
     // Buffers
     pub depth_texture_view: wgpu::TextureView,
     pub instance_buffer: wgpu::Buffer,
 
-    // Uniforms
-    pub camera_buffer: wgpu::Buffer,
-    pub camera_bind_group: wgpu::BindGroup,
-
     // Assets
     pub gpu_meshes: HashMap<AssetId, Arc<GpuMesh>>,
-}
-
-#[repr(C)]
-#[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
-pub struct CameraUniform {
-    pub view_proj: [[f32; 4]; 4],
-}
-
-impl CameraUniform {
-    pub fn new() -> Self {
-        Self {
-            view_proj: Mat4::IDENTITY.to_cols_array_2d(),
-        }
-    }
-
-    pub fn update_view_proj(&mut self, proj: glam::Mat4) {
-        self.view_proj = proj.to_cols_array_2d();
-    }
 }
 
 #[repr(C)]
@@ -92,4 +77,39 @@ pub struct QueuedDraw {
     pub mesh_handle: Handle<MeshAsset>,
     pub instance_count: u32,
     pub transform: glam::Mat4,
+}
+
+pub trait ISceneRenderPass {
+    fn prepare(
+        &mut self,
+        device: &wgpu::Device,
+        queue: &wgpu::Queue,
+        render_queue: &RenderQueueResource,
+        mesh_assets: &AssetStorageResource<MeshAsset>,
+        camera_uniform: &CameraUniformResource,
+    );
+
+    fn render<'a>(
+        &'a self,
+        encoder: &mut wgpu::CommandEncoder,
+        context: RenderContext<'a>,
+        ecs_render_queue: &RenderQueueResource,
+        mesh_assets: &AssetStorageResource<MeshAsset>,
+        instance_buffer: &wgpu::Buffer,
+        gpu_meshes: &mut HashMap<AssetId, Arc<GpuMesh>>,
+        render_pipeline: &wgpu::RenderPipeline,
+    );
+}
+
+pub trait ITextRenderPass {
+    fn prepare(
+        &mut self,
+        device: &wgpu::Device,
+        queue: &wgpu::Queue,
+        render_queue: &RenderQueueResource,
+        mesh_assets: &AssetStorageResource<MeshAsset>,
+        camera_uniform: &CameraUniformResource,
+    );
+
+    fn render<'a>(&'a self, encoder: &mut wgpu::CommandEncoder, context: RenderContext<'a>);
 }

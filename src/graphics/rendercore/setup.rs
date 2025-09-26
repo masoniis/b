@@ -1,9 +1,9 @@
-use super::types::{
-    CameraUniform, InstanceRaw, WebGpuRenderer, DEPTH_FORMAT, MAX_TRANSFORMS, SHADER_PATH,
+use super::types::{InstanceRaw, WebGpuRenderer, DEPTH_FORMAT, MAX_TRANSFORMS, SHADER_PATH};
+use crate::graphics::{
+    renderpass::{shared_data::SharedRenderData, RenderPass},
+    SceneRenderPass, TextRenderPass, Vertex,
 };
-use crate::graphics::{SceneRenderPass, TextRenderPass, Vertex};
 use std::{collections::HashMap, fs, sync::Arc};
-use wgpu::util::DeviceExt;
 
 impl WebGpuRenderer {
     pub fn new(
@@ -11,35 +11,7 @@ impl WebGpuRenderer {
         queue: Arc<wgpu::Queue>,
         config: &wgpu::SurfaceConfiguration,
     ) -> Self {
-        let camera_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: Some("Camera Buffer"),
-            contents: bytemuck::cast_slice(&[CameraUniform::new()]),
-            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
-        });
-
-        let camera_bind_group_layout =
-            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-                entries: &[wgpu::BindGroupLayoutEntry {
-                    binding: 0,
-                    visibility: wgpu::ShaderStages::VERTEX,
-                    ty: wgpu::BindingType::Buffer {
-                        ty: wgpu::BufferBindingType::Uniform,
-                        has_dynamic_offset: false,
-                        min_binding_size: None,
-                    },
-                    count: None,
-                }],
-                label: Some("camera_bind_group_layout"),
-            });
-
-        let camera_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
-            layout: &camera_bind_group_layout,
-            entries: &[wgpu::BindGroupEntry {
-                binding: 0,
-                resource: camera_buffer.as_entire_binding(),
-            }],
-            label: Some("camera_bind_group"),
-        });
+        let shared_data = SharedRenderData::new(&device);
 
         let shader_source = fs::read_to_string(SHADER_PATH).expect("Failed to read shader file");
         let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
@@ -73,7 +45,7 @@ impl WebGpuRenderer {
         let render_pipeline_layout =
             device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                 label: Some("Render Pipeline Layout"),
-                bind_group_layouts: &[&camera_bind_group_layout], // Removed transform_bind_group_layout
+                bind_group_layouts: &[&shared_data.camera_bind_group_layout], // Use the shared layout
                 push_constant_ranges: &[],
             });
 
@@ -124,17 +96,20 @@ impl WebGpuRenderer {
         let text_render_pass = TextRenderPass::new(&device, &queue, config.format);
         let scene_render_pass = SceneRenderPass::new(device.clone(), queue.clone());
 
+        let passes = vec![
+            RenderPass::Scene(scene_render_pass),
+            RenderPass::Text(text_render_pass),
+        ];
+
         Self {
             device,
             queue,
             render_pipeline,
-            camera_buffer,
-            camera_bind_group,
             instance_buffer,
             depth_texture_view,
             gpu_meshes: HashMap::new(),
-            text_render_pass,
-            scene_render_pass,
+            passes,
+            shared_data,
         }
     }
 }
