@@ -17,7 +17,7 @@ pub fn camera_control_system(
     let front = camera.front;
     let mut multiplier = 1.0;
     if input.is_key_down(KeyCode::ShiftLeft) {
-        multiplier = 2.5;
+        multiplier = 5.0;
     }
     if input.is_key_down(KeyCode::KeyW) {
         camera.position += front * velocity * multiplier;
@@ -84,7 +84,7 @@ pub fn camera_control_system(
     // (projection matrix is expensive, only update if dirty)
     if camera.projection_dirty {
         camera.projection_matrix =
-            Mat4::perspective_rh_gl(camera.zoom.to_radians(), window.aspect_ratio(), 0.1, 1000.0);
+            Mat4::perspective_rh_gl(camera.zoom.to_radians(), window.aspect_ratio(), 1.0, 1000.0);
         camera.projection_dirty = false;
     }
 
