@@ -1,17 +1,14 @@
 use crate::{
-    ecs::{
-        modules::{
-            changed_screen_text_system, chunk_generation_system, init_screen_diagnostics_system,
-            mesh_render_system, removed_screen_text_system, screen_diagnostics_system,
-        },
-        resources::{
-            asset_storage::MeshAsset, input::InputResource, time::TimeResource,
-            window::WindowResource, AssetStorageResource, CameraResource, CameraUniformResource,
-            RenderQueueResource,
-        },
-        systems::{camera_control_system, time_system, InputSystem},
+    core::graphics::WebGpuRenderer,
+    ecs_modules::{
+        changed_screen_text_system, chunk_generation_system, init_screen_diagnostics_system,
+        mesh_render_system, removed_screen_text_system, screen_diagnostics_system,
     },
-    graphics::WebGpuRenderer,
+    ecs_resources::{
+        asset_storage::MeshAsset, input::InputResource, time::TimeResource, window::WindowResource,
+        AssetStorageResource, CameraResource, CameraUniformResource, RenderQueueResource,
+    },
+    ecs_systems::{camera_control_system, time_system, InputSystem},
     guard,
 };
 use bevy_ecs::{
@@ -236,8 +233,7 @@ impl ApplicationHandler for App {
             });
 
             // --- 3. Create the Decoupled Renderer ---
-            let webgpu_renderer =
-                crate::graphics::WebGpuRenderer::new(device.clone(), queue.clone(), &config);
+            let webgpu_renderer = WebGpuRenderer::new(device.clone(), queue.clone(), &config);
             self.renderer = Some(webgpu_renderer);
 
             // --- 4. Store Everything in self ---
