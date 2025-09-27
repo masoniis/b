@@ -1,4 +1,5 @@
-use crate::graphics::rendercore::types::{ISceneRenderPass, InstanceRaw, MAX_TRANSFORMS};
+use crate::graphics::rendercore::types::{InstanceRaw, MAX_TRANSFORMS};
+use crate::graphics::ISceneRenderPass;
 use crate::{
     ecs::resources::{
         asset_storage::{AssetStorageResource, MeshAsset},

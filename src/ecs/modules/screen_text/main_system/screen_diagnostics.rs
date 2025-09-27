@@ -1,4 +1,4 @@
-use crate::ecs::components::{FpsCounterScreenTextMarker, ScreenTextComponent};
+use super::super::{FpsCounterScreenTextMarker, ScreenTextComponent};
 use crate::ecs::resources::TimeResource;
 use bevy_ecs::prelude::*;
 

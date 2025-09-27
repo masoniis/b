@@ -18,6 +18,17 @@ pub struct QueuedText {
     pub font_size: f32,
 }
 
+impl Default for QueuedText {
+    fn default() -> Self {
+        Self {
+            text: String::default(),
+            position: glam::Vec2::default(),
+            color: Color::rgb(0xFF, 0xFF, 0xFF),
+            font_size: f32::default(),
+        }
+    }
+}
+
 pub struct TextRenderPass {
     pub renderer: TextRenderer,
 

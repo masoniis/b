@@ -3,9 +3,10 @@ use crate::{
         asset_storage::MeshAsset, AssetStorageResource, CameraUniformResource, RenderQueueResource,
     },
     graphics::{
-        rendercore::types::{ISceneRenderPass, WebGpuRenderer, DEPTH_FORMAT},
+        rendercore::types::{WebGpuRenderer, DEPTH_FORMAT},
         renderpass::types::ITextRenderPass,
         renderpass::{RenderContext, RenderPass},
+        ISceneRenderPass,
     },
 };
 use std::sync::Arc;
