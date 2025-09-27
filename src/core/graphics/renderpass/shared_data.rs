@@ -2,6 +2,9 @@ use wgpu::util::DeviceExt;
 
 use crate::core::graphics::rendercore::camera_uniform::CameraUniform;
 
+/// Shared render data that is used across multiple render passes.
+/// It should be invariant to the renderpasses themselves, which
+/// includes things like the uniforms that shaders might need.
 pub struct SharedRenderData {
     pub camera_buffer: wgpu::Buffer,
     pub camera_bind_group: wgpu::BindGroup,

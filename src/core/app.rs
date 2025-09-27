@@ -1,14 +1,15 @@
 use crate::{
-    core::graphics::context::GraphicsContext, ecs_resources::window::WindowResource,
-    ecs_systems::EcsState, ecs_systems::InputSystem, guard,
+    core::graphics::context::GraphicsContext,
+    ecs_resources::window::WindowResource,
+    ecs_systems::{EcsState, InputSystem},
+    guard,
+    prelude::*,
 };
 use std::error::Error;
 use std::sync::Arc;
-use tracing::{error, info, warn};
 use winit::event_loop::EventLoop;
 use winit::{
     application::ApplicationHandler,
-    dpi::LogicalSize,
     event::{DeviceEvent, StartCause, WindowEvent},
     event_loop::ActiveEventLoop,
     window::{Window, WindowId},
@@ -53,7 +54,7 @@ impl App {
 impl ApplicationHandler for App {
     fn resumed(&mut self, event_loop: &ActiveEventLoop) {
         if self.window.is_none() {
-            info!("App resumed, creating window and renderer...");
+            info!("App started/resumed, creating window and renderer...");
 
             let window_attributes = Window::default_attributes()
                 .with_title("🅱️")
@@ -87,8 +88,8 @@ impl ApplicationHandler for App {
             window.request_redraw();
         }
 
-        // We run this AFTER the main systems as it is responsible
-        // for cleaning up the inptut deltas for the next frame
+        // We run this AFTER the main systems. It collected all the inputs from the
+        // previous frame, and as such clearing it first would nullify all inputs.
         self.input_system.new_events_hook(&mut self.ecs_state.world);
     }
 

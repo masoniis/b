@@ -1,28 +1,12 @@
 use crate::{
-    core::graphics::{
-        renderpass::{SceneRenderPass, SharedRenderData, TextRenderPass},
-        GpuMesh,
-    },
+    core::graphics::renderpass::RenderPassContex,
+    core::graphics::types::GpuMesh,
     ecs_resources::{
         asset_storage::{AssetId, MeshAsset},
         AssetStorageResource, CameraUniformResource, RenderQueueResource,
     },
 };
 use std::{collections::HashMap, sync::Arc};
-
-/// The types of renderpasses available in the engine.
-pub enum RenderPass {
-    Scene(SceneRenderPass),
-    Text(TextRenderPass),
-}
-
-/// The context shared between all renderpasses
-#[derive(Copy, Clone)]
-pub struct RenderContext<'a> {
-    pub view: &'a wgpu::TextureView,
-    pub depth_texture_view: &'a wgpu::TextureView,
-    pub shared_data: &'a SharedRenderData,
-}
 
 /// A trait for main scene renderpasses
 pub trait ISceneRenderPass {
@@ -38,7 +22,7 @@ pub trait ISceneRenderPass {
     fn render<'a>(
         &'a self,
         encoder: &mut wgpu::CommandEncoder,
-        context: RenderContext<'a>,
+        context: RenderPassContex<'a>,
         ecs_render_queue: &RenderQueueResource,
         mesh_assets: &AssetStorageResource<MeshAsset>,
         instance_buffer: &wgpu::Buffer,
@@ -58,5 +42,5 @@ pub trait ITextRenderPass {
         camera_uniform: &CameraUniformResource,
     );
 
-    fn render<'a>(&'a self, encoder: &mut wgpu::CommandEncoder, context: RenderContext<'a>);
+    fn render<'a>(&'a self, encoder: &mut wgpu::CommandEncoder, context: RenderPassContex<'a>);
 }

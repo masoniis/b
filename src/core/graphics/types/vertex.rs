@@ -1,13 +1,6 @@
 use std::hash::{Hash, Hasher};
 
-/// A type to connect ECS components to the webgpu renderer
-pub struct GpuMesh {
-    pub vertex_buffer: wgpu::Buffer,
-    pub index_buffer: wgpu::Buffer,
-    pub index_count: u32,
-}
-
-/// A type to represent a vertex with position and color
+/// A type to represent a vertex with position and color for the gpu
 #[repr(C)]
 #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
 pub struct Vertex {
