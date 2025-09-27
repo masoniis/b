@@ -6,7 +6,7 @@ use crate::{
     },
     ecs_resources::{
         asset_storage::MeshAsset, input::InputResource, time::TimeResource, AssetStorageResource,
-        CameraResource, CameraUniformResource, RenderQueueResource,
+        CameraResource, CameraUniformResource, RenderQueueResource, WindowResource,
     },
 };
 use bevy_ecs::{
@@ -80,6 +80,10 @@ impl EcsState {
 
     /// Runs the startup schedule a single time.
     pub fn run_startup(&mut self) {
+        if !self.world.contains_resource::<WindowResource>() {
+            panic!("WindowResource must be added to the world before running startup systems.");
+        }
+
         self.startup_scheduler.run(&mut self.world);
     }
 
