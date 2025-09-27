@@ -3,7 +3,7 @@ use bevy_ecs::prelude::Resource;
 use std::collections::hash_map::{Entry, HashMap};
 
 use crate::{
-    core::graphics::{rendercore::QueuedDraw, renderpass::text_renderpass::QueuedText},
+    core::graphics::types::gpu_queues::{QueuedDraw, QueuedText},
     ecs_resources::asset_storage::{Handle, MeshAsset},
 };
 

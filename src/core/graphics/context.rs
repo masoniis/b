@@ -1,34 +1,44 @@
-use crate::core::graphics::WebGpuRenderer;
-use crate::ecs_resources::{
-    asset_storage::MeshAsset, AssetStorageResource, CameraUniformResource, RenderQueueResource,
+use crate::{
+    core::graphics::rendercore::Renderer,
+    ecs_resources::{
+        asset_storage::MeshAsset, AssetStorageResource, CameraUniformResource, RenderQueueResource,
+    },
+    prelude::*,
 };
 use std::sync::Arc;
-use tracing::debug;
-use wgpu::{Adapter, Device, Instance, Queue, Surface, SurfaceConfiguration, SurfaceError};
+use wgpu::{
+    Adapter, Device, DeviceDescriptor, Instance, InstanceDescriptor, PowerPreference, PresentMode,
+    Queue, RequestAdapterOptions, Surface, SurfaceConfiguration, SurfaceError,
+    TextureViewDescriptor,
+};
 use winit::window::Window;
 
 /// A container for the core WGPU state and the renderer.
 pub struct GraphicsContext {
-    pub instance: Instance,
-    pub surface: Surface<'static>,
+    // renderer
+    pub renderer: Renderer,
+
+    // properties
     pub config: SurfaceConfiguration,
-    pub adapter: Adapter,
+    pub surface: Surface<'static>,
     pub device: Arc<Device>,
+    pub instance: Instance,
     pub queue: Arc<Queue>,
-    pub renderer: WebGpuRenderer,
+    pub adapter: Adapter,
 }
 
 impl GraphicsContext {
+    /// Creates a new `GraphicsContext` with the given window.
     pub async fn new(window: Arc<Window>) -> Self {
-        let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor::default());
+        let wgpu_instance = Instance::new(&InstanceDescriptor::default());
 
-        let surface = instance
+        let surface = wgpu_instance
             .create_surface(window.clone())
             .expect("Failed to create surface from window");
 
-        let adapter = instance
-            .request_adapter(&wgpu::RequestAdapterOptions {
-                power_preference: wgpu::PowerPreference::default(),
+        let adapter = wgpu_instance
+            .request_adapter(&RequestAdapterOptions {
+                power_preference: PowerPreference::default(),
                 compatible_surface: Some(&surface),
                 force_fallback_adapter: false,
             })
@@ -36,7 +46,7 @@ impl GraphicsContext {
             .unwrap();
 
         let (device, queue) = adapter
-            .request_device(&wgpu::DeviceDescriptor::default())
+            .request_device(&DeviceDescriptor::default())
             .await
             .unwrap();
 
@@ -51,16 +61,13 @@ impl GraphicsContext {
             .find(|f| f.is_srgb())
             .unwrap_or(surface_caps.formats[0]);
 
-        let present_mode = if surface_caps
-            .present_modes
-            .contains(&wgpu::PresentMode::Immediate)
-        {
-            wgpu::PresentMode::Immediate
+        let present_mode = if surface_caps.present_modes.contains(&PresentMode::Immediate) {
+            PresentMode::Immediate
         } else {
-            wgpu::PresentMode::AutoNoVsync
+            PresentMode::AutoNoVsync
         };
 
-        let config = wgpu::SurfaceConfiguration {
+        let config = SurfaceConfiguration {
             usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
             width: window.inner_size().width,
             height: window.inner_size().height,
@@ -81,28 +88,37 @@ impl GraphicsContext {
             config.present_mode,
         );
 
-        let renderer = WebGpuRenderer::new(device.clone(), queue.clone(), &config);
+        let renderer = Renderer::new(device.clone(), queue.clone(), &config);
 
         Self {
-            instance,
+            // renderer
+            renderer,
+
+            // properties
+            instance: wgpu_instance,
             surface,
             config,
             adapter,
             device,
             queue,
-            renderer,
         }
     }
 
-    pub fn resize(&mut self, new_size: winit::dpi::PhysicalSize<u32>) {
+    /// Let the graphics context know that the window associated with the graphics
+    /// context been resized. Relays information to the necessary config elements.
+    pub fn resize(&mut self, new_size: PhysicalSize<u32>) {
         if new_size.width > 0 && new_size.height > 0 {
             self.config.width = new_size.width;
             self.config.height = new_size.height;
             self.surface.configure(&self.device, &self.config);
             self.renderer.resize(new_size);
+        } else {
+            warn!("Attempted to resize graphics context to zero dimensions.");
         }
     }
 
+    /// A render method that handles the bridge between the ECS world and the
+    /// graphics context. Takes in ECS global resources related to rendering.
     pub fn render(
         &mut self,
         render_queue: &RenderQueueResource,
@@ -112,7 +128,7 @@ impl GraphicsContext {
         let output = self.surface.get_current_texture()?;
         let view = output
             .texture
-            .create_view(&wgpu::TextureViewDescriptor::default());
+            .create_view(&TextureViewDescriptor::default());
 
         if let Err(e) = self
             .renderer

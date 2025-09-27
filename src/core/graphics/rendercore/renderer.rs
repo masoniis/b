@@ -1,17 +1,42 @@
 use crate::{
     core::graphics::{
-        rendercore::types::{WebGpuRenderer, DEPTH_FORMAT},
-        renderpass::types::ITextRenderPass,
-        renderpass::{RenderContext, RenderPass},
-        ISceneRenderPass,
+        renderpass::{
+            traits::{ISceneRenderPass, ITextRenderPass},
+            RenderPass, RenderPassContex, SharedRenderData,
+        },
+        types::mesh::GpuMesh,
     },
     ecs_resources::{
-        asset_storage::MeshAsset, AssetStorageResource, CameraUniformResource, RenderQueueResource,
+        asset_storage::{AssetId, MeshAsset},
+        AssetStorageResource, CameraUniformResource, RenderQueueResource,
     },
 };
-use std::sync::Arc;
+use std::{collections::HashMap, sync::Arc};
+use wgpu::{Device, Queue, RenderPipeline};
 
-impl WebGpuRenderer {
+pub const DEPTH_FORMAT: wgpu::TextureFormat = wgpu::TextureFormat::Depth32Float;
+
+pub struct Renderer {
+    // Core
+    pub device: Arc<Device>,
+    pub queue: Arc<Queue>,
+    pub render_pipeline: RenderPipeline,
+
+    // Render Passes
+    pub passes: Vec<RenderPass>,
+
+    // Shared Data
+    pub shared_data: SharedRenderData,
+
+    // Buffers
+    pub depth_texture_view: wgpu::TextureView,
+    pub instance_buffer: wgpu::Buffer,
+
+    // Assets
+    pub gpu_meshes: HashMap<AssetId, Arc<GpuMesh>>,
+}
+
+impl Renderer {
     pub fn get_device(&self) -> Arc<wgpu::Device> {
         self.device.clone()
     }
@@ -63,7 +88,7 @@ impl WebGpuRenderer {
 
         for pass in &mut self.passes {
             match pass {
-                RenderPass::Scene(scene_pass) => {
+                RenderPass::Scene(ref mut scene_pass) => {
                     ISceneRenderPass::prepare(
                         scene_pass,
                         &self.device,
@@ -73,7 +98,7 @@ impl WebGpuRenderer {
                         camera_uniform,
                     );
                 }
-                RenderPass::Text(text_pass) => {
+                RenderPass::Text(ref mut text_pass) => {
                     ITextRenderPass::prepare(
                         text_pass,
                         &self.device,
@@ -92,7 +117,7 @@ impl WebGpuRenderer {
                 label: Some("Render Encoder"),
             });
 
-        let context = RenderContext {
+        let context = RenderPassContex {
             view,
             depth_texture_view: &self.depth_texture_view,
             shared_data: &self.shared_data,
@@ -100,7 +125,7 @@ impl WebGpuRenderer {
 
         for pass in &mut self.passes {
             match pass {
-                RenderPass::Scene(scene_pass) => {
+                RenderPass::Scene(ref mut scene_pass) => {
                     ISceneRenderPass::render(
                         scene_pass,
                         &mut encoder,
@@ -112,7 +137,7 @@ impl WebGpuRenderer {
                         &self.render_pipeline,
                     );
                 }
-                RenderPass::Text(text_pass) => {
+                RenderPass::Text(ref mut text_pass) => {
                     ITextRenderPass::render(text_pass, &mut encoder, context);
                 }
             }

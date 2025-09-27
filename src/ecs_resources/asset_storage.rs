@@ -1,4 +1,4 @@
-use crate::core::graphics::Vertex;
+use crate::core::graphics::types::vertex::Vertex;
 use bevy_ecs::prelude::Resource;
 use std::collections::HashMap;
 use std::marker::PhantomData;

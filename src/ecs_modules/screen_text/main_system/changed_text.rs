@@ -1,5 +1,5 @@
 use super::super::ScreenTextComponent;
-use crate::core::graphics::renderpass::QueuedText;
+use crate::core::graphics::types::gpu_queues::QueuedText;
 use crate::ecs_resources::RenderQueueResource;
 use bevy_ecs::prelude::{Changed, Entity, Query, ResMut};
 use std::collections::hash_map::Entry;

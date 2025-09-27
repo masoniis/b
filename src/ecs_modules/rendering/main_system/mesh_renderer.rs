@@ -1,4 +1,4 @@
-use crate::core::graphics::rendercore::QueuedDraw;
+use crate::core::graphics::types::gpu_queues::QueuedDraw;
 use crate::ecs_modules::rendering::components::{MeshComponent, TransformComponent};
 use crate::ecs_resources::RenderQueueResource;
 use bevy_ecs::prelude::{Query, ResMut};

@@ -1,11 +1,11 @@
-pub mod scene_renderpass;
-pub use scene_renderpass::SceneRenderPass;
-
-pub mod text_renderpass;
-pub use text_renderpass::{QueuedText, TextRenderPass};
-
+pub mod pass;
+pub mod scene_pass;
 pub mod shared_data;
-pub use shared_data::SharedRenderData;
+pub mod text_pass;
+pub mod traits;
 
-pub mod types;
-pub use types::*;
+pub use pass::*;
+pub use scene_pass::*;
+pub use shared_data::*;
+pub use text_pass::*;
+pub use traits::*;
