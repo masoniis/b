@@ -1,15 +1,16 @@
-use crate::core::graphics::rendercore::types::{InstanceRaw, MAX_TRANSFORMS};
-use crate::core::graphics::ISceneRenderPass;
+use crate::core::graphics::rendercore::setup::MAX_TRANSFORMS;
+use crate::core::graphics::renderpass::traits::ISceneRenderPass;
 use crate::ecs_resources::asset_storage::AssetId;
 use crate::{
-    core::graphics::{GpuMesh, RenderContext, Vertex},
+    core::graphics::renderpass::RenderPassContex,
+    core::graphics::types::instance::InstanceRaw,
+    core::graphics::types::mesh::{create_gpu_mesh_from_data, GpuMesh},
     ecs_resources::{
         asset_storage::{AssetStorageResource, MeshAsset},
         CameraUniformResource, RenderQueueResource,
     },
 };
 use std::{collections::HashMap, sync::Arc};
-use wgpu::util::DeviceExt;
 
 pub struct SceneRenderPass {
     pub device: Arc<wgpu::Device>,
@@ -37,7 +38,7 @@ impl ISceneRenderPass for SceneRenderPass {
     fn render<'a>(
         &'a self,
         encoder: &mut wgpu::CommandEncoder,
-        context: RenderContext<'a>,
+        context: RenderPassContex<'a>,
         ecs_render_queue: &RenderQueueResource,
         mesh_assets: &AssetStorageResource<MeshAsset>,
         instance_buffer: &wgpu::Buffer,
@@ -122,29 +123,4 @@ impl ISceneRenderPass for SceneRenderPass {
             current_offset += instances_to_draw;
         }
     }
-}
-
-pub fn create_gpu_mesh_from_data(
-    device: &wgpu::Device,
-    vertices: &[Vertex],
-    indices: &[u32],
-) -> Arc<GpuMesh> {
-    let vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-        label: Some("Vertex Buffer"),
-        contents: bytemuck::cast_slice(vertices),
-        usage: wgpu::BufferUsages::VERTEX,
-    });
-
-    let index_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-        label: Some("Index Buffer"),
-        contents: bytemuck::cast_slice(indices),
-        usage: wgpu::BufferUsages::INDEX,
-    });
-
-    // Wrap the GpuMesh in an Arc
-    Arc::new(GpuMesh {
-        vertex_buffer,
-        index_buffer,
-        index_count: indices.len() as u32,
-    })
 }

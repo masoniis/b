@@ -1,33 +1,14 @@
 use crate::{
-    core::graphics::{ITextRenderPass, RenderContext},
+    core::graphics::renderpass::{ITextRenderPass, RenderPassContex},
     ecs_resources::{
         asset_storage::MeshAsset, AssetStorageResource, CameraUniformResource, RenderQueueResource,
     },
 };
 use glyphon::{
     cosmic_text::{Attrs, Family, Metrics, Shaping},
-    Buffer, Cache, Color, FontSystem, SwashCache, TextArea, TextAtlas, TextBounds, TextRenderer,
-    Viewport,
+    Buffer, Cache, FontSystem, SwashCache, TextArea, TextAtlas, TextBounds, TextRenderer, Viewport,
 };
 use wgpu::{Device, MultisampleState, Queue, TextureFormat};
-
-pub struct QueuedText {
-    pub text: String,
-    pub position: glam::Vec2,
-    pub color: Color,
-    pub font_size: f32,
-}
-
-impl Default for QueuedText {
-    fn default() -> Self {
-        Self {
-            text: String::default(),
-            position: glam::Vec2::default(),
-            color: Color::rgb(0xFF, 0xFF, 0xFF),
-            font_size: f32::default(),
-        }
-    }
-}
 
 pub struct TextRenderPass {
     pub renderer: TextRenderer,
@@ -125,7 +106,7 @@ impl ITextRenderPass for TextRenderPass {
             .unwrap();
     }
 
-    fn render<'a>(&'a self, encoder: &mut wgpu::CommandEncoder, context: RenderContext<'a>) {
+    fn render<'a>(&'a self, encoder: &mut wgpu::CommandEncoder, context: RenderPassContex<'a>) {
         // The text render pass is a pretty plain pass
         // with no depth buffer to ensure text is on top
         let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {

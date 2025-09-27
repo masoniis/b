@@ -1,12 +1,18 @@
-use super::types::{InstanceRaw, WebGpuRenderer, DEPTH_FORMAT, MAX_TRANSFORMS, SHADER_PATH};
-use crate::core::graphics::{
-    renderpass::{shared_data::SharedRenderData, RenderPass},
-    SceneRenderPass, TextRenderPass, Vertex,
+use crate::{
+    core::graphics::{
+        renderpass::{RenderPass, SceneRenderPass, SharedRenderData, TextRenderPass},
+        types::{instance::InstanceRaw, vertex::Vertex},
+    },
+    prelude::*,
 };
 use std::{collections::HashMap, fs, sync::Arc};
-use winit::dpi::PhysicalSize;
 
-impl WebGpuRenderer {
+use super::renderer::{Renderer, DEPTH_FORMAT};
+
+pub const SHADER_PATH: &str = "src/assets/shaders/scene/simple.wgsl";
+pub const MAX_TRANSFORMS: u64 = 100000;
+
+impl Renderer {
     pub fn new(
         device: Arc<wgpu::Device>,
         queue: Arc<wgpu::Queue>,
