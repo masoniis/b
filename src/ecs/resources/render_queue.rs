@@ -1,5 +1,6 @@
+use bevy_ecs::prelude::Entity;
 use bevy_ecs::prelude::Resource;
-use std::collections::HashMap;
+use std::collections::hash_map::{Entry, HashMap};
 
 use crate::{
     ecs::resources::asset_storage::{Handle, MeshAsset},
@@ -11,8 +12,8 @@ pub struct RenderQueueResource {
     /// Elements queued to render in the world
     scene_object_queue: Vec<QueuedDraw>,
 
-    /// Elements queued to the screen as text UI elements
-    screen_text_queue: Vec<QueuedText>,
+    /// ECS Entities queued to the screen as text UI elements
+    screen_texts: HashMap<Entity, QueuedText>,
 }
 
 impl RenderQueueResource {
@@ -21,20 +22,36 @@ impl RenderQueueResource {
         self.scene_object_queue.clear();
     }
 
-    pub fn clear_text_queue(&mut self) {
-        self.screen_text_queue.clear();
-    }
+    // INFO: ----------------------------
+    //         Adding render data
+    // ----------------------------------
 
-    // INFO: -------------------------
-    //         Adding to queue
-    // -------------------------------
-
-    pub fn add_screen_text(&mut self, text: QueuedText) {
-        self.screen_text_queue.push(text);
+    pub fn add_screen_text(&mut self, entity: Entity, text: QueuedText) {
+        self.screen_texts.insert(entity, text);
     }
 
     pub fn add_scene_object(&mut self, object: QueuedDraw) {
         self.scene_object_queue.push(object);
+    }
+
+    // INFO: ----------------------------------------
+    //         Retrieving individual elements
+    // ----------------------------------------------
+
+    pub fn get_screen_text(&self, entity: &Entity) -> Option<&QueuedText> {
+        self.screen_texts.get(entity)
+    }
+
+    pub fn get_or_insert_screen_text_mut(&mut self, entity: Entity) -> &mut QueuedText {
+        return self.screen_texts.entry(entity).or_default();
+    }
+
+    pub fn get_screen_text_mut(&mut self, entity: &Entity) -> Option<&mut QueuedText> {
+        self.screen_texts.get_mut(entity)
+    }
+
+    pub fn get_screen_text_entry(&mut self, entity: Entity) -> Entry<'_, Entity, QueuedText> {
+        self.screen_texts.entry(entity)
     }
 
     // INFO: ---------------------------
@@ -45,8 +62,8 @@ impl RenderQueueResource {
         &self.scene_object_queue
     }
 
-    pub fn get_screen_texts(&self) -> &Vec<QueuedText> {
-        &self.screen_text_queue
+    pub fn get_screen_texts(&self) -> impl Iterator<Item = &QueuedText> {
+        self.screen_texts.values()
     }
 
     pub fn iter_by_mesh(&self) -> HashMap<Handle<MeshAsset>, Vec<&QueuedDraw>> {
@@ -55,5 +72,13 @@ impl RenderQueueResource {
             map.entry(draw.mesh_handle).or_default().push(draw);
         }
         map
+    }
+
+    // INFO: ---------------------------
+    //         Removing elements
+    // ---------------------------------
+
+    pub fn remove_screen_text(&mut self, entity: &Entity) -> Option<QueuedText> {
+        self.screen_texts.remove(entity)
     }
 }
