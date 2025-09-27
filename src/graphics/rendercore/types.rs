@@ -1,12 +1,6 @@
 use crate::{
-    ecs::resources::{
-        asset_storage::{AssetId, Handle, MeshAsset},
-        AssetStorageResource, CameraUniformResource, RenderQueueResource,
-    },
-    graphics::{
-        renderpass::{RenderContext, SharedRenderData},
-        GpuMesh,
-    },
+    ecs::resources::asset_storage::{AssetId, Handle, MeshAsset},
+    graphics::{renderpass::SharedRenderData, GpuMesh},
 };
 use std::{collections::HashMap, sync::Arc};
 use wgpu::{Device, Queue, RenderPipeline};
@@ -77,39 +71,4 @@ pub struct QueuedDraw {
     pub mesh_handle: Handle<MeshAsset>,
     pub instance_count: u32,
     pub transform: glam::Mat4,
-}
-
-pub trait ISceneRenderPass {
-    fn prepare(
-        &mut self,
-        device: &wgpu::Device,
-        queue: &wgpu::Queue,
-        render_queue: &RenderQueueResource,
-        mesh_assets: &AssetStorageResource<MeshAsset>,
-        camera_uniform: &CameraUniformResource,
-    );
-
-    fn render<'a>(
-        &'a self,
-        encoder: &mut wgpu::CommandEncoder,
-        context: RenderContext<'a>,
-        ecs_render_queue: &RenderQueueResource,
-        mesh_assets: &AssetStorageResource<MeshAsset>,
-        instance_buffer: &wgpu::Buffer,
-        gpu_meshes: &mut HashMap<AssetId, Arc<GpuMesh>>,
-        render_pipeline: &wgpu::RenderPipeline,
-    );
-}
-
-pub trait ITextRenderPass {
-    fn prepare(
-        &mut self,
-        device: &wgpu::Device,
-        queue: &wgpu::Queue,
-        render_queue: &RenderQueueResource,
-        mesh_assets: &AssetStorageResource<MeshAsset>,
-        camera_uniform: &CameraUniformResource,
-    );
-
-    fn render<'a>(&'a self, encoder: &mut wgpu::CommandEncoder, context: RenderContext<'a>);
 }

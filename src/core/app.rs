@@ -1,13 +1,14 @@
 use crate::{
     ecs::{
+        changed_screen_text_system, init_screen_diagnostics_system, removed_screen_text_system,
         resources::{
             asset_storage::MeshAsset, input::InputResource, time::TimeResource,
             window::WindowResource, AssetStorageResource, CameraResource, CameraUniformResource,
             RenderQueueResource,
         },
+        screen_diagnostics_system,
         systems::{
-            camera_control_system, chunk_generation_system, init_screen_diagnostics_system,
-            mesh_render_system, screen_diagnostics_system, screen_text_render_system, time_system,
+            camera_control_system, chunk_generation_system, mesh_render_system, time_system,
             InputSystem,
         },
     },
@@ -85,7 +86,6 @@ impl App {
             chunk_generation_system,
             init_screen_diagnostics_system,
             mesh_render_system.after(chunk_generation_system),
-            screen_text_render_system.after(init_screen_diagnostics_system),
         ));
 
         let mut main_scheduler = Schedule::new(Schedules::Main);
@@ -93,7 +93,8 @@ impl App {
             time_system.before(screen_diagnostics_system),
             screen_diagnostics_system,
             camera_control_system,
-            screen_text_render_system.after(screen_diagnostics_system),
+            changed_screen_text_system.after(screen_diagnostics_system),
+            removed_screen_text_system.after(screen_diagnostics_system),
         ));
 
         Self {
@@ -322,7 +323,6 @@ impl ApplicationHandler for App {
             }
 
             WindowEvent::RedrawRequested => {
-                // All the stuff we borrow from app for the redraw
                 let App {
                     surface,
                     device,
@@ -339,13 +339,12 @@ impl ApplicationHandler for App {
                     Err(wgpu::SurfaceError::Lost) => {
                         warn!("WGPU SurfaceError::Lost, reconfiguring surface.");
                         let size = window.as_ref().unwrap().inner_size();
-                        // We can now safely borrow `config` mutably because `webgpu_renderer` isn't borrowed yet.
                         if let (Some(config), Some(device)) = (config.as_mut(), device.as_ref()) {
                             config.width = size.width;
                             config.height = size.height;
                             surface.configure(device, config);
                         }
-                        window.as_ref().unwrap().request_redraw(); // Request another frame to try again
+                        window.as_ref().unwrap().request_redraw(); // try again with a new frame
                         return;
                     }
                     Err(wgpu::SurfaceError::OutOfMemory) => {
@@ -359,13 +358,14 @@ impl ApplicationHandler for App {
                     }
                 };
 
+                // Get all the resources needed for rendering from the ecs world
+                let (render_queue, mesh_assets, camera_uniform) =
+                    self.render_state.get_mut(&mut self.world);
+
+                // Get the view and render
                 let view = output
                     .texture
                     .create_view(&wgpu::TextureViewDescriptor::default());
-
-                // Get all the resources needed for rendering from the ecs world
-                let (mut render_queue, mesh_assets, camera_uniform) =
-                    self.render_state.get_mut(&mut self.world);
 
                 if let Err(e) = self
                     .renderer
@@ -375,8 +375,6 @@ impl ApplicationHandler for App {
                 {
                     eprintln!("Renderer error: {:?}", e);
                 }
-
-                render_queue.clear_text_queue();
 
                 // Apply any deferred changes.
                 self.render_state.apply(&mut self.world);
