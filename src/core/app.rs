@@ -1,16 +1,15 @@
 use crate::{
     ecs::{
-        changed_screen_text_system, init_screen_diagnostics_system, removed_screen_text_system,
+        modules::{
+            changed_screen_text_system, chunk_generation_system, init_screen_diagnostics_system,
+            mesh_render_system, removed_screen_text_system, screen_diagnostics_system,
+        },
         resources::{
             asset_storage::MeshAsset, input::InputResource, time::TimeResource,
             window::WindowResource, AssetStorageResource, CameraResource, CameraUniformResource,
             RenderQueueResource,
         },
-        screen_diagnostics_system,
-        systems::{
-            camera_control_system, chunk_generation_system, mesh_render_system, time_system,
-            InputSystem,
-        },
+        systems::{camera_control_system, time_system, InputSystem},
     },
     graphics::WebGpuRenderer,
     guard,
