@@ -1,4 +1,4 @@
-use crate::ecs::components::{MeshComponent, TransformComponent};
+use crate::ecs::modules::rendering::components::{MeshComponent, TransformComponent};
 use crate::ecs::resources::asset_storage::MeshAsset;
 use crate::ecs::resources::AssetStorageResource;
 use crate::graphics::Vertex;

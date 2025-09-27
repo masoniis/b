@@ -1,8 +1,8 @@
 pub mod mesh;
-pub use MeshComponent;
+pub use mesh::MeshComponent;
 
 pub mod transform;
-pub use TransformComponent;
+pub use transform::TransformComponent;
 
 pub mod visibility;
-pub use VisibilityComponent;
+pub use visibility::VisibilityComponent;
