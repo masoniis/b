@@ -1,8 +1,9 @@
 use tracing::{error, info};
 
 pub mod core;
-pub mod ecs;
-pub mod graphics;
+pub mod ecs_modules;
+pub mod ecs_resources;
+pub mod ecs_systems;
 pub mod utils;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {

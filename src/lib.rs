@@ -1,4 +1,5 @@
 pub mod core;
-pub mod ecs;
-pub mod graphics;
+pub mod ecs_modules;
+pub mod ecs_resources;
+pub mod ecs_systems;
 pub mod utils;
