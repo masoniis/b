@@ -1,7 +1,9 @@
 use crate::ecs_resources::asset_storage::{Handle, MeshAsset};
+use bevy_ecs::prelude::Entity;
 use glyphon::Color;
 
 pub struct QueuedDraw {
+    pub entity: Entity, // requires entity for mapping removal in the queue
     pub mesh_handle: Handle<MeshAsset>,
     pub instance_count: u32,
     pub transform: glam::Mat4,
