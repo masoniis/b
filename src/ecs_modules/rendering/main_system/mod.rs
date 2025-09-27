@@ -1,2 +1,5 @@
-pub mod mesh_renderer;
-pub use mesh_renderer::mesh_render_system;
+pub mod changed_mesh;
+pub mod removed_mesh;
+
+pub use changed_mesh::changed_mesh_system;
+pub use removed_mesh::removed_mesh_system;

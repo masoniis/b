@@ -1,7 +1,8 @@
 use crate::{
     ecs_modules::{
-        changed_screen_text_system, chunk_generation_system, init_screen_diagnostics_system,
-        mesh_render_system, removed_screen_text_system, screen_diagnostics_system,
+        changed_mesh_system, changed_screen_text_system, chunk_generation_system,
+        init_screen_diagnostics_system, removed_mesh_system, removed_screen_text_system,
+        screen_diagnostics_system,
     },
     ecs_resources::{
         asset_storage::MeshAsset, input::InputResource, time::TimeResource, AssetStorageResource,
@@ -52,7 +53,7 @@ impl EcsState {
         startup_scheduler.add_systems((
             chunk_generation_system,
             init_screen_diagnostics_system,
-            mesh_render_system.after(chunk_generation_system),
+            // mesh_render_system.after(chunk_generation_system),
         ));
 
         // Build the main schedule
@@ -63,6 +64,8 @@ impl EcsState {
             camera_control_system,
             changed_screen_text_system.after(screen_diagnostics_system),
             removed_screen_text_system.after(screen_diagnostics_system),
+            changed_mesh_system,
+            removed_mesh_system,
         ));
 
         // Create a cached SystemState for efficient access to render data
