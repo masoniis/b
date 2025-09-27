@@ -1,4 +1,6 @@
-use super::super::{DiagnosticUiElementMarker, FpsCounterScreenTextMarker, ScreenTextComponent};
+use super::super::components::{
+    DiagnosticUiElementMarker, FpsCounterScreenTextMarker, ScreenTextComponent,
+};
 use crate::ecs_modules::rendering::VisibilityComponent;
 use bevy_ecs::prelude::Commands;
 use glam::vec2;

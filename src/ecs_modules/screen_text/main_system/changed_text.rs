@@ -1,4 +1,4 @@
-use super::super::ScreenTextComponent;
+use super::super::components::ScreenTextComponent;
 use crate::core::graphics::types::gpu_queues::QueuedText;
 use crate::ecs_resources::RenderQueueResource;
 use bevy_ecs::prelude::{Changed, Entity, Query, ResMut};

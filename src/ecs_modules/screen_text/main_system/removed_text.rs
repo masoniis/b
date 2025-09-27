@@ -1,4 +1,4 @@
-use super::super::ScreenTextComponent;
+use super::super::components::ScreenTextComponent;
 use crate::ecs_resources::RenderQueueResource;
 use bevy_ecs::prelude::RemovedComponents;
 use bevy_ecs::prelude::ResMut;

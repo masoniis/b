@@ -1,14 +1,13 @@
 use crate::{
     ecs_modules::{
-        changed_mesh_system, changed_screen_text_system, chunk_generation_system,
-        init_screen_diagnostics_system, removed_mesh_system, removed_screen_text_system,
-        screen_diagnostics_system,
+        camera_control_system, changed_mesh_system, changed_screen_text_system,
+        chunk_generation_system, init_screen_diagnostics_system, removed_mesh_system,
+        removed_screen_text_system, screen_diagnostics_system, time_system,
     },
     ecs_resources::{
         asset_storage::MeshAsset, input::InputResource, time::TimeResource, AssetStorageResource,
         CameraResource, CameraUniformResource, RenderQueueResource,
     },
-    ecs_systems::{camera_control_system, time_system},
 };
 use bevy_ecs::{
     prelude::*,
