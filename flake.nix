@@ -24,9 +24,12 @@
           mkShell (
             {
               buildInputs = [
+                # Rust
                 cargo
-                just
                 wgsl-analyzer
+
+                # Utils
+                just
                 ripgrep
               ]
               ++ (lib.optionals stdenv.isLinux [
