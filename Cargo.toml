@@ -17,7 +17,7 @@ path = "src/main.rs"
 # -----------------------
 
 time = { version = "0.3.43", features = ["formatting", "macros"] }
-tracing = "0.1.41"
+tracing = { version = "0.1.41", features = ["log"] }
 tracing-subscriber = { version = "0.3.20", features = [
   "time",
   "local-time",
