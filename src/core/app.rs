@@ -1,7 +1,7 @@
 use crate::{
     core::graphics::context::GraphicsContext,
+    ecs_bridge::{EcsState, InputSystem},
     ecs_resources::window::WindowResource,
-    ecs_systems::{EcsState, InputSystem},
     guard,
     prelude::*,
 };
