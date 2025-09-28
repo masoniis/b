@@ -1,6 +1,19 @@
-# just run
+# INFO: -----------------------------
+#         Basic Cargo aliases
+# -----------------------------------
+
 run *args:
-    cargo run {{args}}
+	cargo run {{args}}
+
+check *args:
+	cargo check {{args}}
+
+clean *args:
+	cargo clean {{args}}
+
+# INFO: ---------------------------
+#         Advanced commands
+# ---------------------------------
 
 debug *args:
 		#!/usr/bin/env bash
@@ -29,6 +42,3 @@ debug *args:
 		echo -e "\033[1;32mRunning with RUST_LOG=\033[0m$RUST_LOG"
 
 		cargo run
-
-check *args:
-    cargo check {{args}}
