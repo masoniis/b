@@ -51,20 +51,6 @@ build-web:
     wasm-pack build --target web --out-name wasm --out-dir ./web
 
 web:
-    just build-web
-    #!/usr/bin/env bash
-    kill -9 $(lsof -ti:8000) || true
-    cd web && python3 -m http.server &
-    PID=$!
-    trap 'kill $PID' EXIT
+    @just build-web
     open http://localhost:8000
-    wait $PID
-
-# Builds the c library
-buildc:
-	cargo build --release
-	mv target/release/libbcraft.a cbridge/
-
-runc *args:
-    make
-
+    cd web && python3 -m http.server
