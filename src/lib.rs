@@ -13,7 +13,7 @@ pub async fn run() {
     // Platform-specific logger setup
     #[cfg(not(target_arch = "wasm32"))]
     {
-        utils::logger::attach_logger();
+        utils::logger::native_logger::attach_logger();
     }
     #[cfg(target_arch = "wasm32")]
     {
@@ -29,12 +29,7 @@ pub async fn run() {
     // This is where you would create your window and run the app.
     // This logic itself needs to be async, which you've likely done in your App.
     // Let's assume you have a function that sets up and runs the app async.
-    if let Err(e) = core::app::App::run_async().await {
-        // Imaginary async runner function
-        error!("App error: {}", e);
-    } else {
-        info!("App runner finished without errors!");
-    }
+    core::app::run().await;
 }
 
 // This is the web entry point.

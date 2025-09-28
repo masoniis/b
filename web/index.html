@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
   <head>
     <meta charset="utf-8" />
@@ -15,10 +15,11 @@
     </style>
   </head>
   <body>
-    <canvas id="bevy-canvas"></canvas>
+    <canvas id="wgpu-canvas"></canvas>
     <script type="module">
-      import init from './wasm.js';
-      init('./wasm_bg.wasm');
+      import init from "./wasm.js";
+      init("./wasm_bg.wasm");
     </script>
   </body>
 </html>
+

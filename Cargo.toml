@@ -16,13 +16,7 @@ path = "src/main.rs"
 #         logging
 # -----------------------
 
-time = { version = "0.3.43", features = ["formatting", "macros"] }
 tracing = { version = "0.1.41", features = ["log"] }
-tracing-subscriber = { version = "0.3.20", features = [
-  "time",
-  "local-time",
-  "env-filter",
-] }
 
 # INFO: ------------------
 #         graphics
@@ -35,15 +29,26 @@ glyphon = { git = "https://github.com/grovesNL/glyphon.git", rev = "724ab57edbd6
 
 # Utils
 glam = "0.30.5"                                        # math (lin alg)
-image = "0.25.6"                                       # reading texture images
 winit = { version = "0.30.12", features = ["rwh_06"] } # OS window abstraction
 
 # INFO: --------------------
 #         game logic
 # --------------------------
 
-bevy_ecs = "0.16.1"
 pollster = "0.3"
+image = { version = "0.25.6", default-features = false, features = [
+  "png",
+  "jpeg",
+] }
+bevy_ecs = { version = "0.16.1", default-features = false, features = ["std"] }
+
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+time = { version = "0.3.43", features = ["formatting", "macros"] }
+tracing-subscriber = { version = "0.3.20", features = [
+  "time",
+  "local-time",
+  "env-filter",
+] }
 
 # INFO: -------------
 #         web
@@ -60,3 +65,5 @@ web-sys = { version = "0.3", features = [
 ] }
 wasm-bindgen = "0.2"
 wasm-bindgen-futures = "0.4"
+tracing-subscriber = { version = "0.3.20", features = ["env-filter"] }
+time = { version = "0.3.43", features = ["wasm-bindgen"] }

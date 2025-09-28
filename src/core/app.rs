@@ -2,102 +2,94 @@ use crate::{
     core::graphics::context::GraphicsContext,
     ecs_resources::window::WindowResource,
     ecs_systems::{EcsState, InputSystem},
-    guard,
     prelude::*,
 };
-use std::error::Error;
 use std::sync::Arc;
-use winit::event_loop::EventLoop;
 use winit::{
     application::ApplicationHandler,
     event::{DeviceEvent, StartCause, WindowEvent},
-    event_loop::ActiveEventLoop,
+    event_loop::{ActiveEventLoop, EventLoop},
     window::{Window, WindowId},
 };
+
+#[cfg(target_arch = "wasm32")]
+use winit::platform::web::WindowAttributesExtWebSys;
+
+// An enum to represent the state of our app, much cleaner than a boolean.
+pub enum AppState {
+    Running,
+    Paused,
+}
 
 /// The main application struct, responsible for orchestrating the event loop,
 /// ECS, and graphics context.
 pub struct App {
-    // OS and Winit State
-    window: Option<Arc<Window>>,
+    // --- FIELDS ARE NO LONGER OPTIONAL ---
+    // All initialization is done in `new_async` before this struct is created.
+    window: Arc<Window>,
     input_system: InputSystem,
-
-    // Core Engine Modules
-    graphics_context: Option<GraphicsContext>,
+    graphics_context: GraphicsContext,
     ecs_state: EcsState,
-
-    // State Flags
-    startup_done: bool,
+    state: AppState,
 }
 
 impl App {
-    pub fn new() -> Self {
-        Self {
-            window: None,
-            input_system: InputSystem,
-            graphics_context: None,
-            ecs_state: EcsState::new(),
-            startup_done: false,
+    // --- NEW ASYNC CONSTRUCTOR ---
+    // This is where all setup, including async setup, now happens.
+    pub async fn new_async(window: Arc<Window>) -> Self {
+        info!("App starting, creating renderer...");
+
+        let mut ecs_state = EcsState::new();
+        ecs_state
+            .world
+            .insert_resource(WindowResource::new(window.inner_size()));
+
+        window.set_cursor_visible(false);
+        if let Err(err) = window.set_cursor_grab(winit::window::CursorGrabMode::Confined) {
+            error!("Failed to grab cursor: {:?}", err);
         }
-    }
 
-    pub fn run_app() -> Result<(), Box<dyn Error>> {
-        let event_loop = EventLoop::new()?;
+        // --- ASYNC CALL ---
+        // We now `.await` the async function directly, no more `pollster::block_on`.
+        let graphics_context = GraphicsContext::new(window.clone()).await;
 
-        let mut app = App::new();
+        info!("Running startup systems...");
+        ecs_state.run_startup();
 
-        event_loop.run_app(&mut app)?;
-        Ok(())
-    }
-
-    pub async fn run_async() -> Result<(), Box<dyn std::error::Error>> {
-        // ... all your setup and event_loop.run_app() logic ...
-        // The event loop part is tricky, a better pattern is shown below.
-        // For now, let's focus on the entry point.
-        Ok(())
+        Self {
+            window,
+            input_system: InputSystem,
+            graphics_context,
+            ecs_state,
+            state: AppState::Running,
+        }
     }
 }
 
+// --- SIMPLIFIED ApplicationHandler ---
+// Its only job now is to handle events for an already-initialized app.
 impl ApplicationHandler for App {
-    fn resumed(&mut self, event_loop: &ActiveEventLoop) {
-        if self.window.is_none() {
-            info!("App started/resumed, creating window and renderer...");
-
-            let window_attributes = Window::default_attributes()
-                .with_title("🅱️")
-                .with_inner_size(LogicalSize::new(1280, 720));
-            let window = Arc::new(event_loop.create_window(window_attributes).unwrap());
-            self.window = Some(window.clone());
-
-            self.ecs_state
-                .world
-                .insert_resource(WindowResource::new(window.inner_size()));
-
-            window.set_cursor_visible(false);
-            if let Err(err) = window.set_cursor_grab(winit::window::CursorGrabMode::Confined) {
-                error!("Failed to grab cursor: {:?}", err);
-            }
-
-            self.graphics_context = Some(pollster::block_on(GraphicsContext::new(window)));
-
-            info!("Running startup systems...");
-            self.ecs_state.run_startup();
-            self.startup_done = true;
-        }
+    fn resumed(&mut self, _event_loop: &ActiveEventLoop) {
+        // This is intentionally left empty.
+        // All initialization is now handled in `App::new_async` before the event loop starts.
     }
 
     fn new_events(&mut self, _event_loop: &ActiveEventLoop, _: StartCause) {
-        guard!(self.startup_done);
+        // We can now use our state machine to control logic flow.
+        match self.state {
+            AppState::Running => {
+                self.ecs_state.run_main();
 
-        self.ecs_state.run_main();
+                // Clearing inputs happens after they've been processed by the main systems.
+                self.input_system.new_events_hook(&mut self.ecs_state.world);
 
-        if let Some(window) = &self.window {
-            window.request_redraw();
+                self.window.request_redraw();
+            }
+            AppState::Paused => {
+                // When paused, we might still want to clear inputs for a pause menu.
+                self.input_system.new_events_hook(&mut self.ecs_state.world);
+            }
         }
-
-        // We run this AFTER the main systems. It collected all the inputs from the
-        // previous frame, and as such clearing it first would nullify all inputs.
-        self.input_system.new_events_hook(&mut self.ecs_state.world);
     }
 
     fn device_event(
@@ -106,14 +98,12 @@ impl ApplicationHandler for App {
         _id: winit::event::DeviceId,
         event: DeviceEvent,
     ) {
-        guard!(self.startup_done);
         self.input_system
             .device_event_hook(&mut self.ecs_state.world, &event);
     }
 
     fn window_event(&mut self, event_loop: &ActiveEventLoop, _id: WindowId, event: WindowEvent) {
-        guard!(self.startup_done);
-
+        // Let the input system process the event first. It won't consume it.
         self.input_system
             .window_event_hook(&mut self.ecs_state.world, &event);
 
@@ -126,39 +116,87 @@ impl ApplicationHandler for App {
                 let mut window_resource = self.ecs_state.world.resource_mut::<WindowResource>();
                 window_resource.width = physical_size.width;
                 window_resource.height = physical_size.height;
-
-                if let Some(gfx) = self.graphics_context.as_mut() {
-                    gfx.resize(physical_size);
-                }
+                self.graphics_context.resize(physical_size);
             }
+            // Example of using the state machine
+            WindowEvent::KeyboardInput {
+                event:
+                    winit::event::KeyEvent {
+                        logical_key: winit::keyboard::Key::Named(winit::keyboard::NamedKey::Escape),
+                        state: winit::event::ElementState::Pressed,
+                        ..
+                    },
+                ..
+            } => match self.state {
+                AppState::Running => {
+                    info!("Pausing game.");
+                    self.state = AppState::Paused;
+                }
+                AppState::Paused => {
+                    info!("Resuming game.");
+                    self.state = AppState::Running;
+                }
+            },
             WindowEvent::RedrawRequested => {
-                let gfx = self.graphics_context.as_mut().unwrap();
                 let (render_queue, mesh_assets, camera_uniform) = self
                     .ecs_state
                     .render_state
                     .get_mut(&mut self.ecs_state.world);
 
-                match gfx.render(&render_queue, &mesh_assets, &camera_uniform) {
+                match self
+                    .graphics_context
+                    .render(&render_queue, &mesh_assets, &camera_uniform)
+                {
                     Ok(_) => {}
                     Err(wgpu::SurfaceError::Lost) => {
                         warn!("WGPU SurfaceError::Lost, resizing surface.");
-                        let size = self.window.as_ref().unwrap().inner_size();
-                        gfx.resize(size);
+                        let size = self.window.inner_size();
+                        self.graphics_context.resize(size);
                     }
                     Err(wgpu::SurfaceError::OutOfMemory) => {
                         error!("WGPU SurfaceError::OutOfMemory, exiting event loop.");
                         event_loop.exit();
                     }
-                    Err(e) => eprintln!("Error during render: {:?}", e),
+                    Err(e) => error!("Error during render: {:?}", e),
                 }
 
                 self.ecs_state.render_state.apply(&mut self.ecs_state.world);
-
-                if let Some(window) = &self.window {
-                    window.request_redraw();
-                }
+                self.window.request_redraw();
             }
             _ => {}
         }
     }
+}
+
+// --- NEW TOP-LEVEL RUNNER FUNCTION ---
+// This is the shared entry point for both native and web.
+pub async fn run() {
+    let event_loop = EventLoop::new().unwrap();
+
+    let mut window_attributes = Window::default_attributes()
+        .with_title("🅱️")
+        .with_inner_size(LogicalSize::new(1280, 720));
+
+    // --- WEB-SPECIFIC CANVAS ATTACHMENT ---
+    #[cfg(target_arch = "wasm32")]
+    {
+        use web_sys::wasm_bindgen::{prelude::*, JsCast};
+        let web_window = web_sys::window().unwrap();
+        let document = web_window.document().unwrap();
+        // Use a CSS selector to find your canvas element
+        let canvas = document
+            .get_element_by_id("wgpu-canvas")
+            .unwrap()
+            .dyn_into::<web_sys::HtmlCanvasElement>()
+            .unwrap();
+        window_attributes = window_attributes.with_canvas(Some(canvas));
+    }
+
+    let window = Arc::new(event_loop.create_window(window_attributes).unwrap());
+
+    let mut app = App::new_async(window).await;
+
+    // `run_app` is a winit feature that handles the event loop differences
+    // between native and web automatically. It blocks on native and returns on web.
+    event_loop.run_app(&mut app).unwrap();
 }
