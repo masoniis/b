@@ -28,10 +28,9 @@ impl<T> Handle<T> {
     }
 }
 
-// Here is the manual implementation of the `Clone` trait.
+// Clone for handle just copies the id
 impl<T> Clone for Handle<T> {
     fn clone(&self) -> Self {
-        // As you can see, cloning a Handle just copies its ID.
         Self {
             id: self.id,
             _phantom: PhantomData,
@@ -39,7 +38,7 @@ impl<T> Clone for Handle<T> {
     }
 }
 
-// It is a "marker" trait, so its implementation block is empty.
+// "marker" trait, so its implementation block is empty.
 impl<T> Copy for Handle<T> {}
 
 pub type AssetId = u64; // Small abstraction for ID that can easily be hotswapped

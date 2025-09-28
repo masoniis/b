@@ -1,10 +1,5 @@
 use crate::{
-    ecs_modules::{
-        PlayerModule,     // Import PlayerModule
-        RenderingModule,  // Import RenderingModule
-        ScreenTextModule, // Import ScreenTextModule
-        WorldModule,      // Import WorldModule
-    },
+    ecs_modules::{PlayerModule, RenderingModule, ScreenTextModule, WorldModule},
     ecs_resources::{
         asset_storage::MeshAsset, input::InputResource, time::TimeResource, AssetStorageResource,
         CameraResource, CameraUniformResource, RenderQueueResource, WindowResource,
@@ -18,7 +13,7 @@ use bevy_ecs::{
 };
 
 #[derive(ScheduleLabel, Debug, Clone, PartialEq, Eq, Hash)]
-pub enum Schedules {
+pub enum ScheduleLables {
     Startup,
     Main,
 }
@@ -49,8 +44,8 @@ impl EcsState {
         // WindowResource will be added later when the window is created
 
         // Set up the schedulers
-        let mut startup_scheduler = Schedule::new(Schedules::Startup);
-        let mut main_scheduler = Schedule::new(Schedules::Main);
+        let mut startup_scheduler = Schedule::new(ScheduleLables::Startup);
+        let mut main_scheduler = Schedule::new(ScheduleLables::Main);
 
         // Add all the modules
         ScreenTextModule::build(&mut startup_scheduler, &mut main_scheduler, &mut world);
