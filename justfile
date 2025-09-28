@@ -40,3 +40,12 @@ buildc:
 
 runc *args:
     make
+
+web:
+    #!/usr/bin/env bash
+    kill -9 $(lsof -ti:8000) || true # kill previous 8000 port if it exists
+    cd web && python3 -m http.server &
+    PID=$!
+    trap 'kill $PID' EXIT
+    open http://localhost:8000
+    wait $PID
