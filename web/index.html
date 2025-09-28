@@ -1,11 +1,24 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hello World</title>
-</head>
-<body>
-    <h1>Hello, World!</h1>
-</body>
+  <head>
+    <meta charset="utf-8" />
+    <title>Bevy App</title>
+    <style>
+      body {
+        margin: 0;
+        overflow: hidden;
+      }
+      canvas {
+        width: 100vw;
+        height: 100vh;
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="bevy-canvas"></canvas>
+    <script type="module">
+      import init from './wasm.js';
+      init('./wasm_bg.wasm');
+    </script>
+  </body>
 </html>

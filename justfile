@@ -41,9 +41,13 @@ buildc:
 runc *args:
     make
 
+build-web:
+    wasm-pack build --target web --out-name wasm --out-dir ./web
+
 web:
+    just build-web
     #!/usr/bin/env bash
-    kill -9 $(lsof -ti:8000) || true # kill previous 8000 port if it exists
+    kill -9 $(lsof -ti:8000) || true
     cd web && python3 -m http.server &
     PID=$!
     trap 'kill $PID' EXIT
