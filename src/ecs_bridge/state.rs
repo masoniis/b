@@ -1,8 +1,9 @@
 use crate::{
     ecs_modules::{
-        camera_control_system, changed_mesh_system, changed_screen_text_system,
-        chunk_generation_system, init_screen_diagnostics_system, removed_mesh_system,
-        removed_screen_text_system, screen_diagnostics_system, time_system,
+        PlayerModule,     // Import PlayerModule
+        RenderingModule,  // Import RenderingModule
+        ScreenTextModule, // Import ScreenTextModule
+        WorldModule,      // Import WorldModule
     },
     ecs_resources::{
         asset_storage::MeshAsset, input::InputResource, time::TimeResource, AssetStorageResource,
@@ -47,25 +48,15 @@ impl EcsState {
         world.insert_resource(AssetStorageResource::<MeshAsset>::default());
         // WindowResource will be added later when the window is created
 
-        // Build the startup schedule
+        // Set up the schedulers
         let mut startup_scheduler = Schedule::new(Schedules::Startup);
-        startup_scheduler.add_systems((
-            chunk_generation_system,
-            init_screen_diagnostics_system,
-            // mesh_render_system.after(chunk_generation_system),
-        ));
-
-        // Build the main schedule
         let mut main_scheduler = Schedule::new(Schedules::Main);
-        main_scheduler.add_systems((
-            time_system.before(screen_diagnostics_system),
-            screen_diagnostics_system,
-            camera_control_system,
-            changed_screen_text_system.after(screen_diagnostics_system),
-            removed_screen_text_system.after(screen_diagnostics_system),
-            changed_mesh_system,
-            removed_mesh_system,
-        ));
+
+        // Add all the modules
+        ScreenTextModule::build(&mut startup_scheduler, &mut main_scheduler, &mut world);
+        PlayerModule::build(&mut startup_scheduler, &mut main_scheduler, &mut world);
+        RenderingModule::build(&mut startup_scheduler, &mut main_scheduler, &mut world);
+        WorldModule::build(&mut startup_scheduler, &mut main_scheduler, &mut world);
 
         // Create a cached SystemState for efficient access to render data
         let render_state = SystemState::new(&mut world);
