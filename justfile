@@ -1,6 +1,19 @@
-# just run
+# INFO: -----------------------------
+#         Basic Cargo aliases
+# -----------------------------------
+
 run *args:
-    cargo run {{args}}
+	cargo run {{args}}
+
+check *args:
+	cargo check {{args}}
+
+clean *args:
+	cargo clean {{args}}
+
+# INFO: ---------------------------
+#         Advanced commands
+# ---------------------------------
 
 debug *args:
 		#!/usr/bin/env bash
@@ -30,16 +43,9 @@ debug *args:
 
 		cargo run
 
-check *args:
-    cargo check {{args}}
-
-# Builds the c library
-buildc:
-	cargo build --release
-	mv target/release/libbcraft.a cbridge/
-
-runc *args:
-    make
+# INFO: -------------
+#         Web
+# -------------------
 
 build-web:
     wasm-pack build --target web --out-name wasm --out-dir ./web
@@ -53,3 +59,12 @@ web:
     trap 'kill $PID' EXIT
     open http://localhost:8000
     wait $PID
+
+# Builds the c library
+buildc:
+	cargo build --release
+	mv target/release/libbcraft.a cbridge/
+
+runc *args:
+    make
+

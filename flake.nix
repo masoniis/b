@@ -28,10 +28,16 @@
                 cargo
                 rustc
 
-                just
-                wgsl-analyzer
-                ripgrep
+                # Web
                 wasm-pack
+                lld
+
+                # webgpu
+                wgsl-analyzer
+
+                # Utils
+                just
+                ripgrep
               ]
               ++ (lib.optionals stdenv.isLinux [
                 libGL
