@@ -28,18 +28,15 @@ tracing-subscriber = { version = "0.3.20", features = [
 #         graphics
 # ------------------------
 
-gl = "0.14.0"
-glam = "0.30.5"
-glutin = "0.32.3"
-glutin-winit = "0.5.0"
-image = "0.25.6"
-winit = { version = "0.30.12", features = ["rwh_06"] }
-
 ## Rendering
 wgpu = "26.0.1"
 bytemuck = { version = "1.13", features = ["derive"] }
-### glyphon latest git rev updated to 26 so nice to have 
 glyphon = { git = "https://github.com/grovesNL/glyphon.git", rev = "724ab57edbd6c59ba219cd99cf89925d056392db" }
+
+# Utils
+glam = "0.30.5"                                        # math (lin alg)
+image = "0.25.6"                                       # reading texture images
+winit = { version = "0.30.12", features = ["rwh_06"] } # OS window abstraction
 
 # INFO: --------------------
 #         game logic

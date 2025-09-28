@@ -49,6 +49,13 @@ impl App {
         event_loop.run_app(&mut app)?;
         Ok(())
     }
+
+    pub async fn run_async() -> Result<(), Box<dyn std::error::Error>> {
+        // ... all your setup and event_loop.run_app() logic ...
+        // The event loop part is tricky, a better pattern is shown below.
+        // For now, let's focus on the entry point.
+        Ok(())
+    }
 }
 
 impl ApplicationHandler for App {
