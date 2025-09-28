@@ -31,7 +31,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 // You need an empty main for wasm builds when you have a [[bin]] section,
 // otherwise the linker will complain.
-#[cfg(target_arch = "wasm32")]
-fn main() {
-    // This does nothing on wasm, as `start()` in lib.rs is the entry point.
-}
+// #[cfg(target_arch = "wasm32")]
+// fn main() {
+//     // This does nothing on wasm, as `start()` in lib.rs is the entry point.
+// }
