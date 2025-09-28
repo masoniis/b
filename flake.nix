@@ -24,10 +24,14 @@
           mkShell (
             {
               buildInputs = [
+                # Rust tools
                 cargo
+                rustc
+
                 just
                 wgsl-analyzer
                 ripgrep
+                wasm-pack
               ]
               ++ (lib.optionals stdenv.isLinux [
                 libGL
