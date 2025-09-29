@@ -1,21 +1,20 @@
 use crate::core::graphics::types::vertex::Vertex;
 use crate::ecs_modules::rendering::{MeshComponent, TransformComponent};
 use crate::ecs_resources::asset_storage::MeshAsset;
+use crate::ecs_resources::texture_map::TextureMapResource;
 use crate::ecs_resources::AssetStorageResource;
-use bevy_ecs::prelude::Commands;
-use bevy_ecs::prelude::ResMut;
-use glam::{Vec2, Vec3};
+use bevy_ecs::prelude::{Commands, Res, ResMut};
+use glam::Vec3;
 use tracing::info;
 
 pub fn cube_array_generation_system(
     mut commands: Commands,
     mut mesh_assets: ResMut<AssetStorageResource<MeshAsset>>,
+    texture_map: Res<TextureMapResource>,
 ) {
     info!("Generating initial cube array...");
 
-    let atlas_id = "main_atlas".to_string(); // unused for now
-    let uv_min = Vec2::new(0.0, 0.0);
-    let uv_max = Vec2::new(1.0, 1.0);
+    let green_texture_index = texture_map.registry.get_or_missing("green");
 
     #[rustfmt::skip]
     let vertices_data: &[f32] = &[
@@ -36,8 +35,9 @@ pub fn cube_array_generation_system(
         .map(|chunk| {
             Vertex {
                 position: [chunk[0], chunk[1], chunk[2]],
-                normal: [0.0, 0.0, 0.0],     // Placeholder normal
-                color: [1.0, 1.0, 1.0, 1.0], // Assuming white color
+                color: [1.0, 1.0, 1.0], // Assuming white color
+                tex_coords: [chunk[3], chunk[4]],
+                texture_index: green_texture_index,
             }
         })
         .collect();
@@ -53,6 +53,7 @@ pub fn cube_array_generation_system(
     ];
 
     let cube_mesh_asset = MeshAsset {
+        name: "cube_mesh".to_string(),
         vertices: vertices.clone(),
         indices: indices.to_vec(),
     };
@@ -60,19 +61,11 @@ pub fn cube_array_generation_system(
     // 2. Add the asset to the central storage and get a handle.
     let mesh_handle = mesh_assets.add(cube_mesh_asset);
 
-    // let gpu_mesh = create_gpu_mesh_from_data(&renderer.get_device(), &vertices, &indices);
-
     // An array of cubes
-    for x in 0..100 {
-        for z in 0..100 {
+    for x in 0..25 {
+        for z in 0..25 {
             commands.spawn((
-                MeshComponent::new(
-                    // &gpu_mesh,
-                    atlas_id.clone(),
-                    uv_min,
-                    uv_max,
-                    mesh_handle.clone(),
-                ),
+                MeshComponent::new(mesh_handle.clone()),
                 TransformComponent {
                     position: Vec3::new((x * -2) as f32, 0.0, (z * -2) as f32),
                     ..Default::default()

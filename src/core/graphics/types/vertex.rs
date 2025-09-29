@@ -5,8 +5,9 @@ use std::hash::{Hash, Hasher};
 #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
 pub struct Vertex {
     pub position: [f32; 3],
-    pub color: [f32; 4],
-    pub normal: [f32; 3],
+    pub color: [f32; 3],
+    pub tex_coords: [f32; 2],
+    pub texture_index: u32,
 }
 
 impl PartialEq for Vertex {
@@ -20,6 +21,12 @@ impl PartialEq for Vertex {
                 .iter()
                 .zip(other.color.iter())
                 .all(|(a, b)| a.to_bits() == b.to_bits())
+            && self
+                .tex_coords
+                .iter()
+                .zip(other.tex_coords.iter())
+                .all(|(a, b)| a.to_bits() == b.to_bits())
+            && self.texture_index == other.texture_index
     }
 }
 
@@ -29,13 +36,17 @@ impl Hash for Vertex {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.position.iter().for_each(|f| f.to_bits().hash(state));
         self.color.iter().for_each(|f| f.to_bits().hash(state));
+        self.tex_coords.iter().for_each(|f| f.to_bits().hash(state));
+        self.texture_index.hash(state);
     }
 }
 
 impl Vertex {
-    const ATTRIBUTES: [wgpu::VertexAttribute; 2] = wgpu::vertex_attr_array![
+    const ATTRIBUTES: [wgpu::VertexAttribute; 4] = wgpu::vertex_attr_array![
         0 => Float32x3, // position
         1 => Float32x3, // color
+        2 => Float32x2, // tex_coords
+        3 => Uint32,    // texture_index
     ];
 
     pub fn desc() -> wgpu::VertexBufferLayout<'static> {

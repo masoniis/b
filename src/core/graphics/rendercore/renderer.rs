@@ -27,6 +27,7 @@ pub struct Renderer {
 
     // Shared Data
     pub shared_data: SharedRenderData,
+    pub texture_bind_group: wgpu::BindGroup,
 
     // Buffers
     pub depth_texture_view: wgpu::TextureView,
@@ -135,6 +136,7 @@ impl Renderer {
                         &self.instance_buffer,
                         &mut self.gpu_meshes,
                         &self.render_pipeline,
+                        &self.texture_bind_group,
                     );
                 }
                 RenderPass::Text(ref mut text_pass) => {

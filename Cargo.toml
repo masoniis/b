@@ -12,9 +12,9 @@ path = "src/main.rs"
 
 [dependencies]
 
-# INFO: -----------------
-#         logging
-# -----------------------
+# INFO: --------------------------------
+#         logging/error handling
+# --------------------------------------
 
 time = { version = "0.3.43", features = ["formatting", "macros"] }
 tracing = "0.1.41"
@@ -23,6 +23,7 @@ tracing-subscriber = { version = "0.3.20", features = [
   "local-time",
   "env-filter",
 ] }
+anyhow = "1.0.100"
 
 # INFO: ------------------
 #         graphics

@@ -17,6 +17,7 @@ pub fn changed_mesh_system(
             queued_draw.transform = transform_comp.to_matrix();
         } else {
             debug!(target: "mesh_sync", "Adding new mesh for entity {:?}", entity);
+
             let queued_draw = QueuedDraw {
                 entity,
                 mesh_handle: mesh_comp.mesh_handle,

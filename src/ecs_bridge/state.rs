@@ -1,8 +1,11 @@
 use crate::{
     ecs_modules::{PlayerModule, RenderingModule, ScreenTextModule, WorldModule},
     ecs_resources::{
-        asset_storage::MeshAsset, input::InputResource, time::TimeResource, AssetStorageResource,
-        CameraResource, CameraUniformResource, RenderQueueResource, WindowResource,
+        asset_storage::{MeshAsset, TextureAsset},
+        input::InputResource,
+        time::TimeResource,
+        AssetStorageResource, CameraResource, CameraUniformResource, RenderQueueResource,
+        WindowResource,
     },
 };
 use bevy_ecs::{
@@ -41,6 +44,7 @@ impl EcsState {
         world.insert_resource(RenderQueueResource::default());
         world.insert_resource(CameraUniformResource::default());
         world.insert_resource(AssetStorageResource::<MeshAsset>::default());
+        world.insert_resource(AssetStorageResource::<TextureAsset>::default());
         // WindowResource will be added later when the window is created
 
         // Set up the schedulers

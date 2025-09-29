@@ -1,7 +1,7 @@
 use crate::{
     core::graphics::context::GraphicsContext,
     ecs_bridge::{EcsState, InputSystem},
-    ecs_resources::window::WindowResource,
+    ecs_resources::{texture_map::TextureMapResource, window::WindowResource},
     guard,
     prelude::*,
 };
@@ -71,7 +71,11 @@ impl ApplicationHandler for App {
                 error!("Failed to grab cursor: {:?}", err);
             }
 
-            self.graphics_context = Some(pollster::block_on(GraphicsContext::new(window)));
+            let (graphics_context, texture_map) = pollster::block_on(GraphicsContext::new(window));
+            self.graphics_context = Some(graphics_context);
+            self.ecs_state.world.insert_resource(TextureMapResource {
+                registry: texture_map,
+            });
 
             info!("Running startup systems...");
             self.ecs_state.run_startup();

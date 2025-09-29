@@ -18,3 +18,6 @@ pub use time::TimeResource;
 
 pub mod window;
 pub use window::WindowResource;
+
+pub mod texture_map;
+pub use texture_map::TextureMapResource;
