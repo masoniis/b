@@ -1,3 +1,4 @@
+#[derive(Clone)]
 pub struct Block {
-    id: u32,
+    pub id: u32,
 }
