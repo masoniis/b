@@ -36,7 +36,8 @@ pub fn chunk_generation_system(
         .map(|chunk| {
             Vertex {
                 position: [chunk[0], chunk[1], chunk[2]],
-                color: [1.0, 1.0, 1.0], // Assuming white color
+                normal: [0.0, 0.0, 0.0],     // Placeholder normal
+                color: [1.0, 1.0, 1.0, 1.0], // Assuming white color
             }
         })
         .collect();
