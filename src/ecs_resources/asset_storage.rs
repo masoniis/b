@@ -1,16 +1,37 @@
 use crate::core::graphics::types::vertex::Vertex;
 use bevy_ecs::prelude::Resource;
 use std::collections::HashMap;
+use std::hash::{Hash, Hasher};
 use std::marker::PhantomData;
 
 // INFO: --------------------
 //        Asset types
 // --------------------------
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct BlockAppearance {
+    pub top_face_texture_index: u32,
+    pub bottom_face_texture_index: u32,
+    pub side_face_texture_index: u32,
+}
+
+#[derive(Debug, Clone)]
+pub struct BlockDefinition {
+    pub name: String,
+    pub appearance: BlockAppearance,
+    pub is_transparent: bool,
+}
+
 #[derive(Debug, PartialEq, Eq, Hash)]
 pub struct MeshAsset {
     pub vertices: Vec<Vertex>,
     pub indices: Vec<u32>,
+}
+
+#[derive(Debug, PartialEq, Eq, Hash)]
+pub struct TextureAsset {
+    pub dimensions: (u32, u32),
+    pub bytes: Vec<u8>, // The raw pixel data (e.g., RGBA8)
 }
 
 // INFO: ---------------------------
