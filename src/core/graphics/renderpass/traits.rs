@@ -28,6 +28,7 @@ pub trait ISceneRenderPass {
         instance_buffer: &wgpu::Buffer,
         gpu_meshes: &mut HashMap<AssetId, Arc<GpuMesh>>,
         render_pipeline: &wgpu::RenderPipeline,
+        texture_bind_group: &wgpu::BindGroup,
     );
 }
 

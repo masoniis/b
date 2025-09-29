@@ -1,6 +1,7 @@
 use crate::{
     core::graphics::{
         renderpass::{RenderPass, SceneRenderPass, SharedRenderData, TextRenderPass},
+        textures::TextureArray,
         types::{instance::InstanceRaw, vertex::Vertex},
     },
     prelude::*,
@@ -17,8 +18,24 @@ impl Renderer {
         device: Arc<wgpu::Device>,
         queue: Arc<wgpu::Queue>,
         config: &wgpu::SurfaceConfiguration,
+        texture_array: &TextureArray,
     ) -> Self {
         let shared_data = SharedRenderData::new(&device);
+
+        let texture_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+            layout: &shared_data.texture_bind_group_layout,
+            entries: &[
+                wgpu::BindGroupEntry {
+                    binding: 0,
+                    resource: wgpu::BindingResource::TextureView(&texture_array.view),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 1,
+                    resource: wgpu::BindingResource::Sampler(&texture_array.sampler),
+                },
+            ],
+            label: Some("texture_bind_group"),
+        });
 
         let shader_source = fs::read_to_string(SHADER_PATH).expect("Failed to read shader file");
         let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
@@ -52,7 +69,10 @@ impl Renderer {
         let render_pipeline_layout =
             device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                 label: Some("Render Pipeline Layout"),
-                bind_group_layouts: &[&shared_data.camera_bind_group_layout], // Use the shared layout
+                bind_group_layouts: &[
+                    &shared_data.camera_bind_group_layout,
+                    &shared_data.texture_bind_group_layout,
+                ],
                 push_constant_ranges: &[],
             });
 
@@ -117,6 +137,7 @@ impl Renderer {
             device,
             queue,
             render_pipeline,
+            texture_bind_group,
             instance_buffer,
             depth_texture_view,
             gpu_meshes: HashMap::new(),

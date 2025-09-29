@@ -1,11 +1,12 @@
 use crate::{
     core::graphics::rendercore::Renderer,
+    core::graphics::textures::{load_texture_array, TextureRegistry},
     ecs_resources::{
         asset_storage::MeshAsset, AssetStorageResource, CameraUniformResource, RenderQueueResource,
     },
     prelude::*,
 };
-use std::sync::Arc;
+use std::{path::Path, sync::Arc};
 use wgpu::{
     Adapter, Device, DeviceDescriptor, Instance, InstanceDescriptor, PowerPreference, PresentMode,
     Queue, RequestAdapterOptions, Surface, SurfaceConfiguration, SurfaceError,
@@ -13,7 +14,7 @@ use wgpu::{
 };
 use winit::window::Window;
 
-/// A container for the core WGPU state and the renderer.
+/// A container for the core WGPU state and the renderer that the app holds.
 pub struct GraphicsContext {
     // renderer
     pub renderer: Renderer,
@@ -29,7 +30,7 @@ pub struct GraphicsContext {
 
 impl GraphicsContext {
     /// Creates a new `GraphicsContext` with the given window.
-    pub async fn new(window: Arc<Window>) -> Self {
+    pub async fn new(window: Arc<Window>) -> (Self, TextureRegistry) {
         let wgpu_instance = Instance::new(&InstanceDescriptor::default());
 
         let surface = wgpu_instance
@@ -52,6 +53,9 @@ impl GraphicsContext {
 
         let device = Arc::new(device);
         let queue = Arc::new(queue);
+
+        let (texture_array, texture_map) =
+            load_texture_array(&device, &queue, Path::new("src/assets/textures")).unwrap();
 
         let surface_caps = surface.get_capabilities(&adapter);
         let surface_format = surface_caps
@@ -88,20 +92,23 @@ impl GraphicsContext {
             config.present_mode,
         );
 
-        let renderer = Renderer::new(device.clone(), queue.clone(), &config);
+        let renderer = Renderer::new(device.clone(), queue.clone(), &config, &texture_array);
 
-        Self {
-            // renderer
-            renderer,
+        (
+            Self {
+                // renderer
+                renderer,
 
-            // properties
-            instance: wgpu_instance,
-            surface,
-            config,
-            adapter,
-            device,
-            queue,
-        }
+                // properties
+                instance: wgpu_instance,
+                surface,
+                config,
+                adapter,
+                device,
+                queue,
+            },
+            texture_map,
+        )
     }
 
     /// Let the graphics context know that the window associated with the graphics
