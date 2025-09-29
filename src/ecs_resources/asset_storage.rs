@@ -3,11 +3,19 @@ use bevy_ecs::prelude::Resource;
 use std::collections::HashMap;
 use std::marker::PhantomData;
 
+// INFO: --------------------
+//        Asset types
+// --------------------------
+
 #[derive(Debug, PartialEq, Eq, Hash)]
 pub struct MeshAsset {
     pub vertices: Vec<Vertex>,
     pub indices: Vec<u32>,
 }
+
+// INFO: ---------------------------
+//        The storage itself
+// ---------------------------------
 
 #[derive(Debug, PartialEq, Eq, Hash)]
 pub struct Handle<T> {
@@ -41,7 +49,7 @@ impl<T> Clone for Handle<T> {
 // "marker" trait, so its implementation block is empty.
 impl<T> Copy for Handle<T> {}
 
-pub type AssetId = u64; // Small abstraction for ID that can easily be hotswapped
+pub type AssetId = u32; // Small abstraction for ID that can easily be hotswapped
 
 #[derive(Resource)]
 pub struct AssetStorageResource<T> {

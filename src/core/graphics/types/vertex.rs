@@ -5,7 +5,8 @@ use std::hash::{Hash, Hasher};
 #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
 pub struct Vertex {
     pub position: [f32; 3],
-    pub color: [f32; 3],
+    pub color: [f32; 4],
+    pub normal: [f32; 3],
 }
 
 impl PartialEq for Vertex {
