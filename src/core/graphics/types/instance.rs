@@ -13,22 +13,22 @@ impl InstanceRaw {
             attributes: &[
                 wgpu::VertexAttribute {
                     offset: 0,
-                    shader_location: 2, // model_row_0
+                    shader_location: 4, // model_row_0
                     format: wgpu::VertexFormat::Float32x4,
                 },
                 wgpu::VertexAttribute {
                     offset: mem::size_of::<[f32; 4]>() as wgpu::BufferAddress,
-                    shader_location: 3, // model_row_1
+                    shader_location: 5, // model_row_1
                     format: wgpu::VertexFormat::Float32x4,
                 },
                 wgpu::VertexAttribute {
                     offset: (mem::size_of::<[f32; 4]>() * 2) as wgpu::BufferAddress,
-                    shader_location: 4, // model_row_2
+                    shader_location: 6, // model_row_2
                     format: wgpu::VertexFormat::Float32x4,
                 },
                 wgpu::VertexAttribute {
                     offset: (mem::size_of::<[f32; 4]>() * 3) as wgpu::BufferAddress,
-                    shader_location: 5, // model_row_3
+                    shader_location: 7, // model_row_3
                     format: wgpu::VertexFormat::Float32x4,
                 },
             ],
