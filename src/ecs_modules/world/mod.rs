@@ -9,6 +9,9 @@ pub mod main_system;
 pub use main_system as world_main_system;
 pub use world_main_system::*;
 
+pub mod utils;
+pub mod world_gen;
+
 pub struct WorldModule;
 
 impl WorldModule {
@@ -17,7 +20,10 @@ impl WorldModule {
         _main_schedule: &mut Schedule,
         _world: &mut World,
     ) {
-        _startup_schedule.add_systems((startup_system::chunk_generation_system,));
+        _startup_schedule.add_systems((
+            startup_system::chunk_generation_system,
+            startup_system::cube_array_generation_system,
+        ));
         _main_schedule.add_systems((main_system::time_system,));
     }
 }
