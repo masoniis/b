@@ -1,4 +1,4 @@
-use crate::ecs_resources::input::InputResource;
+use crate::{ecs_resources::input::InputResource, prelude::*};
 use bevy_ecs::world::World;
 use glam::{DVec2, Vec2};
 use winit::event::{DeviceEvent, ElementState, WindowEvent};
@@ -25,11 +25,13 @@ impl InputSystem {
             match key_event.state {
                 ElementState::Pressed => {
                     if let PhysicalKey::Code(key_code) = key_event.physical_key {
+                        debug!(target: "keys", "Key pressed: {:?}", key_code);
                         input.current_keys.insert(key_code);
                     }
                 }
                 ElementState::Released => {
                     if let PhysicalKey::Code(key_code) = key_event.physical_key {
+                        debug!(target: "keys", "Key released: {:?}", key_code);
                         input.current_keys.remove(&key_code);
                     }
                 }

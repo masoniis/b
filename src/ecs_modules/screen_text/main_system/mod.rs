@@ -1,8 +1,14 @@
 pub mod changed_text;
-pub use changed_text::changed_screen_text_system;
+pub use changed_text::update_visible_text_system;
+
+pub mod handle_visibility_changed;
+pub use handle_visibility_changed::handle_text_visibility_change_system;
 
 pub mod removed_text;
 pub use removed_text::removed_screen_text_system;
 
-pub mod screen_diagnostics;
-pub use screen_diagnostics::screen_diagnostics_system;
+pub mod toggle_debug_diagnostics;
+pub use toggle_debug_diagnostics::toggle_debug_diagnostics_system;
+
+pub mod update_debug_diagnostics;
+pub use update_debug_diagnostics::update_debug_diagnostics_system;
