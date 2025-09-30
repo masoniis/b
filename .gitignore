@@ -1,10 +1,7 @@
 .direnv
 .zig-cache
+.DS_Store
 
 
 # Added by cargo
-
 /target
-cbridge/main
-.DS_Store
-src/assets/fonts/font_atlas.png
