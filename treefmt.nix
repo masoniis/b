@@ -8,6 +8,7 @@
     rustfmt = {
       enable = true;
       edition = "2021"; # 2021 matches the rustfmt edition my nvim uses, so im matching this for now
+      # includes = [ "*.ron" ];
     };
   };
 

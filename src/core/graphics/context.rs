@@ -6,7 +6,7 @@ use crate::{
     },
     prelude::*,
 };
-use std::{path::Path, sync::Arc};
+use std::sync::Arc;
 use wgpu::{
     Adapter, Device, DeviceDescriptor, Instance, InstanceDescriptor, PowerPreference, PresentMode,
     Queue, RequestAdapterOptions, Surface, SurfaceConfiguration, SurfaceError,
@@ -54,8 +54,7 @@ impl GraphicsContext {
         let device = Arc::new(device);
         let queue = Arc::new(queue);
 
-        let (texture_array, texture_map) =
-            load_texture_array(&device, &queue, Path::new("assets/textures")).unwrap();
+        let (texture_array, texture_map) = load_texture_array(&device, &queue).unwrap();
 
         let surface_caps = surface.get_capabilities(&adapter);
         let surface_format = surface_caps

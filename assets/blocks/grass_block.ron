@@ -1,0 +1,9 @@
+(
+	display_name: "Stone",
+	textures: (
+		all: "stone",
+	),
+	is_solid: true,
+	is_transparent: false,
+	hardness: 3.0,
+)
