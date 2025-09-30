@@ -36,4 +36,3 @@ pub fn handle_text_visibility_change_system(
         }
     }
 }
-

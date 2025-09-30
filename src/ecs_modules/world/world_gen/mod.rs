@@ -4,7 +4,6 @@ pub const CHUNK_WIDTH: usize = 16;
 pub const CHUNK_HEIGHT: usize = 256;
 pub const CHUNK_DEPTH: usize = 16;
 
-const AIR: Block = Block { id: 0 };
 const STONE: Block = Block { id: 1 };
 const GRASS: Block = Block { id: 2 };
 

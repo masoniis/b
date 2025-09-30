@@ -20,16 +20,20 @@ impl ScreenTextModule {
     ) {
         startup_schedule.add_systems((startup_system::init_screen_diagnostics_system,));
 
-        main_schedule.add_systems((
+        main_schedule.add_systems(
             main_system::handle_text_visibility_change_system
                 .before(main_system::update_debug_diagnostics_system),
+        );
+        main_schedule.add_systems(
             main_system::update_visible_text_system
                 .after(main_system::handle_text_visibility_change_system)
                 .after(main_system::update_debug_diagnostics_system),
+        );
+        main_schedule.add_systems(
             main_system::removed_screen_text_system
                 .after(main_system::update_debug_diagnostics_system),
-            main_system::update_debug_diagnostics_system,
-            main_system::toggle_debug_diagnostics_system,
-        ));
+        );
+        main_schedule.add_systems(main_system::update_debug_diagnostics_system);
+        main_schedule.add_systems(main_system::toggle_debug_diagnostics_system);
     }
 }

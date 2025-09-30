@@ -3,7 +3,7 @@ use crate::ecs_resources::{
 };
 use bevy_ecs::prelude::*;
 use glam::{Mat4, Vec3};
-use winit::keyboard::KeyCode;
+use winit::keyboard::{KeyCode, PhysicalKey};
 
 pub fn camera_control_system(
     input: Res<InputResource>,
@@ -16,22 +16,22 @@ pub fn camera_control_system(
     let velocity = camera.movement_speed * time.since_last_update.as_secs_f32();
     let front = camera.front;
     let mut multiplier = 1.0;
-    if input.is_key_down(KeyCode::ShiftLeft) {
+    if input.is_key_down(PhysicalKey::Code(KeyCode::ShiftLeft)) {
         multiplier = 5.0;
     }
-    if input.is_key_down(KeyCode::KeyW) {
+    if input.is_key_down(PhysicalKey::Code(KeyCode::KeyW)) {
         camera.position += front * velocity * multiplier;
     }
     let front = camera.front;
-    if input.is_key_down(KeyCode::KeyS) {
+    if input.is_key_down(PhysicalKey::Code(KeyCode::KeyS)) {
         camera.position -= front * velocity * multiplier;
     }
     let right = camera.right;
-    if input.is_key_down(KeyCode::KeyA) {
+    if input.is_key_down(PhysicalKey::Code(KeyCode::KeyA)) {
         camera.position -= right * velocity * multiplier;
     }
     let right = camera.right;
-    if input.is_key_down(KeyCode::KeyD) {
+    if input.is_key_down(PhysicalKey::Code(KeyCode::KeyD)) {
         camera.position += right * velocity * multiplier;
     }
 
