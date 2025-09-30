@@ -10,7 +10,7 @@ use std::{collections::HashMap, fs, sync::Arc};
 
 use super::renderer::{Renderer, DEPTH_FORMAT};
 
-pub const SHADER_PATH: &str = "src/assets/shaders/scene/simple.wgsl";
+pub const SHADER_PATH: &str = "assets/shaders/scene/simple.wgsl";
 pub const MAX_TRANSFORMS: u64 = 100000;
 
 impl Renderer {

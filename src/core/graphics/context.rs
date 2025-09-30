@@ -55,7 +55,7 @@ impl GraphicsContext {
         let queue = Arc::new(queue);
 
         let (texture_array, texture_map) =
-            load_texture_array(&device, &queue, Path::new("src/assets/textures")).unwrap();
+            load_texture_array(&device, &queue, Path::new("assets/textures")).unwrap();
 
         let surface_caps = surface.get_capabilities(&adapter);
         let surface_format = surface_caps
