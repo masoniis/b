@@ -1,9 +1,8 @@
 use crate::{
     core::graphics::rendercore::Renderer,
     core::graphics::textures::{load_texture_array, TextureRegistry},
-    ecs_resources::{
-        asset_storage::MeshAsset, AssetStorageResource, CameraUniformResource, RenderQueueResource,
-    },
+    ecs_modules::rendering::{CameraUniformResource, RenderQueueResource},
+    ecs_resources::{asset_storage::MeshAsset, AssetStorageResource},
     prelude::*,
 };
 use std::sync::Arc;

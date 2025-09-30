@@ -4,9 +4,6 @@ pub use changed_text::update_visible_text_system;
 pub mod handle_visibility_changed;
 pub use handle_visibility_changed::handle_text_visibility_change_system;
 
-pub mod removed_text;
-pub use removed_text::removed_screen_text_system;
-
 pub mod toggle_debug_diagnostics;
 pub use toggle_debug_diagnostics::toggle_debug_diagnostics_system;
 

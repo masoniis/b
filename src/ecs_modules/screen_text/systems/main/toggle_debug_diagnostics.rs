@@ -1,7 +1,5 @@
-use crate::{
-    ecs_modules::{rendering::VisibilityComponent, screen_text::DiagnosticUiElementMarker},
-    ecs_resources::InputResource,
-};
+use crate::ecs_modules::input::InputResource;
+use crate::ecs_modules::{rendering::VisibilityComponent, screen_text::DiagnosticUiElementMarker};
 use bevy_ecs::prelude::*;
 use winit::keyboard::{KeyCode, PhysicalKey};
 

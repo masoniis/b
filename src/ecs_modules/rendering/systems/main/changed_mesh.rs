@@ -1,5 +1,8 @@
-use super::super::components::{MeshComponent, TransformComponent};
-use crate::{core::graphics::types::QueuedDraw, ecs_resources::RenderQueueResource, prelude::*};
+use crate::{
+    core::graphics::types::QueuedDraw,
+    ecs_modules::rendering::{MeshComponent, RenderQueueResource, TransformComponent},
+    prelude::*,
+};
 use bevy_ecs::prelude::{Changed, Entity, Or, Query, ResMut};
 
 /// handles both adding new meshes and updating existing ones that have changed.

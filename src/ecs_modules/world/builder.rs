@@ -1,7 +1,7 @@
 use crate::ecs_bridge::{Plugin, Schedules};
 use bevy_ecs::world::World;
 
-use super::{main_system, startup_system};
+use super::systems::{main as main_system, startup as startup_system};
 
 pub struct WorldModuleBuilder;
 
