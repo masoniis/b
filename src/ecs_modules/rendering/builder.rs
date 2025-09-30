@@ -1,15 +1,21 @@
+use super::{
+    resources::{CameraUniformResource, RenderQueueResource},
+    systems::main,
+};
 use crate::ecs_bridge::{Plugin, Schedules};
 use bevy_ecs::world::World;
-
-use super::main_system;
 
 pub struct RenderingModuleBuilder;
 
 impl Plugin for RenderingModuleBuilder {
-    fn build(&self, schedules: &mut Schedules, _world: &mut World) {
+    fn build(&self, schedules: &mut Schedules, world: &mut World) {
+        world.insert_resource(RenderQueueResource::default());
+        world.insert_resource(CameraUniformResource::default());
+
         schedules.main.add_systems((
-            main_system::changed_mesh_system,
-            main_system::removed_mesh_system,
+            main::changed_mesh_system,
+            main::removed_mesh_system,
+            main::removed_screen_text_system,
         ));
     }
 }

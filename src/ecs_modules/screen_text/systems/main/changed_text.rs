@@ -1,5 +1,5 @@
-use super::super::components::ScreenTextComponent;
-use crate::ecs_resources::RenderQueueResource;
+use super::super::super::components::ScreenTextComponent;
+use crate::ecs_modules::rendering::RenderQueueResource;
 use crate::{ecs_modules::rendering::VisibilityComponent, prelude::*};
 use bevy_ecs::prelude::*;
 use std::collections::hash_map::Entry;

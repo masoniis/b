@@ -1,4 +1,4 @@
-use crate::ecs_resources::input::InputResource;
+use crate::ecs_modules::input::InputResource;
 use bevy_ecs::system::ResMut;
 
 pub fn update_input_system(mut input_resource: ResMut<InputResource>) {

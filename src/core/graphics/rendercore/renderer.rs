@@ -6,9 +6,10 @@ use crate::{
         },
         types::mesh::GpuMesh,
     },
+    ecs_modules::rendering::{CameraUniformResource, RenderQueueResource},
     ecs_resources::{
         asset_storage::{AssetId, MeshAsset},
-        AssetStorageResource, CameraUniformResource, RenderQueueResource,
+        AssetStorageResource,
     },
 };
 use std::{collections::HashMap, sync::Arc};

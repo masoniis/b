@@ -1,6 +1,6 @@
-use crate::ecs_resources::{
-    CameraResource, CameraUniformResource, InputResource, TimeResource, WindowResource,
-};
+use crate::ecs_modules::input::InputResource;
+use crate::ecs_modules::rendering::CameraUniformResource;
+use crate::ecs_resources::{CameraResource, TimeResource, WindowResource};
 use bevy_ecs::prelude::*;
 use glam::{Mat4, Vec3};
 use winit::keyboard::{KeyCode, PhysicalKey};

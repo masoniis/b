@@ -102,7 +102,7 @@ impl RenderQueueResource {
     //        Removing elements
     // ---------------------------------
 
-    /// NEW: Removes a scene object using the fast swap_remove pattern.
+    /// Removes a scene object using the fast swap_remove pattern.
     pub fn remove_scene_object(&mut self, entity: &Entity) -> Option<QueuedDraw> {
         // 1. Get the index of the entity to remove from the map, and remove the map entry.
         let index_to_remove = self.entity_to_queue_index.remove(entity)?;
@@ -129,7 +129,7 @@ impl RenderQueueResource {
         Some(removed_object)
     }
 
-    /// MODIFIED: Must clear both the vector and the index map.
+    /// Must clear both the vector and the index map.
     pub fn clear_object_queue(&mut self) {
         self.scene_object_queue.clear();
         self.entity_to_queue_index.clear();
