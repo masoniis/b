@@ -1,6 +1,6 @@
 use crate::{
     core::graphics::context::GraphicsContext,
-    ecs_bridge::{EcsState, InputSystem},
+    ecs_bridge::{EcsState, InputBridge},
     ecs_resources::{texture_map::TextureMapResource, window::WindowResource},
     guard,
     prelude::*,
@@ -20,7 +20,7 @@ use winit::{
 pub struct App {
     // OS and Winit State
     window: Option<Arc<Window>>,
-    input_system: InputSystem,
+    input_system: InputBridge,
 
     // Core Engine Modules
     graphics_context: Option<GraphicsContext>,
@@ -34,7 +34,7 @@ impl App {
     pub fn new() -> Self {
         Self {
             window: None,
-            input_system: InputSystem,
+            input_system: InputBridge,
             graphics_context: None,
             ecs_state: EcsState::new(),
             startup_done: false,
@@ -94,7 +94,6 @@ impl ApplicationHandler for App {
 
         // We run this AFTER the main systems. It collected all the inputs from the
         // previous frame, and as such clearing it first would nullify all inputs.
-        self.input_system.new_events_hook(&mut self.ecs_state.world);
     }
 
     fn device_event(

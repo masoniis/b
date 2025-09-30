@@ -1,11 +1,6 @@
 use super::super::components::ScreenTextComponent;
-use crate::core::graphics::types::gpu_queues::QueuedText;
 use crate::ecs_resources::RenderQueueResource;
-use crate::{
-    ecs_modules::{rendering::VisibilityComponent, screen_text::DiagnosticUiElementMarker},
-    ecs_resources::InputResource,
-    prelude::*,
-};
+use crate::{ecs_modules::rendering::VisibilityComponent, prelude::*};
 use bevy_ecs::prelude::*;
 use std::collections::hash_map::Entry;
 
