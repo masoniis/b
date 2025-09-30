@@ -1,0 +1,16 @@
+use crate::ecs_bridge::{Plugin, Schedules};
+use bevy_ecs::world::World;
+
+use super::{main_system, startup_system};
+
+pub struct WorldModuleBuilder;
+
+impl Plugin for WorldModuleBuilder {
+    fn build(&self, schedules: &mut Schedules, _world: &mut World) {
+        schedules.startup.add_systems((
+            startup_system::chunk_generation_system,
+            startup_system::cube_array_generation_system,
+        ));
+        schedules.main.add_systems((main_system::time_system,));
+    }
+}
