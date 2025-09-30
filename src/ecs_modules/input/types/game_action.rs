@@ -1,9 +1,13 @@
 /// Defines
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Copy)]
 pub enum GameAction {
-    ToggleDiagnostics,
+    // Core player movement
     MoveForward,
     MoveBackward,
     MoveLeft,
     MoveRight,
+
+    // Misc
+    ToggleDiagnostics,
+    Shift,
 }
