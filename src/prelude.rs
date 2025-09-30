@@ -5,4 +5,7 @@
 // I plan to not use any  external preludes, and rely solely on this prelude for common imports.
 pub use crate::utils::*;
 pub use tracing::{debug, error, info, warn};
-pub use winit::dpi::{LogicalSize, PhysicalSize};
+pub use winit::{
+    dpi::{LogicalSize, PhysicalSize},
+    keyboard::KeyCode,
+};

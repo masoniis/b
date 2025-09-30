@@ -1,34 +1,36 @@
 use super::super::components::ScreenTextComponent;
 use crate::core::graphics::types::gpu_queues::QueuedText;
 use crate::ecs_resources::RenderQueueResource;
-use bevy_ecs::prelude::{Changed, Entity, Query, ResMut};
+use crate::{
+    ecs_modules::{rendering::VisibilityComponent, screen_text::DiagnosticUiElementMarker},
+    ecs_resources::InputResource,
+    prelude::*,
+};
+use bevy_ecs::prelude::*;
 use std::collections::hash_map::Entry;
-use tracing::debug;
 
-pub fn changed_screen_text_system(
+pub fn update_visible_text_system(
     mut render_queue: ResMut<RenderQueueResource>,
-    query: Query<(Entity, &ScreenTextComponent), Changed<ScreenTextComponent>>,
+    // 1. ADD `&VisibilityComponent` to the tuple of data we query for.
+    //    The `Changed` filter still applies to `ScreenTextComponent`.
+    query: Query<
+        (Entity, &ScreenTextComponent, &VisibilityComponent),
+        Changed<ScreenTextComponent>,
+    >,
 ) {
-    for (entity, component) in query.iter() {
-        match render_queue.get_screen_text_entry(entity) {
-            // The entry already exists, so we just update it.
-            Entry::Occupied(mut entry) => {
+    // 2. De-structure the new tuple in the for loop.
+    for (entity, component, visibility) in query.iter() {
+        // 3. Add an `if` statement to check the VALUE of the visibility component.
+        if *visibility == VisibilityComponent::Visible {
+            // All of your original update logic now goes inside this `if` block.
+            if let Entry::Occupied(mut entry) = render_queue.get_screen_text_entry(entity) {
                 let queued_text = entry.get_mut();
                 queued_text.text = component.text.clone();
                 queued_text.position = component.position;
                 queued_text.color = component.color;
                 queued_text.font_size = component.font_size;
-            }
-            // The entry does NOT exist, so we create it with the final values directly.
-            Entry::Vacant(entry) => {
-                entry.insert(QueuedText {
-                    text: component.text.clone(),
-                    position: component.position,
-                    color: component.color,
-                    font_size: component.font_size,
-                });
+                debug!(target: "text_sync", "Visible text UPDATED for entity {:?}", entity);
             }
         }
-        debug!(target: "text_sync", "Text synced for entity {:?}", entity);
     }
 }
