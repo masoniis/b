@@ -12,7 +12,7 @@ pub fn input_event_handler(
     for event in keyboard_input_events.read() {
         match event.state {
             ElementState::Pressed => {
-                input_resource.current_keys.insert(event.key_code.clone());
+                input_resource.current_keys.insert(event.key_code);
             }
             ElementState::Released => {
                 input_resource.current_keys.remove(&event.key_code);
