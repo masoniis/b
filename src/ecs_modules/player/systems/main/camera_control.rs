@@ -1,12 +1,13 @@
-use crate::ecs_modules::input::InputResource;
+use crate::ecs_modules::input::{ActionStateResource, GameAction, InputResource};
 use crate::ecs_modules::rendering::CameraUniformResource;
 use crate::ecs_resources::{CameraResource, TimeResource, WindowResource};
 use bevy_ecs::prelude::*;
 use glam::{Mat4, Vec3};
-use winit::keyboard::{KeyCode, PhysicalKey};
+// Removed: use winit::keyboard::{KeyCode, PhysicalKey};
 
 pub fn camera_control_system(
     input: Res<InputResource>,
+    action_state: Res<ActionStateResource>,
     time: Res<TimeResource>,
     window: Res<WindowResource>,
     mut camera: ResMut<CameraResource>,
@@ -16,22 +17,22 @@ pub fn camera_control_system(
     let velocity = camera.movement_speed * time.since_last_update.as_secs_f32();
     let front = camera.front;
     let mut multiplier = 1.0;
-    if input.is_key_down(PhysicalKey::Code(KeyCode::ShiftLeft)) {
+    if action_state.is_ongoing(GameAction::Shift) {
         multiplier = 5.0;
     }
-    if input.is_key_down(PhysicalKey::Code(KeyCode::KeyW)) {
+    if action_state.is_ongoing(GameAction::MoveForward) {
         camera.position += front * velocity * multiplier;
     }
     let front = camera.front;
-    if input.is_key_down(PhysicalKey::Code(KeyCode::KeyS)) {
+    if action_state.is_ongoing(GameAction::MoveBackward) {
         camera.position -= front * velocity * multiplier;
     }
     let right = camera.right;
-    if input.is_key_down(PhysicalKey::Code(KeyCode::KeyA)) {
+    if action_state.is_ongoing(GameAction::MoveLeft) {
         camera.position -= right * velocity * multiplier;
     }
     let right = camera.right;
-    if input.is_key_down(PhysicalKey::Code(KeyCode::KeyD)) {
+    if action_state.is_ongoing(GameAction::MoveRight) {
         camera.position += right * velocity * multiplier;
     }
 
