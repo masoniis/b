@@ -1,7 +1,8 @@
 use crate::{
-    ecs_modules::{PlayerModule, RenderingModule, ScreenTextModule, WorldModule},
+    ecs_modules::{self, PlayerModule, RenderingModule, ScreenTextModule, WorldModule},
     ecs_resources::{
         asset_storage::{MeshAsset, TextureAsset},
+        events::{KeyboardInputEvent, MouseInputEvent, MouseScrollEvent},
         input::InputResource,
         time::TimeResource,
         AssetStorageResource, CameraResource, CameraUniformResource, RenderQueueResource,
@@ -18,6 +19,7 @@ use bevy_ecs::{
 #[derive(ScheduleLabel, Debug, Clone, PartialEq, Eq, Hash)]
 pub enum ScheduleLables {
     Startup,
+    Input,
     Main,
 }
 
@@ -25,6 +27,7 @@ pub enum ScheduleLables {
 pub struct EcsState {
     pub world: World,
     pub startup_scheduler: Schedule,
+    pub input_scheduler: Schedule,
     pub main_scheduler: Schedule,
     pub render_state: SystemState<(
         ResMut<'static, RenderQueueResource>,
@@ -47,9 +50,22 @@ impl EcsState {
         world.insert_resource(AssetStorageResource::<TextureAsset>::default());
         // WindowResource will be added later when the window is created
 
+        // Register events
+        world.init_resource::<Events<KeyboardInputEvent>>();
+        world.init_resource::<Events<MouseInputEvent>>();
+        world.init_resource::<Events<MouseScrollEvent>>();
+
         // Set up the schedulers
         let mut startup_scheduler = Schedule::new(ScheduleLables::Startup);
+        let mut input_scheduler = Schedule::new(ScheduleLables::Input);
         let mut main_scheduler = Schedule::new(ScheduleLables::Main);
+
+        input_scheduler.add_systems(
+            ecs_modules::input::main_system::update_input::update_input_system
+                .before(ecs_modules::input::main_system::event_handler::input_event_handler),
+        );
+        input_scheduler
+            .add_systems(ecs_modules::input::main_system::event_handler::input_event_handler);
 
         // Add all the modules
         ScreenTextModule::build(&mut startup_scheduler, &mut main_scheduler, &mut world);
@@ -63,6 +79,7 @@ impl EcsState {
         Self {
             world,
             startup_scheduler,
+            input_scheduler,
             main_scheduler,
             render_state,
         }
@@ -79,6 +96,7 @@ impl EcsState {
 
     /// Runs the main schedule once.
     pub fn run_main(&mut self) {
+        self.input_scheduler.run(&mut self.world);
         self.main_scheduler.run(&mut self.world);
     }
 }

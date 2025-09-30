@@ -16,6 +16,7 @@ pub use render_uniforms::CameraUniformResource;
 pub mod time;
 pub use time::TimeResource;
 
+pub mod events;
 pub mod window;
 pub use window::WindowResource;
 

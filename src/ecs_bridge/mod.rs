@@ -1,5 +1,5 @@
 pub mod input;
-pub use input::InputSystem;
+pub use input::InputBridge;
 
 pub mod state;
 pub use state::EcsState;

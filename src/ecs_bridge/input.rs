@@ -1,58 +1,42 @@
-use crate::{ecs_resources::input::InputResource, prelude::*};
+use crate::ecs_resources::events::{KeyboardInputEvent, MouseInputEvent, MouseScrollEvent};
 use bevy_ecs::world::World;
-use glam::{DVec2, Vec2};
-use winit::event::{DeviceEvent, ElementState, WindowEvent};
-use winit::keyboard::PhysicalKey;
+use glam::Vec2;
+use winit::event::{DeviceEvent, WindowEvent};
 
-/// The input system is responsible for handling all forms of input.
-pub struct InputSystem;
+/// Handles window input and sends the events to the world for processing.
+pub struct InputBridge;
 
-impl InputSystem {
-    /// Resets per-frame input state.
-    pub fn new_events_hook(&mut self, world: &mut World) {
-        let mut input = world.resource_mut::<InputResource>();
-        input.mouse_delta = DVec2::ZERO;
-        input.scroll_delta = Vec2::ZERO;
-    }
-
+impl InputBridge {
     /// Processes window-specific events, like keyboard input.
     pub fn window_event_hook(&mut self, world: &mut World, event: &WindowEvent) {
         if let WindowEvent::KeyboardInput {
             event: key_event, ..
         } = event
         {
-            let mut input = world.resource_mut::<InputResource>();
-            match key_event.state {
-                ElementState::Pressed => {
-                    if let PhysicalKey::Code(key_code) = key_event.physical_key {
-                        debug!(target: "keys", "Key pressed: {:?}", key_code);
-                        input.current_keys.insert(key_code);
-                    }
-                }
-                ElementState::Released => {
-                    if let PhysicalKey::Code(key_code) = key_event.physical_key {
-                        debug!(target: "keys", "Key released: {:?}", key_code);
-                        input.current_keys.remove(&key_code);
-                    }
-                }
-            }
+            let key_code = key_event.physical_key;
+            world.send_event(KeyboardInputEvent {
+                key_code,
+                state: key_event.state,
+            });
         }
     }
 
     /// Processes device-agnostic events, like raw mouse motion.
     pub fn device_event_hook(&mut self, world: &mut World, event: &DeviceEvent) {
-        let mut input = world.resource_mut::<InputResource>();
         match event {
             DeviceEvent::MouseMotion { delta } => {
-                input.mouse_delta.x += delta.0;
-                input.mouse_delta.y += delta.1;
+                world.send_event(MouseInputEvent {
+                    delta: (*delta).into(),
+                });
             }
             DeviceEvent::MouseWheel { delta, .. } => {
                 let yoffset = match delta {
                     winit::event::MouseScrollDelta::LineDelta(_, y) => *y,
                     winit::event::MouseScrollDelta::PixelDelta(p) => p.y as f32,
                 };
-                input.scroll_delta.y += yoffset;
+                world.send_event(MouseScrollEvent {
+                    delta: Vec2::new(0.0, yoffset),
+                });
             }
             _ => (),
         }
