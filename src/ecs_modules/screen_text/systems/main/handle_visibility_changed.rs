@@ -1,7 +1,7 @@
-use super::super::components::ScreenTextComponent;
+use super::super::super::components::ScreenTextComponent;
 use crate::{
-    core::graphics::types::gpu_queues::QueuedText, ecs_modules::rendering::VisibilityComponent,
-    ecs_resources::RenderQueueResource, prelude::*,
+    core::graphics::types::gpu_queues::QueuedText, ecs_modules::rendering::RenderQueueResource,
+    ecs_modules::rendering::VisibilityComponent, prelude::*,
 };
 use bevy_ecs::prelude::*;
 

@@ -1,24 +1,20 @@
 use crate::{
     core::graphics::renderpass::{ITextRenderPass, RenderPassContex},
-    ecs_resources::{
-        asset_storage::MeshAsset, AssetStorageResource, CameraUniformResource, RenderQueueResource,
-    },
+    ecs_modules::rendering::{CameraUniformResource, RenderQueueResource},
+    ecs_resources::{asset_storage::MeshAsset, AssetStorageResource},
 };
 use glyphon::{
     cosmic_text::{Attrs, Family, Metrics, Shaping},
     Buffer, Cache, FontSystem, SwashCache, TextArea, TextAtlas, TextBounds, TextRenderer, Viewport,
 };
 use wgpu::{Device, MultisampleState, Queue, TextureFormat};
-
 pub struct TextRenderPass {
     pub renderer: TextRenderer,
-
     pub font_system: FontSystem,
     pub cache: SwashCache,
     pub atlas: TextAtlas,
     pub viewport: Viewport,
 }
-
 impl TextRenderPass {
     pub fn new(
         device: &Device,
@@ -39,7 +35,6 @@ impl TextRenderPass {
         );
         let mut atlas = TextAtlas::new(device, queue, &viewport_cache, target_format);
         let renderer = TextRenderer::new(&mut atlas, device, MultisampleState::default(), None);
-
         Self {
             font_system,
             cache,
@@ -49,7 +44,6 @@ impl TextRenderPass {
         }
     }
 }
-
 impl ITextRenderPass for TextRenderPass {
     fn prepare(
         &mut self,
@@ -73,7 +67,6 @@ impl ITextRenderPass for TextRenderPass {
             );
             buffers.push(buffer);
         }
-
         let text_areas = buffers
             .iter()
             .zip(render_queue.get_screen_texts())
@@ -92,7 +85,6 @@ impl ITextRenderPass for TextRenderPass {
                 custom_glyphs: &[],
             })
             .collect::<Vec<_>>();
-
         self.renderer
             .prepare(
                 device,
@@ -105,17 +97,14 @@ impl ITextRenderPass for TextRenderPass {
             )
             .unwrap();
     }
-
     fn render<'a>(&'a self, encoder: &mut wgpu::CommandEncoder, context: RenderPassContex<'a>) {
-        // The text render pass is a pretty plain pass
-        // with no depth buffer to ensure text is on top
         let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             label: Some("Text Render Pass"),
             color_attachments: &[Some(wgpu::RenderPassColorAttachment {
                 view: context.view,
                 resolve_target: None,
                 ops: wgpu::Operations {
-                    load: wgpu::LoadOp::Load, // loads contents of previous pass
+                    load: wgpu::LoadOp::Load,
                     store: wgpu::StoreOp::Store,
                 },
                 depth_slice: None,
@@ -124,7 +113,6 @@ impl ITextRenderPass for TextRenderPass {
             timestamp_writes: None,
             occlusion_query_set: None,
         });
-
         self.renderer
             .render(&self.atlas, &self.viewport, &mut render_pass)
             .unwrap();

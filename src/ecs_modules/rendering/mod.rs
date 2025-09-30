@@ -1,8 +1,8 @@
-mod components;
-pub use components::*;
-
-mod main_system;
-pub use main_system::*;
-
 pub mod builder;
+pub mod components;
+pub mod resources;
+pub mod systems;
+
 pub use builder::RenderingModuleBuilder;
+pub use components::*;
+pub use resources::*;

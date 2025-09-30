@@ -1,14 +1,11 @@
 use crate::core::graphics::rendercore::setup::MAX_TRANSFORMS;
 use crate::core::graphics::renderpass::traits::ISceneRenderPass;
-use crate::ecs_resources::asset_storage::AssetId;
 use crate::{
     core::graphics::renderpass::RenderPassContex,
     core::graphics::types::instance::InstanceRaw,
     core::graphics::types::mesh::{create_gpu_mesh_from_data, GpuMesh},
-    ecs_resources::{
-        asset_storage::{AssetStorageResource, MeshAsset},
-        CameraUniformResource, RenderQueueResource,
-    },
+    ecs_modules::rendering::{CameraUniformResource, RenderQueueResource},
+    ecs_resources::asset_storage::{AssetId, AssetStorageResource, MeshAsset},
 };
 use std::{collections::HashMap, sync::Arc};
 

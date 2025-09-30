@@ -1,7 +1,8 @@
-use super::systems::main;
-use crate::ecs_bridge::{Plugin, Schedules};
-use crate::ecs_resources::events::{KeyboardInputEvent, MouseInputEvent, MouseScrollEvent};
-use crate::ecs_resources::InputResource;
+use super::{systems::main, InputResource};
+use crate::{
+    ecs_bridge::{Plugin, Schedules},
+    ecs_resources::events::{KeyboardInputEvent, MouseInputEvent, MouseScrollEvent},
+};
 use bevy_ecs::{event::Events, schedule::IntoScheduleConfigs, world::World};
 
 pub struct InputModuleBuilder;

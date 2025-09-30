@@ -1,7 +1,5 @@
-use crate::ecs_resources::{
-    events::{KeyboardInputEvent, MouseInputEvent, MouseScrollEvent},
-    input::InputResource,
-};
+use crate::ecs_modules::input::InputResource;
+use crate::ecs_resources::events::{KeyboardInputEvent, MouseInputEvent, MouseScrollEvent};
 use bevy_ecs::{event::EventReader, system::ResMut};
 use winit::event::ElementState;
 

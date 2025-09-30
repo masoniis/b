@@ -1,7 +1,5 @@
-use super::super::components::ScreenTextComponent;
-use crate::ecs_resources::RenderQueueResource;
-use bevy_ecs::prelude::RemovedComponents;
-use bevy_ecs::prelude::ResMut;
+use crate::ecs_modules::{rendering::RenderQueueResource, screen_text::ScreenTextComponent};
+use bevy_ecs::prelude::{RemovedComponents, ResMut};
 use tracing::{debug, warn};
 
 pub fn removed_screen_text_system(
@@ -10,7 +8,6 @@ pub fn removed_screen_text_system(
 ) {
     for entity in removed.read() {
         if render_queue.remove_screen_text(&entity).is_some() {
-            render_queue.remove_screen_text(&entity);
             debug!(target: "text_sync", "Text removed for entity {:?}", entity);
         } else {
             warn!(

@@ -1,7 +1,9 @@
-use super::super::components::{
-    DiagnosticUiElementMarker, FpsCounterScreenTextMarker, ScreenTextComponent,
+use crate::ecs_modules::{
+    rendering::VisibilityComponent,
+    screen_text::components::{
+        DiagnosticUiElementMarker, FpsCounterScreenTextMarker, ScreenTextComponent,
+    },
 };
-use crate::ecs_modules::rendering::VisibilityComponent;
 use bevy_ecs::prelude::Commands;
 use glam::vec2;
 use glyphon::cosmic_text::Color;
