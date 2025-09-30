@@ -2,7 +2,7 @@ use super::super::components::{FpsCounterScreenTextMarker, ScreenTextComponent};
 use crate::ecs_resources::TimeResource;
 use bevy_ecs::prelude::*;
 
-pub fn screen_diagnostics_system(
+pub fn update_debug_diagnostics_system(
     time: Res<TimeResource>,
     mut query: Query<&mut ScreenTextComponent, With<FpsCounterScreenTextMarker>>,
 ) {
