@@ -1,4 +1,4 @@
-use crate::core::graphics::types::vertex::Vertex;
+use crate::core::graphics::types::{TextureId, Vertex};
 use crate::ecs_modules::rendering::{MeshComponent, TransformComponent};
 use crate::ecs_resources::asset_storage::MeshAsset;
 use crate::ecs_resources::texture_map::TextureMapResource;
@@ -14,7 +14,7 @@ pub fn cube_array_generation_system(
 ) {
     info!("Generating initial cube array...");
 
-    let green_texture_index = texture_map.registry.get_or_missing("green");
+    let green_texture_index = texture_map.registry.get(TextureId::Stone);
 
     #[rustfmt::skip]
     let vertices_data: &[f32] = &[
