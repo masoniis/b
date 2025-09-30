@@ -1,40 +1,27 @@
+use super::super::types::TextureId;
 use std::collections::HashMap;
 
-/// A registry for looking up texture indices by name.
+/// A registry for looking up texture indices from a compile-time safe TextureId.
 pub struct TextureRegistry {
-    map: HashMap<String, u32>,
+    /// Maps the type-safe TextureId to its u32 index in the GPU texture array.
+    map: HashMap<TextureId, u32>,
+
+    /// The index of the fallback "missing texture" pattern.
     missing_texture_index: u32,
 }
 
 impl TextureRegistry {
-    /// Creates a new texture registry from a name-to-index map.
-    pub fn new(map: HashMap<String, u32>, missing_texture_index: u32) -> Self {
+    /// Creates a new texture registry from a pre-populated map and the missing texture index.
+    pub fn new(map: HashMap<TextureId, u32>, missing_texture_index: u32) -> Self {
         Self {
             map,
             missing_texture_index,
         }
     }
 
-    /// Gets the texture index for a given name.
-    pub fn get(&self, name: &str) -> Option<u32> {
-        self.map.get(name).copied()
-    }
-
-    /// Gets the texture index for a given name, panicking if not found.
-    /// Use this when you're certain the texture exists.
-    pub fn get_unchecked(&self, name: &str) -> u32 {
-        self.map[name]
-    }
-
-    /// Gets the texture index for a given name, returning the missing texture if not found.
-    /// This is the recommended method for safe texture lookups.
-    pub fn get_or_missing(&self, name: &str) -> u32 {
-        self.get(name).unwrap_or(self.missing_texture_index)
-    }
-
-    /// Gets the texture index for a given name, returning a default if not found.
-    pub fn get_or_default(&self, name: &str, default: u32) -> u32 {
-        self.get(name).unwrap_or(default)
+    /// Gets the texture index for a given ID, panicking if not found.
+    pub fn get(&self, id: TextureId) -> u32 {
+        self.map[&id]
     }
 
     /// Returns the missing texture index.
@@ -42,18 +29,14 @@ impl TextureRegistry {
         self.missing_texture_index
     }
 
-    /// Returns true if the registry contains a texture with the given name.
-    pub fn contains(&self, name: &str) -> bool {
-        self.map.contains_key(name)
+    /// Returns true if the registry contains a texture with the given ID.
+    pub fn contains(&self, id: TextureId) -> bool {
+        self.map.contains_key(&id)
     }
 
-    /// Returns the number of textures in the registry (including the missing texture).
+    /// Returns the total number of textures in the registry.
+    /// This assumes the "missing texture" is an entry within the map.
     pub fn len(&self) -> usize {
-        self.map.len() + 1 // +1 for missing texture
-    }
-
-    /// Returns true if the registry is empty.
-    pub fn is_empty(&self) -> bool {
-        self.map.is_empty()
+        self.map.len()
     }
 }

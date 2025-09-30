@@ -1,4 +1,4 @@
-use crate::core::graphics::types::vertex::Vertex;
+use crate::core::graphics::types::{TextureId, Vertex};
 use crate::ecs_modules::rendering::{MeshComponent, TransformComponent};
 use crate::ecs_modules::world::utils::types::chunk::Chunk;
 use crate::ecs_modules::world::world_gen::{generate_flat_world_chunk, CHUNK_HEIGHT};
@@ -16,9 +16,7 @@ pub fn chunk_generation_system(
 ) {
     info!("Generating initial chunk...");
 
-    let missing_texture_index = texture_map
-        .registry
-        .get_or_missing("this_should_be_missing");
+    let missing_texture_index = texture_map.registry.get(TextureId::Missing);
 
     let mut chunk = Chunk::new(0, 0, 0);
     generate_flat_world_chunk(&mut chunk);
