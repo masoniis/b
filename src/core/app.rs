@@ -11,7 +11,7 @@ use std::sync::Arc;
 use winit::event_loop::EventLoop;
 use winit::{
     application::ApplicationHandler,
-    event::{DeviceEvent, StartCause, WindowEvent},
+    event::{DeviceEvent, WindowEvent},
     event_loop::ActiveEventLoop,
     window::{Window, WindowId},
 };
@@ -82,16 +82,6 @@ impl ApplicationHandler for App {
         }
     }
 
-    fn new_events(&mut self, _event_loop: &ActiveEventLoop, _: StartCause) {
-        guard!(self.startup_done);
-
-        self.ecs_state.run_main();
-
-        if let Some(window) = &self.window {
-            window.request_redraw();
-        }
-    }
-
     fn device_event(
         &mut self,
         _el: &ActiveEventLoop,
@@ -126,6 +116,11 @@ impl ApplicationHandler for App {
                 }
             }
             WindowEvent::RedrawRequested => {
+                // Update the world just before rendering. This ensures that
+                // all the input events are processed by the world since
+                // redraw request is the final event to come through.
+                self.ecs_state.run_main();
+
                 let gfx = self.graphics_context.as_mut().unwrap();
                 let (render_queue, mesh_assets, camera_uniform) = self
                     .ecs_state
