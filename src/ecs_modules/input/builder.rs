@@ -27,9 +27,11 @@ impl Plugin for InputModuleBuilder {
         world.init_resource::<Events<MouseButtonInputEvent>>();
 
         schedules.input.add_systems((
-            main::input_event_system,
             main::window_events_system,
-            main::update_action_state_system.after(main::input_event_system),
+            main::device_events_system,
+            main::update_action_state_system.after(main::window_events_system),
+            main::update_action_state_system.after(main::device_events_system),
+            main::update_action_state_system,
         ));
     }
 }
