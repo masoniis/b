@@ -6,8 +6,8 @@ pub enum GameAction {
     MoveBackward,
     MoveLeft,
     MoveRight,
+    MoveFaster,
 
     // Misc
     ToggleDiagnostics,
-    Shift,
 }

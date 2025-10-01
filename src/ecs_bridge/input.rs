@@ -1,4 +1,7 @@
-use crate::ecs_resources::events::{KeyboardInputEvent, MouseInputEvent, MouseScrollEvent};
+use crate::ecs_modules::input::events::{
+    keyboard_input_event::KeyboardInputEvent, mouse_button_input_event::MouseButtonInputEvent,
+    mouse_input_event::MouseMoveEvent, mouse_scroll_event::MouseScrollEvent,
+};
 use bevy_ecs::world::World;
 use glam::Vec2;
 use winit::event::{DeviceEvent, WindowEvent};
@@ -9,15 +12,23 @@ pub struct InputBridge;
 impl InputBridge {
     /// Processes window-specific events, like keyboard input.
     pub fn window_event_hook(&mut self, world: &mut World, event: &WindowEvent) {
-        if let WindowEvent::KeyboardInput {
-            event: key_event, ..
-        } = event
-        {
-            let key_code = key_event.physical_key;
-            world.send_event(KeyboardInputEvent {
-                key_code,
-                state: key_event.state,
-            });
+        match event {
+            WindowEvent::KeyboardInput {
+                event: key_event, ..
+            } => {
+                let key_code = key_event.physical_key;
+                world.send_event(KeyboardInputEvent {
+                    key_code,
+                    state: key_event.state,
+                });
+            }
+            WindowEvent::MouseInput { button, state, .. } => {
+                world.send_event(MouseButtonInputEvent {
+                    button: *button,
+                    state: *state,
+                });
+            }
+            _ => (),
         }
     }
 
@@ -25,7 +36,7 @@ impl InputBridge {
     pub fn device_event_hook(&mut self, world: &mut World, event: &DeviceEvent) {
         match event {
             DeviceEvent::MouseMotion { delta } => {
-                world.send_event(MouseInputEvent {
+                world.send_event(MouseMoveEvent {
                     delta: (*delta).into(),
                 });
             }
