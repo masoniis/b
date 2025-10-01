@@ -4,5 +4,5 @@ pub use input::InputBridge;
 pub mod plugin;
 pub use plugin::{Plugin, Schedules};
 
-pub mod state;
-pub use state::EcsState;
+pub mod game_state;
+pub use game_state::EcsState;

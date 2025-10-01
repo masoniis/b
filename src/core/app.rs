@@ -91,9 +91,6 @@ impl ApplicationHandler for App {
         if let Some(window) = &self.window {
             window.request_redraw();
         }
-
-        // We run this AFTER the main systems. It collected all the inputs from the
-        // previous frame, and as such clearing it first would nullify all inputs.
     }
 
     fn device_event(
