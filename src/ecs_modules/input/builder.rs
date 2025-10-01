@@ -2,8 +2,8 @@ use super::{systems::main, ActionStateResource, InputActionMapResource, InputRes
 use crate::{
     ecs_bridge::{Plugin, Schedules},
     ecs_modules::input::events::{
-        keyboard_input_event::KeyboardInputEvent, mouse_button_input_event::MouseButtonInputEvent,
-        mouse_input_event::MouseMoveEvent, mouse_scroll_event::MouseScrollEvent,
+        KeyboardInputEvent, MouseButtonInputEvent, MouseMoveEvent, MouseScrollEvent,
+        RawDeviceEvent, RawWindowEvent,
     },
 };
 use bevy_ecs::{event::Events, schedule::IntoScheduleConfigs, world::World};
@@ -16,15 +16,19 @@ impl Plugin for InputModuleBuilder {
         world.insert_resource(InputActionMapResource::default());
         world.insert_resource(ActionStateResource::default());
 
+        // External events (comes from the app wrapper)
+        world.init_resource::<Events<RawWindowEvent>>();
+        world.init_resource::<Events<RawDeviceEvent>>();
+
+        // Internal events (an ecs system fires them)
         world.init_resource::<Events<KeyboardInputEvent>>();
         world.init_resource::<Events<MouseMoveEvent>>();
         world.init_resource::<Events<MouseScrollEvent>>();
         world.init_resource::<Events<MouseButtonInputEvent>>();
 
         schedules.input.add_systems((
-            main::reset_input_state_system.before(main::input_event_handler),
-            main::input_event_handler,
-            main::update_action_state_system.after(main::input_event_handler),
+            main::input_event_system,
+            main::update_action_state_system.after(main::input_event_system),
         ));
     }
 }

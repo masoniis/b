@@ -59,6 +59,10 @@ impl Default for InputActionMapResource {
                     Input::Key(PhysicalKey::Code(KeyCode::F3)),
                     GameAction::ToggleDiagnostics,
                 ),
+                (
+                    Input::MouseButton(MouseButton::Left),
+                    GameAction::ToggleDiagnostics,
+                ),
             ]),
         }
     }
