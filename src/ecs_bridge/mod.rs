@@ -1,6 +1,3 @@
-pub mod input;
-pub use input::InputBridge;
-
 pub mod plugin;
 pub use plugin::{Plugin, Schedules};
 

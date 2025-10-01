@@ -1,6 +1,7 @@
 use crate::{
     core::graphics::context::GraphicsContext,
-    ecs_bridge::{EcsState, InputBridge},
+    ecs_bridge::EcsState,
+    ecs_modules::input::events::{RawDeviceEvent, RawWindowEvent},
     ecs_resources::{texture_map::TextureMapResource, window::WindowResource},
     guard,
     prelude::*,
@@ -20,7 +21,6 @@ use winit::{
 pub struct App {
     // OS and Winit State
     window: Option<Arc<Window>>,
-    input_system: InputBridge,
 
     // Core Engine Modules
     graphics_context: Option<GraphicsContext>,
@@ -34,7 +34,6 @@ impl App {
     pub fn new() -> Self {
         Self {
             window: None,
-            input_system: InputBridge,
             graphics_context: None,
             ecs_state: EcsState::new(),
             startup_done: false,
@@ -100,15 +99,16 @@ impl ApplicationHandler for App {
         event: DeviceEvent,
     ) {
         guard!(self.startup_done);
-        self.input_system
-            .device_event_hook(&mut self.ecs_state.world, &event);
+
+        self.ecs_state.world.send_event(RawDeviceEvent(event));
     }
 
     fn window_event(&mut self, event_loop: &ActiveEventLoop, _id: WindowId, event: WindowEvent) {
         guard!(self.startup_done);
 
-        self.input_system
-            .window_event_hook(&mut self.ecs_state.world, &event);
+        self.ecs_state
+            .world
+            .send_event(RawWindowEvent(event.clone()));
 
         match event {
             WindowEvent::CloseRequested => {
@@ -116,6 +116,7 @@ impl ApplicationHandler for App {
                 event_loop.exit();
             }
             WindowEvent::Resized(physical_size) => {
+                // TODO: could handle part or all of this in the ecs world.
                 let mut window_resource = self.ecs_state.world.resource_mut::<WindowResource>();
                 window_resource.width = physical_size.width;
                 window_resource.height = physical_size.height;
