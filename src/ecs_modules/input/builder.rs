@@ -9,7 +9,7 @@ pub struct InputModuleBuilder;
 
 impl Plugin for InputModuleBuilder {
     fn build(&self, schedules: &mut Schedules, world: &mut World) {
-        world.insert_resource(InputResource::new());
+        world.insert_resource(InputResource::default());
         world.insert_resource(InputActionMapResource::default());
         world.insert_resource(ActionStateResource::default());
 
