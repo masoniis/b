@@ -6,9 +6,8 @@ use crate::{
         WorldModuleBuilder,
     },
     ecs_resources::{
-        asset_storage::{MeshAsset, TextureAsset},
-        time::TimeResource,
-        AssetStorageResource, CameraResource, WindowResource,
+        asset_storage::MeshAsset, time::TimeResource, AssetStorageResource, CameraResource,
+        WindowResource,
     },
 };
 use bevy_ecs::{prelude::*, schedule::ScheduleLabel, system::SystemState, world::World};
@@ -66,7 +65,6 @@ impl EcsStateBuilder {
         world.insert_resource(TimeResource::default());
         world.insert_resource(CameraResource::default());
         world.insert_resource(AssetStorageResource::<MeshAsset>::default());
-        world.insert_resource(AssetStorageResource::<TextureAsset>::default());
 
         Self {
             world,
