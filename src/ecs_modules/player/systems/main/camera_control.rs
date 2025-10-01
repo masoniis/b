@@ -17,7 +17,7 @@ pub fn camera_control_system(
     let velocity = camera.movement_speed * time.since_last_update.as_secs_f32();
     let front = camera.front;
     let mut multiplier = 1.0;
-    if action_state.is_ongoing(GameAction::Shift) {
+    if action_state.is_ongoing(GameAction::MoveFaster) {
         multiplier = 5.0;
     }
     if action_state.is_ongoing(GameAction::MoveForward) {

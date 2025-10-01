@@ -1,9 +1,8 @@
+use crate::ecs_modules::input::GameAction;
 use bevy_ecs::prelude::Resource;
 use std::collections::hash_map::{HashMap, Iter};
 use winit::event::MouseButton;
 use winit::keyboard::{KeyCode, PhysicalKey};
-
-use super::super::types::game_action::GameAction;
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Copy)]
 pub enum Input {
@@ -34,6 +33,7 @@ impl Default for InputActionMapResource {
     fn default() -> Self {
         Self {
             bindings: HashMap::from([
+                // Core player movement
                 (
                     Input::Key(PhysicalKey::Code(KeyCode::KeyW)),
                     GameAction::MoveForward,
@@ -51,12 +51,13 @@ impl Default for InputActionMapResource {
                     GameAction::MoveRight,
                 ),
                 (
+                    Input::Key(PhysicalKey::Code(KeyCode::ShiftLeft)),
+                    GameAction::MoveFaster,
+                ),
+                // Misc
+                (
                     Input::Key(PhysicalKey::Code(KeyCode::F3)),
                     GameAction::ToggleDiagnostics,
-                ),
-                (
-                    Input::Key(PhysicalKey::Code(KeyCode::ShiftLeft)),
-                    GameAction::Shift,
                 ),
             ]),
         }
