@@ -1,6 +1,6 @@
-use crate::core::graphics::types::vertex::Vertex;
+use crate::{core::graphics::types::vertex::Vertex, prelude::*};
 use bevy_ecs::prelude::Resource;
-use std::collections::HashMap;
+use std::collections::hash_map::{Entry, HashMap};
 use std::hash::Hash;
 use std::marker::PhantomData;
 
@@ -16,17 +16,25 @@ pub trait Asset {
 pub struct BlockAppearance {
     pub top_face_texture_index: u32,
     pub bottom_face_texture_index: u32,
-    pub side_face_texture_index: u32,
+
+    pub front_face_texture_index: u32,
+    pub back_face_texture_index: u32,
+
+    pub left_face_texture_index: u32,
+    pub right_face_texture_index: u32,
 }
 
+// TODO: Add a block def asset storage to the ECS world and use
+// it during chunk generation for stuff like adding textures to blocks
+
 #[derive(Debug, Clone)]
-pub struct BlockDefinition {
+pub struct BlockDefAsset {
     pub name: String,
     pub appearance: BlockAppearance,
     pub is_transparent: bool,
 }
 
-impl Asset for BlockDefinition {
+impl Asset for BlockDefAsset {
     fn name(&self) -> &str {
         &self.name
     }
@@ -40,19 +48,6 @@ pub struct MeshAsset {
 }
 
 impl Asset for MeshAsset {
-    fn name(&self) -> &str {
-        &self.name
-    }
-}
-
-#[derive(Debug, PartialEq, Eq, Hash)]
-pub struct TextureAsset {
-    pub name: String,
-    pub dimensions: (u32, u32),
-    pub bytes: Vec<u8>, // The raw pixel data (e.g., RGBA8)
-}
-
-impl Asset for TextureAsset {
     fn name(&self) -> &str {
         &self.name
     }
@@ -120,12 +115,32 @@ impl<T> AssetStorageResource<T> {
 }
 
 impl<T: Asset> AssetStorageResource<T> {
+    /// Adds an asset to the storage, returning a handle to it.
+    ///
+    /// If an asset with the same name already exists, the new asset is rejected,
+    /// and the handle to that name is returned instead (with a warning log).
     pub fn add(&mut self, asset: T) -> Handle<T> {
-        let id = self.next_id;
-        self.name_to_id.insert(asset.name().to_string(), id);
-        self.storage.insert(id, asset);
-        self.next_id += 1;
-        Handle::new(id)
+        let asset_name = asset.name().to_string();
+
+        match self.name_to_id.entry(asset_name) {
+            Entry::Vacant(entry) => {
+                let id = self.next_id;
+                entry.insert(id);
+                self.storage.insert(id, asset);
+                self.next_id += 1;
+                Handle::new(id)
+            }
+            Entry::Occupied(entry) => {
+                let existing_id = *entry.get();
+                warn!(
+                    "Attempted to add a duplicate asset with name: '{}'. \
+                 The new asset was rejected. Returning a handle to the existing asset (ID: {}).",
+                    entry.key(),
+                    existing_id
+                );
+                Handle::new(existing_id)
+            }
+        }
     }
 
     pub fn get_by_id(&self, name: &str) -> Option<&T> {
