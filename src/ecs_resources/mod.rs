@@ -7,7 +7,6 @@ pub use camera::CameraResource;
 pub mod time;
 pub use time::TimeResource;
 
-pub mod events;
 pub mod window;
 pub use window::WindowResource;
 

@@ -1,4 +1,5 @@
 pub mod builder;
+pub mod events;
 pub mod resources;
 pub mod systems;
 pub mod types;
