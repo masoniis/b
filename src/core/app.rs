@@ -106,11 +106,6 @@ impl ApplicationHandler for App {
                 event_loop.exit();
             }
             WindowEvent::Resized(physical_size) => {
-                // TODO: could handle part or all of this in the ecs world.
-                let mut window_resource = self.ecs_state.world.resource_mut::<WindowResource>();
-                window_resource.width = physical_size.width;
-                window_resource.height = physical_size.height;
-
                 if let Some(gfx) = self.graphics_context.as_mut() {
                     gfx.resize(physical_size);
                 }
