@@ -37,8 +37,8 @@ pub fn camera_control_system(
     }
 
     // Update camera pitch
-    let mut xoffset = input.mouse_delta.x as f32;
-    let mut yoffset = input.mouse_delta.y as f32;
+    let mut xoffset = input.get_mouse_delta().x as f32;
+    let mut yoffset = input.get_mouse_delta().y as f32;
     let constrain_pitch = true; // Assuming this is always true for now, or could be a resource/config
 
     xoffset *= camera.mouse_sensitivity;
@@ -69,7 +69,7 @@ pub fn camera_control_system(
     camera.up = camera.right.cross(camera.front).normalize();
 
     // Handle scrolling
-    let yoffset_scroll = input.scroll_delta.y;
+    let yoffset_scroll = input.get_scroll_delta().y;
     camera.zoom -= yoffset_scroll;
     if camera.zoom < 1.0 {
         camera.zoom = 1.0;

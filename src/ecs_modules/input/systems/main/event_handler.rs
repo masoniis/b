@@ -12,19 +12,19 @@ pub fn input_event_handler(
     for event in keyboard_input_events.read() {
         match event.state {
             ElementState::Pressed => {
-                input_resource.current_keys.insert(event.key_code);
+                input_resource.key_press(event.key_code);
             }
             ElementState::Released => {
-                input_resource.current_keys.remove(&event.key_code);
+                input_resource.key_release(event.key_code);
             }
         }
     }
 
     for event in mouse_input_events.read() {
-        input_resource.mouse_delta += event.delta;
+        input_resource.adjust_mouse_delta(event.delta);
     }
 
     for event in mouse_scroll_events.read() {
-        input_resource.scroll_delta += event.delta;
+        input_resource.adjust_scroll_delta(event.delta);
     }
 }
