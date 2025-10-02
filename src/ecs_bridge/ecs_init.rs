@@ -13,7 +13,9 @@ use crate::{
         asset_storage::MeshAsset, time::TimeResource, AssetStorageResource, CameraResource,
     },
 };
-use bevy_ecs::{prelude::*, schedule::ScheduleLabel, system::SystemState, world::World};
+use bevy_ecs::{
+    prelude::*, resource::Resource, schedule::ScheduleLabel, system::SystemState, world::World,
+};
 
 #[derive(ScheduleLabel, Debug, Clone, PartialEq, Eq, Hash)]
 pub enum ScheduleLables {
