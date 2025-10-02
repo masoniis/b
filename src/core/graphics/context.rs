@@ -139,7 +139,21 @@ impl GraphicsContext {
             .renderer
             .render(&view, render_queue, mesh_assets, camera_uniform)
         {
-            eprintln!("Renderer error: {:?}", e);
+            error!("Renderer error: {:?}", e);
+        }
+
+        output.present();
+        Ok(())
+    }
+
+    pub fn render_loading_screen(&mut self) -> Result<(), SurfaceError> {
+        let output = self.surface.get_current_texture()?;
+        let view = output
+            .texture
+            .create_view(&TextureViewDescriptor::default());
+
+        if let Err(e) = self.renderer.render_loading_screen(&view) {
+            error!("Renderer error: {:?}", e);
         }
 
         output.present();

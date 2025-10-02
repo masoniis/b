@@ -1,9 +1,11 @@
 use crate::{
     core::graphics::context::GraphicsContext,
     ecs_bridge::{EcsState, EcsStateBuilder},
-    ecs_modules::input::events::{RawDeviceEvent, RawWindowEvent},
+    ecs_modules::{
+        input::events::{RawDeviceEvent, RawWindowEvent},
+        state_machine::resources::{AppState, CurrentState},
+    },
     ecs_resources::{texture_map::TextureMapResource, window::WindowResource},
-    guard,
     prelude::*,
 };
 use std::error::Error;
@@ -25,9 +27,6 @@ pub struct App {
     // Core Engine Modules
     graphics_context: Option<GraphicsContext>,
     ecs_state: Option<EcsState>,
-
-    // State Flags
-    startup_done: bool,
 }
 
 impl App {
@@ -36,7 +35,6 @@ impl App {
             window: None,
             graphics_context: None,
             ecs_state: None,
-            startup_done: false,
         }
     }
 
@@ -79,8 +77,6 @@ impl ApplicationHandler for App {
             info!("Running startup systems...");
             ecs_state.schedules.startup.run(&mut ecs_state.world);
 
-            self.startup_done = true;
-
             self.ecs_state = Some(ecs_state);
         }
     }
@@ -91,16 +87,12 @@ impl ApplicationHandler for App {
         _id: winit::event::DeviceId,
         event: DeviceEvent,
     ) {
-        guard!(self.startup_done);
-
         if let Some(ecs_state) = &mut self.ecs_state {
             ecs_state.world.send_event(RawDeviceEvent(event.clone()));
         }
     }
 
     fn window_event(&mut self, event_loop: &ActiveEventLoop, _id: WindowId, event: WindowEvent) {
-        guard!(self.startup_done);
-
         if let Some(ecs_state) = &mut self.ecs_state {
             ecs_state.world.send_event(RawWindowEvent(event.clone()));
 
@@ -115,31 +107,55 @@ impl ApplicationHandler for App {
                     }
                 }
                 WindowEvent::RedrawRequested => {
-                    // Update the world just before rendering. This ensures that
-                    // all the input events are processed by the world since
-                    // redraw request is the final event to come through.
-                    ecs_state.schedules.main.run(&mut ecs_state.world);
+                    let current_app_state = ecs_state.world.resource::<CurrentState<AppState>>();
 
-                    let gfx = self.graphics_context.as_mut().unwrap();
-                    let (render_queue, mesh_assets, camera_uniform) =
-                        ecs_state.render_state.get_mut(&mut ecs_state.world);
+                    match current_app_state.value {
+                        AppState::Loading => {
+                            ecs_state.schedules.loading.run(&mut ecs_state.world);
 
-                    match gfx.render(&render_queue, &mesh_assets, &camera_uniform) {
-                        Ok(_) => {}
-                        Err(wgpu::SurfaceError::Lost) => {
-                            warn!("WGPU SurfaceError::Lost, resizing surface.");
-                            let size = self.window.as_ref().unwrap().inner_size();
-                            gfx.resize(size);
+                            let gfx = self.graphics_context.as_mut().unwrap();
+
+                            match gfx.render_loading_screen() {
+                                Ok(_) => {}
+                                Err(wgpu::SurfaceError::Lost) => {
+                                    warn!("WGPU SurfaceError::Lost, resizing surface.");
+                                    let size = self.window.as_ref().unwrap().inner_size();
+                                    gfx.resize(size);
+                                }
+                                Err(wgpu::SurfaceError::OutOfMemory) => {
+                                    error!("WGPU SurfaceError::OutOfMemory, exiting event loop.");
+                                    event_loop.exit();
+                                }
+                                Err(e) => eprintln!("Error during render: {:?}", e),
+                            }
                         }
-                        Err(wgpu::SurfaceError::OutOfMemory) => {
-                            error!("WGPU SurfaceError::OutOfMemory, exiting event loop.");
-                            event_loop.exit();
+                        AppState::Running => {
+                            ecs_state.schedules.main.run(&mut ecs_state.world);
+
+                            let gfx = self.graphics_context.as_mut().unwrap();
+                            let (render_queue, mesh_assets, camera_uniform) =
+                                ecs_state.render_state.get_mut(&mut ecs_state.world);
+
+                            match gfx.render(&render_queue, &mesh_assets, &camera_uniform) {
+                                Ok(_) => {}
+                                Err(wgpu::SurfaceError::Lost) => {
+                                    warn!("WGPU SurfaceError::Lost, resizing surface.");
+                                    let size = self.window.as_ref().unwrap().inner_size();
+                                    gfx.resize(size);
+                                }
+                                Err(wgpu::SurfaceError::OutOfMemory) => {
+                                    error!("WGPU SurfaceError::OutOfMemory, exiting event loop.");
+                                    event_loop.exit();
+                                }
+                                Err(e) => eprintln!("Error during render: {:?}", e),
+                            }
+
+                            ecs_state.render_state.apply(&mut ecs_state.world);
                         }
-                        Err(e) => eprintln!("Error during render: {:?}", e),
-                    }
+                        AppState::Closing => {}
+                    };
 
-                    ecs_state.render_state.apply(&mut ecs_state.world);
-
+                    // Request the next frame
                     if let Some(window) = &self.window {
                         window.request_redraw();
                     }
