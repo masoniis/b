@@ -1,6 +1,6 @@
-pub mod builder;
 pub mod components;
+pub mod plugin;
 pub mod systems;
 
-pub use builder::ScreenTextModuleBuilder;
 pub use components::*;
+pub use plugin::ScreenTextModulePlugin;

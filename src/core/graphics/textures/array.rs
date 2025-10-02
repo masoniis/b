@@ -34,12 +34,9 @@ pub fn load_texture_array(
 
     for (i, &texture_id) in TextureId::ALL.iter().enumerate() {
         let image = if texture_id == TextureId::Missing {
-            // If this is the special 'Missing' texture, generate it procedurally.
-            // We'll determine the size from the first *real* texture later.
-            // For now, push a placeholder.
+            // placeholder for missing texture until it gets generated
             RgbaImage::new(0, 0)
         } else {
-            // For all other textures, load them from the file system.
             let texture_name = texture_id.name();
             let file_path = path.join(format!("{}.png", texture_name));
             image::open(&file_path)
@@ -48,7 +45,6 @@ pub fn load_texture_array(
         };
 
         if i == 1 {
-            // After loading the first *real* texture (index 1 if Missing is at 0)
             (width, height) = image.dimensions();
         }
 
@@ -64,11 +60,10 @@ pub fn load_texture_array(
     }
 
     if images.len() < 2 {
-        // Need at least missing + 1 real texture
         return Err(format!("No textures found in directory: {:?}", path));
     }
 
-    // 2. Verify all images have the same dimensions.
+    // Verify all images have the same dimensions.
     for (i, img) in images.iter().enumerate() {
         if img.dimensions() != (width, height) {
             let texture_id = TextureId::ALL[i];
