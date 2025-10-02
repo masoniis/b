@@ -2,6 +2,7 @@ use crate::{
     ecs_bridge::{Plugin, Schedules},
     ecs_modules::{
         rendering::{CameraUniformResource, RenderQueueResource},
+        state_machine::resources::{AppState, CurrentState, GameState, NextState},
         InputModuleBuilder, PlayerModuleBuilder, RenderingModuleBuilder, ScreenTextModuleBuilder,
         WorldModuleBuilder,
     },
@@ -61,9 +62,25 @@ impl EcsState {
 impl EcsStateBuilder {
     pub fn new() -> Self {
         let mut world = World::new();
+
         world.insert_resource(TimeResource::default());
         world.insert_resource(CameraResource::default());
         world.insert_resource(AssetStorageResource::<MeshAsset>::default());
+
+        // Insert the state structs
+        world.insert_resource(CurrentState {
+            value: AppState::default(),
+        });
+        world.insert_resource(NextState {
+            value: None::<AppState>,
+        });
+
+        world.insert_resource(CurrentState {
+            value: GameState::default(),
+        });
+        world.insert_resource(NextState {
+            value: None::<GameState>,
+        });
 
         Self {
             world,
