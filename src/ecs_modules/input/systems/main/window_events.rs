@@ -1,7 +1,7 @@
 use crate::{
     ecs_modules::input::{
         events::{KeyboardInputEvent, MouseButtonInputEvent, RawWindowEvent},
-        InputResource,
+        resources::Buttons,
     },
     ecs_resources::WindowResource,
 };
@@ -9,13 +9,17 @@ use bevy_ecs::{
     event::{EventReader, EventWriter},
     system::ResMut,
 };
-use winit::event::{ElementState, WindowEvent};
+use winit::{
+    event::{ElementState, MouseButton, WindowEvent},
+    keyboard::PhysicalKey,
+};
 
 /// A system to handle external raw window events from the OS (via winit),
 /// and convert them into ECS world events (as well as updating input state)
 pub fn window_events_system(
     // State to modify
-    mut input_resource: ResMut<InputResource>,
+    mut keyboard_input: ResMut<Buttons<PhysicalKey>>,
+    mut mouse_input: ResMut<Buttons<MouseButton>>,
     mut window_resource: ResMut<WindowResource>,
 
     // Input from OS bridge
@@ -25,11 +29,9 @@ pub fn window_events_system(
     mut keyboard_writer: EventWriter<KeyboardInputEvent>,
     mut mouse_button_writer: EventWriter<MouseButtonInputEvent>,
 ) {
-    input_resource.swap_previous_and_reset_deltas();
-
-    // INFO: ----------------------------------
-    //         Handle raw window events
-    // ----------------------------------------
+    // Clear previous stale state
+    keyboard_input.swap_previous();
+    mouse_input.swap_previous();
 
     for RawWindowEvent(event) in raw_window_events.read() {
         match event {
@@ -40,8 +42,8 @@ pub fn window_events_system(
                 };
 
                 match semantic_event.state {
-                    ElementState::Pressed => input_resource.key_press(semantic_event.key_code),
-                    ElementState::Released => input_resource.key_release(semantic_event.key_code),
+                    ElementState::Pressed => keyboard_input.press(semantic_event.key_code),
+                    ElementState::Released => keyboard_input.release(semantic_event.key_code),
                 }
 
                 keyboard_writer.write(semantic_event);
@@ -53,8 +55,8 @@ pub fn window_events_system(
                 };
 
                 match semantic_event.state {
-                    ElementState::Pressed => input_resource.mouse_press(semantic_event.button),
-                    ElementState::Released => input_resource.mouse_release(semantic_event.button),
+                    ElementState::Pressed => mouse_input.press(semantic_event.button),
+                    ElementState::Released => mouse_input.release(semantic_event.button),
                 }
 
                 mouse_button_writer.write(semantic_event);
