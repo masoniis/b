@@ -1,5 +1,5 @@
 use crate::{
-    ecs_bridge::{Plugin, Schedules},
+    ecs_modules::{Plugin, Schedules},
     prelude::CoreSet,
 };
 use bevy_ecs::prelude::*;

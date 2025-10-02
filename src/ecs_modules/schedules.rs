@@ -4,8 +4,19 @@ use bevy_ecs::{
     world::World,
 };
 
+use super::state_machine::State;
 use crate::ecs_modules::{system_sets::StartupSet, CoreSet};
+use std::collections::HashMap;
 
+/// Schedule that runs once in the entering state.
+#[derive(ScheduleLabel, Debug, Hash, PartialEq, Eq, Clone)]
+pub struct OnEnter<T: State>(pub T);
+
+/// Schedule that runs once in the exiting state as we transition to a new state.
+#[derive(ScheduleLabel, Debug, Hash, PartialEq, Eq, Clone)]
+pub struct OnExit<T: State>(pub T);
+
+/// Core pre-defined schedule labels
 #[derive(ScheduleLabel, Debug, Clone, PartialEq, Eq, Hash)]
 pub enum ScheduleLables {
     Startup,
@@ -22,6 +33,8 @@ pub struct Schedules {
     pub loading: Schedule,
     /// Runs every frame during normal gameplay.
     pub main: Schedule,
+
+    labeled: HashMap<Box<dyn ScheduleLabel>, Schedule>,
 }
 
 impl Schedules {
@@ -47,7 +60,22 @@ impl Schedules {
             startup: startup_schedule,
             loading: Schedule::new(ScheduleLables::Loading),
             main: main_schedule,
+            labeled: HashMap::new(),
         }
+    }
+
+    pub fn drain_dynamic_schedules(&mut self) -> HashMap<Box<dyn ScheduleLabel>, Schedule> {
+        return self.labeled.drain().collect();
+    }
+
+    pub fn get_labeled_mut(&mut self, label: impl ScheduleLabel + Clone) -> &mut Schedule {
+        self.labeled
+            .entry(Box::new(label.clone()))
+            .or_insert_with(|| Schedule::new(label))
+    }
+
+    pub fn add(&mut self, label: impl ScheduleLabel + Clone) {
+        self.get_labeled_mut(label);
     }
 }
 

@@ -1,14 +1,14 @@
 use crate::{
-    ecs_bridge::{Plugin, Schedules},
     ecs_modules::{
         rendering::{CameraUniformResource, RenderQueueResource},
         state_machine::{
-            resources::{AppState, CurrentState, GameState, NextState},
+            resources::{AppState, CurrentState, GameState, NextState, PrevState},
             StateMachineModuleBuilder,
         },
         InputModuleBuilder, PlayerModuleBuilder, RenderingModuleBuilder, ScreenTextModuleBuilder,
         WorldModuleBuilder,
     },
+    ecs_modules::{Plugin, Schedules},
     ecs_resources::{
         asset_storage::MeshAsset, time::TimeResource, AssetStorageResource, CameraResource,
     },
@@ -47,26 +47,32 @@ impl EcsStateBuilder {
             .add_resource(TimeResource::default())
             .add_resource(CameraResource::default())
             .add_resource(AssetStorageResource::<MeshAsset>::default())
-            .add_resource(CurrentState {
-                value: AppState::default(),
+            .add_resource(PrevState {
+                val: None::<AppState>,
+            })
+            .add_resource(PrevState {
+                val: None::<GameState>,
             })
             .add_resource(CurrentState {
-                value: GameState::default(),
+                val: AppState::default(),
+            })
+            .add_resource(CurrentState {
+                val: GameState::default(),
             })
             .add_resource(NextState {
-                value: None::<AppState>,
+                val: None::<AppState>,
             })
             .add_resource(NextState {
-                value: None::<GameState>,
+                val: None::<GameState>,
             });
 
         builder
-            .add_plugin(InputModuleBuilder)
-            .add_plugin(RenderingModuleBuilder)
-            .add_plugin(ScreenTextModuleBuilder)
-            .add_plugin(WorldModuleBuilder)
             .add_plugin(StateMachineModuleBuilder)
-            .add_plugin(PlayerModuleBuilder);
+            .add_plugin(ScreenTextModuleBuilder)
+            .add_plugin(RenderingModuleBuilder)
+            .add_plugin(PlayerModuleBuilder)
+            .add_plugin(InputModuleBuilder)
+            .add_plugin(WorldModuleBuilder);
 
         return builder;
     }
@@ -90,6 +96,11 @@ impl EcsStateBuilder {
 
     pub fn build(mut self) -> EcsState {
         let render_state = SystemState::new(&mut self.world);
+
+        for (_, schedule) in self.schedules.drain_dynamic_schedules() {
+            self.world.add_schedule(schedule);
+        }
+
         EcsState {
             world: self.world,
             schedules: self.schedules,

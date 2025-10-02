@@ -1,15 +1,16 @@
 use super::{
     resources::{Buttons, CursorMovement},
-    systems::main,
+    systems::{processing, utils},
     ActionStateResource, InputActionMapResource,
 };
-use crate::{
-    ecs_bridge::{Plugin, Schedules},
-    ecs_modules::input::events::{
+use crate::ecs_modules::{
+    input::events::{
         KeyboardInputEvent, MouseButtonInputEvent, MouseMoveEvent, MouseScrollEvent,
         RawDeviceEvent, RawWindowEvent,
     },
-    ecs_modules::CoreSet,
+    schedules::OnExit,
+    state_machine::resources::AppState,
+    CoreSet, Plugin, Schedules,
 };
 use bevy_ecs::{event::Events, schedule::IntoScheduleConfigs, world::World};
 use winit::{event::MouseButton, keyboard::PhysicalKey};
@@ -18,6 +19,7 @@ pub struct InputModuleBuilder;
 
 impl Plugin for InputModuleBuilder {
     fn build(&self, schedules: &mut Schedules, world: &mut World) {
+        // Resources
         world.insert_resource(InputActionMapResource::default());
         world.insert_resource(ActionStateResource::default());
 
@@ -35,15 +37,20 @@ impl Plugin for InputModuleBuilder {
         world.init_resource::<Events<MouseScrollEvent>>();
         world.init_resource::<Events<MouseButtonInputEvent>>();
 
+        // Schedules
         schedules.main.add_systems(
             (
-                main::window_events_system,
-                main::device_events_system,
-                main::update_action_state_system
-                    .after(main::window_events_system)
-                    .after(main::device_events_system),
+                processing::window_events_system,
+                processing::device_events_system,
+                processing::update_action_state_system
+                    .after(processing::window_events_system)
+                    .after(processing::device_events_system),
             )
                 .in_set(CoreSet::Input),
         );
+
+        schedules
+            .get_labeled_mut(OnExit(AppState::Loading))
+            .add_systems(utils::clear_stale_input_events_system);
     }
 }

@@ -1,4 +1,4 @@
-use crate::ecs_bridge::{Plugin, Schedules};
+use crate::ecs_modules::{Plugin, Schedules};
 use bevy_ecs::{schedule::IntoScheduleConfigs, world::World};
 
 use super::systems::{main, startup};

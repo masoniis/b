@@ -11,6 +11,9 @@ check *args:
 clean *args:
 	cargo clean {{args}}
 
+fix *args:
+	cargo fix --lib -p b --allow-dirty
+
 # INFO: ---------------------------
 #         Advanced commands
 # ---------------------------------
