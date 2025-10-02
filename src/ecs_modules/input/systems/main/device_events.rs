@@ -1,6 +1,6 @@
 use crate::ecs_modules::input::{
     events::{MouseMoveEvent, MouseScrollEvent, RawDeviceEvent},
-    InputResource,
+    resources::CursorMovement,
 };
 use bevy_ecs::{
     event::{EventReader, EventWriter},
@@ -10,21 +10,18 @@ use bevy_ecs::{
 /// A system to handle external raw input events from the OS (via winit),
 /// and simultaneously update the input resource with device information.
 pub fn device_events_system(
-    // State to modify
-    mut input_resource: ResMut<InputResource>,
-
     // Input from OS bridge
     mut raw_device_events: EventReader<RawDeviceEvent>,
 
-    // Output
+    // State to modify (output)
+    mut movement: ResMut<CursorMovement>,
+
+    // Events to fire (output)
     mut mouse_move_writer: EventWriter<MouseMoveEvent>,
     mut mouse_scroll_writer: EventWriter<MouseScrollEvent>,
 ) {
-    input_resource.swap_previous_and_reset_deltas();
-
-    // INFO: ----------------------------------
-    //         Handle raw device events
-    // ----------------------------------------
+    // Clear previous stale state (without this mouse movement would "accumulate")
+    movement.reset_deltas();
 
     for RawDeviceEvent(event) in raw_device_events.read() {
         match event {
@@ -33,7 +30,7 @@ pub fn device_events_system(
                     delta: (*delta).into(),
                 };
 
-                input_resource.adjust_mouse_delta(semantic_event.delta);
+                movement.adjust_mouse_delta(semantic_event.delta);
 
                 mouse_move_writer.write(semantic_event);
             }
@@ -46,7 +43,7 @@ pub fn device_events_system(
                     delta: glam::Vec2::new(0.0, yoffset),
                 };
 
-                input_resource.adjust_scroll_delta(semantic_event.delta);
+                movement.adjust_scroll_delta(semantic_event.delta);
 
                 mouse_scroll_writer.write(semantic_event);
             }

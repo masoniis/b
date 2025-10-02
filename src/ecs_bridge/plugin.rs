@@ -1,29 +1,43 @@
 use bevy_ecs::{
+    prelude::*,
     schedule::{Schedule, ScheduleLabel},
     world::World,
 };
 
+use crate::ecs_modules::CoreSet;
+
 #[derive(ScheduleLabel, Debug, Clone, PartialEq, Eq, Hash)]
 pub enum ScheduleLables {
     Startup,
-    Input, // should run just before main
     Main,
 }
 
 /// A container for all the core schedules of the app.
 pub struct Schedules {
     pub startup: Schedule,
-    pub input: Schedule,
     pub main: Schedule,
 }
 
 impl Schedules {
     /// Creates a new instance with empty schedules.
     pub fn new() -> Self {
+        let mut main_schedule = Schedule::new(ScheduleLables::Main);
+
+        main_schedule.configure_sets(
+            (
+                CoreSet::Input,
+                CoreSet::PreUpdate,
+                CoreSet::Update,
+                CoreSet::Physics,
+                CoreSet::PostUpdate,
+                CoreSet::RenderPrep,
+            )
+                .chain(),
+        );
+
         Self {
             startup: Schedule::new(ScheduleLables::Startup),
-            input: Schedule::new(ScheduleLables::Input),
-            main: Schedule::new(ScheduleLables::Main),
+            main: main_schedule,
         }
     }
 }

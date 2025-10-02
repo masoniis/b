@@ -54,7 +54,6 @@ impl EcsState {
     }
 
     pub fn run_main(&mut self) {
-        self.schedules.input.run(&mut self.world);
         self.schedules.main.run(&mut self.world);
     }
 }
