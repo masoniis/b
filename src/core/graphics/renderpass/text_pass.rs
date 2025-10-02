@@ -5,9 +5,14 @@ use crate::{
 };
 use glyphon::{
     cosmic_text::{Attrs, Family, Metrics, Shaping},
+    fontdb::Source,
     Buffer, Cache, FontSystem, SwashCache, TextArea, TextAtlas, TextBounds, TextRenderer, Viewport,
 };
+use std::fs;
+use std::path::Path;
+use std::sync::Arc;
 use wgpu::{Device, MultisampleState, Queue, TextureFormat};
+
 pub struct TextRenderPass {
     pub renderer: TextRenderer,
     pub font_system: FontSystem,
@@ -15,6 +20,7 @@ pub struct TextRenderPass {
     pub atlas: TextAtlas,
     pub viewport: Viewport,
 }
+
 impl TextRenderPass {
     pub fn new(
         device: &Device,
@@ -22,7 +28,18 @@ impl TextRenderPass {
         target_format: TextureFormat,
         size: winit::dpi::PhysicalSize<u32>,
     ) -> Self {
-        let font_system = FontSystem::new();
+        // Loading font from assets
+        let font_path = Path::new("assets/fonts/Miracode.ttf");
+        let font_bytes = match fs::read(font_path) {
+            Ok(bytes) => Arc::new(bytes),
+            Err(e) => {
+                panic!("Failed to load font file at {:?}: {}", font_path, e);
+            }
+        };
+
+        let source = Source::Binary(font_bytes);
+        let font_system = FontSystem::new_with_fonts(vec![source]);
+
         let cache = SwashCache::new();
         let viewport_cache = Cache::new(device);
         let mut viewport = Viewport::new(device, &viewport_cache);
@@ -62,7 +79,7 @@ impl ITextRenderPass for TextRenderPass {
             buffer.set_text(
                 &mut self.font_system,
                 &text.text,
-                &Attrs::new().family(Family::SansSerif),
+                &Attrs::new().family(Family::Name("Miracode")),
                 Shaping::Advanced,
             );
             buffers.push(buffer);
