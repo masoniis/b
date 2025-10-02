@@ -1,6 +1,6 @@
 use crate::{
     core::graphics::context::GraphicsContext,
-    ecs_bridge::EcsState,
+    ecs_bridge::{EcsState, EcsStateBuilder},
     ecs_modules::input::events::{RawDeviceEvent, RawWindowEvent},
     ecs_resources::{texture_map::TextureMapResource, window::WindowResource},
     guard,
@@ -24,7 +24,7 @@ pub struct App {
 
     // Core Engine Modules
     graphics_context: Option<GraphicsContext>,
-    ecs_state: EcsState,
+    ecs_state: Option<EcsState>,
 
     // State Flags
     startup_done: bool,
@@ -35,7 +35,7 @@ impl App {
         Self {
             window: None,
             graphics_context: None,
-            ecs_state: EcsState::new(),
+            ecs_state: None,
             startup_done: false,
         }
     }
@@ -61,9 +61,9 @@ impl ApplicationHandler for App {
             let window = Arc::new(event_loop.create_window(window_attributes).unwrap());
             self.window = Some(window.clone());
 
-            self.ecs_state
-                .world
-                .insert_resource(WindowResource::new(window.inner_size()));
+            let mut builder = EcsStateBuilder::default();
+            builder.add_resource(WindowResource::new(window.inner_size()));
+            let mut ecs_state = builder.build();
 
             window.set_cursor_visible(false);
             if let Err(err) = window.set_cursor_grab(winit::window::CursorGrabMode::Confined) {
@@ -72,13 +72,16 @@ impl ApplicationHandler for App {
 
             let (graphics_context, texture_map) = pollster::block_on(GraphicsContext::new(window));
             self.graphics_context = Some(graphics_context);
-            self.ecs_state.world.insert_resource(TextureMapResource {
+            ecs_state.world.insert_resource(TextureMapResource {
                 registry: texture_map,
             });
 
             info!("Running startup systems...");
-            self.ecs_state.run_startup();
+            ecs_state.schedules.startup.run(&mut ecs_state.world);
+
             self.startup_done = true;
+
+            self.ecs_state = Some(ecs_state);
         }
     }
 
@@ -90,59 +93,59 @@ impl ApplicationHandler for App {
     ) {
         guard!(self.startup_done);
 
-        self.ecs_state.world.send_event(RawDeviceEvent(event));
+        if let Some(ecs_state) = &mut self.ecs_state {
+            ecs_state.world.send_event(RawDeviceEvent(event.clone()));
+        }
     }
 
     fn window_event(&mut self, event_loop: &ActiveEventLoop, _id: WindowId, event: WindowEvent) {
         guard!(self.startup_done);
 
-        self.ecs_state
-            .world
-            .send_event(RawWindowEvent(event.clone()));
+        if let Some(ecs_state) = &mut self.ecs_state {
+            ecs_state.world.send_event(RawWindowEvent(event.clone()));
 
-        match event {
-            WindowEvent::CloseRequested => {
-                info!("Window close requested, exiting app event loop.");
-                event_loop.exit();
-            }
-            WindowEvent::Resized(physical_size) => {
-                if let Some(gfx) = self.graphics_context.as_mut() {
-                    gfx.resize(physical_size);
+            match event {
+                WindowEvent::CloseRequested => {
+                    info!("Window close requested, exiting app event loop.");
+                    event_loop.exit();
                 }
-            }
-            WindowEvent::RedrawRequested => {
-                // Update the world just before rendering. This ensures that
-                // all the input events are processed by the world since
-                // redraw request is the final event to come through.
-                self.ecs_state.run_main();
-
-                let gfx = self.graphics_context.as_mut().unwrap();
-                let (render_queue, mesh_assets, camera_uniform) = self
-                    .ecs_state
-                    .render_state
-                    .get_mut(&mut self.ecs_state.world);
-
-                match gfx.render(&render_queue, &mesh_assets, &camera_uniform) {
-                    Ok(_) => {}
-                    Err(wgpu::SurfaceError::Lost) => {
-                        warn!("WGPU SurfaceError::Lost, resizing surface.");
-                        let size = self.window.as_ref().unwrap().inner_size();
-                        gfx.resize(size);
+                WindowEvent::Resized(physical_size) => {
+                    if let Some(gfx) = self.graphics_context.as_mut() {
+                        gfx.resize(physical_size);
                     }
-                    Err(wgpu::SurfaceError::OutOfMemory) => {
-                        error!("WGPU SurfaceError::OutOfMemory, exiting event loop.");
-                        event_loop.exit();
+                }
+                WindowEvent::RedrawRequested => {
+                    // Update the world just before rendering. This ensures that
+                    // all the input events are processed by the world since
+                    // redraw request is the final event to come through.
+                    ecs_state.schedules.main.run(&mut ecs_state.world);
+
+                    let gfx = self.graphics_context.as_mut().unwrap();
+                    let (render_queue, mesh_assets, camera_uniform) =
+                        ecs_state.render_state.get_mut(&mut ecs_state.world);
+
+                    match gfx.render(&render_queue, &mesh_assets, &camera_uniform) {
+                        Ok(_) => {}
+                        Err(wgpu::SurfaceError::Lost) => {
+                            warn!("WGPU SurfaceError::Lost, resizing surface.");
+                            let size = self.window.as_ref().unwrap().inner_size();
+                            gfx.resize(size);
+                        }
+                        Err(wgpu::SurfaceError::OutOfMemory) => {
+                            error!("WGPU SurfaceError::OutOfMemory, exiting event loop.");
+                            event_loop.exit();
+                        }
+                        Err(e) => eprintln!("Error during render: {:?}", e),
                     }
-                    Err(e) => eprintln!("Error during render: {:?}", e),
-                }
 
-                self.ecs_state.render_state.apply(&mut self.ecs_state.world);
+                    ecs_state.render_state.apply(&mut ecs_state.world);
 
-                if let Some(window) = &self.window {
-                    window.request_redraw();
+                    if let Some(window) = &self.window {
+                        window.request_redraw();
+                    }
                 }
+                _ => {}
             }
-            _ => {}
         }
     }
 }

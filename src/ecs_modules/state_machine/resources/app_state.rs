@@ -6,7 +6,7 @@ use std::hash::Hash;
 #[derive(Resource, Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 pub enum AppState {
     #[default]
-    Launching,
+    Loading,
     Running,
     Closing,
 }
