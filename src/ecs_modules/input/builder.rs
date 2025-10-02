@@ -39,9 +39,9 @@ impl Plugin for InputModuleBuilder {
             (
                 main::window_events_system,
                 main::device_events_system,
-                main::update_action_state_system.after(main::window_events_system),
-                main::update_action_state_system.after(main::device_events_system),
-                main::update_action_state_system,
+                main::update_action_state_system
+                    .after(main::window_events_system)
+                    .after(main::device_events_system),
             )
                 .in_set(CoreSet::Input),
         );

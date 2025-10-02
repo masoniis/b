@@ -1,5 +1,5 @@
-pub mod game_state;
+pub mod ecs_init;
 pub mod plugin;
 
-pub use game_state::EcsState;
+pub use ecs_init::{EcsState, EcsStateBuilder};
 pub use plugin::{Plugin, Schedules};
