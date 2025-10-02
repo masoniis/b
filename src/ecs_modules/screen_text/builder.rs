@@ -11,20 +11,14 @@ impl Plugin for ScreenTextModuleBuilder {
             .startup
             .add_systems((startup::init_screen_diagnostics_system,));
 
-        schedules.main.add_systems(
+        schedules.main.add_systems((
             main::handle_text_visibility_change_system
                 .before(main::update_debug_diagnostics_system),
-        );
-        schedules.main.add_systems(
             main::update_visible_text_system
                 .after(main::handle_text_visibility_change_system)
                 .after(main::update_debug_diagnostics_system),
-        );
-        schedules
-            .main
-            .add_systems(main::update_debug_diagnostics_system);
-        schedules
-            .main
-            .add_systems(main::toggle_debug_diagnostics_system);
+            main::update_debug_diagnostics_system,
+            main::toggle_debug_diagnostics_system,
+        ));
     }
 }
