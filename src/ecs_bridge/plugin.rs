@@ -4,23 +4,31 @@ use bevy_ecs::{
     world::World,
 };
 
-use crate::ecs_modules::CoreSet;
+use crate::ecs_modules::{system_sets::StartupSet, CoreSet};
 
 #[derive(ScheduleLabel, Debug, Clone, PartialEq, Eq, Hash)]
 pub enum ScheduleLables {
     Startup,
+    Loading,
     Main,
 }
 
 /// A container for all the core schedules of the app.
 pub struct Schedules {
+    /// Runs a single time at app start.
     pub startup: Schedule,
+    /// Runs every frame after startup, waiting for loading tasks to complete.
+    /// Transitions to `main` schedule when loading is complete.
+    pub loading: Schedule,
+    /// Runs every frame during normal gameplay.
     pub main: Schedule,
 }
 
 impl Schedules {
-    /// Creates a new instance with empty schedules.
     pub fn new() -> Self {
+        let mut startup_schedule = Schedule::new(ScheduleLables::Startup);
+        startup_schedule.configure_sets((StartupSet::InitialSetup, StartupSet::Finalize).chain());
+
         let mut main_schedule = Schedule::new(ScheduleLables::Main);
 
         main_schedule.configure_sets(
@@ -36,7 +44,8 @@ impl Schedules {
         );
 
         Self {
-            startup: Schedule::new(ScheduleLables::Startup),
+            startup: startup_schedule,
+            loading: Schedule::new(ScheduleLables::Loading),
             main: main_schedule,
         }
     }

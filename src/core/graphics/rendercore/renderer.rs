@@ -151,4 +151,44 @@ impl Renderer {
 
         Ok(())
     }
+
+    /// Render a loading screen that as of now is
+    /// just a single clear pass to a dark color.
+    pub fn render_loading_screen(
+        &mut self,
+        view: &wgpu::TextureView,
+    ) -> Result<(), wgpu::SurfaceError> {
+        let mut encoder = self
+            .device
+            .create_command_encoder(&wgpu::CommandEncoderDescriptor {
+                label: Some("Loading Screen Encoder"),
+            });
+
+        {
+            let _render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                label: Some("Loading Screen Clear Pass"),
+                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                    view, // The texture view of the screen to draw to.
+                    resolve_target: None,
+                    ops: wgpu::Operations {
+                        load: wgpu::LoadOp::Clear(wgpu::Color {
+                            r: 0.1,
+                            g: 0.1,
+                            b: 0.15,
+                            a: 1.0,
+                        }),
+                        store: wgpu::StoreOp::Store,
+                    },
+                    depth_slice: None,
+                })],
+                depth_stencil_attachment: None,
+                timestamp_writes: None,
+                occlusion_query_set: None,
+            });
+        }
+
+        self.queue.submit(std::iter::once(encoder.finish()));
+
+        Ok(())
+    }
 }

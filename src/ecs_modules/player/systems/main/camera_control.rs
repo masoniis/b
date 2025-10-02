@@ -3,13 +3,15 @@ use crate::ecs_modules::rendering::CameraUniformResource;
 use crate::ecs_resources::{CameraResource, TimeResource, WindowResource};
 use bevy_ecs::prelude::*;
 use glam::{Mat4, Vec3};
-// Removed: use winit::keyboard::{KeyCode, PhysicalKey};
 
 pub fn camera_control_system(
+    // Input
     movement: Res<CursorMovement>,
     action_state: Res<ActionStateResource>,
     time: Res<TimeResource>,
     window: Res<WindowResource>,
+
+    // Output
     mut camera: ResMut<CameraResource>,
     mut camera_uniform: ResMut<CameraUniformResource>,
 ) {

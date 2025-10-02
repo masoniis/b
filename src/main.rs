@@ -7,7 +7,8 @@ pub mod utils;
 
 pub use prelude::*;
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
     utils::logger::attach_logger();
     info!("Logger attached...");
     info!("Running app...");

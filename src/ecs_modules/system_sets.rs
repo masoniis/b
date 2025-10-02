@@ -1,6 +1,14 @@
 use bevy_ecs::prelude::SystemSet;
 
 #[derive(SystemSet, Debug, Hash, PartialEq, Eq, Clone)]
+pub enum StartupSet {
+    // For systems that create initial assets and entities.
+    InitialSetup,
+    // For the final system that transitions the AppState.
+    Finalize,
+}
+
+#[derive(SystemSet, Debug, Hash, PartialEq, Eq, Clone)]
 pub enum CoreSet {
     /// Process raw OS input and publish game-specific events.
     Input,
