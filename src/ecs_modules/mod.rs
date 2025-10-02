@@ -7,10 +7,10 @@ pub mod state_machine;
 pub mod system_sets;
 pub mod world;
 
-pub use input::InputModuleBuilder;
-pub use player::PlayerModuleBuilder;
-pub use rendering::RenderingModuleBuilder;
+pub use input::InputModulePlugin;
+pub use player::PlayerModulePlugin;
+pub use rendering::RenderingModulePlugin;
 pub use schedules::{Plugin, Schedules};
-pub use screen_text::ScreenTextModuleBuilder;
+pub use screen_text::ScreenTextModulePlugin;
 pub use system_sets::CoreSet;
-pub use world::WorldModuleBuilder;
+pub use world::WorldModulePlugin;
