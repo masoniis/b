@@ -9,9 +9,9 @@ use crate::{
 };
 use bevy_ecs::prelude::*;
 
-pub struct StateMachineModuleBuilder;
+pub struct StateMachineModulePlugin;
 
-impl Plugin for StateMachineModuleBuilder {
+impl Plugin for StateMachineModulePlugin {
     fn build(&self, schedules: &mut Schedules, _world: &mut World) {
         // Initialize the transition schedules
         schedules.add(OnEnter(AppState::Running));

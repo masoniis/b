@@ -1,12 +1,14 @@
 use crate::{
     ecs_modules::{
-        rendering::{CameraUniformResource, RenderQueueResource},
+        input::InputModulePlugin,
+        player::PlayerModulePlugin,
+        rendering::{CameraUniformResource, RenderQueueResource, RenderingModulePlugin},
+        screen_text::ScreenTextModulePlugin,
         state_machine::{
             resources::{AppState, CurrentState, GameState, NextState, PrevState},
-            StateMachineModuleBuilder,
+            StateMachineModulePlugin,
         },
-        InputModuleBuilder, PlayerModuleBuilder, RenderingModuleBuilder, ScreenTextModuleBuilder,
-        WorldModuleBuilder,
+        world::WorldModulePlugin,
     },
     ecs_modules::{Plugin, Schedules},
     ecs_resources::{
@@ -67,12 +69,12 @@ impl EcsStateBuilder {
             });
 
         builder
-            .add_plugin(StateMachineModuleBuilder)
-            .add_plugin(ScreenTextModuleBuilder)
-            .add_plugin(RenderingModuleBuilder)
-            .add_plugin(PlayerModuleBuilder)
-            .add_plugin(InputModuleBuilder)
-            .add_plugin(WorldModuleBuilder);
+            .add_plugin(StateMachineModulePlugin)
+            .add_plugin(ScreenTextModulePlugin)
+            .add_plugin(RenderingModulePlugin)
+            .add_plugin(PlayerModulePlugin)
+            .add_plugin(InputModulePlugin)
+            .add_plugin(WorldModulePlugin);
 
         return builder;
     }

@@ -1,4 +1,4 @@
-pub mod builder;
+pub mod plugin;
 pub mod systems;
 
-pub use builder::PlayerModuleBuilder;
+pub use plugin::PlayerModulePlugin;

@@ -15,9 +15,9 @@ use crate::ecs_modules::{
 use bevy_ecs::{event::Events, schedule::IntoScheduleConfigs, world::World};
 use winit::{event::MouseButton, keyboard::PhysicalKey};
 
-pub struct InputModuleBuilder;
+pub struct InputModulePlugin;
 
-impl Plugin for InputModuleBuilder {
+impl Plugin for InputModulePlugin {
     fn build(&self, schedules: &mut Schedules, world: &mut World) {
         // Resources
         world.insert_resource(InputActionMapResource::default());

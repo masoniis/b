@@ -8,9 +8,9 @@ use crate::{
 };
 use bevy_ecs::prelude::*;
 
-pub struct RenderingModuleBuilder;
+pub struct RenderingModulePlugin;
 
-impl Plugin for RenderingModuleBuilder {
+impl Plugin for RenderingModulePlugin {
     fn build(&self, schedules: &mut Schedules, world: &mut World) {
         world.insert_resource(RenderQueueResource::default());
         world.insert_resource(CameraUniformResource::default());

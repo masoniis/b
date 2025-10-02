@@ -3,9 +3,9 @@ use bevy_ecs::{schedule::IntoScheduleConfigs, world::World};
 
 use super::systems::{main, startup};
 
-pub struct ScreenTextModuleBuilder;
+pub struct ScreenTextModulePlugin;
 
-impl Plugin for ScreenTextModuleBuilder {
+impl Plugin for ScreenTextModulePlugin {
     fn build(&self, schedules: &mut Schedules, _world: &mut World) {
         schedules
             .startup

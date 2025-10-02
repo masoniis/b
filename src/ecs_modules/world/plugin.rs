@@ -6,9 +6,9 @@ use crate::ecs_modules::{Plugin, Schedules};
 use crate::prelude::CoreSet;
 use bevy_ecs::prelude::*;
 
-pub struct WorldModuleBuilder;
+pub struct WorldModulePlugin;
 
-impl Plugin for WorldModuleBuilder {
+impl Plugin for WorldModulePlugin {
     fn build(&self, schedules: &mut Schedules, _world: &mut World) {
         schedules.startup.add_systems(
             (
