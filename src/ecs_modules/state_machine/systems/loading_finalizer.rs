@@ -30,6 +30,6 @@ pub fn finalize_loading_system(
     // Transition to AppState::Running if no tasks remain
     if remaining_tasks == 0 {
         info!("All loading tasks complete. Transitioning to AppState::Running.");
-        next_state.value = Some(AppState::Running);
+        next_state.val = Some(AppState::Running);
     }
 }

@@ -109,7 +109,7 @@ impl ApplicationHandler for App {
                 WindowEvent::RedrawRequested => {
                     let current_app_state = ecs_state.world.resource::<CurrentState<AppState>>();
 
-                    match current_app_state.value {
+                    match current_app_state.val {
                         AppState::Loading => {
                             ecs_state.schedules.loading.run(&mut ecs_state.world);
 
