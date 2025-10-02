@@ -1,8 +1,8 @@
 use super::systems::{main as main_system, startup as startup_system};
-use crate::ecs_bridge::{Plugin, Schedules};
 use crate::ecs_modules::state_machine::in_state;
 use crate::ecs_modules::state_machine::resources::AppState;
 use crate::ecs_modules::system_sets::StartupSet;
+use crate::ecs_modules::{Plugin, Schedules};
 use crate::prelude::CoreSet;
 use bevy_ecs::prelude::*;
 
