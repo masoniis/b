@@ -2,6 +2,7 @@ pub mod input;
 pub mod player;
 pub mod rendering;
 pub mod screen_text;
+pub mod state_machine;
 pub mod system_sets;
 pub mod world;
 
