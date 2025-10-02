@@ -2,13 +2,15 @@ use crate::{
     ecs_bridge::{Plugin, Schedules},
     ecs_modules::{
         rendering::{CameraUniformResource, RenderQueueResource},
-        state_machine::resources::{AppState, CurrentState, GameState, NextState},
+        state_machine::{
+            resources::{AppState, CurrentState, GameState, NextState},
+            StateMachineModuleBuilder,
+        },
         InputModuleBuilder, PlayerModuleBuilder, RenderingModuleBuilder, ScreenTextModuleBuilder,
         WorldModuleBuilder,
     },
     ecs_resources::{
         asset_storage::MeshAsset, time::TimeResource, AssetStorageResource, CameraResource,
-        WindowResource,
     },
 };
 use bevy_ecs::{prelude::*, schedule::ScheduleLabel, system::SystemState, world::World};
@@ -35,61 +37,52 @@ pub struct EcsStateBuilder {
     schedules: Schedules,
 }
 
-impl EcsState {
-    pub fn new() -> Self {
-        let mut builder = EcsStateBuilder::new();
+impl EcsStateBuilder {
+    pub fn default() -> EcsStateBuilder {
+        let mut builder = Self::new();
+
+        builder
+            .add_resource(TimeResource::default())
+            .add_resource(CameraResource::default())
+            .add_resource(AssetStorageResource::<MeshAsset>::default())
+            .add_resource(CurrentState {
+                value: AppState::default(),
+            })
+            .add_resource(CurrentState {
+                value: GameState::default(),
+            })
+            .add_resource(NextState {
+                value: None::<AppState>,
+            })
+            .add_resource(NextState {
+                value: None::<GameState>,
+            });
+
         builder
             .add_plugin(InputModuleBuilder)
-            .add_plugin(ScreenTextModuleBuilder)
-            .add_plugin(PlayerModuleBuilder)
             .add_plugin(RenderingModuleBuilder)
-            .add_plugin(WorldModuleBuilder);
-        builder.build()
+            .add_plugin(ScreenTextModuleBuilder)
+            .add_plugin(WorldModuleBuilder)
+            .add_plugin(StateMachineModuleBuilder)
+            .add_plugin(PlayerModuleBuilder);
+
+        return builder;
     }
 
-    pub fn run_startup(&mut self) {
-        if !self.world.contains_resource::<WindowResource>() {
-            panic!("WindowResource must be added to the world before running startup systems.");
-        }
-        self.schedules.startup.run(&mut self.world);
-    }
-
-    pub fn run_main(&mut self) {
-        self.schedules.main.run(&mut self.world);
-    }
-}
-
-impl EcsStateBuilder {
     pub fn new() -> Self {
-        let mut world = World::new();
-
-        world.insert_resource(TimeResource::default());
-        world.insert_resource(CameraResource::default());
-        world.insert_resource(AssetStorageResource::<MeshAsset>::default());
-
-        // Insert the state structs
-        world.insert_resource(CurrentState {
-            value: AppState::default(),
-        });
-        world.insert_resource(NextState {
-            value: None::<AppState>,
-        });
-
-        world.insert_resource(CurrentState {
-            value: GameState::default(),
-        });
-        world.insert_resource(NextState {
-            value: None::<GameState>,
-        });
-
         Self {
-            world,
+            world: World::new(),
             schedules: Schedules::new(),
         }
     }
 
     pub fn add_plugin<P: Plugin>(&mut self, plugin: P) -> &mut Self {
         plugin.build(&mut self.schedules, &mut self.world);
+        self
+    }
+
+    pub fn add_resource<R: Resource>(&mut self, resource: R) -> &mut Self {
+        self.world.insert_resource(resource);
         self
     }
 
