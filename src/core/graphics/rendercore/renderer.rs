@@ -7,12 +7,12 @@ use crate::{
         },
         types::mesh::GpuMesh,
     },
-    ecs_modules::graphics::{CameraUniformResource, RenderQueueResource},
     ecs_resources::{
         asset_storage::{AssetId, MeshAsset},
         time::TimeResource,
         AssetStorageResource,
     },
+    game_world::graphics::{CameraUniformResource, RenderQueueResource},
 };
 use std::{collections::HashMap, sync::Arc};
 use wgpu::{Device, Queue, RenderPipeline};

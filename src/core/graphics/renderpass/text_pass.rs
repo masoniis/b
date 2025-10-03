@@ -1,7 +1,7 @@
 use crate::{
     core::graphics::renderpass::{ITextRenderPass, RenderPassContex},
-    ecs_modules::graphics::{CameraUniformResource, RenderQueueResource},
     ecs_resources::{asset_storage::MeshAsset, AssetStorageResource},
+    game_world::graphics::{CameraUniformResource, RenderQueueResource},
 };
 use glyphon::{
     cosmic_text::{Attrs, Family, Metrics, Shaping},
