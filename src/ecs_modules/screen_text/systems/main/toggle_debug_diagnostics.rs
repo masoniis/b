@@ -1,5 +1,5 @@
 use crate::ecs_modules::input::{ActionStateResource, GameAction};
-use crate::ecs_modules::{rendering::VisibilityComponent, screen_text::DiagnosticUiElementMarker};
+use crate::ecs_modules::{graphics::VisibilityComponent, screen_text::DiagnosticUiElementMarker};
 use bevy_ecs::prelude::*;
 
 pub fn toggle_debug_diagnostics_system(

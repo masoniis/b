@@ -65,7 +65,7 @@ pub fn window_events_system(
             WindowEvent::Resized(physical_size) => {
                 window_resource.width = physical_size.width;
                 window_resource.height = physical_size.height;
-                gfx_resource.context.resize(*physical_size);
+                gfx_resource.context.inform_resize(*physical_size);
             }
             _ => {}
         }

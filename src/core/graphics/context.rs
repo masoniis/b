@@ -1,15 +1,12 @@
 use crate::{
     core::graphics::rendercore::Renderer,
     core::graphics::textures::{load_texture_array, TextureRegistry},
-    ecs_modules::rendering::{CameraUniformResource, RenderQueueResource},
-    ecs_resources::{asset_storage::MeshAsset, AssetStorageResource},
     prelude::*,
 };
 use std::sync::Arc;
 use wgpu::{
     Adapter, Device, DeviceDescriptor, Instance, InstanceDescriptor, PowerPreference, PresentMode,
-    Queue, RequestAdapterOptions, Surface, SurfaceConfiguration, SurfaceError,
-    TextureViewDescriptor,
+    Queue, RequestAdapterOptions, Surface, SurfaceConfiguration,
 };
 use winit::window::Window;
 
@@ -111,7 +108,7 @@ impl GraphicsContext {
 
     /// Let the graphics context know that the window associated with the graphics
     /// context been resized. Relays information to the necessary config elements.
-    pub fn resize(&mut self, new_size: PhysicalSize<u32>) {
+    pub fn inform_resize(&mut self, new_size: PhysicalSize<u32>) {
         if new_size.width > 0 && new_size.height > 0 {
             self.config.width = new_size.width;
             self.config.height = new_size.height;
@@ -120,43 +117,5 @@ impl GraphicsContext {
         } else {
             warn!("Attempted to resize graphics context to zero dimensions.");
         }
-    }
-
-    /// A render method that handles the bridge between the ECS world and the
-    /// graphics context. Takes in ECS global resources related to rendering.
-    pub fn render(
-        &mut self,
-        render_queue: &RenderQueueResource,
-        mesh_assets: &AssetStorageResource<MeshAsset>,
-        camera_uniform: &CameraUniformResource,
-    ) -> Result<(), SurfaceError> {
-        let output = self.surface.get_current_texture()?;
-        let view = output
-            .texture
-            .create_view(&TextureViewDescriptor::default());
-
-        if let Err(e) = self
-            .renderer
-            .render(&view, render_queue, mesh_assets, camera_uniform)
-        {
-            error!("Renderer error: {:?}", e);
-        }
-
-        output.present();
-        Ok(())
-    }
-
-    pub fn render_loading_screen(&mut self) -> Result<(), SurfaceError> {
-        let output = self.surface.get_current_texture()?;
-        let view = output
-            .texture
-            .create_view(&TextureViewDescriptor::default());
-
-        if let Err(e) = self.renderer.render_loading_screen(&view) {
-            error!("Renderer error: {:?}", e);
-        }
-
-        output.present();
-        Ok(())
     }
 }

@@ -1,6 +1,6 @@
 use crate::{
     core::graphics::types::QueuedDraw,
-    ecs_modules::rendering::{MeshComponent, RenderQueueResource, TransformComponent},
+    ecs_modules::graphics::{MeshComponent, RenderQueueResource, TransformComponent},
     prelude::*,
 };
 use bevy_ecs::prelude::{Changed, Entity, Or, Query, ResMut};
