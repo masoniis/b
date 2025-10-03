@@ -1,5 +1,5 @@
+use crate::ecs_modules::graphics::CameraUniformResource;
 use crate::ecs_modules::input::{resources::CursorMovement, ActionStateResource, GameAction};
-use crate::ecs_modules::rendering::CameraUniformResource;
 use crate::ecs_resources::{time::TimeResource, window::WindowResource, CameraResource};
 use bevy_ecs::prelude::*;
 use glam::{Mat4, Vec3};

@@ -1,4 +1,4 @@
-use crate::ecs_modules::{rendering::RenderQueueResource, screen_text::ScreenTextComponent};
+use crate::ecs_modules::{graphics::RenderQueueResource, screen_text::ScreenTextComponent};
 use bevy_ecs::prelude::{RemovedComponents, ResMut};
 use tracing::{debug, warn};
 

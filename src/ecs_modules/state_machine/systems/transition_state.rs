@@ -20,15 +20,11 @@ pub fn apply_state_transition_system<T: State>(world: &mut World) {
             return;
         }
 
-        info!("State transition: {:?} -> {:?}", old_state, new_state);
+        info!("\n\nState transition: {:?} -> {:?}\n", old_state, new_state);
 
-        // The Core Transition Logic
-
+        // INFO: Try-run the transition schedules
         if let Err(e) = world.try_run_schedule(OnExit(old_state.clone())) {
-            warn!(
-                "Failed to run OnExit schedule for state {:?}: {}",
-                old_state, e
-            );
+            warn!("Transition didn't run: {}", e);
         }
 
         // Update the CurrentState resource
@@ -36,10 +32,7 @@ pub fn apply_state_transition_system<T: State>(world: &mut World) {
         current_state_res.val = new_state.clone();
 
         if let Err(e) = world.try_run_schedule(OnEnter(new_state.clone())) {
-            warn!(
-                "Failed to run OnEnter schedule for state {:?}: {}",
-                new_state, e
-            );
+            warn!("Transition didn't run: {}", e);
         }
     }
 }

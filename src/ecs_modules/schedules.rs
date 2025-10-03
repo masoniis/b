@@ -52,6 +52,7 @@ impl Schedules {
                 CoreSet::Physics,
                 CoreSet::PostUpdate,
                 CoreSet::RenderPrep,
+                CoreSet::Render,
             )
                 .chain(),
         );
@@ -68,14 +69,14 @@ impl Schedules {
         return self.labeled.drain().collect();
     }
 
+    /// Get a labeled schedule and add it if it doesn't exist
+    ///
+    /// This ensures that any plugin that uses a labeled schedule like
+    /// OnEnter will also guarantee the schedule exists in the world.
     pub fn get_labeled_mut(&mut self, label: impl ScheduleLabel + Clone) -> &mut Schedule {
         self.labeled
             .entry(Box::new(label.clone()))
             .or_insert_with(|| Schedule::new(label))
-    }
-
-    pub fn add(&mut self, label: impl ScheduleLabel + Clone) {
-        self.get_labeled_mut(label);
     }
 }
 

@@ -1,48 +1,64 @@
 use crate::{
     ecs_modules::{
+        graphics::RenderingModulePlugin,
         input::InputModulePlugin,
         player::PlayerModulePlugin,
-        rendering::{CameraUniformResource, RenderQueueResource, RenderingModulePlugin},
+        schedules::ScheduleLables,
         screen_text::ScreenTextModulePlugin,
         state_machine::{
             resources::{AppState, CurrentState, GameState, NextState, PrevState},
             StateMachineModulePlugin,
         },
         world::WorldModulePlugin,
+        Plugin, Schedules,
     },
-    ecs_modules::{Plugin, Schedules},
     ecs_resources::{
         asset_storage::MeshAsset, time::TimeResource, AssetStorageResource, CameraResource,
     },
+    prelude::*,
 };
-use bevy_ecs::{
-    prelude::*, resource::Resource, schedule::ScheduleLabel, system::SystemState, world::World,
-};
+use bevy_ecs::prelude::{Event, Resource, World};
 
-#[derive(ScheduleLabel, Debug, Clone, PartialEq, Eq, Hash)]
-pub enum ScheduleLables {
-    Startup,
-    Input,
-    Main,
+/// An interface for the app to safely interact with the ECS world
+pub struct ExternalEcsInterface {
+    world: World,
 }
 
-pub struct EcsState {
-    pub world: World,
-    pub schedules: Schedules,
-    pub render_state: SystemState<(
-        ResMut<'static, RenderQueueResource>,
-        Res<'static, AssetStorageResource<MeshAsset>>,
-        Res<'static, CameraUniformResource>,
-    )>,
+impl ExternalEcsInterface {
+    // Send an event to the ECS world
+    pub fn send_event<E: Event>(&mut self, event: E) {
+        self.world.send_event(event);
+    }
+
+    // Get the value of the AppState resource in the world
+    pub fn get_app_state(&self) -> AppState {
+        self.world
+            .get_resource::<CurrentState<AppState>>()
+            .unwrap()
+            .val
+            .clone()
+    }
+
+    pub fn run_schedule(&mut self, label: ScheduleLables) {
+        match self.world.try_run_schedule(label.clone()) {
+            Ok(_) => {}
+            Err(error) => {
+                warn!(
+                    "Schedule with label {:?} not found or failed to run: {}",
+                    label, error
+                );
+            }
+        }
+    }
 }
 
-pub struct EcsStateBuilder {
+pub struct ExternalEcsInterfaceBuilder {
     world: World,
     schedules: Schedules,
 }
 
-impl EcsStateBuilder {
-    pub fn default() -> EcsStateBuilder {
+impl ExternalEcsInterfaceBuilder {
+    pub fn default() -> ExternalEcsInterfaceBuilder {
         let mut builder = Self::new();
 
         builder
@@ -96,17 +112,21 @@ impl EcsStateBuilder {
         self
     }
 
-    pub fn build(mut self) -> EcsState {
-        let render_state = SystemState::new(&mut self.world);
+    pub fn build(self) -> ExternalEcsInterface {
+        // We take ownership of world and schedules, add the schedules
+        // necessary to the world, and then give ownership of world to
+        // the EcsState struct.
+        let mut schedules = self.schedules;
+        let mut world = self.world;
 
-        for (_, schedule) in self.schedules.drain_dynamic_schedules() {
-            self.world.add_schedule(schedule);
+        for (_, schedule) in schedules.drain_dynamic_schedules() {
+            world.add_schedule(schedule);
         }
 
-        EcsState {
-            world: self.world,
-            schedules: self.schedules,
-            render_state,
-        }
+        world.add_schedule(schedules.startup);
+        world.add_schedule(schedules.loading);
+        world.add_schedule(schedules.main);
+
+        ExternalEcsInterface { world }
     }
 }

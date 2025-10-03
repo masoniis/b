@@ -1,5 +1,5 @@
 use crate::ecs_modules::{
-    rendering::VisibilityComponent,
+    graphics::VisibilityComponent,
     screen_text::components::{
         DiagnosticUiElementMarker, FpsCounterScreenTextMarker, ScreenTextComponent,
     },
