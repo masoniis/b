@@ -1,5 +1,5 @@
-mod queue;
-mod uniforms;
+pub mod queue;
+pub mod uniforms;
 
 pub use queue::*;
 pub use uniforms::*;
