@@ -21,6 +21,7 @@ impl Plugin for StateMachineModulePlugin {
                 systems::finalize_loading_system,
                 systems::apply_state_transition_system::<AppState>,
                 graphics::systems::render::render_loading_screen_system,
+                crate::ecs_modules::world::systems::main::time::time_system, // Add time_system
             )
                 .chain(),
         );

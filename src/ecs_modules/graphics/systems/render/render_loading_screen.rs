@@ -1,9 +1,15 @@
-use crate::{ecs_resources::graphics_context::GraphicsContextResource, prelude::*};
-use bevy_ecs::prelude::ResMut;
+use crate::{
+    ecs_resources::{graphics_context::GraphicsContextResource, time::TimeResource},
+    prelude::*,
+};
+use bevy_ecs::prelude::{Res, ResMut};
 use wgpu::TextureViewDescriptor;
 
 /// The rendering system for the loading screen
-pub fn render_loading_screen_system(mut gfx_resource: ResMut<GraphicsContextResource>) {
+pub fn render_loading_screen_system(
+    mut gfx_resource: ResMut<GraphicsContextResource>,
+    time: Res<TimeResource>,
+) {
     let gfx = &mut gfx_resource.context;
 
     let output = match gfx.surface.get_current_texture() {
@@ -28,7 +34,7 @@ pub fn render_loading_screen_system(mut gfx_resource: ResMut<GraphicsContextReso
         .texture
         .create_view(&TextureViewDescriptor::default());
 
-    gfx.renderer.render_loading_screen(&view);
+    gfx.renderer.render_loading_screen(&view, &time);
 
     output.present();
 }
