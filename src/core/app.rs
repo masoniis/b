@@ -29,14 +29,14 @@ pub struct App {
     window: Option<Arc<Window>>,
 
     // Core Engine Modules
-    ecs_state: Option<ExternalEcsInterface>,
+    ecs_interface: Option<ExternalEcsInterface>,
 }
 
 impl App {
     pub fn new() -> Self {
         Self {
             window: None,
-            ecs_state: None,
+            ecs_interface: None,
         }
     }
 
@@ -77,13 +77,13 @@ impl ApplicationHandler for App {
                 .add_resource(TextureMapResource {
                     registry: texture_map,
                 });
-            let mut ecs_state = builder.build();
+            let mut ecs_interface = builder.build();
 
             info!("Running startup systems...\n\n\n");
-            ecs_state.run_schedule(ScheduleLables::Startup);
+            ecs_interface.run_schedule(ScheduleLables::Startup);
 
             self.window = Some(window.clone());
-            self.ecs_state = Some(ecs_state);
+            self.ecs_interface = Some(ecs_interface);
         }
     }
 
@@ -93,14 +93,14 @@ impl ApplicationHandler for App {
         _id: winit::event::DeviceId,
         event: DeviceEvent,
     ) {
-        if let Some(ecs_state) = &mut self.ecs_state {
-            ecs_state.send_event(RawDeviceEvent(event.clone()));
+        if let Some(ecs_interface) = &mut self.ecs_interface {
+            ecs_interface.send_event(RawDeviceEvent(event.clone()));
         }
     }
 
     fn window_event(&mut self, event_loop: &ActiveEventLoop, _id: WindowId, event: WindowEvent) {
-        if let Some(ecs_state) = &mut self.ecs_state {
-            ecs_state.send_event(RawWindowEvent(event.clone()));
+        if let Some(ecs_interface) = &mut self.ecs_interface {
+            ecs_interface.send_event(RawWindowEvent(event.clone()));
 
             // NOTE: The events handled here should only be events that rely on the event loop
             // itself. Any other event should be fine to handle within the ECS world itself.
@@ -110,14 +110,14 @@ impl ApplicationHandler for App {
                     event_loop.exit();
                 }
                 WindowEvent::RedrawRequested => {
-                    let current_app_state = ecs_state.get_app_state();
+                    let current_app_state = ecs_interface.get_app_state();
 
                     match current_app_state {
                         AppState::Loading => {
-                            ecs_state.run_schedule(ScheduleLables::Loading);
+                            ecs_interface.run_schedule(ScheduleLables::Loading);
                         }
                         AppState::Running => {
-                            ecs_state.run_schedule(ScheduleLables::Main);
+                            ecs_interface.run_schedule(ScheduleLables::Main);
                         }
                         AppState::Closing => {}
                     };

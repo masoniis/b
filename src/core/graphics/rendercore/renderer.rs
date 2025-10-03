@@ -1,5 +1,6 @@
 use crate::{
     core::graphics::{
+        rendercore::time_uniform::TimeUniform,
         renderpass::{
             traits::{ISceneRenderPass, ITextRenderPass},
             RenderPass, RenderPassContex, SharedRenderData,
@@ -9,6 +10,7 @@ use crate::{
     ecs_modules::graphics::{CameraUniformResource, RenderQueueResource},
     ecs_resources::{
         asset_storage::{AssetId, MeshAsset},
+        time::TimeResource,
         AssetStorageResource,
     },
 };
@@ -22,6 +24,7 @@ pub struct Renderer {
     pub device: Arc<Device>,
     pub queue: Arc<Queue>,
     pub render_pipeline: RenderPipeline,
+    pub loading_screen_pipeline: RenderPipeline,
 
     // Render Passes
     pub passes: Vec<RenderPass>,
@@ -150,28 +153,30 @@ impl Renderer {
         self.queue.submit(std::iter::once(encoder.finish()));
     }
 
-    /// Render a loading screen that as of now is
-    /// just a single clear pass to a dark color.
-    pub fn render_loading_screen(&mut self, view: &wgpu::TextureView) {
+    /// Render a shader-based loading screen
+    pub fn render_loading_screen(&mut self, view: &wgpu::TextureView, time: &TimeResource) {
         let mut encoder = self
             .device
             .create_command_encoder(&wgpu::CommandEncoderDescriptor {
                 label: Some("Loading Screen Encoder"),
             });
 
+        let mut time_uniform = TimeUniform::new();
+        time_uniform.update_total_time(time.total_elapse.as_secs_f32());
+        self.queue.write_buffer(
+            &self.shared_data.time_buffer,
+            0,
+            bytemuck::cast_slice(&[time_uniform]),
+        );
+
         {
-            let _render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                label: Some("Loading Screen Clear Pass"),
+            let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                label: Some("Loading Screen Render Pass"),
                 color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                    view, // The texture view of the screen to draw to.
+                    view,
                     resolve_target: None,
                     ops: wgpu::Operations {
-                        load: wgpu::LoadOp::Clear(wgpu::Color {
-                            r: 0.1,
-                            g: 0.1,
-                            b: 0.15,
-                            a: 1.0,
-                        }),
+                        load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
                         store: wgpu::StoreOp::Store,
                     },
                     depth_slice: None,
@@ -180,6 +185,10 @@ impl Renderer {
                 timestamp_writes: None,
                 occlusion_query_set: None,
             });
+
+            render_pass.set_pipeline(&self.loading_screen_pipeline);
+            render_pass.set_bind_group(0, &self.shared_data.time_bind_group, &[]);
+            render_pass.draw(0..4, 0..1); // 4 vertices for 4 corners
         }
 
         self.queue.submit(std::iter::once(encoder.finish()));
