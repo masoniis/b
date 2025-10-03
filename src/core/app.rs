@@ -5,7 +5,10 @@ use crate::{
         input::events::{RawDeviceEvent, RawWindowEvent},
         state_machine::resources::{AppState, CurrentState},
     },
-    ecs_resources::{texture_map::TextureMapResource, window::WindowResource},
+    ecs_resources::{
+        graphics_context::GraphicsContextResource, texture_map::TextureMapResource,
+        window::WindowResource,
+    },
     prelude::*,
 };
 use std::error::Error;
@@ -25,7 +28,6 @@ pub struct App {
     window: Option<Arc<Window>>,
 
     // Core Engine Modules
-    graphics_context: Option<GraphicsContext>,
     ecs_state: Option<EcsState>,
 }
 
@@ -33,7 +35,6 @@ impl App {
     pub fn new() -> Self {
         Self {
             window: None,
-            graphics_context: None,
             ecs_state: None,
         }
     }
@@ -57,26 +58,30 @@ impl ApplicationHandler for App {
                 .with_title("🅱️")
                 .with_inner_size(LogicalSize::new(1280, 720));
             let window = Arc::new(event_loop.create_window(window_attributes).unwrap());
-            self.window = Some(window.clone());
-
-            let mut builder = EcsStateBuilder::default();
-            builder.add_resource(WindowResource::new(window.inner_size()));
-            let mut ecs_state = builder.build();
 
             window.set_cursor_visible(false);
             if let Err(err) = window.set_cursor_grab(winit::window::CursorGrabMode::Confined) {
                 error!("Failed to grab cursor: {:?}", err);
             }
 
-            let (graphics_context, texture_map) = pollster::block_on(GraphicsContext::new(window));
-            self.graphics_context = Some(graphics_context);
-            ecs_state.world.insert_resource(TextureMapResource {
-                registry: texture_map,
-            });
+            let (graphics_context, texture_map) =
+                pollster::block_on(GraphicsContext::new(window.clone()));
+
+            let mut builder = EcsStateBuilder::default();
+            builder
+                .add_resource(WindowResource::new(window.inner_size()))
+                .add_resource(GraphicsContextResource {
+                    context: graphics_context,
+                })
+                .add_resource(TextureMapResource {
+                    registry: texture_map,
+                });
+            let mut ecs_state = builder.build();
 
             info!("Running startup systems...");
             ecs_state.schedules.startup.run(&mut ecs_state.world);
 
+            self.window = Some(window.clone());
             self.ecs_state = Some(ecs_state);
         }
     }
@@ -102,8 +107,11 @@ impl ApplicationHandler for App {
                     event_loop.exit();
                 }
                 WindowEvent::Resized(physical_size) => {
-                    if let Some(gfx) = self.graphics_context.as_mut() {
-                        gfx.resize(physical_size);
+                    if let Some(mut gfx_res) = ecs_state
+                        .world
+                        .get_resource_mut::<GraphicsContextResource>()
+                    {
+                        gfx_res.context.resize(physical_size);
                     }
                 }
                 WindowEvent::RedrawRequested => {
@@ -112,44 +120,9 @@ impl ApplicationHandler for App {
                     match current_app_state.val {
                         AppState::Loading => {
                             ecs_state.schedules.loading.run(&mut ecs_state.world);
-
-                            let gfx = self.graphics_context.as_mut().unwrap();
-
-                            match gfx.render_loading_screen() {
-                                Ok(_) => {}
-                                Err(wgpu::SurfaceError::Lost) => {
-                                    warn!("WGPU SurfaceError::Lost, resizing surface.");
-                                    let size = self.window.as_ref().unwrap().inner_size();
-                                    gfx.resize(size);
-                                }
-                                Err(wgpu::SurfaceError::OutOfMemory) => {
-                                    error!("WGPU SurfaceError::OutOfMemory, exiting event loop.");
-                                    event_loop.exit();
-                                }
-                                Err(e) => eprintln!("Error during render: {:?}", e),
-                            }
                         }
                         AppState::Running => {
                             ecs_state.schedules.main.run(&mut ecs_state.world);
-
-                            let gfx = self.graphics_context.as_mut().unwrap();
-                            let (render_queue, mesh_assets, camera_uniform) =
-                                ecs_state.render_state.get_mut(&mut ecs_state.world);
-
-                            match gfx.render(&render_queue, &mesh_assets, &camera_uniform) {
-                                Ok(_) => {}
-                                Err(wgpu::SurfaceError::Lost) => {
-                                    warn!("WGPU SurfaceError::Lost, resizing surface.");
-                                    let size = self.window.as_ref().unwrap().inner_size();
-                                    gfx.resize(size);
-                                }
-                                Err(wgpu::SurfaceError::OutOfMemory) => {
-                                    error!("WGPU SurfaceError::OutOfMemory, exiting event loop.");
-                                    event_loop.exit();
-                                }
-                                Err(e) => eprintln!("Error during render: {:?}", e),
-                            }
-
                             ecs_state.render_state.apply(&mut ecs_state.world);
                         }
                         AppState::Closing => {}

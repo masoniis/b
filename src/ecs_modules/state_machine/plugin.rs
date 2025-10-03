@@ -1,6 +1,7 @@
 use super::systems::{self, start_fake_work_system, transition_state::OnExit};
 use crate::{
     ecs_modules::{
+        rendering::systems::main::render::render_loading_system,
         schedules::OnEnter,
         state_machine::resources::{AppState, GameState},
         Plugin, Schedules,
@@ -28,6 +29,7 @@ impl Plugin for StateMachineModulePlugin {
             systems::finalize_loading_system,
             systems::apply_state_transition_system::<AppState>
                 .after(systems::finalize_loading_system),
+            render_loading_system.after(systems::apply_state_transition_system::<AppState>),
         ));
 
         schedules.main.add_systems(

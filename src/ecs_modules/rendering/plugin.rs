@@ -23,5 +23,8 @@ impl Plugin for RenderingModulePlugin {
             )
                 .in_set(CoreSet::RenderPrep),
         );
+        schedules
+            .main
+            .add_systems(main::render::render_system.in_set(CoreSet::RenderPrep));
     }
 }
