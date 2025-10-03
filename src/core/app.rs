@@ -1,14 +1,14 @@
 use crate::{
     core::graphics::context::GraphicsContext,
     core::{ExternalEcsInterface, ExternalEcsInterfaceBuilder},
-    ecs_modules::{
-        input::events::{RawDeviceEvent, RawWindowEvent},
-        schedules::ScheduleLables,
-        state_machine::resources::AppState,
-    },
     ecs_resources::{
         graphics_context::GraphicsContextResource, texture_map::TextureMapResource,
         window::WindowResource,
+    },
+    game_world::{
+        input::events::{RawDeviceEvent, RawWindowEvent},
+        schedules::ScheduleLables,
+        state_machine::resources::AppState,
     },
     prelude::*,
 };

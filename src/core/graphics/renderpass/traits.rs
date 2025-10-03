@@ -1,11 +1,11 @@
 use crate::{
     core::graphics::renderpass::RenderPassContex,
     core::graphics::types::GpuMesh,
-    ecs_modules::graphics::{CameraUniformResource, RenderQueueResource},
     ecs_resources::{
         asset_storage::{AssetId, MeshAsset},
         AssetStorageResource,
     },
+    game_world::graphics::{CameraUniformResource, RenderQueueResource},
 };
 use std::{collections::HashMap, sync::Arc};
 

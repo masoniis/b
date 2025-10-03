@@ -1,5 +1,8 @@
 use crate::{
-    ecs_modules::{
+    ecs_resources::{
+        asset_storage::MeshAsset, time::TimeResource, AssetStorageResource, CameraResource,
+    },
+    game_world::{
         graphics::RenderingModulePlugin,
         input::InputModulePlugin,
         player::PlayerModulePlugin,
@@ -11,9 +14,6 @@ use crate::{
         },
         world::WorldModulePlugin,
         Plugin, Schedules,
-    },
-    ecs_resources::{
-        asset_storage::MeshAsset, time::TimeResource, AssetStorageResource, CameraResource,
     },
     prelude::*,
 };

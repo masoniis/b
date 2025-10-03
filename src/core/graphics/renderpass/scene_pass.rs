@@ -4,8 +4,8 @@ use crate::{
     core::graphics::renderpass::RenderPassContex,
     core::graphics::types::instance::InstanceRaw,
     core::graphics::types::mesh::{create_gpu_mesh_from_data, GpuMesh},
-    ecs_modules::graphics::{CameraUniformResource, RenderQueueResource},
     ecs_resources::asset_storage::{AssetId, AssetStorageResource, MeshAsset},
+    game_world::graphics::{CameraUniformResource, RenderQueueResource},
 };
 use std::{collections::HashMap, sync::Arc};
 
