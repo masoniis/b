@@ -22,4 +22,6 @@ pub enum CoreSet {
     PostUpdate,
     /// Collect all data needed for rendering into queues/buffers.
     RenderPrep,
+    /// Perform the actual rendering operations based on the ECS world.
+    Render,
 }

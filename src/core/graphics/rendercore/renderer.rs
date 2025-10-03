@@ -6,7 +6,7 @@ use crate::{
         },
         types::mesh::GpuMesh,
     },
-    ecs_modules::rendering::{CameraUniformResource, RenderQueueResource},
+    ecs_modules::graphics::{CameraUniformResource, RenderQueueResource},
     ecs_resources::{
         asset_storage::{AssetId, MeshAsset},
         AssetStorageResource,
@@ -84,7 +84,7 @@ impl Renderer {
         render_queue: &RenderQueueResource,
         mesh_assets: &AssetStorageResource<MeshAsset>,
         camera_uniform: &CameraUniformResource,
-    ) -> Result<(), wgpu::SurfaceError> {
+    ) {
         self.shared_data
             .update_camera(&self.queue, camera_uniform.view_proj_matrix);
 
@@ -148,16 +148,11 @@ impl Renderer {
 
         // Submit the command encoder containing all the accumulated passes to the queue
         self.queue.submit(std::iter::once(encoder.finish()));
-
-        Ok(())
     }
 
     /// Render a loading screen that as of now is
     /// just a single clear pass to a dark color.
-    pub fn render_loading_screen(
-        &mut self,
-        view: &wgpu::TextureView,
-    ) -> Result<(), wgpu::SurfaceError> {
+    pub fn render_loading_screen(&mut self, view: &wgpu::TextureView) {
         let mut encoder = self
             .device
             .create_command_encoder(&wgpu::CommandEncoderDescriptor {
@@ -188,7 +183,5 @@ impl Renderer {
         }
 
         self.queue.submit(std::iter::once(encoder.finish()));
-
-        Ok(())
     }
 }

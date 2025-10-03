@@ -1,5 +1,5 @@
 use crate::{
-    ecs_modules::rendering::{MeshComponent, RenderQueueResource},
+    ecs_modules::graphics::{MeshComponent, RenderQueueResource},
     prelude::*,
 };
 use bevy_ecs::prelude::{RemovedComponents, ResMut};

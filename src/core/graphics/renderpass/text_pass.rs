@@ -1,6 +1,6 @@
 use crate::{
     core::graphics::renderpass::{ITextRenderPass, RenderPassContex},
-    ecs_modules::rendering::{CameraUniformResource, RenderQueueResource},
+    ecs_modules::graphics::{CameraUniformResource, RenderQueueResource},
     ecs_resources::{asset_storage::MeshAsset, AssetStorageResource},
 };
 use glyphon::{

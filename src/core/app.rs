@@ -1,9 +1,10 @@
 use crate::{
     core::graphics::context::GraphicsContext,
-    ecs_bridge::{EcsState, EcsStateBuilder},
+    core::{ExternalEcsInterface, ExternalEcsInterfaceBuilder},
     ecs_modules::{
         input::events::{RawDeviceEvent, RawWindowEvent},
-        state_machine::resources::{AppState, CurrentState},
+        schedules::ScheduleLables,
+        state_machine::resources::AppState,
     },
     ecs_resources::{
         graphics_context::GraphicsContextResource, texture_map::TextureMapResource,
@@ -28,7 +29,7 @@ pub struct App {
     window: Option<Arc<Window>>,
 
     // Core Engine Modules
-    ecs_state: Option<EcsState>,
+    ecs_state: Option<ExternalEcsInterface>,
 }
 
 impl App {
@@ -67,7 +68,7 @@ impl ApplicationHandler for App {
             let (graphics_context, texture_map) =
                 pollster::block_on(GraphicsContext::new(window.clone()));
 
-            let mut builder = EcsStateBuilder::default();
+            let mut builder = ExternalEcsInterfaceBuilder::default();
             builder
                 .add_resource(WindowResource::new(window.inner_size()))
                 .add_resource(GraphicsContextResource {
@@ -78,8 +79,8 @@ impl ApplicationHandler for App {
                 });
             let mut ecs_state = builder.build();
 
-            info!("Running startup systems...");
-            ecs_state.schedules.startup.run(&mut ecs_state.world);
+            info!("Running startup systems...\n\n\n");
+            ecs_state.run_schedule(ScheduleLables::Startup);
 
             self.window = Some(window.clone());
             self.ecs_state = Some(ecs_state);
@@ -93,37 +94,30 @@ impl ApplicationHandler for App {
         event: DeviceEvent,
     ) {
         if let Some(ecs_state) = &mut self.ecs_state {
-            ecs_state.world.send_event(RawDeviceEvent(event.clone()));
+            ecs_state.send_event(RawDeviceEvent(event.clone()));
         }
     }
 
     fn window_event(&mut self, event_loop: &ActiveEventLoop, _id: WindowId, event: WindowEvent) {
         if let Some(ecs_state) = &mut self.ecs_state {
-            ecs_state.world.send_event(RawWindowEvent(event.clone()));
+            ecs_state.send_event(RawWindowEvent(event.clone()));
 
+            // NOTE: The events handled here should only be events that rely on the event loop
+            // itself. Any other event should be fine to handle within the ECS world itself.
             match event {
                 WindowEvent::CloseRequested => {
                     info!("Window close requested, exiting app event loop.");
                     event_loop.exit();
                 }
-                WindowEvent::Resized(physical_size) => {
-                    if let Some(mut gfx_res) = ecs_state
-                        .world
-                        .get_resource_mut::<GraphicsContextResource>()
-                    {
-                        gfx_res.context.resize(physical_size);
-                    }
-                }
                 WindowEvent::RedrawRequested => {
-                    let current_app_state = ecs_state.world.resource::<CurrentState<AppState>>();
+                    let current_app_state = ecs_state.get_app_state();
 
-                    match current_app_state.val {
+                    match current_app_state {
                         AppState::Loading => {
-                            ecs_state.schedules.loading.run(&mut ecs_state.world);
+                            ecs_state.run_schedule(ScheduleLables::Loading);
                         }
                         AppState::Running => {
-                            ecs_state.schedules.main.run(&mut ecs_state.world);
-                            ecs_state.render_state.apply(&mut ecs_state.world);
+                            ecs_state.run_schedule(ScheduleLables::Main);
                         }
                         AppState::Closing => {}
                     };

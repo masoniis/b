@@ -1,5 +1,5 @@
 use crate::core::graphics::types::{TextureId, Vertex};
-use crate::ecs_modules::rendering::{MeshComponent, TransformComponent};
+use crate::ecs_modules::graphics::{MeshComponent, TransformComponent};
 use crate::ecs_resources::asset_storage::MeshAsset;
 use crate::ecs_resources::texture_map::TextureMapResource;
 use crate::ecs_resources::AssetStorageResource;

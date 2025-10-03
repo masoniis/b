@@ -1,7 +1,7 @@
 use crate::{
     core::graphics::renderpass::RenderPassContex,
     core::graphics::types::GpuMesh,
-    ecs_modules::rendering::{CameraUniformResource, RenderQueueResource},
+    ecs_modules::graphics::{CameraUniformResource, RenderQueueResource},
     ecs_resources::{
         asset_storage::{AssetId, MeshAsset},
         AssetStorageResource,

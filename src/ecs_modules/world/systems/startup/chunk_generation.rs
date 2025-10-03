@@ -1,5 +1,5 @@
 use crate::core::graphics::types::{TextureId, Vertex};
-use crate::ecs_modules::rendering::{MeshComponent, TransformComponent};
+use crate::ecs_modules::graphics::{MeshComponent, TransformComponent};
 use crate::ecs_modules::world::utils::types::chunk::Chunk;
 use crate::ecs_modules::world::world_gen::{generate_flat_world_chunk, CHUNK_HEIGHT};
 use crate::ecs_resources::asset_storage::AssetStorageResource;

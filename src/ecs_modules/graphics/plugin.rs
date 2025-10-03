@@ -1,6 +1,7 @@
 use super::{
     resources::{CameraUniformResource, RenderQueueResource},
-    systems::main,
+    systems::render,
+    systems::render_queue,
 };
 use crate::{
     ecs_modules::{Plugin, Schedules},
@@ -15,16 +16,14 @@ impl Plugin for RenderingModulePlugin {
         world.insert_resource(RenderQueueResource::default());
         world.insert_resource(CameraUniformResource::default());
 
-        schedules.main.add_systems(
+        schedules.main.add_systems((
             (
-                main::changed_mesh_system,
-                main::removed_mesh_system,
-                main::removed_screen_text_system,
+                render_queue::changed_mesh_system,
+                render_queue::removed_mesh_system,
+                render_queue::removed_screen_text_system,
             )
                 .in_set(CoreSet::RenderPrep),
-        );
-        schedules
-            .main
-            .add_systems(main::render::render_system.in_set(CoreSet::RenderPrep));
+            (render::render_scene_system,).in_set(CoreSet::Render),
+        ));
     }
 }
