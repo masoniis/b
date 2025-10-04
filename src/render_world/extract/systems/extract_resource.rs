@@ -1,3 +1,4 @@
+use crate::prelude::*;
 use crate::render_world::extract::utils::{run_extract_schedule::GameWorld, ExtractResource};
 use bevy_ecs::prelude::*;
 use std::marker::PhantomData;
@@ -11,5 +12,10 @@ pub fn extract_resource_system<T: ExtractResource>(
     if let Some(source_resource) = main_world.val.get_resource::<T::Source>() {
         let extracted = T::extract_resource(source_resource);
         commands.insert_resource(extracted);
+    } else {
+        warn!(
+            "Source resource of type {} not found in main world. This system likely was placed incorrectly.",
+            std::any::type_name::<T::Source>()
+        );
     }
 }
