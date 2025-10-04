@@ -1,5 +1,6 @@
 use crate::{
-    ecs_resources::time::TimeResource, prelude::*, render_world::pipeline::GraphicsContextResource,
+    prelude::*,
+    render_world::{extract::RenderTimeResource, pipeline::GraphicsContextResource},
 };
 use bevy_ecs::prelude::{Res, ResMut};
 use wgpu::TextureViewDescriptor;
@@ -7,7 +8,7 @@ use wgpu::TextureViewDescriptor;
 /// The rendering system for the loading screen
 pub fn render_loading_screen_system(
     mut gfx_resource: ResMut<GraphicsContextResource>,
-    time: Res<TimeResource>,
+    time: Res<RenderTimeResource>,
 ) {
     let gfx = &mut gfx_resource.context;
 

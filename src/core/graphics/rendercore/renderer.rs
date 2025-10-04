@@ -13,6 +13,7 @@ use crate::{
         AssetStorageResource,
     },
     game_world::graphics::{CameraUniformResource, RenderQueueResource},
+    render_world::extract::RenderTimeResource,
 };
 use std::{collections::HashMap, sync::Arc};
 use wgpu::{Device, Queue, RenderPipeline};
@@ -154,7 +155,7 @@ impl Renderer {
     }
 
     /// Render a shader-based loading screen
-    pub fn render_loading_screen(&mut self, view: &wgpu::TextureView, time: &TimeResource) {
+    pub fn render_loading_screen(&mut self, view: &wgpu::TextureView, time: &RenderTimeResource) {
         let mut encoder = self
             .device
             .create_command_encoder(&wgpu::CommandEncoderDescriptor {
@@ -162,7 +163,7 @@ impl Renderer {
             });
 
         let mut time_uniform = TimeUniform::new();
-        time_uniform.update_total_time(time.total_elapse.as_secs_f32());
+        time_uniform.update_total_time(time.delta_seconds);
         self.queue.write_buffer(
             &self.shared_data.time_buffer,
             0,
