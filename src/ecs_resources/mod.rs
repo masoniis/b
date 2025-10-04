@@ -4,7 +4,6 @@ pub use asset_storage::{AssetStorageResource, MeshAsset};
 pub mod camera;
 pub use camera::CameraResource;
 
-pub mod graphics_context;
 pub mod time;
 pub mod window;
 
