@@ -24,7 +24,7 @@ impl Plugin for RenderingModulePlugin {
                 render_queue::removed_screen_text_system,
             )
                 .in_set(CoreSet::RenderPrep),
-            (render::render_scene_system,).in_set(CoreSet::Render),
+            // (render::render_scene_system,).in_set(CoreSet::Render),
         ));
     }
 }

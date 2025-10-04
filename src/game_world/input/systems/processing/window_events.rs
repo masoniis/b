@@ -1,5 +1,5 @@
 use crate::{
-    ecs_resources::{graphics_context::GraphicsContextResource, window::WindowResource},
+    ecs_resources::window::WindowResource,
     game_world::input::{
         events::{KeyboardInputEvent, MouseButtonInputEvent, RawWindowEvent},
         resources::Buttons,
@@ -21,7 +21,6 @@ pub fn window_events_system(
     mut keyboard_input: ResMut<Buttons<PhysicalKey>>,
     mut mouse_input: ResMut<Buttons<MouseButton>>,
     mut window_resource: ResMut<WindowResource>,
-    mut gfx_resource: ResMut<GraphicsContextResource>,
 
     // Input from OS bridge
     mut raw_window_events: EventReader<RawWindowEvent>,
@@ -65,7 +64,6 @@ pub fn window_events_system(
             WindowEvent::Resized(physical_size) => {
                 window_resource.width = physical_size.width;
                 window_resource.height = physical_size.height;
-                gfx_resource.context.inform_resize(*physical_size);
             }
             _ => {}
         }
