@@ -2,7 +2,17 @@ use crate::{
     core::{graphics::context::GraphicsContext, world::CommonEcsInterface},
     prelude::*,
 };
+use bevy_ecs::schedule::ScheduleLabel;
 use std::ops::{Deref, DerefMut};
+
+pub mod extract;
+
+#[derive(ScheduleLabel, Debug, Clone, PartialEq, Eq, Hash)]
+pub enum RenderSchedule {
+    Extract,
+    Queue,
+    Render,
+}
 
 // INFO: --------------------------------
 //         Render world interface
