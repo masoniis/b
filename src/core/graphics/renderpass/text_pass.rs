@@ -1,7 +1,6 @@
 use crate::{
     core::graphics::renderpass::{ITextRenderPass, RenderPassContex},
-    ecs_resources::{asset_storage::MeshAsset, AssetStorageResource},
-    game_world::graphics::{CameraUniformResource, RenderQueueResource},
+    render_world::{extract::RenderMeshStorageResource, queue::RenderQueueResource},
 };
 use glyphon::{
     cosmic_text::{Attrs, Family, Metrics, Shaping},
@@ -67,8 +66,8 @@ impl ITextRenderPass for TextRenderPass {
         device: &wgpu::Device,
         queue: &wgpu::Queue,
         render_queue: &RenderQueueResource,
-        _mesh_assets: &AssetStorageResource<MeshAsset>,
-        _camera_uniform: &CameraUniformResource,
+        _render_mesh_storage: &RenderMeshStorageResource,
+        _camera_info: &crate::render_world::extract::RenderCameraResource,
     ) {
         let mut buffers = Vec::new();
         for text in render_queue.get_screen_texts() {

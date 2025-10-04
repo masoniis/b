@@ -5,13 +5,13 @@ use crate::ecs_resources::texture_map::TextureMapResource;
 use crate::game_world::graphics::{MeshComponent, TransformComponent};
 use crate::game_world::world::utils::types::chunk::Chunk;
 use crate::game_world::world::world_gen::{generate_flat_world_chunk, CHUNK_HEIGHT};
-use bevy_ecs::prelude::{Commands, Res, ResMut};
+use bevy_ecs::prelude::{Commands, Res};
 use glam::Vec3;
 use tracing::info;
 
 pub fn chunk_generation_system(
     mut commands: Commands,
-    mut mesh_assets: ResMut<AssetStorageResource<MeshAsset>>,
+    mesh_assets: Res<AssetStorageResource<MeshAsset>>,
     texture_map: Res<TextureMapResource>,
 ) {
     info!("Generating initial chunk...");

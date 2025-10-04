@@ -1,5 +1,5 @@
 use crate::core::graphics::types::vertex::Vertex;
-use std::sync::Arc;
+
 use wgpu::util::DeviceExt;
 
 /// A type to connect ECS components to the webgpu renderer
@@ -13,7 +13,7 @@ pub fn create_gpu_mesh_from_data(
     device: &wgpu::Device,
     vertices: &[Vertex],
     indices: &[u32],
-) -> Arc<GpuMesh> {
+) -> GpuMesh {
     let vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
         label: Some("Vertex Buffer"),
         contents: bytemuck::cast_slice(vertices),
@@ -27,9 +27,9 @@ pub fn create_gpu_mesh_from_data(
     });
 
     // Wrap the GpuMesh in an Arc
-    Arc::new(GpuMesh {
+    GpuMesh {
         vertex_buffer,
         index_buffer,
         index_count: indices.len() as u32,
-    })
+    }
 }

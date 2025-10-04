@@ -4,17 +4,20 @@ use crate::{
 };
 use bevy_ecs::schedule::ScheduleLabel;
 use extract::ExtractModulePlugin;
-use pipeline::{GraphicsContextResource, PipelineModulePlugin};
+use prepare::plugin::PrepareModulePlugin;
 use queue::plugin::QueueModulePlugin;
+use render::{GraphicsContextResource, PipelineModulePlugin};
 use std::ops::{Deref, DerefMut};
 
 pub mod extract;
-pub mod pipeline;
+pub mod prepare;
 pub mod queue;
+pub mod render;
 
 #[derive(ScheduleLabel, Debug, Clone, PartialEq, Eq, Hash)]
 pub enum RenderSchedule {
     Extract,
+    Prepare,
     Queue,
     Render,
 }
@@ -52,7 +55,8 @@ pub fn configure_render_world() -> EcsBuilder {
     builder
         .add_plugin(PipelineModulePlugin)
         .add_plugin(QueueModulePlugin)
-        .add_plugin(ExtractModulePlugin);
+        .add_plugin(ExtractModulePlugin)
+        .add_plugin(PrepareModulePlugin);
 
     builder
 }

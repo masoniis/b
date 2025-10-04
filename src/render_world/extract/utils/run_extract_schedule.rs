@@ -1,6 +1,8 @@
 use bevy_ecs::prelude::*;
 use bevy_ecs::schedule::ScheduleLabel;
 
+use crate::ecs_resources::{AssetStorageResource, MeshAsset};
+
 /// A wrapper for the game world so it can be inserted as a resource in the render world.
 #[derive(Resource)]
 pub struct GameWorld {
@@ -32,6 +34,10 @@ pub fn run_extract_schedule(
     render_world: &mut World,
     schedule_label: impl ScheduleLabel,
 ) {
+    // Place a pointer to the asset storage in render world
+    let main_world_mesh_assets = game_world.resource::<AssetStorageResource<MeshAsset>>();
+    render_world.insert_resource(main_world_mesh_assets.clone());
+
     // At this point, GameWorldPlaceholder should be an empty GameWorld.
     let placeholder_world = game_world
         .remove_resource::<GameWorldPlaceholder>()

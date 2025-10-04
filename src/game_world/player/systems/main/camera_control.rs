@@ -1,5 +1,4 @@
 use crate::ecs_resources::{time::TimeResource, window::WindowResource, CameraResource};
-use crate::game_world::graphics::CameraUniformResource;
 use crate::game_world::input::{resources::CursorMovement, ActionStateResource, GameAction};
 use bevy_ecs::prelude::*;
 use glam::{Mat4, Vec3};
@@ -13,7 +12,6 @@ pub fn camera_control_system(
 
     // Output
     mut camera: ResMut<CameraResource>,
-    mut camera_uniform: ResMut<CameraUniformResource>,
 ) {
     // Update camera position
     let velocity = camera.movement_speed * time.since_last_update.as_secs_f32();
@@ -90,6 +88,4 @@ pub fn camera_control_system(
             Mat4::perspective_rh_gl(camera.zoom.to_radians(), window.aspect_ratio(), 1.0, 1000.0);
         camera.projection_dirty = false;
     }
-
-    camera_uniform.view_proj_matrix = camera.projection_matrix * camera.view_matrix;
 }

@@ -1,6 +1,6 @@
 use super::{
     extract_meshes::MeshEntityMap, extract_meshes_system, extract_resource_system,
-    RenderCameraResource, RenderTimeResource,
+    RenderCameraResource, RenderMeshStorageResource, RenderTimeResource,
 };
 use crate::{prelude::*, render_world::RenderSchedule};
 use bevy_ecs::prelude::*;
@@ -12,6 +12,7 @@ impl Plugin for ExtractModulePlugin {
         world.insert_resource(RenderTimeResource::default());
         world.insert_resource(RenderCameraResource::default());
         world.insert_resource(MeshEntityMap::default());
+        world.insert_resource(RenderMeshStorageResource::default());
 
         schedules.entry(RenderSchedule::Extract).add_systems((
             extract_resource_system::<RenderTimeResource>,

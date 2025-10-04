@@ -141,6 +141,7 @@ impl ApplicationHandler for App {
                         );
 
                         // TODO: These schedules can run in parallel with the next frame of the game
+                        render_world.run_schedule(RenderSchedule::Prepare);
                         render_world.run_schedule(RenderSchedule::Queue);
                         render_world.run_schedule(RenderSchedule::Render);
 

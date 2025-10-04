@@ -1,8 +1,9 @@
-use crate::ecs_resources::asset_storage::{Handle, MeshAsset};
-use crate::game_world::graphics::components::{mesh::MeshComponent, transform::TransformComponent};
-use crate::render_world::extract::utils::run_extract_schedule::GameWorld;
+use crate::{
+    ecs_resources::asset_storage::{Handle, MeshAsset},
+    game_world::graphics::components::{mesh::MeshComponent, transform::TransformComponent},
+    render_world::extract::utils::run_extract_schedule::GameWorld,
+};
 use bevy_ecs::prelude::*;
-use bevy_ecs::prelude::{Changed, Entity, Or, ResMut};
 use std::collections::HashMap;
 
 // --- Components for the Render World ---
@@ -22,25 +23,30 @@ pub struct RenderTransformComponent {
 // --- Entity Mapping Resource ---
 
 /// A resource that maps entities from the main world to the render world.
-/// This is crucial for efficiently updating and removing entities.
 #[derive(Resource, Default)]
 pub struct MeshEntityMap(pub HashMap<Entity, Entity>);
 
-// --- The Extract System ---
+// --- The (Corrected) Extract System ---
 
 /// Extracts meshes and transforms from the main world into the render world.
 ///
-/// This system performs several key functions:
-/// 1.  Handles meshes that were removed in the main world by despawning their
-///     render world counterparts.
-/// 2.  Queries for meshes that were added or whose transforms have changed.
-/// 3.  For each changed entity, it either updates the existing render world entity
-///     or spawns a new one if it's the first time we've seen it.
+/// This system's ONLY job is to quickly replicate the state of mesh-related
+/// components from the main world to the render world. It performs NO GPU operations.
 pub fn extract_meshes_system(
     mut commands: Commands,
     mut entity_map: ResMut<MeshEntityMap>,
     mut main_world: ResMut<GameWorld>,
+    // We also need to handle entities that were removed in the main world.
+    // removed_mesh_components: Res<RemovedComponents<MeshComponent>>,
 ) {
+    // 1. Handle removals: Despawn render entities corresponding to main world entities
+    //    that had their MeshComponent removed.
+    // for main_entity in removed_mesh_components.iter() {
+    //     if let Some(render_entity) = entity_map.0.remove(&main_entity) {
+    //         commands.entity(render_entity).despawn();
+    //     }
+    // }
+
     // 2. Query for added or changed meshes in the main world.
     let mut query = main_world.val.query_filtered::<(Entity, &MeshComponent, &TransformComponent), Or<(
         Added<MeshComponent>,
@@ -51,6 +57,9 @@ pub fn extract_meshes_system(
     let mut commands_to_apply = Vec::new();
 
     for (main_entity, mesh, transform) in query.iter(&main_world.val) {
+        // info!("Extracting mesh for entity: {:?}", main_entity);
+        // info!("Mesh handle: {:?}", mesh.mesh_handle);
+
         let render_components = (
             RenderMeshComponent {
                 mesh_handle: mesh.mesh_handle,
