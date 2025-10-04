@@ -3,6 +3,7 @@ use crate::{
     prelude::*,
 };
 use bevy_ecs::schedule::{Schedule, ScheduleLabel};
+use pipeline::GraphicsContextResource;
 use std::ops::{Deref, DerefMut};
 
 pub mod extract;
@@ -21,7 +22,6 @@ pub enum RenderSchedule {
 
 pub struct RenderWorldInterface {
     pub common: CommonEcsInterface,
-    pub graphics_context: GraphicsContext,
 }
 
 impl Deref for RenderWorldInterface {
@@ -65,12 +65,15 @@ pub fn build_render_world(
     mut builder: EcsBuilder,
     graphics_context: GraphicsContext,
 ) -> RenderWorldInterface {
+    builder.add_resource(GraphicsContextResource {
+        context: graphics_context,
+    });
+
     for (_, schedule) in builder.schedules.drain_schedules() {
         builder.world.add_schedule(schedule);
     }
 
     RenderWorldInterface {
-        graphics_context,
         common: CommonEcsInterface {
             world: builder.world,
         },
