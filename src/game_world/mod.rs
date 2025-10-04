@@ -1,5 +1,5 @@
 use crate::{
-    ecs_resources::{AssetStorageResource, CameraResource, MeshAsset, TimeResource},
+    game_world::global_resources::MeshAsset,
     game_world::{
         input::InputModulePlugin,
         player::PlayerModulePlugin,
@@ -16,6 +16,7 @@ use crate::{
 use bevy_ecs::prelude::*;
 use std::ops::{Deref, DerefMut};
 
+pub mod global_resources;
 pub mod graphics;
 pub mod input;
 pub mod player;
@@ -111,7 +112,7 @@ struct SharedPlugins;
 impl PluginGroup for SharedPlugins {
     fn build(self, builder: &mut EcsBuilder) {
         builder
-            .add_resource(TimeResource::default())
+            .add_resource(global_resources::time::TimeResource::default())
             .add_plugin(StateMachineModulePlugin)
             .add_plugin(WorldModulePlugin)
             .add_plugin(PlayerModulePlugin);
@@ -123,8 +124,10 @@ struct ClientOnlyPlugins;
 impl PluginGroup for ClientOnlyPlugins {
     fn build(self, builder: &mut EcsBuilder) {
         builder
-            .add_resource(CameraResource::default())
-            .add_resource(AssetStorageResource::<MeshAsset>::default())
+            .add_resource(global_resources::camera::CameraResource::default())
+            .add_resource(global_resources::asset_storage::AssetStorageResource::<
+                MeshAsset,
+            >::default())
             .add_plugin(ScreenTextModulePlugin)
             .add_plugin(InputModulePlugin);
     }

@@ -1,5 +1,6 @@
+use crate::game_world::graphics::components::visibility::VisibilityComponent;
 use crate::game_world::input::{ActionStateResource, GameAction};
-use crate::game_world::{graphics::VisibilityComponent, screen_text::DiagnosticUiElementMarker};
+use crate::game_world::screen_text::DiagnosticUiElementMarker;
 use bevy_ecs::prelude::*;
 
 pub fn toggle_debug_diagnostics_system(

@@ -1,4 +1,4 @@
-use crate::ecs_resources::time::TimeResource;
+use crate::game_world::global_resources::time::TimeResource;
 use bevy_ecs::prelude::*;
 use std::time::Instant;
 use tracing::debug;

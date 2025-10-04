@@ -1,5 +1,5 @@
 use crate::{
-    ecs_resources::window::WindowResource,
+    game_world::global_resources::window::WindowResource,
     game_world::input::{
         events::{KeyboardInputEvent, MouseButtonInputEvent, RawWindowEvent},
         resources::Buttons,

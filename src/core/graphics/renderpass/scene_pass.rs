@@ -4,7 +4,7 @@ use crate::render_world::extract::resources::RenderMeshStorageResource;
 use crate::render_world::queue::RenderQueueResource;
 use crate::{
     core::graphics::renderpass::RenderPassContex, core::graphics::types::instance::InstanceRaw,
-    ecs_resources::asset_storage::AssetId,
+    game_world::global_resources::asset_storage::AssetId,
 };
 use std::{collections::HashMap, sync::Arc};
 

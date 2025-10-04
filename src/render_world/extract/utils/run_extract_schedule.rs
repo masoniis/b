@@ -1,7 +1,7 @@
 use bevy_ecs::prelude::*;
 use bevy_ecs::schedule::ScheduleLabel;
 
-use crate::ecs_resources::{AssetStorageResource, MeshAsset};
+use crate::game_world::global_resources::{AssetStorageResource, MeshAsset};
 
 /// A wrapper for the game world so it can be inserted as a resource in the render world.
 #[derive(Resource)]

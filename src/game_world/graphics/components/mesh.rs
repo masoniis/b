@@ -1,5 +1,5 @@
-use crate::ecs_resources::asset_storage::Handle;
-use crate::ecs_resources::asset_storage::MeshAsset;
+use crate::game_world::global_resources::asset_storage::Handle;
+use crate::game_world::global_resources::asset_storage::MeshAsset;
 use bevy_ecs::prelude::Component;
 
 #[derive(Component)]

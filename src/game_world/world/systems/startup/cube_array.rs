@@ -1,8 +1,8 @@
 use crate::core::graphics::types::{TextureId, Vertex};
-use crate::ecs_resources::asset_storage::MeshAsset;
-use crate::ecs_resources::texture_map::TextureMapResource;
-use crate::ecs_resources::AssetStorageResource;
-use crate::game_world::graphics::{MeshComponent, TransformComponent};
+use crate::game_world::global_resources::asset_storage::AssetStorageResource;
+use crate::game_world::global_resources::asset_storage::MeshAsset;
+use crate::game_world::global_resources::texture_map::TextureMapResource;
+use crate::game_world::graphics::components::{MeshComponent, TransformComponent};
 use bevy_ecs::prelude::{Commands, Res};
 use glam::Vec3;
 use tracing::info;
