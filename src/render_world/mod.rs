@@ -2,8 +2,9 @@ use crate::{
     core::{graphics::context::GraphicsContext, world::CommonEcsInterface},
     prelude::*,
 };
-use bevy_ecs::schedule::{Schedule, ScheduleLabel};
-use pipeline::GraphicsContextResource;
+use bevy_ecs::schedule::ScheduleLabel;
+use extract::ExtractModulePlugin;
+use pipeline::{GraphicsContextResource, PipelineModulePlugin};
 use std::ops::{Deref, DerefMut};
 
 pub mod extract;
@@ -44,20 +45,12 @@ impl DerefMut for RenderWorldInterface {
 pub fn configure_render_world() -> EcsBuilder {
     let mut builder = EcsBuilder::new();
 
-    // Ensure render schedules exist before plugins are added.
-    let mut extract_schedule = Schedule::new(RenderSchedule::Extract);
-    // extract_schedule.add_systems(extract_meshes_systes);
+    // TODO: add system sets and stuff to the core schedules
 
-    let mut queue_schedule = Schedule::new(RenderSchedule::Queue);
-    // queue_schedule.add_systems(queue_meshes_system);
-
-    builder.world.add_schedule(extract_schedule);
-    builder.world.add_schedule(queue_schedule);
     builder
-        .world
-        .add_schedule(Schedule::new(RenderSchedule::Render));
+        .add_plugin(PipelineModulePlugin)
+        .add_plugin(ExtractModulePlugin);
 
-    // builder.add_plugins(RenderPlugins); // Example: Add render-specific plugins here
     builder
 }
 
@@ -65,10 +58,12 @@ pub fn build_render_world(
     mut builder: EcsBuilder,
     graphics_context: GraphicsContext,
 ) -> RenderWorldInterface {
+    // Add gfx context as a resource
     builder.add_resource(GraphicsContextResource {
         context: graphics_context,
     });
 
+    // Drain all the schedules from the plugins build steps
     for (_, schedule) in builder.schedules.drain_schedules() {
         builder.world.add_schedule(schedule);
     }
