@@ -88,6 +88,7 @@ pub struct CommonEcsInterface {
 }
 
 impl CommonEcsInterface {
+    /// Run a schedule by its label, if it exists.
     pub fn run_schedule(&mut self, label: impl ScheduleLabel + Clone) {
         match self.world.try_run_schedule(label.clone()) {
             Ok(_) => {}
@@ -99,5 +100,9 @@ impl CommonEcsInterface {
                 );
             }
         }
+    }
+
+    pub fn borrow(&mut self) -> &mut World {
+        &mut self.world
     }
 }
