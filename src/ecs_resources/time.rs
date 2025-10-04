@@ -1,6 +1,8 @@
 use bevy_ecs::prelude::Resource;
 use std::time::{Duration, Instant};
 
+use crate::render_world::extract::utils::ExtractResource;
+
 // Lower values are smoother, higher values are more responsive.
 const FPS_SMOOTHING_FACTOR: f32 = 0.025;
 
@@ -19,6 +21,22 @@ impl Default for TimeResource {
             since_last_update: Duration::ZERO,
             total_elapse: Duration::ZERO,
             smoothed_fps: 69.0,
+        }
+    }
+}
+
+#[derive(Resource)]
+pub struct RenderTime {
+    pub delta_seconds: f32,
+}
+
+impl ExtractResource for RenderTime {
+    type Source = TimeResource;
+    type Output = Self; // The output is a RenderTime resource
+
+    fn extract_resource(source: &Self::Source) -> Self::Output {
+        RenderTime {
+            delta_seconds: source.total_elapse.as_secs_f32(),
         }
     }
 }

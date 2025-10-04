@@ -7,6 +7,7 @@ use crate::{
         state_machine::resources::AppState,
     },
     prelude::*,
+    render_world::extract::utils::run_extract_schedule::initialize_main_world_for_extract,
 };
 use std::error::Error;
 use std::sync::Arc;
@@ -81,6 +82,7 @@ impl ApplicationHandler for App {
                     registry: texture_map,
                 });
             let mut game_world = game_world::build_game_world(builder);
+            initialize_main_world_for_extract(game_world.borrow());
 
             info!("Running startup systems...\n\n\n");
             game_world.run_schedule(GameSchedule::Startup);
