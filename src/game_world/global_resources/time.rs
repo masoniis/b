@@ -1,7 +1,6 @@
+use crate::render_world::extract::utils::ExtractResource;
 use bevy_ecs::prelude::Resource;
 use std::time::{Duration, Instant};
-
-use crate::render_world::extract::utils::ExtractResource;
 
 // Lower values are smoother, higher values are more responsive.
 const FPS_SMOOTHING_FACTOR: f32 = 0.025;
