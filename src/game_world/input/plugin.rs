@@ -8,9 +8,9 @@ use crate::game_world::{
         KeyboardInputEvent, MouseButtonInputEvent, MouseMoveEvent, MouseScrollEvent,
         RawDeviceEvent, RawWindowEvent,
     },
-    schedules::OnExit,
+    schedules::{GameSchedule, OnExit},
     state_machine::resources::AppState,
-    CoreSet, Plugin, Schedules,
+    CoreSet, Plugin, ScheduleBuilder,
 };
 use bevy_ecs::{event::Events, schedule::IntoScheduleConfigs, world::World};
 use winit::{event::MouseButton, keyboard::PhysicalKey};
@@ -18,7 +18,7 @@ use winit::{event::MouseButton, keyboard::PhysicalKey};
 pub struct InputModulePlugin;
 
 impl Plugin for InputModulePlugin {
-    fn build(&self, schedules: &mut Schedules, world: &mut World) {
+    fn build(&self, schedules: &mut ScheduleBuilder, world: &mut World) {
         // Resources
         world.insert_resource(InputActionMapResource::default());
         world.insert_resource(ActionStateResource::default());
@@ -38,7 +38,7 @@ impl Plugin for InputModulePlugin {
         world.init_resource::<Events<MouseButtonInputEvent>>();
 
         // Schedules
-        schedules.main.add_systems(
+        schedules.entry(GameSchedule::Main).add_systems(
             (
                 processing::window_events_system,
                 processing::device_events_system,
@@ -50,7 +50,7 @@ impl Plugin for InputModulePlugin {
         );
 
         schedules
-            .get_labeled_mut(OnExit(AppState::Loading))
+            .entry(OnExit(AppState::Loading))
             .add_systems(utils::clear_stale_input_events_system);
     }
 }
