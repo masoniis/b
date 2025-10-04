@@ -5,10 +5,12 @@ use crate::{
 use bevy_ecs::schedule::ScheduleLabel;
 use extract::ExtractModulePlugin;
 use pipeline::{GraphicsContextResource, PipelineModulePlugin};
+use queue::plugin::QueueModulePlugin;
 use std::ops::{Deref, DerefMut};
 
 pub mod extract;
 pub mod pipeline;
+pub mod queue;
 
 #[derive(ScheduleLabel, Debug, Clone, PartialEq, Eq, Hash)]
 pub enum RenderSchedule {
@@ -49,6 +51,7 @@ pub fn configure_render_world() -> EcsBuilder {
 
     builder
         .add_plugin(PipelineModulePlugin)
+        .add_plugin(QueueModulePlugin)
         .add_plugin(ExtractModulePlugin);
 
     builder
