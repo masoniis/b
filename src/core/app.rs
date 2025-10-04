@@ -80,9 +80,6 @@ impl ApplicationHandler for App {
             let mut builder = game_world::configure_game_world();
             builder
                 .add_resource(WindowResource::new(window.inner_size()))
-                .add_resource(GraphicsContextResource {
-                    context: graphics_context,
-                })
                 .add_resource(TextureMapResource {
                     registry: texture_map,
                 });
@@ -92,7 +89,7 @@ impl ApplicationHandler for App {
             game_world.run_schedule(GameSchedule::Startup);
 
             let render_builder = configure_render_world();
-            let render_world = build_render_world(render_builder, graphics_context.clone());
+            let render_world = build_render_world(render_builder, graphics_context);
 
             self.window = Some(window.clone());
             self.game_world = Some(game_world);
@@ -143,6 +140,8 @@ impl ApplicationHandler for App {
                             render_world.borrow(),
                             RenderSchedule::Extract,
                         );
+
+                        // TODO: These schedules can run in parallel with the next frame of the game
                         render_world.run_schedule(RenderSchedule::Queue);
                         render_world.run_schedule(RenderSchedule::Render);
 
