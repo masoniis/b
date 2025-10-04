@@ -5,17 +5,13 @@ use crate::{
             traits::{ISceneRenderPass, ITextRenderPass},
             RenderPass, RenderPassContex, SharedRenderData,
         },
-        types::mesh::GpuMesh,
     },
-    ecs_resources::{
-        asset_storage::{AssetId, MeshAsset},
-        time::TimeResource,
-        AssetStorageResource,
+    render_world::{
+        extract::{RenderCameraResource, RenderMeshStorageResource, RenderTimeResource},
+        queue::RenderQueueResource,
     },
-    game_world::graphics::{CameraUniformResource, RenderQueueResource},
-    render_world::extract::RenderTimeResource,
 };
-use std::{collections::HashMap, sync::Arc};
+use std::sync::Arc;
 use wgpu::{Device, Queue, RenderPipeline};
 
 pub const DEPTH_FORMAT: wgpu::TextureFormat = wgpu::TextureFormat::Depth32Float;
@@ -37,9 +33,8 @@ pub struct Renderer {
     // Buffers
     pub depth_texture_view: wgpu::TextureView,
     pub instance_buffer: wgpu::Buffer,
-
     // Assets
-    pub gpu_meshes: HashMap<AssetId, Arc<GpuMesh>>,
+    // pub gpu_meshes: HashMap<AssetId, Arc<GpuMesh>>,
 }
 
 impl Renderer {
@@ -86,11 +81,13 @@ impl Renderer {
         &mut self,
         view: &wgpu::TextureView,
         render_queue: &RenderQueueResource,
-        mesh_assets: &AssetStorageResource<MeshAsset>,
-        camera_uniform: &CameraUniformResource,
+        render_mesh_storage: &RenderMeshStorageResource,
+        camera_info: &RenderCameraResource,
     ) {
-        self.shared_data
-            .update_camera(&self.queue, camera_uniform.view_proj_matrix);
+        self.shared_data.update_camera(
+            &self.queue,
+            camera_info.projection_matrix * camera_info.view_matrix,
+        );
 
         for pass in &mut self.passes {
             match pass {
@@ -100,8 +97,8 @@ impl Renderer {
                         &self.device,
                         &self.queue,
                         render_queue,
-                        mesh_assets,
-                        camera_uniform,
+                        render_mesh_storage,
+                        camera_info,
                     );
                 }
                 RenderPass::Text(ref mut text_pass) => {
@@ -110,8 +107,8 @@ impl Renderer {
                         &self.device,
                         &self.queue,
                         render_queue,
-                        mesh_assets,
-                        camera_uniform,
+                        render_mesh_storage,
+                        camera_info,
                     );
                 }
             }
@@ -137,9 +134,8 @@ impl Renderer {
                         &mut encoder,
                         context,
                         render_queue,
-                        mesh_assets,
+                        render_mesh_storage,
                         &self.instance_buffer,
-                        &mut self.gpu_meshes,
                         &self.render_pipeline,
                         &self.texture_bind_group,
                     );

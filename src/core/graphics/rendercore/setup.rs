@@ -6,7 +6,7 @@ use crate::{
     },
     prelude::*,
 };
-use std::{collections::HashMap, fs, sync::Arc};
+use std::{fs, sync::Arc};
 
 use super::renderer::{Renderer, DEPTH_FORMAT};
 
@@ -195,7 +195,7 @@ impl Renderer {
             texture_bind_group,
             instance_buffer,
             depth_texture_view,
-            gpu_meshes: HashMap::new(),
+            // gpu_meshes: HashMap::new(),
             passes,
             shared_data,
         }

@@ -3,13 +3,13 @@ use crate::ecs_resources::asset_storage::MeshAsset;
 use crate::ecs_resources::texture_map::TextureMapResource;
 use crate::ecs_resources::AssetStorageResource;
 use crate::game_world::graphics::{MeshComponent, TransformComponent};
-use bevy_ecs::prelude::{Commands, Res, ResMut};
+use bevy_ecs::prelude::{Commands, Res};
 use glam::Vec3;
 use tracing::info;
 
 pub fn cube_array_generation_system(
     mut commands: Commands,
-    mut mesh_assets: ResMut<AssetStorageResource<MeshAsset>>,
+    mesh_assets: Res<AssetStorageResource<MeshAsset>>,
     texture_map: Res<TextureMapResource>,
 ) {
     info!("Generating initial cube array...");

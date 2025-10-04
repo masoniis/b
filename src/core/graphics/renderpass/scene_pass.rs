@@ -1,11 +1,10 @@
 use crate::core::graphics::rendercore::setup::MAX_TRANSFORMS;
 use crate::core::graphics::renderpass::traits::ISceneRenderPass;
+use crate::render_world::extract::resources::RenderMeshStorageResource;
+use crate::render_world::queue::RenderQueueResource;
 use crate::{
-    core::graphics::renderpass::RenderPassContex,
-    core::graphics::types::instance::InstanceRaw,
-    core::graphics::types::mesh::{create_gpu_mesh_from_data, GpuMesh},
-    ecs_resources::asset_storage::{AssetId, AssetStorageResource, MeshAsset},
-    game_world::graphics::{CameraUniformResource, RenderQueueResource},
+    core::graphics::renderpass::RenderPassContex, core::graphics::types::instance::InstanceRaw,
+    ecs_resources::asset_storage::AssetId,
 };
 use std::{collections::HashMap, sync::Arc};
 
@@ -26,8 +25,8 @@ impl ISceneRenderPass for SceneRenderPass {
         _device: &wgpu::Device,
         _queue: &wgpu::Queue,
         _render_queue: &RenderQueueResource,
-        _mesh_assets: &AssetStorageResource<MeshAsset>,
-        _camera_uniform: &CameraUniformResource,
+        _render_mesh_storage: &RenderMeshStorageResource,
+        _camera_info: &crate::render_world::extract::RenderCameraResource,
     ) {
         // No actual preparation needed here for SceneRenderPass, as it's done in render
     }
@@ -37,9 +36,8 @@ impl ISceneRenderPass for SceneRenderPass {
         encoder: &mut wgpu::CommandEncoder,
         context: RenderPassContex<'a>,
         ecs_render_queue: &RenderQueueResource,
-        mesh_assets: &AssetStorageResource<MeshAsset>,
+        render_mesh_storage: &RenderMeshStorageResource,
         instance_buffer: &wgpu::Buffer,
-        gpu_meshes: &mut HashMap<AssetId, Arc<GpuMesh>>,
         render_pipeline: &wgpu::RenderPipeline,
         texture_bind_group: &wgpu::BindGroup,
     ) {
@@ -114,10 +112,15 @@ impl ISceneRenderPass for SceneRenderPass {
 
         for (mesh_handle, _draws) in ecs_render_queue.iter_by_mesh() {
             // This is the second loop, where draws is unused
-            let gpu_mesh = gpu_meshes.entry(mesh_handle.id()).or_insert_with(|| {
-                let mesh_asset = mesh_assets.get(mesh_handle).unwrap();
-                create_gpu_mesh_from_data(&self.device, &mesh_asset.vertices, &mesh_asset.indices)
-            });
+            let gpu_mesh = render_mesh_storage
+                .meshes
+                .get(&mesh_handle.id())
+                .unwrap_or_else(|| {
+                    panic!(
+                        "GpuMesh not found in RenderMeshStorageResource for handle ID: {}",
+                        mesh_handle.id()
+                    )
+                });
 
             render_pass.set_vertex_buffer(0, gpu_mesh.vertex_buffer.slice(..));
             render_pass

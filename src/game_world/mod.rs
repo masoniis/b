@@ -1,7 +1,6 @@
 use crate::{
     ecs_resources::{AssetStorageResource, CameraResource, MeshAsset, TimeResource},
     game_world::{
-        graphics::RenderingModulePlugin,
         input::InputModulePlugin,
         player::PlayerModulePlugin,
         schedules::GameSchedule,
@@ -127,7 +126,6 @@ impl PluginGroup for ClientOnlyPlugins {
             .add_resource(CameraResource::default())
             .add_resource(AssetStorageResource::<MeshAsset>::default())
             .add_plugin(ScreenTextModulePlugin)
-            .add_plugin(RenderingModulePlugin)
             .add_plugin(InputModulePlugin);
     }
 }

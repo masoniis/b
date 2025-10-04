@@ -4,7 +4,6 @@ use super::{
 };
 use crate::{
     game_world::{
-        graphics,
         schedules::GameSchedule,
         state_machine::resources::{AppState, GameState},
         Plugin, ScheduleBuilder,

@@ -1,20 +1,14 @@
 use crate::{
-    // game_world::graphics::resources::{
-    //     queue::RenderQueueResource, uniforms::CameraUniformResource,
-    // },
     prelude::*,
-    render_world::pipeline::GraphicsContextResource,
+    render_world::{extract::RenderTimeResource, render::GraphicsContextResource},
 };
-
-use bevy_ecs::prelude::ResMut;
+use bevy_ecs::prelude::{Res, ResMut};
 use wgpu::TextureViewDescriptor;
 
-/// The main rendering system for when the game is running
-pub fn render_scene_system(
+/// The rendering system for the loading screen
+pub fn render_loading_screen_system(
     mut gfx_resource: ResMut<GraphicsContextResource>,
-    // render_queue: Res<RenderQueueResource>,
-    // mesh_assets: Res<AssetStorageResource<MeshAsset>>,
-    // camera_uniform: Res<CameraUniformResource>,
+    time: Res<RenderTimeResource>,
 ) {
     let gfx = &mut gfx_resource.context;
 
@@ -40,8 +34,7 @@ pub fn render_scene_system(
         .texture
         .create_view(&TextureViewDescriptor::default());
 
-    // gfx.renderer
-    //     .render(&view, &render_queue, &mesh_assets, &camera_uniform);
+    gfx.renderer.render_loading_screen(&view, &time);
 
     output.present();
 }

@@ -1,13 +1,7 @@
 use crate::{
     core::graphics::renderpass::RenderPassContex,
-    core::graphics::types::GpuMesh,
-    ecs_resources::{
-        asset_storage::{AssetId, MeshAsset},
-        AssetStorageResource,
-    },
-    game_world::graphics::{CameraUniformResource, RenderQueueResource},
+    render_world::{extract::RenderMeshStorageResource, queue::RenderQueueResource},
 };
-use std::{collections::HashMap, sync::Arc};
 
 /// A trait for main scene renderpasses
 pub trait ISceneRenderPass {
@@ -16,8 +10,8 @@ pub trait ISceneRenderPass {
         device: &wgpu::Device,
         queue: &wgpu::Queue,
         render_queue: &RenderQueueResource,
-        mesh_assets: &AssetStorageResource<MeshAsset>,
-        camera_uniform: &CameraUniformResource,
+        render_mesh_storage: &RenderMeshStorageResource,
+        camera_uniform: &crate::render_world::extract::RenderCameraResource,
     );
 
     fn render<'a>(
@@ -25,9 +19,8 @@ pub trait ISceneRenderPass {
         encoder: &mut wgpu::CommandEncoder,
         context: RenderPassContex<'a>,
         ecs_render_queue: &RenderQueueResource,
-        mesh_assets: &AssetStorageResource<MeshAsset>,
+        render_mesh_storage: &RenderMeshStorageResource,
         instance_buffer: &wgpu::Buffer,
-        gpu_meshes: &mut HashMap<AssetId, Arc<GpuMesh>>,
         render_pipeline: &wgpu::RenderPipeline,
         texture_bind_group: &wgpu::BindGroup,
     );
@@ -40,8 +33,8 @@ pub trait ITextRenderPass {
         device: &wgpu::Device,
         queue: &wgpu::Queue,
         render_queue: &RenderQueueResource,
-        mesh_assets: &AssetStorageResource<MeshAsset>,
-        camera_uniform: &CameraUniformResource,
+        render_mesh_storage: &RenderMeshStorageResource,
+        camera_uniform: &crate::render_world::extract::RenderCameraResource,
     );
 
     fn render<'a>(&'a self, encoder: &mut wgpu::CommandEncoder, context: RenderPassContex<'a>);
