@@ -1,4 +1,6 @@
-use crate::{ecs_resources::TimeResource, render_world::extract::utils::ExtractResource};
+use crate::{
+    game_world::global_resources::time::TimeResource, render_world::extract::utils::ExtractResource,
+};
 use bevy_ecs::prelude::Resource;
 
 #[derive(Resource, Debug, Default)]

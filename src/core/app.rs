@@ -1,6 +1,6 @@
 use crate::{
     core::graphics::context::GraphicsContext,
-    ecs_resources::{texture_map::TextureMapResource, window::WindowResource},
+    game_world::global_resources::{texture_map::TextureMapResource, window::WindowResource},
     game_world::{
         input::events::{RawDeviceEvent, RawWindowEvent},
         schedules::GameSchedule,

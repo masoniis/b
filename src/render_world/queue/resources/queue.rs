@@ -5,7 +5,7 @@ use tracing::debug; // For debugging the remove logic
 
 use crate::{
     core::graphics::types::gpu_queues::{QueuedDraw, QueuedText},
-    ecs_resources::asset_storage::{Handle, MeshAsset},
+    game_world::global_resources::asset_storage::{Handle, MeshAsset},
 };
 
 #[derive(Resource, Default)]

@@ -1,8 +1,6 @@
-use crate::{
-    ecs_resources::asset_storage::{Handle, MeshAsset},
-    game_world::graphics::components::{mesh::MeshComponent, transform::TransformComponent},
-    render_world::extract::utils::run_extract_schedule::GameWorld,
-};
+use crate::game_world::global_resources::asset_storage::{Handle, MeshAsset};
+use crate::game_world::graphics::components::{mesh::MeshComponent, transform::TransformComponent};
+use crate::render_world::extract::utils::run_extract_schedule::GameWorld;
 use bevy_ecs::prelude::*;
 use std::collections::HashMap;
 

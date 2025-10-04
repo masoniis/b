@@ -1,5 +1,5 @@
 use super::super::super::components::{FpsCounterScreenTextMarker, ScreenTextComponent};
-use crate::ecs_resources::time::TimeResource;
+use crate::game_world::global_resources::time::TimeResource;
 use bevy_ecs::prelude::*;
 
 pub fn update_debug_diagnostics_system(

@@ -1,8 +1,6 @@
-use crate::game_world::{
-    graphics::VisibilityComponent,
-    screen_text::components::{
-        DiagnosticUiElementMarker, FpsCounterScreenTextMarker, ScreenTextComponent,
-    },
+use crate::game_world::graphics::components::visibility::VisibilityComponent;
+use crate::game_world::screen_text::components::{
+    DiagnosticUiElementMarker, FpsCounterScreenTextMarker, ScreenTextComponent,
 };
 use bevy_ecs::prelude::Commands;
 use glam::vec2;
