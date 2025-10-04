@@ -1,4 +1,4 @@
-use crate::game_world::{Plugin, Schedules};
+use crate::game_world::{schedules::GameSchedule, Plugin, ScheduleBuilder};
 use bevy_ecs::{schedule::IntoScheduleConfigs, world::World};
 
 use super::systems::{main, startup};
@@ -6,12 +6,12 @@ use super::systems::{main, startup};
 pub struct ScreenTextModulePlugin;
 
 impl Plugin for ScreenTextModulePlugin {
-    fn build(&self, schedules: &mut Schedules, _world: &mut World) {
+    fn build(&self, schedules: &mut ScheduleBuilder, _world: &mut World) {
         schedules
-            .startup
+            .entry(GameSchedule::Startup)
             .add_systems((startup::init_screen_diagnostics_system,));
 
-        schedules.main.add_systems((
+        schedules.entry(GameSchedule::Main).add_systems((
             main::handle_text_visibility_change_system
                 .before(main::update_debug_diagnostics_system),
             main::update_visible_text_system

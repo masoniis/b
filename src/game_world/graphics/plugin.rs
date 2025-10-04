@@ -3,8 +3,9 @@ use super::{
     systems::render,
     systems::render_queue,
 };
+use crate::game_world::schedules::GameSchedule;
 use crate::{
-    game_world::{Plugin, Schedules},
+    game_world::{Plugin, ScheduleBuilder},
     prelude::CoreSet,
 };
 use bevy_ecs::prelude::*;
@@ -12,11 +13,11 @@ use bevy_ecs::prelude::*;
 pub struct RenderingModulePlugin;
 
 impl Plugin for RenderingModulePlugin {
-    fn build(&self, schedules: &mut Schedules, world: &mut World) {
+    fn build(&self, schedules: &mut ScheduleBuilder, world: &mut World) {
         world.insert_resource(RenderQueueResource::default());
         world.insert_resource(CameraUniformResource::default());
 
-        schedules.main.add_systems((
+        schedules.entry(GameSchedule::Main).add_systems((
             (
                 render_queue::changed_mesh_system,
                 render_queue::removed_mesh_system,

@@ -1,10 +1,14 @@
-// While multiple external preludes can obscure the origin of code, a single internal
-// prelude does the opposite. This file will serve as the one clear, predictable source
-// for the project's most common imports. It will be frequently used across many files.
+/// Prelude is to be reserved for imports that get used across many
+/// files. For this project, that mostly includes things that are used
+/// at a system ecs module level (eg plugin) as there will be many modules.
+pub use crate::{
+    core::world::{CommonEcsInterface, EcsBuilder, Plugin, PluginGroup, ScheduleBuilder},
+    game_world::system_sets::CoreSet,
+    utils::*,
+};
 
-// I plan to not use any  external preludes, and rely solely on this prelude for common imports.
-pub use crate::{game_world::CoreSet, utils::*};
 pub use tracing::{debug, error, info, warn};
+
 pub use winit::{
     dpi::{LogicalSize, PhysicalSize},
     keyboard::KeyCode,
