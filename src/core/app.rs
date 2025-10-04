@@ -23,6 +23,10 @@ use winit::{
 
 use crate::game_world;
 use crate::game_world::GameWorldInterface;
+use crate::render_world::extract::utils::run_extract_schedule;
+use crate::render_world::{
+    build_render_world, configure_render_world, RenderSchedule, RenderWorldInterface,
+};
 
 /// The main application struct, responsible for orchestrating window events
 /// as well as the scheduling of the main ECS systems.
@@ -33,6 +37,7 @@ pub struct App {
 
     // Core Engine Modules
     game_world: Option<GameWorldInterface>,
+    render_world: Option<RenderWorldInterface>,
 }
 
 impl App {
@@ -40,6 +45,7 @@ impl App {
         Self {
             window: None,
             game_world: None,
+            render_world: None,
         }
     }
 
@@ -85,8 +91,12 @@ impl ApplicationHandler for App {
             info!("Running startup systems...\n\n\n");
             game_world.run_schedule(GameSchedule::Startup);
 
+            let render_builder = configure_render_world();
+            let render_world = build_render_world(render_builder, graphics_context.clone());
+
             self.window = Some(window.clone());
             self.game_world = Some(game_world);
+            self.render_world = Some(render_world);
         }
     }
 
@@ -113,21 +123,35 @@ impl ApplicationHandler for App {
                     event_loop.exit();
                 }
                 WindowEvent::RedrawRequested => {
-                    let current_app_state = game_world.get_app_state();
+                    if let (Some(game_world), Some(render_world)) =
+                        (self.game_world.as_mut(), self.render_world.as_mut())
+                    {
+                        let current_app_state = game_world.get_app_state();
 
-                    match current_app_state {
-                        AppState::Loading => {
-                            game_world.run_schedule(GameSchedule::Loading);
-                        }
-                        AppState::Running => {
-                            game_world.run_schedule(GameSchedule::Main);
-                        }
-                        AppState::Closing => {}
-                    };
+                        match current_app_state {
+                            AppState::Loading => {
+                                game_world.run_schedule(GameSchedule::Loading);
+                            }
+                            AppState::Running => {
+                                game_world.run_schedule(GameSchedule::Main);
+                            }
+                            AppState::Closing => {}
+                        };
 
-                    // Request the next frame
-                    if let Some(window) = &self.window {
-                        window.request_redraw();
+                        run_extract_schedule(
+                            game_world.borrow(),
+                            render_world.borrow(),
+                            RenderSchedule::Extract,
+                        );
+                        render_world.run_schedule(RenderSchedule::Queue);
+                        render_world.run_schedule(RenderSchedule::Render);
+
+                        // Request the next frame
+                        if let Some(window) = &self.window {
+                            window.request_redraw();
+                        }
+                    } else {
+                        warn!("Redraw requested but game or render world is not initialized.");
                     }
                 }
                 _ => {}
