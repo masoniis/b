@@ -6,6 +6,7 @@ use bevy_ecs::schedule::{Schedule, ScheduleLabel};
 use std::ops::{Deref, DerefMut};
 
 pub mod extract;
+pub mod pipeline;
 
 #[derive(ScheduleLabel, Debug, Clone, PartialEq, Eq, Hash)]
 pub enum RenderSchedule {
