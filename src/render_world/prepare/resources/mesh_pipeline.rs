@@ -11,7 +11,12 @@ pub struct MeshPipelineLayoutsResource {
 
 impl FromWorld for MeshPipelineLayoutsResource {
     fn from_world(world: &mut World) -> Self {
-        let gfx_context = world.get_resource::<GraphicsContextResource>().unwrap();
+        let gfx_context = world.get_resource::<GraphicsContextResource>().expect(
+            "
+            The GraphicsContextResource is required to create the MeshPipelineLayoutsResource.
+            ",
+        );
+
         let device = &gfx_context.context.device;
 
         // INFO: Camera bind
@@ -29,7 +34,7 @@ impl FromWorld for MeshPipelineLayoutsResource {
             }],
         });
 
-        // INFO: Camera array bind
+        // INFO: Texture array bind
         let texture_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
             label: Some("Texture Bind Group Layout"),
             entries: &[

@@ -89,8 +89,8 @@ impl ApplicationHandler for App {
             info!("Running startup systems...\n\n\n");
             game_world.run_schedule(GameSchedule::Startup);
 
-            let render_builder = configure_render_world();
-            let render_world = build_render_world(render_builder, graphics_context);
+            let render_builder = configure_render_world(graphics_context);
+            let render_world = build_render_world(render_builder);
 
             self.window = Some(window.clone());
             self.game_world = Some(game_world);

@@ -46,8 +46,16 @@ impl DerefMut for RenderWorldInterface {
 //         Render World Builder
 // ---------------------------------
 
-pub fn configure_render_world() -> EcsBuilder {
+pub fn configure_render_world(graphics_context: GraphicsContext) -> EcsBuilder {
     let mut builder = EcsBuilder::new();
+
+    // As a root resource that requites input from app, graphics context must be
+    // inserted before we do any other system building.
+    //
+    // This is because systems can't create it themselves like most other resources.
+    builder.add_resource(GraphicsContextResource {
+        context: graphics_context,
+    });
 
     builder
         .add_plugin(PipelineModulePlugin)
@@ -58,15 +66,7 @@ pub fn configure_render_world() -> EcsBuilder {
     builder
 }
 
-pub fn build_render_world(
-    mut builder: EcsBuilder,
-    graphics_context: GraphicsContext,
-) -> RenderWorldInterface {
-    // Add gfx context as a resource
-    builder.add_resource(GraphicsContextResource {
-        context: graphics_context,
-    });
-
+pub fn build_render_world(mut builder: EcsBuilder) -> RenderWorldInterface {
     // Drain all the schedules from the plugins build steps
     for (_, schedule) in builder.schedules.drain_schedules() {
         builder.world.add_schedule(schedule);
