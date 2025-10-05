@@ -7,10 +7,10 @@ use super::{
     RenderSchedule,
 };
 use crate::{
+    core::state_machine::{self, in_state, StatePlugin},
     game_world::{
         app_lifecycle::{AppState, GameState},
         global_resources::{AssetStorageResource, MeshAsset},
-        state_machine::StatePlugin,
     },
     prelude::*,
     render_world::{
@@ -19,6 +19,7 @@ use crate::{
         queue::{self, RenderQueueResource},
     },
 };
+use bevy_ecs::prelude::*;
 
 /// The main render world plugin that orchestrates all the phases of rendering
 pub struct RenderPlugin;
@@ -41,17 +42,22 @@ impl Plugin for RenderPlugin {
         builder
             .schedule_entry(RenderSchedule::Extract)
             .add_systems((
+                extract::clone_resource_system::<AssetStorageResource<MeshAsset>>,
                 extract::extract_resource_system::<RenderTimeResource>,
                 extract::extract_resource_system::<RenderCameraResource>,
-                extract::clone_resource_system::<AssetStorageResource<MeshAsset>>,
-                extract::extract_state_system::<AppState>,
                 extract::extract_state_system::<GameState>,
+                extract::extract_state_system::<AppState>,
                 extract::extract_meshes_system,
             ));
 
         builder
             .schedule_entry(RenderSchedule::Prepare)
-            .add_systems(prepare::prepare_meshes_system);
+            .add_systems((
+                prepare::prepare_meshes_system,
+                // Apply any state transitions detected during Extract phase
+                state_machine::apply_state_transition_system::<AppState>,
+                state_machine::apply_state_transition_system::<GameState>,
+            ));
 
         builder
             .schedule_entry(RenderSchedule::Queue)
@@ -59,7 +65,7 @@ impl Plugin for RenderPlugin {
 
         builder
             .schedule_entry(RenderSchedule::Render)
-            .add_systems(render_scene_system);
+            .add_systems(render_scene_system.run_if(in_state(AppState::Running)));
         // builder.schedule_entry(RenderSchedule::Render).add_systems((
         //     render::render_loading_screen_system.run_if(in_state(AppState::Loading)),
         //     render::render_main_scene_system.run_if(in_state(AppState::Running)),

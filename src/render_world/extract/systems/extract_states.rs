@@ -1,5 +1,6 @@
-use crate::game_world::state_machine::resources::{CurrentState, NextState};
-use crate::game_world::state_machine::State;
+use crate::core::state_machine::resources::{CurrentState, NextState};
+use crate::core::state_machine::State;
+use crate::prelude::*;
 use crate::render_world::extract::utils::run_extract_schedule::GameWorld;
 use bevy_ecs::prelude::*;
 
@@ -17,6 +18,11 @@ pub fn extract_state_system<T: State>(
 
     // If the game_world has a state that the render_world doesn't have yet...
     if game_world_state.val != render_world_state.val {
+        debug!(
+            target: "state_machine",
+            "Render world extracted a state change: {:?} -> {:?}",
+            render_world_state.val, game_world_state.val
+        );
         next_state.val = Some(game_world_state.val.clone());
     }
 }

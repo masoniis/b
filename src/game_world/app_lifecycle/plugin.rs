@@ -1,9 +1,9 @@
 use crate::{
-    core::world::{EcsBuilder, Plugin},
-    game_world::{
-        schedules::GameSchedule,
+    core::{
         state_machine::{systems::apply_state_transition_system, StatePlugin},
+        world::{EcsBuilder, Plugin},
     },
+    game_world::schedules::GameSchedule,
     prelude::CoreSet,
 };
 use bevy_ecs::prelude::*;
