@@ -50,8 +50,6 @@ impl GraphicsContext {
         let device = Arc::new(device);
         let queue = Arc::new(queue);
 
-        let (texture_array, texture_map) = load_texture_array(&device, &queue).unwrap();
-
         let surface_caps = surface.get_capabilities(&adapter);
         let surface_format = surface_caps
             .formats
@@ -87,6 +85,7 @@ impl GraphicsContext {
             config.present_mode,
         );
 
+        let (texture_array, texture_map) = load_texture_array(&device, &queue).unwrap();
         let renderer = Renderer::new(device.clone(), queue.clone(), &config, &texture_array);
 
         (

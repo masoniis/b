@@ -1,4 +1,4 @@
-use crate::core::graphics::context::GraphicsContext;
+use crate::render_world::context::GraphicsContext;
 use bevy_ecs::prelude::Resource;
 
 #[derive(Resource)]

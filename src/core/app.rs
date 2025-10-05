@@ -1,5 +1,4 @@
 use crate::{
-    core::graphics::context::GraphicsContext,
     game_world::global_resources::{texture_map::TextureMapResource, window::WindowResource},
     game_world::{
         input::events::{RawDeviceEvent, RawWindowEvent},
@@ -7,7 +6,7 @@ use crate::{
         state_machine::resources::AppState,
     },
     prelude::*,
-    render_world::extract::utils::run_extract_schedule::initialize_main_world_for_extract,
+    render_world::{context::GraphicsContext, extract::utils::run_extract_schedule::initialize_main_world_for_extract},
 };
 use std::error::Error;
 use std::sync::Arc;
