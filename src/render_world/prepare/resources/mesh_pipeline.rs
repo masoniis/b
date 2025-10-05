@@ -9,15 +9,12 @@ pub struct MeshPipelineLayoutsResource {
     pub texture_layout: BindGroupLayout,
 }
 
-// This is the magic. `FromWorld` provides a one-time constructor for resources.
-// It will be called automatically exactly once when we do `world.init_resource::<MeshPipeline>()`.
 impl FromWorld for MeshPipelineLayoutsResource {
     fn from_world(world: &mut World) -> Self {
-        // We can get other resources, like the device, from the world.
         let gfx_context = world.get_resource::<GraphicsContextResource>().unwrap();
         let device = &gfx_context.context.device;
 
-        // Define the layouts here, in their one and only source location.
+        // INFO: Camera bind
         let camera_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
             label: Some("Camera Bind Group Layout"),
             entries: &[wgpu::BindGroupLayoutEntry {
@@ -32,6 +29,7 @@ impl FromWorld for MeshPipelineLayoutsResource {
             }],
         });
 
+        // INFO: Camera array bind
         let texture_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
             label: Some("Texture Bind Group Layout"),
             entries: &[
