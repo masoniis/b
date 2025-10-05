@@ -1,4 +1,4 @@
-use crate::game_world::{graphics::RenderQueueResource, screen_text::ScreenTextComponent};
+use crate::game_world::{graphics_old::RenderQueueResource, screen_text::ScreenTextComponent};
 use bevy_ecs::prelude::{RemovedComponents, ResMut};
 use tracing::{debug, warn};
 

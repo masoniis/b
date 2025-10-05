@@ -2,11 +2,11 @@ use crate::{
     prelude::*,
     render_world::{
         extract::RenderTimeResource,
+        resources::GraphicsContextResource,
         // prepare::{
         //     prepare_pipelines::LOADING_SCREEN_PIPELINE_ID, LoadingScreenPipelineLayoutsResource,
         //     PipelineCacheResource,
         // },
-        render::GraphicsContextResource,
     },
 };
 use bevy_ecs::prelude::{Res, ResMut};
@@ -15,7 +15,7 @@ use wgpu::TextureViewDescriptor;
 // The rendering system for the loading screen
 pub fn render_loading_screen_system(
     mut gfx_resource: ResMut<GraphicsContextResource>,
-    time: Res<RenderTimeResource>,
+    _time: Res<RenderTimeResource>,
 ) {
     let gfx = &mut gfx_resource.context;
 
@@ -37,13 +37,13 @@ pub fn render_loading_screen_system(
         }
     };
 
-    let view = output
+    let _view = output
         .texture
         .create_view(&TextureViewDescriptor::default());
 
-    gfx.renderer.render_loading_screen(&view, &time);
+    // gfx.renderer.render_loading_screen(&view, &time);
 
-    output.present();
+    // output.present();
 }
 
 // pub fn render_loading_screen_system(

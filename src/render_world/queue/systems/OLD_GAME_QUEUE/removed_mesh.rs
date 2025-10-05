@@ -1,5 +1,5 @@
 use crate::{
-    game_world::graphics::{MeshComponent, RenderQueueResource},
+    game_world::graphics_old::{MeshComponent, RenderQueueResource},
     prelude::*,
 };
 use bevy_ecs::prelude::{RemovedComponents, ResMut};

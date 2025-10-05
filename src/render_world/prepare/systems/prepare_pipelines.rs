@@ -1,11 +1,11 @@
 use crate::{
-    core::graphics::types::{instance::InstanceRaw, vertex::Vertex},
+    render_world::types::vertex::Vertex,
     render_world::{
         prepare::{
             resources::pipeline_cache::{PipelineCacheResource, PipelineId},
             LoadingScreenPipelineLayoutsResource, MeshPipelineLayoutsResource,
         },
-        render::GraphicsContextResource,
+        resources::GraphicsContextResource,
     },
 };
 use bevy_ecs::prelude::*;
@@ -43,7 +43,11 @@ pub fn prepare_pipelines_system(
         let render_pipeline_layout =
             device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                 label: Some("Mesh Render Pipeline Layout"),
-                bind_group_layouts: &[&mesh_layouts.camera_layout, &mesh_layouts.texture_layout],
+                bind_group_layouts: &[
+                    &mesh_layouts.camera_layout,
+                    &mesh_layouts.texture_layout,
+                    &mesh_layouts.model_layout,
+                ],
                 push_constant_ranges: &[],
             });
 
@@ -53,7 +57,7 @@ pub fn prepare_pipelines_system(
             vertex: wgpu::VertexState {
                 module: &shader,
                 entry_point: Some("vs_main"),
-                buffers: &[Vertex::desc(), InstanceRaw::desc()],
+                buffers: &[Vertex::desc()],
                 compilation_options: Default::default(),
             },
             fragment: Some(wgpu::FragmentState {

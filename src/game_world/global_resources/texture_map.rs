@@ -1,4 +1,4 @@
-use crate::core::graphics::textures::TextureRegistry;
+use crate::render_world::textures::TextureRegistry;
 use bevy_ecs::prelude::Resource;
 
 /// A resource holding the texture registry for looking up texture indices by name.

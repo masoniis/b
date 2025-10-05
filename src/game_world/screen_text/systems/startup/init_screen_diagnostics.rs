@@ -1,4 +1,4 @@
-use crate::game_world::graphics::components::visibility::VisibilityComponent;
+use crate::game_world::graphics_old::components::visibility::VisibilityComponent;
 use crate::game_world::screen_text::components::{
     DiagnosticUiElementMarker, FpsCounterScreenTextMarker, ScreenTextComponent,
 };

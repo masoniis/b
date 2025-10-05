@@ -1,7 +1,7 @@
 use crate::{
-    core::{
+    ecs_core::{
         state_machine::{systems::apply_state_transition_system, StatePlugin},
-        world::{EcsBuilder, Plugin},
+        EcsBuilder, Plugin,
     },
     game_world::schedules::GameSchedule,
     prelude::CoreSet,

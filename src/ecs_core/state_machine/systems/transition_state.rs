@@ -1,11 +1,9 @@
-use crate::prelude::*;
-pub use crate::{
-    core::state_machine::{
-        resources::{CurrentState, NextState},
-        State,
-    },
-    game_world::schedules::{OnEnter, OnExit},
+use crate::ecs_core::state_machine::{
+    resources::{CurrentState, NextState},
+    State,
 };
+pub use crate::game_world::schedules::{OnEnter, OnExit};
+use crate::prelude::*;
 use bevy_ecs::prelude::*;
 
 pub fn apply_state_transition_system<T: State>(world: &mut World) {

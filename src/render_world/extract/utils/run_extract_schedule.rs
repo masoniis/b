@@ -15,7 +15,7 @@ struct GameWorldPlaceholder {
 }
 
 /// Initializes the main world with the necessary resources for the extract runner.
-/// This must be called once at application startup.
+/// This must be called before running anything in the mainworld if we want to render.
 pub fn initialize_main_world_for_extract(main_world: &mut World) {
     main_world.init_resource::<GameWorldPlaceholder>();
 }

@@ -1,7 +1,7 @@
 use bevy_ecs::prelude::Component;
 use glam::{Mat4, Quat, Vec3};
 
-#[derive(Component)]
+#[derive(Component, Debug)]
 pub struct TransformComponent {
     pub position: Vec3,
     pub rotation: Quat,

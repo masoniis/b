@@ -1,7 +1,6 @@
 use crate::{
-    core::graphics::rendercore::Renderer,
-    core::graphics::textures::{load_texture_array, TextureRegistry},
     prelude::*,
+    render_world::textures::{load_texture_array, TextureRegistry},
 };
 use std::sync::Arc;
 use wgpu::{
@@ -13,7 +12,7 @@ use winit::window::Window;
 /// A container for the core WGPU state and the renderer that the app holds.
 pub struct GraphicsContext {
     // renderer
-    pub renderer: Renderer,
+    // pub renderer: Renderer,
 
     // properties
     pub config: SurfaceConfiguration,
@@ -85,13 +84,13 @@ impl GraphicsContext {
             config.present_mode,
         );
 
-        let (texture_array, texture_map) = load_texture_array(&device, &queue).unwrap();
-        let renderer = Renderer::new(device.clone(), queue.clone(), &config, &texture_array);
+        let (_texture_array, texture_map) = load_texture_array(&device, &queue).unwrap();
+        // let renderer = Renderer::new(device.clone(), queue.clone(), &config, &texture_array);
 
         (
             Self {
                 // renderer
-                renderer,
+                // renderer,
 
                 // properties
                 instance: wgpu_instance,
@@ -112,7 +111,7 @@ impl GraphicsContext {
             self.config.width = new_size.width;
             self.config.height = new_size.height;
             self.surface.configure(&self.device, &self.config);
-            self.renderer.resize(new_size);
+            // self.renderer.resize(new_size);
         } else {
             warn!("Attempted to resize graphics context to zero dimensions.");
         }

@@ -1,18 +1,24 @@
 use crate::{
-    core::state_machine::resources::CurrentState,
+    ecs_core::state_machine::resources::CurrentState,
     game_world::{
         global_resources::MeshAsset, input::InputModulePlugin, player::PlayerModulePlugin,
         schedules::GameSchedule, screen_text::ScreenTextModulePlugin, world::WorldModulePlugin,
     },
     prelude::*,
+    render_world::{
+        extract::utils::run_extract_schedule::initialize_main_world_for_extract,
+        textures::TextureRegistry,
+    },
 };
 use app_lifecycle::{AppLifecyclePlugin, AppState};
 use bevy_ecs::prelude::*;
+use global_resources::{window::WindowResource, TextureMapResource};
 use std::ops::{Deref, DerefMut};
+use winit::window::Window;
 
 pub mod app_lifecycle;
 pub mod global_resources;
-pub mod graphics;
+pub mod graphics_old;
 pub mod input;
 pub mod player;
 pub mod schedules;
@@ -60,8 +66,13 @@ impl DerefMut for GameWorldInterface {
 //         Game World Builder
 // ----------------------------------
 
-pub fn configure_game_world() -> EcsBuilder {
+pub fn configure_game_world(registry: TextureRegistry, window: &Window) -> EcsBuilder {
     let mut builder = EcsBuilder::new();
+
+    // Add resources built from the app
+    builder
+        .add_resource(WindowResource::new(window.inner_size()))
+        .add_resource(TextureMapResource { registry });
 
     // Configure core schedule sets before adding plugins
     builder.schedules.entry(GameSchedule::Main).configure_sets(
@@ -90,11 +101,15 @@ pub fn build_game_world(mut builder: EcsBuilder) -> GameWorldInterface {
         builder.world.add_schedule(schedule);
     }
 
-    GameWorldInterface {
+    let mut res = GameWorldInterface {
         common: CommonEcsInterface {
             world: builder.world,
         },
-    }
+    };
+
+    initialize_main_world_for_extract(&mut res.common.world);
+
+    return res;
 }
 
 // INFO: ---------------------------------
