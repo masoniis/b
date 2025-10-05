@@ -1,11 +1,8 @@
+use super::{systems::prepare_meshes_system, MeshPipelineLayoutsResource};
 use crate::{
     core::world::{EcsBuilder, Plugin},
     render_world::extract::resources::RenderMeshStorageResource,
     render_world::RenderSchedule,
-};
-
-use super::{
-    resources::mesh_pipeline::MeshPipelineLayoutsResource, systems::prepare_meshes_system,
 };
 
 pub struct PrepareModulePlugin;

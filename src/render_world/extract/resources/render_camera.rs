@@ -1,5 +1,5 @@
 use crate::game_world::global_resources::camera::CameraResource;
-use crate::render_world::extract::utils::ExtractResource; // Assuming this path exists
+use crate::render_world::extract::utils::ExtractResource;
 use bevy_ecs::prelude::Resource;
 use glam::Mat4;
 
