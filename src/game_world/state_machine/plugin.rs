@@ -1,7 +1,5 @@
 use super::{
-    resources::{CurrentState, NextState, PrevState},
-    systems::apply_state_transition_system,
-    State,
+    apply_state_transition_system, State, {CurrentState, NextState, PrevState},
 };
 use crate::{
     game_world::{schedules::GameSchedule, Plugin, ScheduleBuilder},
