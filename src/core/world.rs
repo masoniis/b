@@ -70,6 +70,11 @@ impl EcsBuilder {
         self
     }
 
+    pub fn from_world_resource<R: Resource + FromWorld>(&mut self) -> &mut Self {
+        self.world.init_resource::<R>();
+        self
+    }
+
     pub fn schedule_entry(&mut self, label: impl ScheduleLabel + Clone) -> &mut Schedule {
         self.schedules.entry(label)
     }
