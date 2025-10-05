@@ -1,9 +1,9 @@
 use crate::{
     core::graphics::types::{instance::InstanceRaw, vertex::Vertex},
     render_world::{
-        prepare::resources::{
-            mesh_pipeline::MeshPipelineLayoutsResource,
-            pipeline_cache::{PipelineCacheResource, PipelineId},
+        prepare::{
+            resources::pipeline_cache::{PipelineCacheResource, PipelineId},
+            LoadingScreenPipelineLayoutsResource, MeshPipelineLayoutsResource,
         },
         render::GraphicsContextResource,
     },
@@ -25,6 +25,7 @@ pub fn prepare_pipelines_system(
     mut cache: ResMut<PipelineCacheResource>,
     gfx_context: Res<GraphicsContextResource>,
     mesh_layouts: Res<MeshPipelineLayoutsResource>,
+    loading_layouts: Res<LoadingScreenPipelineLayoutsResource>,
 ) {
     let device = &gfx_context.context.device;
     let surface_format = gfx_context.context.config.format;
@@ -88,22 +89,6 @@ pub fn prepare_pipelines_system(
 
     // --- Create Loading Screen Pipeline ---
     if cache.get(LOADING_SCREEN_PIPELINE_ID).is_none() {
-        // Define Layout Locally
-        let time_bind_group_layout =
-            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-                label: Some("Time Bind Group Layout"),
-                entries: &[wgpu::BindGroupLayoutEntry {
-                    binding: 0,
-                    visibility: wgpu::ShaderStages::FRAGMENT,
-                    ty: wgpu::BindingType::Buffer {
-                        ty: wgpu::BufferBindingType::Uniform,
-                        has_dynamic_offset: false,
-                        min_binding_size: None,
-                    },
-                    count: None,
-                }],
-            });
-
         // Compile Pipeline
         let shader_source =
             fs::read_to_string(LOADING_SHADER_PATH).expect("Failed to read loading shader file");
@@ -114,7 +99,7 @@ pub fn prepare_pipelines_system(
 
         let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: Some("Loading Screen Pipeline Layout"),
-            bind_group_layouts: &[&time_bind_group_layout],
+            bind_group_layouts: &[&loading_layouts.time_layout],
             push_constant_ranges: &[],
         });
 

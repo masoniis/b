@@ -66,8 +66,8 @@ pub fn configure_render_world(graphics_context: GraphicsContext) -> EcsBuilder {
     builder
 }
 
+/// Builds the final state and returns the final render world interface.
 pub fn build_render_world(mut builder: EcsBuilder) -> RenderWorldInterface {
-    // Drain all the schedules from the plugins build steps
     for (_, schedule) in builder.schedules.drain_schedules() {
         builder.world.add_schedule(schedule);
     }
