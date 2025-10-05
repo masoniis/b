@@ -65,25 +65,30 @@ impl EcsBuilder {
         }
     }
 
+    /// Adds a resource of type R to the world.
     pub fn add_resource<R: Resource>(&mut self, resource: R) -> &mut Self {
         self.world.insert_resource(resource);
         self
     }
 
-    pub fn from_world_resource<R: Resource + FromWorld>(&mut self) -> &mut Self {
+    /// Initializes a resource of type R using its FromWorld implementation
+    pub fn init_resource<R: Resource + FromWorld>(&mut self) -> &mut Self {
         self.world.init_resource::<R>();
         self
     }
 
+    /// Gets the current builder entry for a schedule or creates it if it doesn't exist
     pub fn schedule_entry(&mut self, label: impl ScheduleLabel + Clone) -> &mut Schedule {
         self.schedules.entry(label)
     }
 
+    /// Adds a plugin to the builder by invoking its build method
     pub fn add_plugin<P: Plugin>(&mut self, plugin: P) -> &mut Self {
         plugin.build(self);
         self
     }
 
+    /// Adds a group of plugins to the builder by invoking the group's build method
     pub fn add_plugins<G: PluginGroup>(&mut self, group: G) -> &mut Self {
         group.build(self);
         self
