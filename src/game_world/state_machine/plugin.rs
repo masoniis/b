@@ -1,61 +1,39 @@
 use super::{
     resources::{CurrentState, NextState, PrevState},
-    systems::{self, start_fake_work_system},
+    systems::apply_state_transition_system,
+    State,
 };
 use crate::{
-    game_world::{
-        schedules::GameSchedule,
-        state_machine::resources::{AppState, GameState},
-        Plugin, ScheduleBuilder,
-    },
+    game_world::{schedules::GameSchedule, Plugin, ScheduleBuilder},
     prelude::CoreSet,
 };
 use bevy_ecs::prelude::*;
+use std::marker::PhantomData;
 
-pub struct StateMachineModulePlugin;
+/// A generic plugin for any type T that implements the State trait
+pub struct StatePlugin<T: State>(PhantomData<T>);
 
-impl Plugin for StateMachineModulePlugin {
+impl<T: State> Default for StatePlugin<T> {
+    fn default() -> Self {
+        Self(PhantomData)
+    }
+}
+
+/// Generic implementation just adds state transition systems for the
+/// state type to the the the main schedules that want/need them
+impl<T: State> Plugin for StatePlugin<T> {
     fn build(&self, schedules: &mut ScheduleBuilder, world: &mut World) {
-        // The state resources the state machine oversees
-        world.insert_resource(PrevState {
-            val: None::<AppState>,
-        });
-        world.insert_resource(PrevState {
-            val: None::<GameState>,
-        });
-        world.insert_resource(CurrentState {
-            val: AppState::default(),
-        });
-        world.insert_resource(CurrentState {
-            val: GameState::default(),
-        });
-        world.insert_resource(NextState {
-            val: None::<AppState>,
-        });
-        world.insert_resource(NextState {
-            val: None::<GameState>,
-        });
+        world.init_resource::<CurrentState<T>>();
+        world.init_resource::<NextState<T>>();
+        world.init_resource::<PrevState<T>>();
 
-        // Add systems to the regular schedules
+        // Add the transition system for this specific state type
         schedules
-            .entry(GameSchedule::Startup)
-            .add_systems(start_fake_work_system);
+            .entry(GameSchedule::Loading)
+            .add_systems(apply_state_transition_system::<T>.in_set(CoreSet::PostUpdate));
 
-        schedules.entry(GameSchedule::Loading).add_systems(
-            (
-                systems::finalize_loading_system,
-                systems::apply_state_transition_system::<AppState>,
-                crate::game_world::world::systems::main::time::time_system, // Add time_system
-            )
-                .chain(),
-        );
-
-        schedules.entry(GameSchedule::Main).add_systems(
-            (
-                systems::apply_state_transition_system::<AppState>,
-                systems::apply_state_transition_system::<GameState>,
-            )
-                .in_set(CoreSet::PostUpdate),
-        );
+        schedules
+            .entry(GameSchedule::Main)
+            .add_systems(apply_state_transition_system::<T>.in_set(CoreSet::PostUpdate));
     }
 }

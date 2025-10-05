@@ -1,5 +1,5 @@
+use crate::game_world::app_lifecycle::LoadingTaskComponent;
 use crate::game_world::state_machine::resources::{AppState, NextState};
-use crate::game_world::state_machine::LoadingTaskComponent;
 use crate::prelude::*;
 use bevy_ecs::prelude::*;
 use futures_lite::future;
