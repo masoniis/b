@@ -1,14 +1,13 @@
 use crate::prelude::*;
 use bevy_ecs::schedule::ScheduleLabel;
 use context::GraphicsContext;
-use extract::ExtractModulePlugin;
-use prepare::plugin::PrepareModulePlugin;
-use queue::plugin::QueueModulePlugin;
-use render::{GraphicsContextResource, PipelineModulePlugin};
+use plugin::RenderPlugin;
+use render::GraphicsContextResource;
 use std::ops::{Deref, DerefMut};
 
 pub mod context;
 pub mod extract;
+pub mod plugin;
 pub mod prepare;
 pub mod queue;
 pub mod render;
@@ -57,11 +56,7 @@ pub fn configure_render_world(graphics_context: GraphicsContext) -> EcsBuilder {
         context: graphics_context,
     });
 
-    builder
-        .add_plugin(PipelineModulePlugin)
-        .add_plugin(QueueModulePlugin)
-        .add_plugin(ExtractModulePlugin)
-        .add_plugin(PrepareModulePlugin);
+    builder.add_plugin(RenderPlugin);
 
     builder
 }
