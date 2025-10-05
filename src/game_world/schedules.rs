@@ -1,4 +1,4 @@
-use super::state_machine::State;
+use crate::core::state_machine::State;
 use bevy_ecs::schedule::ScheduleLabel;
 
 /// Schedule that runs once in the entering state.

@@ -1,11 +1,7 @@
 use super::{
     apply_state_transition_system, {CurrentState, NextState, PrevState},
 };
-use crate::{
-    core::world::{EcsBuilder, Plugin},
-    game_world::schedules::GameSchedule,
-    prelude::CoreSet,
-};
+use crate::{game_world::schedules::GameSchedule, prelude::*};
 use bevy_ecs::prelude::*;
 use std::fmt::Debug;
 use std::hash::Hash;

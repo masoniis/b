@@ -1,7 +1,10 @@
 use super::systems::{main as main_system, startup as startup_system};
 use crate::{
-    core::world::{EcsBuilder, Plugin},
-    game_world::{app_lifecycle::AppState, schedules::GameSchedule, state_machine::in_state},
+    core::{
+        state_machine::in_state,
+        world::{EcsBuilder, Plugin},
+    },
+    game_world::{app_lifecycle::AppState, schedules::GameSchedule},
     prelude::*,
 };
 use bevy_ecs::prelude::*;

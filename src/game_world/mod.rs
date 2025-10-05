@@ -1,9 +1,8 @@
 use crate::{
-    game_world::global_resources::MeshAsset,
+    core::state_machine::resources::CurrentState,
     game_world::{
-        input::InputModulePlugin, player::PlayerModulePlugin, schedules::GameSchedule,
-        screen_text::ScreenTextModulePlugin, state_machine::resources::CurrentState,
-        world::WorldModulePlugin,
+        global_resources::MeshAsset, input::InputModulePlugin, player::PlayerModulePlugin,
+        schedules::GameSchedule, screen_text::ScreenTextModulePlugin, world::WorldModulePlugin,
     },
     prelude::*,
 };
@@ -18,7 +17,6 @@ pub mod input;
 pub mod player;
 pub mod schedules;
 pub mod screen_text;
-pub mod state_machine;
 pub mod system_sets;
 pub mod world;
 
