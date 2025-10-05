@@ -1,7 +1,7 @@
 pub use crate::game_world::{
     schedules::{OnEnter, OnExit},
     state_machine::resources::{CurrentState, NextState},
-    state_machine::types::State,
+    state_machine::State,
 };
 use crate::prelude::*;
 use bevy_ecs::prelude::*;
