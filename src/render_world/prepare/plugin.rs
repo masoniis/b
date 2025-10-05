@@ -4,13 +4,16 @@ use crate::{
     render_world::RenderSchedule,
 };
 
-use super::systems::prepare_meshes_system;
+use super::{
+    resources::mesh_pipeline::MeshPipelineLayoutsResource, systems::prepare_meshes_system,
+};
 
 pub struct PrepareModulePlugin;
 
 impl Plugin for PrepareModulePlugin {
     fn build(&self, builder: &mut EcsBuilder) {
         builder.add_resource(RenderMeshStorageResource::default());
+        builder.from_world_resource::<MeshPipelineLayoutsResource>();
 
         builder
             .schedule_entry(RenderSchedule::Prepare)
