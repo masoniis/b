@@ -1,5 +1,7 @@
-use crate::{prelude::*, render_world::RenderSchedule};
-use bevy_ecs::prelude::*;
+use crate::{
+    core::world::{EcsBuilder, Plugin},
+    render_world::RenderSchedule,
+};
 
 use super::queue_mesh_system;
 use crate::render_world::queue::resources::queue::RenderQueueResource;
@@ -7,11 +9,11 @@ use crate::render_world::queue::resources::queue::RenderQueueResource;
 pub struct QueueModulePlugin;
 
 impl Plugin for QueueModulePlugin {
-    fn build(&self, schedules: &mut ScheduleBuilder, world: &mut World) {
-        world.insert_resource(RenderQueueResource::default());
+    fn build(&self, builder: &mut EcsBuilder) {
+        builder.add_resource(RenderQueueResource::default());
 
-        schedules
-            .entry(RenderSchedule::Queue)
+        builder
+            .schedule_entry(RenderSchedule::Queue)
             .add_systems(queue_mesh_system);
     }
 }

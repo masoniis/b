@@ -1,12 +1,15 @@
 use crate::{
-    game_world::global_resources::{texture_map::TextureMapResource, window::WindowResource},
     game_world::{
+        app_lifecycle::AppState,
+        global_resources::{texture_map::TextureMapResource, window::WindowResource},
         input::events::{RawDeviceEvent, RawWindowEvent},
         schedules::GameSchedule,
-        state_machine::resources::AppState,
     },
     prelude::*,
-    render_world::{context::GraphicsContext, extract::utils::run_extract_schedule::initialize_main_world_for_extract},
+    render_world::{
+        context::GraphicsContext,
+        extract::utils::run_extract_schedule::initialize_main_world_for_extract,
+    },
 };
 use std::error::Error;
 use std::sync::Arc;

@@ -3,42 +3,47 @@ use super::{
     systems::{processing, utils},
     ActionStateResource, InputActionMapResource,
 };
-use crate::game_world::{
-    input::events::{
-        KeyboardInputEvent, MouseButtonInputEvent, MouseMoveEvent, MouseScrollEvent,
-        RawDeviceEvent, RawWindowEvent,
+use crate::{
+    core::world::{EcsBuilder, Plugin},
+    game_world::{
+        app_lifecycle::AppState,
+        input::events::{
+            KeyboardInputEvent, MouseButtonInputEvent, MouseMoveEvent, MouseScrollEvent,
+            RawDeviceEvent, RawWindowEvent,
+        },
+        schedules::{GameSchedule, OnExit},
+        CoreSet,
     },
-    schedules::{GameSchedule, OnExit},
-    state_machine::resources::AppState,
-    CoreSet, Plugin, ScheduleBuilder,
 };
-use bevy_ecs::{event::Events, schedule::IntoScheduleConfigs, world::World};
+use bevy_ecs::{event::Events, schedule::IntoScheduleConfigs};
 use winit::{event::MouseButton, keyboard::PhysicalKey};
 
 pub struct InputModulePlugin;
 
 impl Plugin for InputModulePlugin {
-    fn build(&self, schedules: &mut ScheduleBuilder, world: &mut World) {
+    fn build(&self, builder: &mut EcsBuilder) {
         // Resources
-        world.insert_resource(InputActionMapResource::default());
-        world.insert_resource(ActionStateResource::default());
+        builder.add_resource(InputActionMapResource::default());
+        builder.add_resource(ActionStateResource::default());
 
-        world.insert_resource(Buttons::<PhysicalKey>::default());
-        world.insert_resource(Buttons::<MouseButton>::default());
-        world.insert_resource(CursorMovement::default());
+        builder.add_resource(Buttons::<PhysicalKey>::default());
+        builder.add_resource(Buttons::<MouseButton>::default());
+        builder.add_resource(CursorMovement::default());
 
         // External events (comes from the app wrapper)
-        world.init_resource::<Events<RawWindowEvent>>();
-        world.init_resource::<Events<RawDeviceEvent>>();
+        builder.world.init_resource::<Events<RawWindowEvent>>();
+        builder.world.init_resource::<Events<RawDeviceEvent>>();
 
         // Internal events (an ecs system fires them)
-        world.init_resource::<Events<KeyboardInputEvent>>();
-        world.init_resource::<Events<MouseMoveEvent>>();
-        world.init_resource::<Events<MouseScrollEvent>>();
-        world.init_resource::<Events<MouseButtonInputEvent>>();
+        builder.world.init_resource::<Events<KeyboardInputEvent>>();
+        builder.world.init_resource::<Events<MouseMoveEvent>>();
+        builder.world.init_resource::<Events<MouseScrollEvent>>();
+        builder
+            .world
+            .init_resource::<Events<MouseButtonInputEvent>>();
 
         // Schedules
-        schedules.entry(GameSchedule::Main).add_systems(
+        builder.schedule_entry(GameSchedule::Main).add_systems(
             (
                 processing::window_events_system,
                 processing::device_events_system,
@@ -49,8 +54,8 @@ impl Plugin for InputModulePlugin {
                 .in_set(CoreSet::Input),
         );
 
-        schedules
-            .entry(OnExit(AppState::Loading))
+        builder
+            .schedule_entry(OnExit(AppState::Loading))
             .add_systems(utils::clear_stale_input_events_system);
     }
 }

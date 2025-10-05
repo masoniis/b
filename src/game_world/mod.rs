@@ -1,18 +1,14 @@
 use crate::{
     game_world::global_resources::MeshAsset,
     game_world::{
-        input::InputModulePlugin,
-        player::PlayerModulePlugin,
-        schedules::GameSchedule,
-        screen_text::ScreenTextModulePlugin,
-        state_machine::resources::{AppState, CurrentState},
+        input::InputModulePlugin, player::PlayerModulePlugin, schedules::GameSchedule,
+        screen_text::ScreenTextModulePlugin, state_machine::resources::CurrentState,
         world::WorldModulePlugin,
     },
     prelude::*,
 };
-use app_lifecycle::AppLifecyclePlugin;
+use app_lifecycle::{AppLifecyclePlugin, AppState};
 use bevy_ecs::prelude::*;
-use state_machine::{resources::GameState, StatePlugin};
 use std::ops::{Deref, DerefMut};
 
 pub mod app_lifecycle;
@@ -114,8 +110,6 @@ impl PluginGroup for SharedPlugins {
         builder
             .add_resource(global_resources::time::TimeResource::default())
             .add_plugin(AppLifecyclePlugin)
-            .add_plugin(StatePlugin::<AppState>::default())
-            .add_plugin(StatePlugin::<GameState>::default())
             .add_plugin(WorldModulePlugin)
             .add_plugin(PlayerModulePlugin);
     }

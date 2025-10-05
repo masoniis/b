@@ -1,28 +1,29 @@
 use crate::{
+    core::world::{EcsBuilder, Plugin},
     game_world::{
         schedules::GameSchedule,
-        state_machine::{
-            resources::{AppState, GameState},
-            systems::apply_state_transition_system,
-        },
-        Plugin, ScheduleBuilder,
+        state_machine::{systems::apply_state_transition_system, StatePlugin},
     },
     prelude::CoreSet,
 };
 use bevy_ecs::prelude::*;
 
-use super::{finalize_loading_system, start_fake_work_system};
+use super::{finalize_loading_system, start_fake_work_system, AppState, GameState};
 
 pub struct AppLifecyclePlugin;
 
 impl Plugin for AppLifecyclePlugin {
-    fn build(&self, schedules: &mut ScheduleBuilder, _world: &mut World) {
+    fn build(&self, builder: &mut EcsBuilder) {
+        builder
+            .add_plugin(StatePlugin::<AppState>::default())
+            .add_plugin(StatePlugin::<GameState>::default());
+
         // The state resources the state machine oversees
-        schedules
-            .entry(GameSchedule::Startup)
+        builder
+            .schedule_entry(GameSchedule::Startup)
             .add_systems(start_fake_work_system);
 
-        schedules.entry(GameSchedule::Loading).add_systems(
+        builder.schedule_entry(GameSchedule::Loading).add_systems(
             (
                 finalize_loading_system,
                 apply_state_transition_system::<AppState>,
@@ -31,7 +32,7 @@ impl Plugin for AppLifecyclePlugin {
                 .chain(),
         );
 
-        schedules.entry(GameSchedule::Main).add_systems(
+        builder.schedule_entry(GameSchedule::Main).add_systems(
             (
                 apply_state_transition_system::<AppState>,
                 apply_state_transition_system::<GameState>,
