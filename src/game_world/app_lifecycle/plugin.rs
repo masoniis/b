@@ -8,12 +8,17 @@ use crate::{
 };
 use bevy_ecs::prelude::*;
 
-use super::{finalize_loading_system, start_fake_work_system, AppState, GameState};
+use super::{
+    finalize_loading_system, start_fake_work_system, update_app_time_system, AppState,
+    AppTimeResource, GameState,
+};
 
 pub struct AppLifecyclePlugin;
 
 impl Plugin for AppLifecyclePlugin {
     fn build(&self, builder: &mut EcsBuilder) {
+        builder.add_resource(AppTimeResource::default());
+
         builder
             .add_plugin(StatePlugin::<AppState>::default())
             .add_plugin(StatePlugin::<GameState>::default());
@@ -36,6 +41,7 @@ impl Plugin for AppLifecyclePlugin {
             (
                 apply_state_transition_system::<AppState>,
                 apply_state_transition_system::<GameState>,
+                update_app_time_system, // TODO: The main system needs to run every frame, even during loading
             )
                 .in_set(CoreSet::PostUpdate),
         );
