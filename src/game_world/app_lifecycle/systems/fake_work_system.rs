@@ -1,5 +1,4 @@
-use crate::game_world::state_machine::LoadingTaskComponent;
-use crate::prelude::*;
+use crate::{game_world::app_lifecycle::LoadingTaskComponent, prelude::*};
 use bevy_ecs::prelude::*;
 
 pub fn start_fake_work_system(mut commands: Commands) {
