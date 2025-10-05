@@ -40,10 +40,13 @@ impl ScheduleBuilder {
 
 /// A trait that enables a module to plug into the ECS context.
 pub trait Plugin {
-    fn build(&self, schedules: &mut ScheduleBuilder, world: &mut World);
+    fn build(&self, builder: &mut EcsBuilder);
 }
 
 /// A trait for composing groups of plugins.
+///
+/// Different from the `Plugin` trait it enables
+/// consuming self (to call .build() for example)
 pub trait PluginGroup {
     fn build(self, builder: &mut EcsBuilder);
 }
@@ -67,8 +70,12 @@ impl EcsBuilder {
         self
     }
 
+    pub fn schedule_entry(&mut self, label: impl ScheduleLabel + Clone) -> &mut Schedule {
+        self.schedules.entry(label)
+    }
+
     pub fn add_plugin<P: Plugin>(&mut self, plugin: P) -> &mut Self {
-        plugin.build(&mut self.schedules, &mut self.world);
+        plugin.build(self);
         self
     }
 

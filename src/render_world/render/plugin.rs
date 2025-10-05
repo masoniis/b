@@ -1,16 +1,18 @@
 use super::render_scene_system;
-use crate::{prelude::*, render_world::RenderSchedule};
-use bevy_ecs::prelude::*;
+use crate::{
+    core::world::{EcsBuilder, Plugin},
+    render_world::RenderSchedule,
+};
 
 pub struct PipelineModulePlugin;
 
 impl Plugin for PipelineModulePlugin {
-    fn build(&self, schedules: &mut ScheduleBuilder, _world: &mut World) {
+    fn build(&self, builder: &mut EcsBuilder) {
         // schedules
         //     .entry(RenderSchedule::Render)
         //     .add_systems(render_loading_screen_system);
-        schedules
-            .entry(RenderSchedule::Render)
+        builder
+            .schedule_entry(RenderSchedule::Render)
             .add_systems(render_scene_system);
     }
 }
