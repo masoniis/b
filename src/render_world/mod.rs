@@ -1,11 +1,13 @@
-use crate::{core::graphics::context::GraphicsContext, prelude::*};
+use crate::prelude::*;
 use bevy_ecs::schedule::ScheduleLabel;
+use context::GraphicsContext;
 use extract::ExtractModulePlugin;
 use prepare::plugin::PrepareModulePlugin;
 use queue::plugin::QueueModulePlugin;
 use render::{GraphicsContextResource, PipelineModulePlugin};
 use std::ops::{Deref, DerefMut};
 
+pub mod context;
 pub mod extract;
 pub mod prepare;
 pub mod queue;
