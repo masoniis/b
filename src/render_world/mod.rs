@@ -1,7 +1,4 @@
-use crate::{
-    core::{graphics::context::GraphicsContext, world::CommonEcsInterface},
-    prelude::*,
-};
+use crate::{core::graphics::context::GraphicsContext, prelude::*};
 use bevy_ecs::schedule::ScheduleLabel;
 use extract::ExtractModulePlugin;
 use prepare::plugin::PrepareModulePlugin;
@@ -49,8 +46,6 @@ impl DerefMut for RenderWorldInterface {
 
 pub fn configure_render_world() -> EcsBuilder {
     let mut builder = EcsBuilder::new();
-
-    // TODO: add system sets and stuff to the core schedules
 
     builder
         .add_plugin(PipelineModulePlugin)
