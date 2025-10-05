@@ -1,21 +1,25 @@
+// Your existing camera uniform struct
 struct CameraUniform {
     view_proj: mat4x4<f32>,
 };
 
-@group(0) @binding(0) var<uniform> camera : CameraUniform;
+// A new uniform struct just for the model matrix
+struct ModelUniform {
+    model_matrix: mat4x4<f32>,
+};
 
+// Your existing bind groups
+@group(0) @binding(0) var<uniform> camera : CameraUniform;
 @group(1) @binding(0) var myTexture: texture_2d_array<f32>;
 @group(1) @binding(1) var mySampler: sampler;
+@group(2) @binding(0) var<uniform> model: ModelUniform;
+
 
 struct VertexInput {
     @location(0) position: vec3<f32>,
     @location(1) color: vec3<f32>,
     @location(2) tex_coords: vec2<f32>,
     @location(3) texture_index: u32,
-    @location(4) model_row_0: vec4<f32>,
-    @location(5) model_row_1: vec4<f32>,
-    @location(6) model_row_2: vec4<f32>,
-    @location(7) model_row_3: vec4<f32>,
 };
 
 struct VertexOutput {
@@ -28,9 +32,7 @@ struct VertexOutput {
 @vertex
 fn vs_main(model_in: VertexInput) -> VertexOutput {
     var out: VertexOutput;
-    let model_matrix = mat4x4<f32>(model_in.model_row_0, model_in.model_row_1,
-        model_in.model_row_2, model_in.model_row_3);
-    out.clip_position = camera.view_proj * model_matrix * vec4<f32>(model_in.position, 1.0);
+    out.clip_position = camera.view_proj * model.model_matrix * vec4<f32>(model_in.position, 1.0);
     out.color = model_in.color;
     out.tex_coords = model_in.tex_coords;
     out.texture_index = model_in.texture_index;

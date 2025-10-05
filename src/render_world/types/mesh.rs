@@ -1,4 +1,4 @@
-use crate::core::graphics::types::vertex::Vertex;
+use crate::render_world::types::vertex::Vertex;
 
 use wgpu::util::DeviceExt;
 

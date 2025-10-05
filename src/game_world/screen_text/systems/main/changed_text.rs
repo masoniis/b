@@ -1,6 +1,6 @@
 // use super::super::super::components::ScreenTextComponent;
-// use crate::game_world::graphics::RenderQueueResource;
-// use crate::{game_world::graphics::VisibilityComponent, prelude::*};
+// use crate::game_world::graphics_old::RenderQueueResource;
+// use crate::{game_world::graphics_old::VisibilityComponent, prelude::*};
 // use bevy_ecs::prelude::*;
 // use std::collections::hash_map::Entry;
 //

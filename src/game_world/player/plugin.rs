@@ -1,5 +1,5 @@
 use crate::{
-    core::world::{EcsBuilder, Plugin},
+    ecs_core::{EcsBuilder, Plugin},
     game_world::schedules::GameSchedule,
     prelude::CoreSet,
 };

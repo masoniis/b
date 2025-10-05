@@ -1,6 +1,7 @@
-use crate::render_world::render::GraphicsContextResource;
 use bevy_ecs::prelude::*;
 use wgpu::BindGroupLayout;
+
+use crate::render_world::resources::GraphicsContextResource;
 
 /// A resource that holds the bind group layouts needed for the mesh pipeline.
 #[derive(Resource)]

@@ -1,8 +1,8 @@
-use crate::core::graphics::types::{TextureId, Vertex};
 use crate::game_world::global_resources::asset_storage::AssetStorageResource;
 use crate::game_world::global_resources::asset_storage::MeshAsset;
 use crate::game_world::global_resources::texture_map::TextureMapResource;
-use crate::game_world::graphics::components::{MeshComponent, TransformComponent};
+use crate::game_world::graphics_old::components::{MeshComponent, TransformComponent};
+use crate::render_world::types::{TextureId, Vertex};
 use bevy_ecs::prelude::{Commands, Res};
 use glam::Vec3;
 use tracing::info;
@@ -14,7 +14,7 @@ pub fn cube_array_generation_system(
 ) {
     info!("Generating initial cube array...");
 
-    let green_texture_index = texture_map.registry.get(TextureId::Stone);
+    let green_texture_index = texture_map.registry.get(TextureId::Dirt);
 
     #[rustfmt::skip]
     let vertices_data: &[f32] = &[
@@ -62,8 +62,8 @@ pub fn cube_array_generation_system(
     let mesh_handle = mesh_assets.add(cube_mesh_asset);
 
     // An array of cubes
-    for x in 0..25 {
-        for z in 0..25 {
+    for x in 0..5 {
+        for z in 0..5 {
             commands.spawn((
                 MeshComponent::new(mesh_handle.clone()),
                 TransformComponent {

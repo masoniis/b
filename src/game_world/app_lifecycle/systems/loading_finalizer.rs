@@ -1,4 +1,4 @@
-use crate::core::state_machine::resources::NextState;
+use crate::ecs_core::state_machine::resources::NextState;
 use crate::game_world::app_lifecycle::{AppState, LoadingTaskComponent};
 use crate::prelude::*;
 use bevy_ecs::prelude::*;

@@ -1,10 +1,10 @@
 use crate::{
-    core::graphics::types::mesh::create_gpu_mesh_from_data,
     game_world::global_resources::{AssetStorageResource, MeshAsset},
     prelude::*,
+    render_world::types::mesh::create_gpu_mesh_from_data,
     render_world::{
-        extract::extract_meshes::RenderMeshComponent,
-        extract::resources::RenderMeshStorageResource, render::GraphicsContextResource,
+        extract::{extract_meshes::RenderMeshComponent, resources::RenderMeshStorageResource},
+        resources::GraphicsContextResource,
     },
 };
 use bevy_ecs::prelude::*;

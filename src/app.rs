@@ -1,47 +1,38 @@
 use crate::{
     game_world::{
         app_lifecycle::AppState,
-        global_resources::{texture_map::TextureMapResource, window::WindowResource},
+        build_game_world, configure_game_world,
         input::events::{RawDeviceEvent, RawWindowEvent},
         schedules::GameSchedule,
+        GameWorldInterface,
     },
     prelude::*,
     render_world::{
-        context::GraphicsContext,
-        extract::utils::run_extract_schedule::initialize_main_world_for_extract,
+        build_render_world, configure_render_world, context::GraphicsContext,
+        extract::utils::run_extract_schedule, RenderSchedule, RenderWorldInterface,
     },
 };
-use std::error::Error;
-use std::sync::Arc;
-use winit::event_loop::EventLoop;
+use std::{error::Error, sync::Arc};
 use winit::{
     application::ApplicationHandler,
     event::{DeviceEvent, WindowEvent},
-    event_loop::ActiveEventLoop,
+    event_loop::{ActiveEventLoop, EventLoop},
     window::{Window, WindowId},
 };
 
-use crate::game_world;
-use crate::game_world::GameWorldInterface;
-use crate::render_world::extract::utils::run_extract_schedule;
-use crate::render_world::{
-    build_render_world, configure_render_world, RenderSchedule, RenderWorldInterface,
-};
-
-/// The main application struct, responsible for orchestrating window events
-/// as well as the scheduling of the main ECS systems.
-/// ECS, and graphics context.
+/// The main application container, responsible for orchestrating OS
+/// events as well as the creation and scheduling of the ECS worlds.
 pub struct App {
-    // OS and Winit State
+    // Window is an Arc because the surface created by wgpu needs to hold
+    // a window reference with a static lifetime (like Arc) for safety.
     window: Option<Arc<Window>>,
 
-    // Core Engine Modules
     game_world: Option<GameWorldInterface>,
     render_world: Option<RenderWorldInterface>,
 }
 
 impl App {
-    pub fn new() -> Self {
+    fn new() -> Self {
         Self {
             window: None,
             game_world: None,
@@ -49,7 +40,8 @@ impl App {
         }
     }
 
-    pub fn run_app() -> Result<(), Box<dyn Error>> {
+    /// Simple utility method to spin up an event loop and run a default app
+    pub fn create_and_run() -> Result<(), Box<dyn Error>> {
         let event_loop = EventLoop::new()?;
 
         let mut app = App::new();
@@ -77,20 +69,11 @@ impl ApplicationHandler for App {
             let (graphics_context, texture_map) =
                 pollster::block_on(GraphicsContext::new(window.clone()));
 
-            let mut builder = game_world::configure_game_world();
-            builder
-                .add_resource(WindowResource::new(window.inner_size()))
-                .add_resource(TextureMapResource {
-                    registry: texture_map,
-                });
-            let mut game_world = game_world::build_game_world(builder);
-            initialize_main_world_for_extract(game_world.borrow());
+            let mut game_world = build_game_world(configure_game_world(texture_map, &window));
+            let render_world = build_render_world(configure_render_world(graphics_context));
 
             info!("Running startup systems...\n\n\n");
             game_world.run_schedule(GameSchedule::Startup);
-
-            let render_builder = configure_render_world(graphics_context);
-            let render_world = build_render_world(render_builder);
 
             self.window = Some(window.clone());
             self.game_world = Some(game_world);
@@ -114,7 +97,7 @@ impl ApplicationHandler for App {
             game_world.send_event(RawWindowEvent(event.clone()));
 
             // NOTE: The events handled here should only be events that rely on the event loop
-            // itself. Any other event should be fine to handle within the ECS world itself.
+            // or window. Any other event should be fine to handle within the ECS world itself.
             match event {
                 WindowEvent::CloseRequested => {
                     info!("Window close requested, exiting app event loop.");
@@ -142,7 +125,7 @@ impl ApplicationHandler for App {
                             RenderSchedule::Extract,
                         );
 
-                        // TODO: These schedules can run in parallel with the next frame of the game
+                        // TODO: These schedules can run in parallel with the next frame of the game (in theory)
                         render_world.run_schedule(RenderSchedule::Prepare);
                         render_world.run_schedule(RenderSchedule::Queue);
                         render_world.run_schedule(RenderSchedule::Render);

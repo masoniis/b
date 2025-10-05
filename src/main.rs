@@ -1,5 +1,6 @@
-pub mod core;
+pub mod ecs_core;
 
+pub mod app;
 pub mod game_world;
 pub mod prelude;
 pub mod render_world;
@@ -13,7 +14,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     info!("Logger attached...");
     info!("Running app...");
 
-    if let Err(e) = core::app::App::run_app() {
+    if let Err(e) = app::App::create_and_run() {
         error!("App error: {}", e);
     } else {
         info!("App runner finished without errors!");

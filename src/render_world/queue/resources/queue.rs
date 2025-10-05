@@ -4,8 +4,8 @@ use std::collections::hash_map::{Entry, HashMap};
 use tracing::debug; // For debugging the remove logic
 
 use crate::{
-    core::graphics::types::gpu_queues::{QueuedDraw, QueuedText},
     game_world::global_resources::asset_storage::{Handle, MeshAsset},
+    render_world::types::gpu_queues::{QueuedDraw, QueuedText},
 };
 
 #[derive(Resource, Default)]

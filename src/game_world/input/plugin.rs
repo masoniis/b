@@ -4,7 +4,7 @@ use super::{
     ActionStateResource, InputActionMapResource,
 };
 use crate::{
-    core::world::{EcsBuilder, Plugin},
+    ecs_core::{EcsBuilder, Plugin},
     game_world::{
         app_lifecycle::AppState,
         input::events::{

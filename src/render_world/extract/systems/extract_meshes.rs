@@ -1,5 +1,8 @@
 use crate::game_world::global_resources::asset_storage::{Handle, MeshAsset};
-use crate::game_world::graphics::components::{mesh::MeshComponent, transform::TransformComponent};
+use crate::game_world::graphics_old::components::{
+    mesh::MeshComponent, transform::TransformComponent,
+};
+use crate::prelude::*;
 use crate::render_world::extract::utils::run_extract_schedule::GameWorld;
 use bevy_ecs::prelude::*;
 use std::collections::HashMap;
@@ -15,7 +18,7 @@ pub struct RenderMeshComponent {
 /// A component in the render world holding the extracted transform.
 #[derive(Component, Clone)]
 pub struct RenderTransformComponent {
-    pub transform: glam::Mat4,
+    pub transform: Mat4,
 }
 
 // --- Entity Mapping Resource ---
@@ -55,9 +58,6 @@ pub fn extract_meshes_system(
     let mut commands_to_apply = Vec::new();
 
     for (main_entity, mesh, transform) in query.iter(&main_world.val) {
-        // info!("Extracting mesh for entity: {:?}", main_entity);
-        // info!("Mesh handle: {:?}", mesh.mesh_handle);
-
         let render_components = (
             RenderMeshComponent {
                 mesh_handle: mesh.mesh_handle,

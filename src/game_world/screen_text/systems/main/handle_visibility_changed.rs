@@ -1,7 +1,7 @@
 // use super::super::super::components::ScreenTextComponent;
 // use crate::{
-//     core::graphics::types::gpu_queues::QueuedText, game_world::graphics::RenderQueueResource,
-//     game_world::graphics::VisibilityComponent, prelude::*,
+//     core::graphics_old::types::gpu_queues::QueuedText, game_world::graphics_old::RenderQueueResource,
+//     game_world::graphics_old::VisibilityComponent, prelude::*,
 // };
 // use bevy_ecs::prelude::*;
 //

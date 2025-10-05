@@ -1,4 +1,4 @@
-use crate::{core::graphics::types::vertex::Vertex, prelude::*};
+use crate::{prelude::*, render_world::types::vertex::Vertex};
 use bevy_ecs::prelude::Resource;
 use std::collections::hash_map::{Entry, HashMap};
 use std::hash::Hash;

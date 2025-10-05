@@ -1,6 +1,6 @@
-use crate::{
-    game_world::global_resources::window::WindowResource,
-    game_world::input::{
+use crate::game_world::{
+    global_resources::{window::WindowResource, CameraResource},
+    input::{
         events::{KeyboardInputEvent, MouseButtonInputEvent, RawWindowEvent},
         resources::Buttons,
     },
@@ -28,6 +28,7 @@ pub fn window_events_system(
     // Output
     mut keyboard_writer: EventWriter<KeyboardInputEvent>,
     mut mouse_button_writer: EventWriter<MouseButtonInputEvent>,
+    mut camera: ResMut<CameraResource>,
 ) {
     // Clear previous stale state
     keyboard_input.swap_previous();
@@ -64,6 +65,7 @@ pub fn window_events_system(
             WindowEvent::Resized(physical_size) => {
                 window_resource.width = physical_size.width;
                 window_resource.height = physical_size.height;
+                camera.projection_dirty = true;
             }
             _ => {}
         }

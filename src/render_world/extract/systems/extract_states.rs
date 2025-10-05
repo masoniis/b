@@ -1,5 +1,5 @@
-use crate::core::state_machine::resources::{CurrentState, NextState};
-use crate::core::state_machine::State;
+use crate::ecs_core::state_machine::resources::{CurrentState, NextState};
+use crate::ecs_core::state_machine::State;
 use crate::prelude::*;
 use crate::render_world::extract::utils::run_extract_schedule::GameWorld;
 use bevy_ecs::prelude::*;
