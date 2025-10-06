@@ -1,20 +1,18 @@
 use crate::{
-    ecs_core::state_machine::resources::CurrentState,
+    ecs_core::{state_machine::resources::CurrentState, worlds::GameWorldMarker},
     game_world::{
         global_resources::MeshAsset, input::InputModulePlugin, player::PlayerModulePlugin,
         schedules::GameSchedule, screen_text::ScreenTextModulePlugin, world::WorldModulePlugin,
     },
     prelude::*,
-    render_world::{
-        extract::utils::run_extract_schedule::initialize_main_world_for_extract,
-        textures::TextureRegistry,
-    },
+    render_world::{extract::utils::initialize_main_world_for_extract, textures::TextureRegistry},
 };
 use app_lifecycle::{AppLifecyclePlugin, AppState};
 use bevy_ecs::prelude::*;
 use global_resources::TextureMapResource;
 use input::resources::WindowSizeResource;
 use std::ops::{Deref, DerefMut};
+use ui::UiPlugin;
 use winit::window::Window;
 
 pub mod app_lifecycle;
@@ -103,15 +101,17 @@ pub fn build_game_world(mut builder: EcsBuilder) -> GameWorldInterface {
         builder.world.add_schedule(schedule);
     }
 
-    let mut res = GameWorldInterface {
+    let mut interface = GameWorldInterface {
         common: CommonEcsInterface {
             world: builder.world,
         },
     };
 
-    initialize_main_world_for_extract(&mut res.common.world);
+    initialize_main_world_for_extract(&mut interface.common.world);
 
-    return res;
+    interface.common.world.insert_resource(GameWorldMarker);
+
+    return interface;
 }
 
 // INFO: ---------------------------------
@@ -140,6 +140,7 @@ impl PluginGroup for ClientOnlyPlugins {
                 MeshAsset,
             >::default())
             .add_plugin(ScreenTextModulePlugin)
+            .add_plugin(UiPlugin)
             .add_plugin(InputModulePlugin);
     }
 }

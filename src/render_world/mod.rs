@@ -7,9 +7,12 @@ pub mod textures;
 pub mod types;
 pub mod uniforms;
 
-use crate::{prelude::*, render_world::textures::load_texture_array};
+use crate::{
+    ecs_core::worlds::RenderWorldMarker, prelude::*, render_world::textures::load_texture_array,
+};
 use bevy_ecs::schedule::ScheduleLabel;
 use context::GraphicsContext;
+use passes::setup_render_graph;
 use plugin::RenderPlugin;
 use resources::{GraphicsContextResource, TextureArrayResource};
 use std::ops::{Deref, DerefMut};
@@ -43,9 +46,9 @@ impl DerefMut for RenderWorldInterface {
     }
 }
 
-// INFO: ---------------------------
+// INFO: ------------------------------
 //         Render World Builder
-// ---------------------------------
+// ------------------------------------
 
 pub fn configure_render_world(graphics_context: GraphicsContext) -> EcsBuilder {
     let mut builder = EcsBuilder::new();
@@ -57,6 +60,9 @@ pub fn configure_render_world(graphics_context: GraphicsContext) -> EcsBuilder {
     let (texture_array, _texture_registry) =
         load_texture_array(&graphics_context.device, &graphics_context.queue).unwrap();
 
+    // Setup render graph runs as an early system since it needs mutable world access
+    setup_render_graph(&mut builder.world);
+
     builder.add_resource(TextureArrayResource {
         array: texture_array,
     });
@@ -64,6 +70,8 @@ pub fn configure_render_world(graphics_context: GraphicsContext) -> EcsBuilder {
     builder.add_resource(GraphicsContextResource {
         context: graphics_context,
     });
+
+    builder.add_resource(RenderWorldMarker);
 
     builder.add_plugin(RenderPlugin);
 

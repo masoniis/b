@@ -14,12 +14,12 @@ pub struct Node; // marker for any entit in the ui tree
 #[derive(Component)]
 pub struct Parent(pub Entity);
 
-#[derive(Component)]
+#[derive(Component, Default)]
 pub struct Children(pub Vec<Entity>);
 
-// INFO: -----------------
+// INFO: ------------------
 //         Styling
-// -----------------------
+// ------------------------
 
 pub enum Size {
     Px(f32),
@@ -37,9 +37,10 @@ pub struct Style {
 //         Visual elements
 // -------------------------------
 
-#[derive(Component)]
+#[derive(Component, Clone)]
 pub enum UiMaterial {
     SolidColor { color: [f32; 4] },
+    Other { color: [f32; 4] },
 }
 
 // INFO: Output

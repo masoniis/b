@@ -3,7 +3,7 @@ use crate::{
     prelude::*,
     render_world::types::mesh::create_gpu_mesh_from_data,
     render_world::{
-        extract::{extract_meshes::RenderMeshComponent, resources::RenderMeshStorageResource},
+        extract::{mesh::RenderMeshComponent, resources::RenderMeshStorageResource},
         resources::GraphicsContextResource,
     },
 };

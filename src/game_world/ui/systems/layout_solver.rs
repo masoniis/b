@@ -7,14 +7,14 @@ use bevy_ecs::prelude::*;
 
 /// The main layout system.
 /// It finds all UI roots and starts the recursive layout calculation from them.
-pub fn ui_layout_system(
+pub fn layout_solver_system(
     mut commands: Commands,
     window_size: Res<WindowSizeResource>,
     // Query for all root nodes to kick things off.
     root_query: Query<(Entity, &Style, &Children), (With<Node>, With<UiRoot>)>,
     // A query for all nodes that we will pass to the recursive helper.
     // This allows us to look up children's components without borrowing conflicts.
-    all_nodes_query: Query<(&Style, &Children)>,
+    all_nodes_query: Query<(&Style, &Children), With<Node>>,
 ) {
     let root_size = Vec2::new(window_size.width as f32, window_size.height as f32);
 
@@ -34,7 +34,7 @@ pub fn ui_layout_system(
 /// Recursively calculates the layout for a node and all of its children.
 fn layout_node_recursive(
     // Input
-    ui_tree: &Query<(&Style, &Children)>,
+    ui_tree: &Query<(&Style, &Children), With<Node>>,
     entity: Entity,
     parent_size: Vec2,
     parent_pos: Vec2,
