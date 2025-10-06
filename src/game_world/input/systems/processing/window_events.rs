@@ -1,8 +1,8 @@
 use crate::game_world::{
-    global_resources::{window::WindowResource, CameraResource},
+    global_resources::CameraResource,
     input::{
         events::{KeyboardInputEvent, MouseButtonInputEvent, RawWindowEvent},
-        resources::Buttons,
+        resources::{Buttons, WindowSizeResource},
     },
 };
 use bevy_ecs::{
@@ -20,7 +20,7 @@ pub fn window_events_system(
     // State to modify
     mut keyboard_input: ResMut<Buttons<PhysicalKey>>,
     mut mouse_input: ResMut<Buttons<MouseButton>>,
-    mut window_resource: ResMut<WindowResource>,
+    mut window_resource: ResMut<WindowSizeResource>,
 
     // Input from OS bridge
     mut raw_window_events: EventReader<RawWindowEvent>,

@@ -1,6 +1,5 @@
-use crate::game_world::global_resources::{
-    camera::CameraResource, time::TimeResource, window::WindowResource,
-};
+use crate::game_world::global_resources::{camera::CameraResource, time::TimeResource};
+use crate::game_world::input::resources::WindowSizeResource;
 use crate::game_world::input::{resources::CursorMovement, ActionStateResource, GameAction};
 use bevy_ecs::prelude::*;
 use glam::{Mat4, Vec3};
@@ -10,7 +9,7 @@ pub fn camera_control_system(
     movement: Res<CursorMovement>,
     action_state: Res<ActionStateResource>,
     time: Res<TimeResource>,
-    window: Res<WindowResource>,
+    window: Res<WindowSizeResource>,
 
     // Output
     mut camera: ResMut<CameraResource>,
