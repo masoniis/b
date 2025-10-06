@@ -1,4 +1,4 @@
-use crate::render_world::prepare::DepthTextureResource;
+use crate::render_world::passes::main_pass::prepare::DepthTextureResource;
 use crate::render_world::resources::GraphicsContextResource;
 use bevy_ecs::prelude::*;
 use bevy_ecs::system::Commands;

@@ -3,7 +3,7 @@ use crate::render_world::{
         extract_meshes::{RenderMeshComponent, RenderTransformComponent},
         RenderCameraResource,
     },
-    queue::{Opaque3dRenderPhase, PhaseItem, RenderQueueResource},
+    passes::main_pass::queue::{Opaque3dRenderPhase, PhaseItem},
 };
 use bevy_ecs::prelude::*;
 
@@ -17,27 +17,9 @@ pub fn queue_mesh_system(
     meshes_query: Query<(Entity, &RenderMeshComponent, &RenderTransformComponent)>,
 
     // Output
-    mut render_queue: ResMut<RenderQueueResource>,
     mut opaque_phase: ResMut<Opaque3dRenderPhase>,
 ) {
     opaque_phase.items.clear();
-
-    // It's often a good idea to clear the queue at the start of the system
-    // to ensure no data from the previous frame persists.
-    render_queue.clear_object_queue();
-    //
-    // for (entity, mesh, transform) in meshes_query.iter() {
-    //     // info!("Queueing mesh for entity: {:?}", entity);
-    //     // info!(" - Mesh Handle: {:?}", mesh.mesh_handle);
-    //     // info!(" - Transform: {:?}", transform.transform);
-    //     let queued_draw = QueuedDraw {
-    //         entity,
-    //         mesh_handle: mesh.mesh_handle,
-    //         instance_count: 1, // Assuming 1 instance per entity for now
-    //         transform: transform.transform,
-    //     };
-    //     render_queue.add_scene_object(entity, queued_draw);
-    // }
 
     let camera_position = camera_info.world_position;
 

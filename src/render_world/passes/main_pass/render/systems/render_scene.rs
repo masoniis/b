@@ -1,15 +1,19 @@
 use crate::{
     prelude::*,
     render_world::{
-        extract::extract_meshes::{RenderMeshComponent, RenderTransformComponent},
-        extract::RenderMeshStorageResource,
-        prepare::bind_groups::ModelBindGroup,
-        prepare::resources::{
-            DepthTextureResource, MainTextureBindGroup, PipelineCacheResource, ViewBindGroup,
+        extract::{
+            extract_meshes::{RenderMeshComponent, RenderTransformComponent},
+            RenderMeshStorageResource,
         },
-        prepare::systems::prepare_pipelines::MESH_PIPELINE_ID,
-        queue::Opaque3dRenderPhase,
-        resources::GraphicsContextResource,
+        passes::main_pass::{
+            prepare::{
+                bind_groups::ModelBindGroup,
+                resources::{DepthTextureResource, MainTextureBindGroup, ViewBindGroup},
+                systems::prepare_pipelines::MESH_PIPELINE_ID,
+            },
+            queue::Opaque3dRenderPhase,
+        },
+        resources::{GraphicsContextResource, PipelineCacheResource},
         uniforms::ModelUniform,
     },
 };

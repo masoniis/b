@@ -1,9 +1,7 @@
 pub mod context;
 pub mod extract;
+pub mod passes;
 pub mod plugin;
-pub mod prepare;
-pub mod queue;
-pub mod render;
 pub mod resources;
 pub mod textures;
 pub mod types;

@@ -31,7 +31,6 @@ impl Plugin for AppLifecyclePlugin {
         builder.schedule_entry(GameSchedule::Loading).add_systems(
             (
                 finalize_loading_system,
-                apply_state_transition_system::<AppState>,
                 crate::game_world::world::systems::main::time::time_system, // Add time_system
             )
                 .chain(),
@@ -43,7 +42,7 @@ impl Plugin for AppLifecyclePlugin {
                 apply_state_transition_system::<GameState>,
                 update_app_time_system, // TODO: The main system needs to run every frame, even during loading
             )
-                .in_set(CoreSet::PostUpdate),
+                .in_set(CoreSet::PreUpdate),
         );
     }
 }
