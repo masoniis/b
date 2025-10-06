@@ -1,5 +1,6 @@
 use crate::{
-    game_world::global_resources::time::TimeResource, render_world::extract::utils::ExtractResource,
+    game_world::global_resources::time::TimeResource,
+    render_world::extract::extract_resource::ExtractResource,
 };
 use bevy_ecs::prelude::Resource;
 

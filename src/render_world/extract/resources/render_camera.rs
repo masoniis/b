@@ -1,6 +1,6 @@
 use crate::game_world::global_resources::camera::CameraResource;
 use crate::prelude::*;
-use crate::render_world::extract::utils::ExtractResource;
+use crate::render_world::extract::extract_resource::ExtractResource;
 use bevy_ecs::prelude::Resource;
 
 /// A resource in the render world holding the extracted camera matrices.

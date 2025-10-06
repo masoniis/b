@@ -1,6 +1,6 @@
 use crate::render_world::{
     extract::{
-        extract_meshes::{RenderMeshComponent, RenderTransformComponent},
+        mesh::{RenderMeshComponent, RenderTransformComponent},
         RenderCameraResource,
     },
     passes::main_pass::queue::{Opaque3dRenderPhase, PhaseItem},

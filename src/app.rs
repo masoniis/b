@@ -9,7 +9,7 @@ use crate::{
     prelude::*,
     render_world::{
         build_render_world, configure_render_world, context::GraphicsContext,
-        extract::utils::run_extract_schedule, RenderSchedule, RenderWorldInterface,
+        extract::run_extract_schedule, RenderSchedule, RenderWorldInterface,
     },
 };
 use std::{error::Error, sync::Arc};

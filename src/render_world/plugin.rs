@@ -1,3 +1,8 @@
+use super::extract::extract_component::ExtractedItems;
+use super::extract::ui::UiNodeExtractor;
+use super::extract::{ExtractComponentPlugin, RenderWindowSizeResource};
+use super::passes;
+use crate::game_world::graphics_old::MeshComponent;
 use crate::prelude::*;
 use crate::{
     ecs_core::state_machine::{self, in_state, StatePlugin},
@@ -6,19 +11,15 @@ use crate::{
         global_resources::{AssetStorageResource, MeshAsset},
     },
     render_world::{
-        extract::{
-            self, extract_meshes::MeshEntityMap, RenderCameraResource, RenderMeshStorageResource,
-            RenderTimeResource,
-        },
-        passes::loading_pass::prepare::LoadingScreenPipelineLayoutsResource,
+        extract::{self, RenderCameraResource, RenderMeshStorageResource, RenderTimeResource},
         passes::main_pass::{
             prepare::{
                 self, MainTextureBindGroup, MeshPipelineLayoutsResource, ModelBindGroup,
                 ViewBindGroup,
             },
             queue::{self, Opaque3dRenderPhase},
-            render::{self},
         },
+        passes::ui_pass::{self},
         resources::PipelineCacheResource,
         RenderSchedule,
     },
@@ -33,19 +34,19 @@ impl Plugin for RenderPlugin {
         // Resources
         builder.init_resource::<RenderTimeResource>();
         builder.init_resource::<RenderCameraResource>();
-        builder.init_resource::<MeshEntityMap>();
         builder.init_resource::<RenderMeshStorageResource>();
         builder.init_resource::<MeshPipelineLayoutsResource>();
         builder.init_resource::<Opaque3dRenderPhase>();
         builder.init_resource::<PipelineCacheResource>();
-        builder.init_resource::<LoadingScreenPipelineLayoutsResource>();
         builder.init_resource::<ViewBindGroup>();
         builder.init_resource::<MainTextureBindGroup>();
         builder.init_resource::<ModelBindGroup>();
+        builder.init_resource::<ExtractedItems<UiNodeExtractor>>();
 
         // Plugin dependencies
         builder.add_plugin(StatePlugin::<AppState>::default());
         builder.add_plugin(StatePlugin::<GameState>::default());
+        builder.add_plugin(ExtractComponentPlugin::<MeshComponent>::default());
 
         // System builders
         builder
@@ -54,9 +55,10 @@ impl Plugin for RenderPlugin {
                 (
                     extract::clone_resource_system::<AssetStorageResource<MeshAsset>>,
                     extract::extract_resource_system::<RenderTimeResource>,
+                    extract::extract_resource_system::<RenderWindowSizeResource>,
+                    extract::extract_component_system::<UiNodeExtractor>,
                     extract::extract_state_system::<GameState>,
                     extract::extract_state_system::<AppState>,
-                    extract::extract_meshes_system,
                 ),
                 (extract::extract_resource_system::<RenderCameraResource>)
                     .run_if(in_state(AppState::Running)),
@@ -68,10 +70,17 @@ impl Plugin for RenderPlugin {
                 (
                     prepare::prepare_render_buffers_system,
                     prepare::prepare_pipelines_system,
-                    // Apply any state transitions detected during Extract phase
+                    // apply any state transitions detected during Extract phase
                     state_machine::apply_state_transition_system::<AppState>,
                     state_machine::apply_state_transition_system::<GameState>,
                 ),
+                (
+                    ui_pass::prepare::setup_ui_pipeline,
+                    ui_pass::prepare::prepare_screen_quad_system,
+                    ui_pass::prepare::prepare_ui_nodes_system,
+                    ui_pass::prepare::prepare_ui_view_system,
+                )
+                    .chain(),
                 (
                     prepare::prepare_view_bind_group_system,
                     prepare::prepare_meshes_system,
@@ -81,14 +90,10 @@ impl Plugin for RenderPlugin {
 
         builder
             .schedule_entry(RenderSchedule::Queue)
-            .add_systems(queue::queue_mesh_system);
+            .add_systems((queue::queue_mesh_system, ui_pass::queue::queue_ui_system));
 
         builder
             .schedule_entry(RenderSchedule::Render)
-            .add_systems(render::render_scene_system.run_if(in_state(AppState::Running)));
-        // builder.schedule_entry(RenderSchedule::Render).add_systems((
-        //     render::render_loading_screen_system.run_if(in_state(AppState::Loading)),
-        //     render::render_main_scene_system.run_if(in_state(AppState::Running)),
-        // ));
+            .add_systems(passes::render_graph::render_graph_system);
     }
 }

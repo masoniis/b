@@ -1,23 +1,12 @@
 use bevy_ecs::prelude::*;
 use bevy_ecs::schedule::ScheduleLabel;
 
+use super::GameWorldPlaceholder;
+
 /// A wrapper for the game world so it can be inserted as a resource in the render world.
 #[derive(Resource)]
 pub struct GameWorld {
     pub val: World,
-}
-
-/// A "scratch" world used to avoid allocating new worlds every frame when
-/// swapping out the `MainWorld` for the `Extract` schedule.
-#[derive(Resource, Default)]
-struct GameWorldPlaceholder {
-    val: World,
-}
-
-/// Initializes the main world with the necessary resources for the extract runner.
-/// This must be called before running anything in the mainworld if we want to render.
-pub fn initialize_main_world_for_extract(main_world: &mut World) {
-    main_world.init_resource::<GameWorldPlaceholder>();
 }
 
 /// A custom schedule runner for the `Extract` schedule.
