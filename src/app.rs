@@ -114,10 +114,15 @@ impl ApplicationHandler for App {
                                 game_world.run_schedule(GameSchedule::Loading);
                             }
                             AppState::Running => {
-                                game_world.run_schedule(GameSchedule::Main);
+                                // We run the main schedule regardless of running state
+                                // Not sure yet if this case will need anything
                             }
-                            AppState::Closing => {}
+                            AppState::Closing => {
+                                // Save data or something
+                            }
                         };
+
+                        game_world.run_schedule(GameSchedule::Main);
 
                         run_extract_schedule(
                             game_world.borrow(),

@@ -2,7 +2,8 @@
 use crate::{
     render_world::uniforms::CameraUniform,
     render_world::{
-        extract::RenderCameraResource, prepare::resources::bind_groups::ViewBindGroup,
+        extract::RenderCameraResource,
+        passes::main_pass::prepare::resources::bind_groups::ViewBindGroup,
         resources::GraphicsContextResource,
     },
 };

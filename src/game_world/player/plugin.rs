@@ -1,6 +1,6 @@
 use crate::{
-    ecs_core::{EcsBuilder, Plugin},
-    game_world::schedules::GameSchedule,
+    ecs_core::{in_state, EcsBuilder, Plugin},
+    game_world::{app_lifecycle::AppState, schedules::GameSchedule},
     prelude::CoreSet,
 };
 use bevy_ecs::prelude::*;
@@ -11,8 +11,9 @@ pub struct PlayerModulePlugin;
 
 impl Plugin for PlayerModulePlugin {
     fn build(&self, builder: &mut EcsBuilder) {
-        builder
-            .schedule_entry(GameSchedule::Main)
-            .add_systems((main_system::camera_control_system,).in_set(CoreSet::Update));
+        builder.schedule_entry(GameSchedule::Main).add_systems(
+            (main_system::camera_control_system.run_if(in_state(AppState::Running)),)
+                .in_set(CoreSet::Update),
+        );
     }
 }

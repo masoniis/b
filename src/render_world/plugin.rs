@@ -1,27 +1,26 @@
-use super::{
-    extract::{
-        extract_meshes::MeshEntityMap, RenderCameraResource, RenderMeshStorageResource,
-        RenderTimeResource,
-    },
-    prepare::{
-        resources::bind_groups::ModelBindGroup, resources::LoadingScreenPipelineLayoutsResource,
-        MainTextureBindGroup, PipelineCacheResource, ViewBindGroup,
-    },
-    queue::Opaque3dRenderPhase,
-    render::render_scene_system,
-    RenderSchedule,
-};
+use crate::prelude::*;
 use crate::{
     ecs_core::state_machine::{self, in_state, StatePlugin},
     game_world::{
         app_lifecycle::{AppState, GameState},
         global_resources::{AssetStorageResource, MeshAsset},
     },
-    prelude::*,
     render_world::{
-        extract::{self},
-        prepare::{self, MeshPipelineLayoutsResource},
-        queue::{self, RenderQueueResource},
+        extract::{
+            self, extract_meshes::MeshEntityMap, RenderCameraResource, RenderMeshStorageResource,
+            RenderTimeResource,
+        },
+        passes::loading_pass::prepare::LoadingScreenPipelineLayoutsResource,
+        passes::main_pass::{
+            prepare::{
+                self, MainTextureBindGroup, MeshPipelineLayoutsResource, ModelBindGroup,
+                ViewBindGroup,
+            },
+            queue::{self, Opaque3dRenderPhase},
+            render::{self},
+        },
+        resources::PipelineCacheResource,
+        RenderSchedule,
     },
 };
 use bevy_ecs::prelude::*;
@@ -36,7 +35,6 @@ impl Plugin for RenderPlugin {
         builder.init_resource::<RenderCameraResource>();
         builder.init_resource::<MeshEntityMap>();
         builder.init_resource::<RenderMeshStorageResource>();
-        builder.init_resource::<RenderQueueResource>();
         builder.init_resource::<MeshPipelineLayoutsResource>();
         builder.init_resource::<Opaque3dRenderPhase>();
         builder.init_resource::<PipelineCacheResource>();
@@ -87,7 +85,7 @@ impl Plugin for RenderPlugin {
 
         builder
             .schedule_entry(RenderSchedule::Render)
-            .add_systems(render_scene_system.run_if(in_state(AppState::Running)));
+            .add_systems(render::render_scene_system.run_if(in_state(AppState::Running)));
         // builder.schedule_entry(RenderSchedule::Render).add_systems((
         //     render::render_loading_screen_system.run_if(in_state(AppState::Loading)),
         //     render::render_main_scene_system.run_if(in_state(AppState::Running)),
