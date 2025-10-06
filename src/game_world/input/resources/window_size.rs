@@ -1,13 +1,15 @@
 use bevy_ecs::prelude::Resource;
 use winit::dpi::PhysicalSize;
 
+/// WindowSize is considered an Input resource as it is received
+/// from the OS directly, and the user can adjust it as well.
 #[derive(Debug, Resource)]
-pub struct WindowResource {
+pub struct WindowSizeResource {
     pub width: u32,
     pub height: u32,
 }
 
-impl WindowResource {
+impl WindowSizeResource {
     pub fn new(size: PhysicalSize<u32>) -> Self {
         Self {
             width: size.width,

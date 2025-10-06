@@ -12,7 +12,8 @@ use crate::{
 };
 use app_lifecycle::{AppLifecyclePlugin, AppState};
 use bevy_ecs::prelude::*;
-use global_resources::{window::WindowResource, TextureMapResource};
+use global_resources::TextureMapResource;
+use input::resources::WindowSizeResource;
 use std::ops::{Deref, DerefMut};
 use winit::window::Window;
 
@@ -24,6 +25,7 @@ pub mod player;
 pub mod schedules;
 pub mod screen_text;
 pub mod system_sets;
+pub mod ui;
 pub mod world;
 
 // INFO: ------------------------------
@@ -71,7 +73,7 @@ pub fn configure_game_world(registry: TextureRegistry, window: &Window) -> EcsBu
 
     // Add resources built from the app
     builder
-        .add_resource(WindowResource::new(window.inner_size()))
+        .add_resource(WindowSizeResource::new(window.inner_size()))
         .add_resource(TextureMapResource { registry });
 
     // Configure core schedule sets before adding plugins

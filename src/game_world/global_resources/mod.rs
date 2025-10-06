@@ -2,7 +2,6 @@ pub mod asset_storage;
 pub mod camera;
 pub mod texture_map;
 pub mod time;
-pub mod window;
 
 pub use asset_storage::{AssetStorageResource, MeshAsset};
 pub use camera::CameraResource;
