@@ -1,14 +1,11 @@
-// Your existing camera uniform struct
 struct CameraUniform {
     view_proj: mat4x4<f32>,
 };
 
-// A new uniform struct just for the model matrix
 struct ModelUniform {
     model_matrix: mat4x4<f32>,
 };
 
-// Your existing bind groups
 @group(0) @binding(0) var<uniform> camera : CameraUniform;
 @group(1) @binding(0) var myTexture: texture_2d_array<f32>;
 @group(1) @binding(1) var mySampler: sampler;

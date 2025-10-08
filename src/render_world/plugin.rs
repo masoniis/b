@@ -1,7 +1,6 @@
-use super::extract::extract_component::ExtractedItems;
-use super::extract::ui::UiNodeExtractor;
 use super::extract::{ExtractComponentPlugin, RenderWindowSizeResource};
 use super::passes;
+use super::passes::ui_pass::prepare::RenderUiPlugin;
 use crate::game_world::graphics_old::MeshComponent;
 use crate::prelude::*;
 use crate::{
@@ -41,9 +40,10 @@ impl Plugin for RenderPlugin {
         builder.init_resource::<ViewBindGroup>();
         builder.init_resource::<MainTextureBindGroup>();
         builder.init_resource::<ModelBindGroup>();
-        builder.init_resource::<ExtractedItems<UiNodeExtractor>>();
 
-        // Plugin dependencies
+        // Specifically implemented plugins
+        builder.add_plugin(RenderUiPlugin);
+        // Generic auto-constructed plugins
         builder.add_plugin(StatePlugin::<AppState>::default());
         builder.add_plugin(StatePlugin::<GameState>::default());
         builder.add_plugin(ExtractComponentPlugin::<MeshComponent>::default());
@@ -56,7 +56,6 @@ impl Plugin for RenderPlugin {
                     extract::clone_resource_system::<AssetStorageResource<MeshAsset>>,
                     extract::extract_resource_system::<RenderTimeResource>,
                     extract::extract_resource_system::<RenderWindowSizeResource>,
-                    extract::extract_component_system::<UiNodeExtractor>,
                     extract::extract_state_system::<GameState>,
                     extract::extract_state_system::<AppState>,
                 ),
@@ -74,13 +73,6 @@ impl Plugin for RenderPlugin {
                     state_machine::apply_state_transition_system::<AppState>,
                     state_machine::apply_state_transition_system::<GameState>,
                 ),
-                (
-                    ui_pass::prepare::setup_ui_pipeline,
-                    ui_pass::prepare::prepare_screen_quad_system,
-                    ui_pass::prepare::prepare_ui_nodes_system,
-                    ui_pass::prepare::prepare_ui_view_system,
-                )
-                    .chain(),
                 (
                     prepare::prepare_view_bind_group_system,
                     prepare::prepare_meshes_system,
