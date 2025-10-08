@@ -1,5 +1,5 @@
 use crate::{
-    game_world::ui::components::UiMaterial,
+    game_world::ui::components::UiBackground,
     prelude::*,
     render_world::{
         extract::{extract_component::ExtractedItems, ui::UiNodeExtractor},
@@ -36,7 +36,7 @@ pub struct PreparedUiNodes {
     pub nodes: Vec<PreparedUiNode>,
 }
 
-// This system prepares the uniform buffers and bind groups for each UI node.
+/// This system prepares the uniform buffers and bind groups for each UI node.
 pub fn prepare_ui_nodes_system(
     mut commands: Commands,
     gfx: Res<GraphicsContextResource>,
@@ -48,7 +48,7 @@ pub fn prepare_ui_nodes_system(
     let mut prepared_nodes = Vec::new();
 
     for extracted_node in &extracted_nodes.items {
-        if let UiMaterial::SolidColor { color } = extracted_node.material {
+        if let UiBackground::SolidColor { color } = extracted_node.material {
             let position = extracted_node.layout.position;
             let size = extracted_node.layout.size;
             let model_matrix =
