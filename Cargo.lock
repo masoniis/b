@@ -233,6 +233,7 @@ dependencies = [
  "glob",
  "glyphon",
  "image",
+ "naga 27.0.0",
  "pollster",
  "ron",
  "serde",
@@ -328,7 +329,7 @@ checksum = "f7573dc824a1b08b4c93fdbe421c53e1e8188e9ca1dd74a414455fe571facb47"
 dependencies = [
  "cfg-if",
  "critical-section",
- "foldhash",
+ "foldhash 0.1.5",
  "hashbrown 0.15.5",
  "portable-atomic",
  "portable-atomic-util",
@@ -357,7 +358,7 @@ dependencies = [
  "disqualified",
  "downcast-rs 2.0.2",
  "erased-serde",
- "foldhash",
+ "foldhash 0.1.5",
  "glam 0.29.3",
  "serde",
  "smallvec",
@@ -992,6 +993,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d9c4f5dac5e15c24eb999c26181a6ca40b39fe946cbe4c263c7209467bc83af2"
 
 [[package]]
+name = "foldhash"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "77ce24cb58228fbb8aa041425bb1050850ac19177686ea6e0f41a70416f56fdb"
+
+[[package]]
 name = "font-types"
 version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1273,7 +1280,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9229cfe53dfd69f0609a49f65461bd93001ea1ef889cd5529dd176593f5338a1"
 dependencies = [
  "equivalent",
- "foldhash",
+ "foldhash 0.1.5",
  "serde",
 ]
 
@@ -1282,6 +1289,9 @@ name = "hashbrown"
 version = "0.16.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5419bdc4f6a9207fbeba6d11b604d481addf78ecd10c11ad51e76c2f6482748d"
+dependencies = [
+ "foldhash 0.2.0",
+]
 
 [[package]]
 name = "heapless"
@@ -1673,6 +1683,31 @@ dependencies = [
  "once_cell",
  "rustc-hash 1.1.0",
  "spirv",
+ "thiserror 2.0.16",
+ "unicode-ident",
+]
+
+[[package]]
+name = "naga"
+version = "27.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "12b2e757b11b47345d44e7760e45458339bc490463d9548cd8651c53ae523153"
+dependencies = [
+ "arrayvec",
+ "bit-set",
+ "bitflags 2.9.4",
+ "cfg-if",
+ "cfg_aliases",
+ "codespan-reporting",
+ "half",
+ "hashbrown 0.16.0",
+ "hexf-parse",
+ "indexmap",
+ "libm",
+ "log",
+ "num-traits",
+ "once_cell",
+ "rustc-hash 1.1.0",
  "thiserror 2.0.16",
  "unicode-ident",
 ]
@@ -3563,7 +3598,7 @@ dependencies = [
  "hashbrown 0.15.5",
  "js-sys",
  "log",
- "naga",
+ "naga 26.0.0",
  "parking_lot",
  "portable-atomic",
  "profiling",
@@ -3593,7 +3628,7 @@ dependencies = [
  "hashbrown 0.15.5",
  "indexmap",
  "log",
- "naga",
+ "naga 26.0.0",
  "once_cell",
  "parking_lot",
  "portable-atomic",
@@ -3664,7 +3699,7 @@ dependencies = [
  "libloading",
  "log",
  "metal",
- "naga",
+ "naga 26.0.0",
  "ndk-sys",
  "objc",
  "ordered-float",

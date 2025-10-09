@@ -29,7 +29,7 @@ pub struct RenderableUiElement {
     pub kind: UiElementKind,
 }
 
-#[derive(Component)]
+#[derive(Component, Debug)]
 pub struct ExtractedUiNode {
     pub layout: CalculatedLayout,
     pub material: UiBackground,

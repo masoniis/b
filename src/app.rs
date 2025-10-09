@@ -8,8 +8,8 @@ use crate::{
     },
     prelude::*,
     render_world::{
-        build_render_world, configure_render_world, context::GraphicsContext,
-        extract::run_extract_schedule, RenderSchedule, RenderWorldInterface,
+        context::GraphicsContext, extract::run_extract_schedule, RenderSchedule,
+        RenderWorldInterface,
     },
 };
 use std::{error::Error, sync::Arc};
@@ -70,10 +70,11 @@ impl ApplicationHandler for App {
                 pollster::block_on(GraphicsContext::new(window.clone()));
 
             let mut game_world = build_game_world(configure_game_world(texture_map, &window));
-            let render_world = build_render_world(configure_render_world(graphics_context));
+            let mut render_world = RenderWorldInterface::new(graphics_context);
 
             info!("Running startup systems...\n\n\n");
             game_world.run_schedule(GameSchedule::Startup);
+            render_world.run_schedule(RenderSchedule::Startup); // TODO: Async handling for loading screen?
 
             self.window = Some(window.clone());
             self.game_world = Some(game_world);

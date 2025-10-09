@@ -1,11 +1,16 @@
 use crate::render_world::passes::{
     render_graph::{RenderContext, RenderNode},
     ui_pass::{
-        prepare::{PreparedUiNodes, ScreenQuadResource, UiPipeline, UiViewBindGroup},
         queue::{RenderPhase, UiPhaseItem},
+        startup::UiPipeline,
     },
 };
 use bevy_ecs::world::World;
+
+use super::{
+    prepare::{PreparedUiNodes, UiViewBindGroup},
+    startup::{ScreenQuadResource, UiInstanceBuffer},
+};
 
 pub struct UiPassNode;
 impl RenderNode for UiPassNode {
@@ -58,9 +63,17 @@ impl RenderNode for UiPassNode {
         render_pass.set_vertex_buffer(0, quad.vertex_buffer.slice(..));
         render_pass.set_index_buffer(quad.index_buffer.slice(..), wgpu::IndexFormat::Uint16);
 
+        let instance_buffer = world
+            .get_resource::<UiInstanceBuffer>()
+            .expect("UiInstanceBuffer resource not found");
+
         for item in &ui_phase.queue {
             let prepared_node = &prepared_nodes.nodes[item.prepared_node_index];
-            render_pass.set_bind_group(1, &prepared_node.bind_group, &[]);
+            render_pass.set_bind_group(
+                1,
+                &instance_buffer.bind_group,
+                &[prepared_node.dynamic_offset],
+            );
             render_pass.draw_indexed(0..quad.index_count, 0, 0..1);
         }
     }

@@ -1,5 +1,6 @@
 pub mod context;
 pub mod extract;
+pub mod material;
 pub mod passes;
 pub mod plugin;
 pub mod resources;
@@ -19,6 +20,7 @@ use std::ops::{Deref, DerefMut};
 
 #[derive(ScheduleLabel, Debug, Clone, PartialEq, Eq, Hash)]
 pub enum RenderSchedule {
+    Startup,
     Extract,
     Prepare,
     Queue,
@@ -46,47 +48,47 @@ impl DerefMut for RenderWorldInterface {
     }
 }
 
-// INFO: ------------------------------
-//         Render World Builder
-// ------------------------------------
+impl RenderWorldInterface {
+    /// Creates a new render world with a sane default configuration
+    pub fn new(graphics_context: GraphicsContext) -> Self {
+        let mut builder = EcsBuilder::new();
 
-pub fn configure_render_world(graphics_context: GraphicsContext) -> EcsBuilder {
-    let mut builder = EcsBuilder::new();
+        // As a root resource that requites input from app, graphics context must be
+        // inserted before we do any other system building.
+        //
+        // This is because systems can't create it themselves like most other resources.
+        let (texture_array, _texture_registry) =
+            load_texture_array(&graphics_context.device, &graphics_context.queue).unwrap();
 
-    // As a root resource that requites input from app, graphics context must be
-    // inserted before we do any other system building.
-    //
-    // This is because systems can't create it themselves like most other resources.
-    let (texture_array, _texture_registry) =
-        load_texture_array(&graphics_context.device, &graphics_context.queue).unwrap();
+        // Setup render graph runs as an early system since it needs mutable world access
+        setup_render_graph(&mut builder.world);
 
-    // Setup render graph runs as an early system since it needs mutable world access
-    setup_render_graph(&mut builder.world);
+        // Add any resources that require specific app input
+        builder
+            .add_resource(TextureArrayResource {
+                array: texture_array,
+            })
+            .add_resource(GraphicsContextResource {
+                context: graphics_context,
+            })
+            .add_resource(RenderWorldMarker);
 
-    builder.add_resource(TextureArrayResource {
-        array: texture_array,
-    });
+        // And finally add the plugins
+        builder.add_plugin(RenderPlugin);
 
-    builder.add_resource(GraphicsContextResource {
-        context: graphics_context,
-    });
-
-    builder.add_resource(RenderWorldMarker);
-
-    builder.add_plugin(RenderPlugin);
-
-    builder
-}
-
-/// Builds the final state and returns the final render world interface.
-pub fn build_render_world(mut builder: EcsBuilder) -> RenderWorldInterface {
-    for (_, schedule) in builder.schedules.drain_schedules() {
-        builder.world.add_schedule(schedule);
+        return Self::build_render_world(builder);
     }
 
-    RenderWorldInterface {
-        common: CommonEcsInterface {
-            world: builder.world,
-        },
+    /// Builds the final state and returns the final render world interface.
+    fn build_render_world(mut builder: EcsBuilder) -> RenderWorldInterface {
+        for (_, schedule) in builder.schedules.drain_schedules() {
+            builder.world.add_schedule(schedule);
+        }
+
+        RenderWorldInterface {
+            common: CommonEcsInterface {
+                world: builder.world,
+            },
+        }
     }
 }

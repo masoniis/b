@@ -11,10 +11,6 @@ use winit::window::Window;
 
 /// A container for the core WGPU state and the renderer that the app holds.
 pub struct GraphicsContext {
-    // renderer
-    // pub renderer: Renderer,
-
-    // properties
     pub config: SurfaceConfiguration,
     pub surface: Surface<'static>,
     pub device: Arc<Device>,
@@ -85,14 +81,9 @@ impl GraphicsContext {
         );
 
         let (_texture_array, texture_map) = load_texture_array(&device, &queue).unwrap();
-        // let renderer = Renderer::new(device.clone(), queue.clone(), &config, &texture_array);
 
         (
             Self {
-                // renderer
-                // renderer,
-
-                // properties
                 instance: wgpu_instance,
                 surface,
                 config,
@@ -111,7 +102,6 @@ impl GraphicsContext {
             self.config.width = new_size.width;
             self.config.height = new_size.height;
             self.surface.configure(&self.device, &self.config);
-            // self.renderer.resize(new_size);
         } else {
             warn!("Attempted to resize graphics context to zero dimensions.");
         }

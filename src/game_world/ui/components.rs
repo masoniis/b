@@ -55,7 +55,7 @@ impl Default for Style {
 //         Visual elements
 // -------------------------------
 
-#[derive(Component, Clone)]
+#[derive(Component, Clone, Debug)]
 pub enum UiBackground {
     SolidColor { color: [f32; 4] },
     // TODO: image support
