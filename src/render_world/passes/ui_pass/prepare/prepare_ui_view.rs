@@ -1,18 +1,25 @@
 use crate::{
     prelude::*,
-    render_world::{extract::RenderWindowSizeResource, resources::GraphicsContextResource},
+    render_world::{
+        extract::RenderWindowSizeResource, passes::ui_pass::startup::ViewBindGroupLayout,
+        resources::GraphicsContextResource,
+    },
 };
 use bevy_ecs::prelude::*;
 use wgpu::util::DeviceExt;
 
-use super::{UiPipeline, UiViewBindGroup};
+/// A resource holding the shared projection matrix for the UI.
+#[derive(Resource)]
+pub struct UiViewBindGroup {
+    pub bind_group: wgpu::BindGroup,
+}
 
 // A system that creates the orthographic projection matrix for the UI camera.
 pub fn prepare_ui_view_system(
     // Input
     gfx: Res<GraphicsContextResource>,
-    pipeline: Res<UiPipeline>,
     window_size: Res<RenderWindowSizeResource>,
+    view_layout: Res<ViewBindGroupLayout>,
 
     // Output (insert resource)
     mut commands: Commands,
@@ -29,7 +36,7 @@ pub fn prepare_ui_view_system(
 
     let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
         label: Some("UI View Bind Group"),
-        layout: &pipeline.view_bind_group_layout,
+        layout: &view_layout.0,
         entries: &[wgpu::BindGroupEntry {
             binding: 0,
             resource: projection_buffer.as_entire_binding(),

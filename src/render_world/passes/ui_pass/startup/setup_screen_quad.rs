@@ -12,21 +12,16 @@ pub struct ScreenQuadResource {
 
 /// A one-time system that creates the shared quad mesh on the GPU.
 ///
-/// The quad is intended to be the root canvas for all
-/// drawing, and as such it covers the entire screen.
-pub fn prepare_screen_quad_system(
+/// The quad is intended to be the root canvas for all drawing, and
+/// as such it covers the entire screen.
+pub fn setup_ui_screen_quad_system(
     // Input
     gfx: Res<GraphicsContextResource>,
-    quad: Option<Res<ScreenQuadResource>>,
 
     // Output (spawn entity)
     mut commands: Commands,
 ) {
     let device = &gfx.context.device;
-
-    if quad.is_some() {
-        return;
-    }
 
     let vertices: &[f32] = &[0.0, 0.0, 1.0, 0.0, 1.0, 1.0, 0.0, 1.0];
     let indices: &[u16] = &[0, 3, 2, 0, 2, 1];

@@ -1,5 +1,6 @@
-use crate::render_world::passes::ui_pass::prepare::PreparedUiNodes;
 use bevy_ecs::prelude::*;
+
+use super::prepare::PreparedUiNodes;
 
 #[derive(Resource, Default)]
 pub struct RenderPhase<T: 'static> {

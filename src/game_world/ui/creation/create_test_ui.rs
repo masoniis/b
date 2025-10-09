@@ -8,8 +8,6 @@ use bevy_ecs::prelude::*;
 pub fn create_test_ui_system(mut commands: Commands) {
     info!("Spawning test UI");
 
-    // --- Refactored `child1` as a Button with Centered Text ---
-
     let text_entity = commands
         .spawn((
             Node,
@@ -66,7 +64,7 @@ pub fn create_test_ui_system(mut commands: Commands) {
         Style {
             width: Size::Percent(100.0),
             height: Size::Percent(100.0),
-            justify_content: Some(taffy::JustifyContent::Center),
+            justify_content: Some(taffy::JustifyContent::SpaceBetween),
             align_items: Some(taffy::AlignItems::Center),
             ..Default::default()
         },

@@ -25,15 +25,19 @@ tracing-subscriber = { version = "0.3.20", features = [
 #         graphics
 # ------------------------
 
-## Rendering
-wgpu = "26.0.1"                                                                                                 # gpu interfacing
-glyphon = { git = "https://github.com/grovesNL/glyphon.git", rev = "724ab57edbd6c59ba219cd99cf89925d056392db" } # Specific rev which upgraded to wgpu 26
-winit = { version = "0.30.12", features = ["rwh_06"] }                                                          # OS window manage
+## rendering
+wgpu = "26.0.1"                                        # gpu interfacing
+winit = { version = "0.30.12", features = ["rwh_06"] } # OS window manage
 
-## Utilities
+## ui
+taffy = "0.9.1"                                                                                                 # ui layout
+glyphon = { git = "https://github.com/grovesNL/glyphon.git", rev = "724ab57edbd6c59ba219cd99cf89925d056392db" } # text vectorization/prep
+
+## utils 
 bytemuck = { version = "1.13", features = ["derive"] } # gpu friendly data
 glam = "0.30.5"                                        # linear algebra
 image = "0.25.6"                                       # load textures
+naga = { version = "27.0.0", features = ["wgsl-in"] }  # for shader reflection
 
 
 # INFO: --------------------
@@ -53,7 +57,6 @@ futures-lite = "2.6.1"
 
 ron = "0.11.0"                                         # parsing
 serde = { version = "1.0.228", features = ["derive"] } # serializing
-taffy = "0.9.1"
 
 [build-dependencies]
 glob = "0.3.3"

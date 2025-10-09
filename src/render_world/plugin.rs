@@ -1,6 +1,6 @@
 use super::extract::{ExtractComponentPlugin, RenderWindowSizeResource};
 use super::passes;
-use super::passes::ui_pass::prepare::RenderUiPlugin;
+use super::passes::ui_pass::RenderUiPlugin;
 use crate::game_world::graphics_old::MeshComponent;
 use crate::prelude::*;
 use crate::{
@@ -18,7 +18,6 @@ use crate::{
             },
             queue::{self, Opaque3dRenderPhase},
         },
-        passes::ui_pass::{self},
         resources::PipelineCacheResource,
         RenderSchedule,
     },
@@ -82,7 +81,7 @@ impl Plugin for RenderPlugin {
 
         builder
             .schedule_entry(RenderSchedule::Queue)
-            .add_systems((queue::queue_mesh_system, ui_pass::queue::queue_ui_system));
+            .add_systems(queue::queue_mesh_system);
 
         builder
             .schedule_entry(RenderSchedule::Render)
