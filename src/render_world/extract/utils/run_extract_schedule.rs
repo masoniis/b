@@ -40,6 +40,7 @@ pub fn run_extract_schedule(
         .remove_resource::<GameWorld>()
         .expect("MainWorld resource was removed unexpectedly during extract schedule.");
     let new_scratch_world = std::mem::replace(game_world, main_world_resource.val);
+    game_world.clear_trackers();
     game_world.insert_resource(GameWorldPlaceholder {
         val: new_scratch_world,
     });

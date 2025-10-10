@@ -53,7 +53,7 @@ pub fn setup_ui_instance_buffer(
 
     let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
         label: Some("UI Instance Bind Group"),
-        layout: &pipeline.node_bind_group_layout,
+        layout: &pipeline.material_bind_group_layout,
         entries: &[wgpu::BindGroupEntry {
             binding: 0, // instance data must be at binding 0 in @group(1)
             resource: wgpu::BindingResource::Buffer(wgpu::BufferBinding {
