@@ -7,12 +7,16 @@ use bevy_ecs::prelude::*; // Your path might differ
 pub fn game_world_resource_changed<T: Resource>(game_world: Res<GameWorld>) -> bool {
     let world = &game_world.val;
 
-    // info!(
-    //     "Resource of type {} changed: {}",
-    //     std::any::type_name::<T>(),
-    //     world.is_resource_changed::<T>()
-    // );
-
     // Check if the resource exists and if its "changed" flag is set.
-    world.is_resource_changed::<T>()
+    let is_changed = world.is_resource_changed::<T>();
+
+    if is_changed {
+        debug!(
+            target: "game_world_resource_changed",
+            "Resource of type {} changed.",
+            std::any::type_name::<T>(),
+        );
+    }
+
+    return is_changed;
 }

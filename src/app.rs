@@ -131,10 +131,15 @@ impl ApplicationHandler for App {
                             RenderSchedule::Extract,
                         );
 
+                        game_world.clear_trackers();
+
                         // TODO: These schedules can run in parallel with the next frame of the game (in theory)
+
                         render_world.run_schedule(RenderSchedule::Prepare);
                         render_world.run_schedule(RenderSchedule::Queue);
                         render_world.run_schedule(RenderSchedule::Render);
+
+                        render_world.clear_trackers();
 
                         // Request the next frame
                         if let Some(window) = &self.window {

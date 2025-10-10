@@ -3,7 +3,6 @@ use super::extract::{
 };
 use super::passes;
 use super::passes::ui_pass::RenderUiPlugin;
-use crate::game_world::global_resources::TextureMapResource;
 use crate::game_world::graphics_old::MeshComponent;
 use crate::game_world::input::resources::WindowSizeResource;
 use crate::prelude::*;

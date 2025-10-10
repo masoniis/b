@@ -26,8 +26,6 @@ pub fn prepare_ui_view_system(
 ) {
     let device = &gfx.context.device;
 
-    info!("Preparing UI view with window size: {:?}", window_size);
-
     let projection_matrix =
         Mat4::orthographic_rh(0.0, window_size.width, window_size.height, 0.0, -1.0, 1.0);
     let projection_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {

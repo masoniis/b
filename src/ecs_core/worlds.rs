@@ -29,6 +29,14 @@ impl CommonEcsInterface {
         }
     }
 
+    /// Clears the world's internal change trackers.
+    ///
+    /// This MUST be called at the end of a world's update cycle to ensure
+    /// change detection works correctly on the next frame.
+    pub fn clear_trackers(&mut self) {
+        self.world.clear_trackers();
+    }
+
     pub fn borrow(&mut self) -> &mut World {
         &mut self.world
     }
