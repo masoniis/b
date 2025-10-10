@@ -1,51 +1,31 @@
-(
-	// INFO: -------------------------------------
-	//         Vertex buffers descriptions
-	// -------------------------------------------
-	vertex_buffers: [
-		// Buffer 0: Per-Vertex Data for simple screen-sized quad
-		(
-			step_mode: "Vertex",
-			attributes: [
-				(name: "Position", location: 0, format: "Float32x2"), // @location(0) position: vec2<f32>
-			]
-		),
-	],
-
-	// INFO: ---------------------------------
-	//         Bind group descriptions
-	// ---------------------------------------
-	bind_group_layouts: {
-		// @group(0): Per-View data, managed by the engine.
-		0: (
-			bindings: [
-				(
-					// Corresponds to `@group(0) @binding(0) var<uniform> projection`
-					binding: 0,
-					ty: "Buffer",
-					visibility: ["Vertex"],
-					buffer_options: Some((
-						ty: "Uniform",
-						has_dynamic_offset: false,
-					)),
-				),
-			],
-		),
-
-		// @group(1): Per-Object data for a single UI node.
-		1: (
-			bindings: [
-				(
-					// Corresponds to `@group(1) @binding(0) var<uniform> instance_data`
-					binding: 0,
-					ty: "Buffer",
-					visibility: ["Vertex", "Fragment"],
-					buffer_options: Some((
-						ty: "Uniform",
-						has_dynamic_offset: true,
-					)),
-				),
-			],
-		),
-	},
+MaterialDefinition(
+    vertex_buffers: [],
+    bind_group_layouts: {
+        1: BindGroupLayoutDef(
+            bindings: [
+                BindingDef(
+                    binding: 0,
+                    visibility: ["Fragment"],
+                    ty: "Buffer",
+                    buffer_options: Some((
+                        ty: "Uniform",
+                        has_dynamic_offset: true,
+                    )),
+                ),
+            ],
+        ),
+        2: BindGroupLayoutDef(
+            bindings: [
+                BindingDef(
+                    binding: 0,
+                    visibility: ["Vertex"],
+                    ty: "Buffer",
+                    buffer_options: Some((
+                        ty: "Storage",
+                        has_dynamic_offset: false,
+                    )),
+                ),
+            ],
+        ),
+    },
 )
