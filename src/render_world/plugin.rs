@@ -1,7 +1,11 @@
-use super::extract::{ExtractComponentPlugin, RenderWindowSizeResource};
+use super::extract::{
+    game_world_resource_changed, ExtractComponentPlugin, RenderWindowSizeResource,
+};
 use super::passes;
 use super::passes::ui_pass::RenderUiPlugin;
+use crate::game_world::global_resources::TextureMapResource;
 use crate::game_world::graphics_old::MeshComponent;
+use crate::game_world::input::resources::WindowSizeResource;
 use crate::prelude::*;
 use crate::{
     ecs_core::state_machine::{self, in_state, StatePlugin},
@@ -54,7 +58,8 @@ impl Plugin for RenderPlugin {
                 (
                     extract::clone_resource_system::<AssetStorageResource<MeshAsset>>,
                     extract::extract_resource_system::<RenderTimeResource>,
-                    extract::extract_resource_system::<RenderWindowSizeResource>,
+                    (extract::extract_resource_system::<RenderWindowSizeResource>)
+                        .run_if(game_world_resource_changed::<WindowSizeResource>),
                     extract::extract_state_system::<GameState>,
                     extract::extract_state_system::<AppState>,
                 ),

@@ -1,4 +1,5 @@
 use super::{
+    events::internal::WindowResizeEvent,
     resources::{Buttons, CursorMovement},
     systems::{processing, utils},
     ActionStateResource, InputActionMapResource,
@@ -38,6 +39,7 @@ impl Plugin for InputModulePlugin {
         builder.world.init_resource::<Events<KeyboardInputEvent>>();
         builder.world.init_resource::<Events<MouseMoveEvent>>();
         builder.world.init_resource::<Events<MouseScrollEvent>>();
+        builder.world.init_resource::<Events<WindowResizeEvent>>();
         builder
             .world
             .init_resource::<Events<MouseButtonInputEvent>>();
@@ -47,6 +49,7 @@ impl Plugin for InputModulePlugin {
             (
                 processing::window_events_system,
                 processing::device_events_system,
+                processing::handle_resize_system.after(processing::window_events_system),
                 processing::update_action_state_system
                     .after(processing::window_events_system)
                     .after(processing::device_events_system),

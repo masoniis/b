@@ -1,7 +1,9 @@
 use crate::game_world::{
     global_resources::CameraResource,
     input::{
-        events::{KeyboardInputEvent, MouseButtonInputEvent, RawWindowEvent},
+        events::{
+            internal::WindowResizeEvent, KeyboardInputEvent, MouseButtonInputEvent, RawWindowEvent,
+        },
         resources::{Buttons, WindowSizeResource},
     },
 };
@@ -20,7 +22,6 @@ pub fn window_events_system(
     // State to modify
     mut keyboard_input: ResMut<Buttons<PhysicalKey>>,
     mut mouse_input: ResMut<Buttons<MouseButton>>,
-    mut window_resource: ResMut<WindowSizeResource>,
 
     // Input from OS bridge
     mut raw_window_events: EventReader<RawWindowEvent>,
@@ -28,7 +29,7 @@ pub fn window_events_system(
     // Output
     mut keyboard_writer: EventWriter<KeyboardInputEvent>,
     mut mouse_button_writer: EventWriter<MouseButtonInputEvent>,
-    mut camera: ResMut<CameraResource>,
+    mut resize_writer: EventWriter<WindowResizeEvent>,
 ) {
     // Clear previous stale state
     keyboard_input.swap_previous();
@@ -63,11 +64,25 @@ pub fn window_events_system(
                 mouse_button_writer.write(semantic_event);
             }
             WindowEvent::Resized(physical_size) => {
-                window_resource.width = physical_size.width;
-                window_resource.height = physical_size.height;
-                camera.projection_dirty = true;
+                resize_writer.write(WindowResizeEvent {
+                    width: physical_size.width,
+                    height: physical_size.height,
+                });
             }
             _ => {}
         }
+    }
+}
+
+/// A system that listens for `WindowResizedEvent`s and updates relevant resources.
+pub fn handle_resize_system(
+    mut resize_events: EventReader<WindowResizeEvent>,
+    mut window_resource: ResMut<WindowSizeResource>,
+    mut camera: ResMut<CameraResource>,
+) {
+    for event in resize_events.read() {
+        window_resource.width = event.width;
+        window_resource.height = event.height;
+        camera.projection_dirty = true;
     }
 }

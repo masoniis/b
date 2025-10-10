@@ -1,4 +1,3 @@
-// The bind group now contains a shared projection matrix and per-object data.
 @group(0) @binding(0)
 var<uniform> projection: mat4x4<f32>;
 

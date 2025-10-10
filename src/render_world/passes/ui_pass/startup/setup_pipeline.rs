@@ -10,8 +10,9 @@ use std::fs;
 #[derive(Resource)]
 pub struct UiPipeline {
     pub pipeline: wgpu::RenderPipeline,
-    pub view_bind_group_layout: wgpu::BindGroupLayout,
-    pub node_bind_group_layout: wgpu::BindGroupLayout,
+    pub view_bind_group_layout: wgpu::BindGroupLayout, // once-per-frame
+    pub material_bind_group_layout: wgpu::BindGroupLayout,
+    // pub object_bind_group_layout: wgpu::BindGroupLayout,
 }
 
 const SHADER_PATH: &str = "assets/shaders/ui/main.wgsl";
@@ -69,7 +70,7 @@ pub fn setup_ui_pipeline(
         push_constant_ranges: &[],
     });
 
-    // Create the RenderPipeline (as before)
+    // Create the rendering pipeline
     let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
         label: Some("UI Shader"),
         source: wgpu::ShaderSource::Wgsl(shader_source.into()),
@@ -109,7 +110,7 @@ pub fn setup_ui_pipeline(
     commands.insert_resource(UiPipeline {
         pipeline,
         view_bind_group_layout: view_layout.0.clone(),
-        node_bind_group_layout: created_layouts
+        material_bind_group_layout: created_layouts
             .remove(&1)
             .expect("Material missing @group(1)"),
     });

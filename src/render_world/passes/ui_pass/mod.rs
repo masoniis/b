@@ -11,7 +11,9 @@ use self::queue::{RenderPhase, UiPhaseItem};
 use crate::{
     ecs_core::{EcsBuilder, Plugin},
     render_world::{
-        extract::{self, extract_component::ExtractedItems, ui::UiNodeExtractor},
+        extract::{
+            self, extract_component::ExtractedItems, ui::UiNodeExtractor, RenderWindowSizeResource,
+        },
         RenderSchedule,
     },
 };
@@ -43,7 +45,8 @@ impl Plugin for RenderUiPlugin {
         builder.schedule_entry(RenderSchedule::Prepare).add_systems(
             (
                 prepare::prepare_ui_instances_system,
-                prepare::prepare_ui_view_system,
+                prepare::prepare_ui_view_system
+                    .run_if(resource_changed::<RenderWindowSizeResource>),
             )
                 .chain(),
         );

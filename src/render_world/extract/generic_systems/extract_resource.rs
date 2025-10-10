@@ -12,22 +12,28 @@ pub trait ExtractResource {
     type Source: Resource;
     type Output: Resource;
 
-    /// Extracts the resource from the main world and returns the render world version.
-    fn extract_resource(source: &Self::Source) -> Self::Output;
+    /// Extracts the resource from the main world, compares it to the target in the
+    /// render world, and inserts or updates it only if necessary.
+    fn extract_and_update(
+        commands: &mut Commands,
+        source: &Self::Source,
+        target: Option<ResMut<Self::Output>>,
+    );
 }
 
-/// A generic system that extracts all resources implementing the `ExtractResource` trait.
+/// A generic system that extracts resources using the `ExtractResource` trait.
+/// It delegates the update logic to the trait's implementation.
 pub fn extract_resource_system<T: ExtractResource>(
     mut commands: Commands,
     main_world: Res<GameWorld>,
-    _phantom: PhantomData<T>, // needed to make this a unique system for each type T
+    target: Option<ResMut<T::Output>>,
+    _phantom: PhantomData<T>,
 ) {
     if let Some(source_resource) = main_world.val.get_resource::<T::Source>() {
-        let extracted = T::extract_resource(source_resource);
-        commands.insert_resource(extracted);
+        T::extract_and_update(&mut commands, source_resource, target);
     } else {
         warn!(
-            "Source resource of type {} not found in main world. This system likely was placed incorrectly.",
+            "Source resource of type {} not found in main world.",
             std::any::type_name::<T::Source>()
         );
     }
