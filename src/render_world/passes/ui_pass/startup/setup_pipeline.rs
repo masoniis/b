@@ -2,9 +2,9 @@ use super::ViewBindGroupLayout;
 use crate::render_world::material::MaterialDefinition;
 use crate::render_world::resources::GraphicsContextResource;
 use bevy_ecs::prelude::*;
-use naga;
 use std::collections::BTreeMap;
 use std::fs;
+use wesl::include_wesl;
 
 /// A resource to hold the pipeline and bind group layouts for our UI shader.
 #[derive(Resource)]
@@ -12,10 +12,9 @@ pub struct UiPipeline {
     pub pipeline: wgpu::RenderPipeline,
     pub view_bind_group_layout: wgpu::BindGroupLayout, // once-per-frame
     pub material_bind_group_layout: wgpu::BindGroupLayout,
-    // pub object_bind_group_layout: wgpu::BindGroupLayout,
+    pub object_bind_group_layout: wgpu::BindGroupLayout,
 }
 
-const SHADER_PATH: &str = "assets/shaders/ui/main.wgsl";
 const MATERIAL_PATH: &str = "assets/shaders/ui/main.material.ron";
 
 // Setup the UI pipeline using the shader and material definition
@@ -27,13 +26,10 @@ pub fn setup_ui_pipeline(
     let device = &gfx.context.device;
     let surface_format = gfx.context.config.format;
 
-    // Process shader files (including parse)
-    let shader_source = fs::read_to_string(SHADER_PATH).expect("Failed to read UI shader file");
+    // Process shader files (including parsing the ron file)
     let material_source = fs::read_to_string(MATERIAL_PATH).expect("Failed to read material file");
     let material_def: MaterialDefinition =
         ron::from_str(&material_source).expect("Failed to parse material definition");
-    let _shader_module =
-        naga::front::wgsl::parse_str(&shader_source).expect("Failed to parse shader");
 
     // TODO: validate the shader against the material_def here.
 
@@ -53,11 +49,13 @@ pub fn setup_ui_pipeline(
         created_layouts.insert(group_index, layout);
     }
 
-    // --- 4. Assemble Final Pipeline Layout using Conventions ---
+    // Assemble final pipeline (conventions for this meantioned in `./assets/shaders/readme.me`)
     let mut pipeline_bind_group_layouts = BTreeMap::new();
-    // For @group(0), use the "well-known" engine layout
+
+    // For @group(0), it will always be the "per-view" layout
     pipeline_bind_group_layouts.insert(0, &view_layout.0);
-    // For other groups, use the layouts we just generated from the RON file
+
+    // For other groups, use the layouts just generated from the RON file
     for (group_index, layout) in &created_layouts {
         pipeline_bind_group_layouts.insert(*group_index, layout);
     }
@@ -73,7 +71,7 @@ pub fn setup_ui_pipeline(
     // Create the rendering pipeline
     let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
         label: Some("UI Shader"),
-        source: wgpu::ShaderSource::Wgsl(shader_source.into()),
+        source: wgpu::ShaderSource::Wgsl(include_wesl!("ui_main").into()),
     });
 
     let pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
@@ -106,13 +104,15 @@ pub fn setup_ui_pipeline(
         multiview: None,
     });
 
-    // --- 6. Store the final resources ---
     commands.insert_resource(UiPipeline {
         pipeline,
         view_bind_group_layout: view_layout.0.clone(),
         material_bind_group_layout: created_layouts
             .remove(&1)
             .expect("Material missing @group(1)"),
+        object_bind_group_layout: created_layouts
+            .remove(&2)
+            .expect("Object missing @group(2)"),
     });
 }
 
@@ -141,7 +141,7 @@ fn create_layout_entry_from_metadata(
             wgpu::BindingType::Buffer {
                 ty: match opts.ty.as_str() {
                     "Uniform" => wgpu::BufferBindingType::Uniform,
-                    "Storage" => wgpu::BufferBindingType::Storage { read_only: false },
+                    "Storage" => wgpu::BufferBindingType::Storage { read_only: true },
                     _ => panic!("Unknown buffer type"),
                 },
                 has_dynamic_offset: opts.has_dynamic_offset,

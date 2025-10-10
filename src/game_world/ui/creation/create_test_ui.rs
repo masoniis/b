@@ -37,7 +37,6 @@ pub fn create_test_ui_system(mut commands: Commands) {
             UiBackground::SolidColor {
                 color: [0.8, 0.1, 0.1, 0.5],
             },
-            // It contains the text entity as its child.
             Children(vec![text_entity]),
         ))
         .id();
@@ -53,7 +52,7 @@ pub fn create_test_ui_system(mut commands: Commands) {
                 ..Default::default()
             },
             UiBackground::SolidColor {
-                color: [0.0, 1.0, 0.0, 0.2],
+                color: [0.0, 1.0, 1.0, 0.5],
             },
         ))
         .id();

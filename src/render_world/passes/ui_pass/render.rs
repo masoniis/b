@@ -2,15 +2,12 @@ use crate::render_world::passes::{
     render_graph::{RenderContext, RenderNode},
     ui_pass::{
         queue::{RenderPhase, UiPhaseItem},
-        startup::UiPipeline,
+        startup::{UiMaterialBuffer, UiObjectBuffer, UiPipeline},
     },
 };
 use bevy_ecs::world::World;
 
-use super::{
-    prepare::{PreparedUiNodes, UiViewBindGroup},
-    startup::{ScreenQuadResource, UiInstanceBuffer},
-};
+use super::{prepare::UiViewBindGroup, startup::ScreenQuadResource};
 
 pub struct UiPassNode;
 impl RenderNode for UiPassNode {
@@ -22,9 +19,6 @@ impl RenderNode for UiPassNode {
         let ui_phase = world
             .get_resource::<RenderPhase<UiPhaseItem>>()
             .expect("UiPhaseItem resource not found");
-        let prepared_nodes = world
-            .get_resource::<PreparedUiNodes>()
-            .expect("PreparedUiNodes resource not found");
         let pipeline = world
             .get_resource::<UiPipeline>()
             .expect("UiPipeline resource not found");
@@ -34,6 +28,12 @@ impl RenderNode for UiPassNode {
         let view_bind_group = world
             .get_resource::<UiViewBindGroup>()
             .expect("UiViewBindGroup resource not found");
+        let material_buffer = world
+            .get_resource::<UiMaterialBuffer>()
+            .expect("UiMaterialBuffer resource not found");
+        let object_buffer = world
+            .get_resource::<UiObjectBuffer>()
+            .expect("UiObjectBuffer resource not found");
 
         // INFO: ----------------------
         //         Render logic
@@ -62,19 +62,16 @@ impl RenderNode for UiPassNode {
         render_pass.set_bind_group(0, &view_bind_group.bind_group, &[]);
         render_pass.set_vertex_buffer(0, quad.vertex_buffer.slice(..));
         render_pass.set_index_buffer(quad.index_buffer.slice(..), wgpu::IndexFormat::Uint16);
+        render_pass.set_bind_group(2, &object_buffer.bind_group, &[]);
 
-        let instance_buffer = world
-            .get_resource::<UiInstanceBuffer>()
-            .expect("UiInstanceBuffer resource not found");
-
-        for item in &ui_phase.queue {
-            let prepared_node = &prepared_nodes.nodes[item.prepared_node_index];
-            render_pass.set_bind_group(
-                1,
-                &instance_buffer.bind_group,
-                &[prepared_node.dynamic_offset],
+        for batch in &ui_phase.queue {
+            let material_offset = batch.material_index * material_buffer.stride;
+            render_pass.set_bind_group(1, &material_buffer.bind_group, &[material_offset]);
+            render_pass.draw_indexed(
+                0..quad.index_count,
+                0,
+                batch.first_instance..batch.first_instance + batch.instance_count,
             );
-            render_pass.draw_indexed(0..quad.index_count, 0, 0..1);
         }
     }
 }

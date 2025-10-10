@@ -18,7 +18,7 @@ use crate::{
     },
 };
 use bevy_ecs::prelude::*;
-use prepare::PreparedUiNodes;
+use prepare::PreparedUiBatches;
 
 pub struct RenderUiPlugin;
 
@@ -26,14 +26,14 @@ impl Plugin for RenderUiPlugin {
     fn build(&self, builder: &mut EcsBuilder) {
         builder.init_resource::<ExtractedItems<UiNodeExtractor>>();
         builder.init_resource::<RenderPhase<UiPhaseItem>>();
-        builder.init_resource::<PreparedUiNodes>();
+        builder.init_resource::<PreparedUiBatches>();
 
         builder.schedule_entry(RenderSchedule::Startup).add_systems(
             (
                 startup::setup_view_bind_group_layout,
                 startup::setup_ui_pipeline,
                 startup::setup_ui_screen_quad_system,
-                startup::setup_ui_instance_buffer,
+                startup::setup_ui_buffers,
             )
                 .chain(),
         );
@@ -44,7 +44,7 @@ impl Plugin for RenderUiPlugin {
 
         builder.schedule_entry(RenderSchedule::Prepare).add_systems(
             (
-                prepare::prepare_ui_instances_system,
+                prepare::prepare_ui_batches_system,
                 prepare::prepare_ui_view_system
                     .run_if(resource_changed::<RenderWindowSizeResource>),
             )

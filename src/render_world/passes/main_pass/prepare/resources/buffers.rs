@@ -1,8 +1,8 @@
 use bevy_ecs::prelude::Resource;
 use wgpu::{Texture, TextureView};
 
-pub const SHADER_PATH: &str = "assets/shaders/scene/simple.wgsl";
-pub const LOADING_SHADER_PATH: &str = "assets/shaders/loading_screen/loading.wgsl";
+pub const SHADER_PATH: &str = "assets/shaders/scene/simple.wesl";
+pub const LOADING_SHADER_PATH: &str = "assets/shaders/loading_screen/loading.wesl";
 pub const MAX_TRANSFORMS: u64 = 100000;
 
 /// A resource to hold the depth texture and its view, used for depth testing.

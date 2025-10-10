@@ -2,20 +2,20 @@ use std::env;
 use std::fs::File;
 use std::io::{BufWriter, Write};
 use std::path::Path;
+use wesl::Wesl;
 
 fn main() {
-    // Conditions for when to rerun the build step
-    println!("cargo:rerun-if-changed=assets/textures");
+    // INFO: -------------------------------------------
+    //         Task 1: Generating TextureId Enum
+    // -------------------------------------------------
 
-    // Sets output to the rust outdir in target
+    println!("cargo:rerun-if-changed=assets/textures"); // run condition
+
     let out_dir = env::var("OUT_DIR").unwrap();
     let dest_path = Path::new(&out_dir).join("texture_ids.rs");
     let mut f = BufWriter::new(File::create(&dest_path).unwrap());
 
-    // INFO: -----------------------------------------
-    //         Generating the "TextureId" Enum
-    // -----------------------------------------------
-
+    // Writing the code for the enum into the build file
     writeln!(
         &mut f,
         "#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, serde::Deserialize)]"
@@ -23,56 +23,51 @@ fn main() {
     .unwrap();
     writeln!(&mut f, "#[serde(rename_all = \"snake_case\")]").unwrap();
     writeln!(&mut f, "pub enum TextureId {{").unwrap();
-
     writeln!(&mut f, "  Missing,").unwrap();
-
-    // This will store tuples of (PascalCaseVariant, snake_case_filename)
     let mut texture_info = Vec::new();
-
-    // Generates the rest of the enum variants by reading from the textures folder
     for entry in glob::glob("assets/textures/*.png").expect("Failed to read glob pattern") {
         if let Ok(path) = entry {
             let name = path.file_stem().unwrap().to_str().unwrap().to_string();
-
-            // 2. Skip any file named `_missing.png` to avoid duplicates.
             if name == "_missing" {
                 continue;
             }
-
             let enum_variant = to_pascal_case(&name);
-
             writeln!(&mut f, "  {},", &enum_variant).unwrap();
             texture_info.push((enum_variant, name));
         }
     }
     writeln!(&mut f, "}}").unwrap();
-
-    // Generate the `name()` method to get the filename back from the enum
     writeln!(&mut f, "\nimpl TextureId {{").unwrap();
     writeln!(&mut f, "  pub fn name(&self) -> &'static str {{").unwrap();
     writeln!(&mut f, "    match self {{").unwrap();
-    writeln!(&mut f, "      Self::Missing => \"_missing\",").unwrap(); // missing has no file name
+    writeln!(&mut f, "      Self::Missing => \"_missing\",").unwrap();
     for (variant, name) in &texture_info {
         writeln!(&mut f, "      Self::{} => \"{}\",", variant, name).unwrap();
     }
     writeln!(&mut f, "    }}").unwrap();
     writeln!(&mut f, "  }}").unwrap();
-
-    // INFO: -------------------------------------------------------------------
-    //         Generate a constant array that includes all enum variants
-    // -------------------------------------------------------------------------
-
     writeln!(&mut f, "  pub const ALL: &'static [TextureId] = &[").unwrap();
-    writeln!(&mut f, "    Self::Missing,").unwrap(); // Add Missing variant to the array
+    writeln!(&mut f, "    Self::Missing,").unwrap();
     for (variant, _) in &texture_info {
         writeln!(&mut f, "    Self::{},", variant).unwrap();
     }
     writeln!(&mut f, "  ];").unwrap();
-
     writeln!(&mut f, "}}").unwrap();
+
+    // INFO: --------------------------------------
+    //         Compile WESL shaders to WGSL
+    // --------------------------------------------
+
+    println!("cargo:rerun-if-changed=src/shaders"); // run condition
+
+    let compiler = Wesl::new("assets/shaders"); // src dir for shaders
+
+    // Specific final shaders
+    compiler.build_artifact(&"package::ui::main".parse().unwrap(), "ui_main");
+    compiler.build_artifact(&"package::scene::simple".parse().unwrap(), "scene_simple");
 }
 
-/// Converts snake_case to PascalCase (unchanged)
+/// Converts snake_case to PascalCase
 fn to_pascal_case(s: &str) -> String {
     s.split('_')
         .map(|word| {

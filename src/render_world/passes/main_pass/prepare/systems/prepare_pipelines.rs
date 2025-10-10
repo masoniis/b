@@ -4,11 +4,10 @@ use crate::render_world::{
     types::vertex::Vertex,
 };
 use bevy_ecs::prelude::*;
-use std::fs;
+use wesl::include_wesl;
 
 // --- Constants ---
-pub const SHADER_PATH: &str = "assets/shaders/scene/simple.wgsl";
-pub const LOADING_SHADER_PATH: &str = "assets/shaders/loading_screen/loading.wgsl";
+pub const LOADING_SHADER_PATH: &str = "assets/shaders/loading_screen/loading.wesl";
 pub const DEPTH_FORMAT: wgpu::TextureFormat = wgpu::TextureFormat::Depth32Float;
 
 pub const MESH_PIPELINE_ID: PipelineId = 0;
@@ -26,11 +25,9 @@ pub fn prepare_pipelines_system(
     // --- Create Main Mesh Render Pipeline ---
     if cache.get(MESH_PIPELINE_ID).is_none() {
         // Compile Pipeline
-        let shader_source =
-            fs::read_to_string(SHADER_PATH).expect("Failed to read mesh shader file");
         let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("Mesh Shader"),
-            source: wgpu::ShaderSource::Wgsl(shader_source.into()),
+            source: wgpu::ShaderSource::Wgsl(include_wesl!("scene_simple").into()),
         });
 
         let render_pipeline_layout =

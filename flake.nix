@@ -1,14 +1,19 @@
 {
   inputs = {
-    utils.url = "github:numtide/flake-utils";
+    nixpkgs.url = "github:NixOS/nixpkgs/release-25.05";
+    nixpkgs-unstable.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
+
     treefmt-nix.url = "github:numtide/treefmt-nix";
     treefmt-nix.inputs.nixpkgs.follows = "nixpkgs";
+
     systems.url = "github:nix-systems/default";
+    utils.url = "github:numtide/flake-utils";
   };
   outputs =
     {
       self,
       nixpkgs,
+      nixpkgs-unstable,
       utils,
       treefmt-nix,
       systems,
@@ -17,6 +22,7 @@
       system:
       let
         pkgs = nixpkgs.legacyPackages.${system};
+        pkgs-unstable = nixpkgs-unstable.legacyPackages.${system};
       in
       {
         devShell =
@@ -25,8 +31,8 @@
             {
               buildInputs = [
                 # Rust
-                cargo
-                wgsl-analyzer
+                pkgs-unstable.cargo
+                pkgs-unstable.wgsl-analyzer
 
                 # Utils
                 just
