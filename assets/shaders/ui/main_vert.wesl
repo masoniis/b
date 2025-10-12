@@ -1,4 +1,4 @@
-import package::ui::common::{camera, Object, objects, material, Material};
+import package::ui::common::{ortho_projection, Object, objects, material, Material};
 
 struct VertexOutput {
     @builtin(position) clip_position: vec4<f32>,

@@ -1,38 +1,56 @@
+use crate::game_world::ui::components::{Node, UiRoot};
 use bevy_ecs::prelude::*;
 
-use crate::game_world::ui::components::{Node, Parent, UiRoot};
-
-#[derive(Component)]
+#[derive(Component, Debug)]
 pub struct UiDepth(pub f32);
 
 /// A system that runs after layout to calculate the depth of each UI node.
+///
+/// Depth is computed as integer values starting from 0 at the root.
 pub fn compute_ui_depth_system(
     // Input (queries)
-    nodes_to_update: Query<Entity, (With<Node>, Without<UiDepth>)>,
-    parents_query: Query<&Parent>,
-    root_query: Query<Entity, With<UiRoot>>,
+    root_query: Query<(Entity, &Children), With<UiRoot>>,
+    children_query: Query<&Children, With<Node>>,
 
-    // Output (depth attachment component)
+    // Output (spawned entities)
     mut commands: Commands,
 ) {
-    // TODO: there is likely a more efficient alg here
-    // but i'll have to think on it since we also need to consider
-    // that we are only updated "dirty" nodes that lack depth
-    if let Ok(root_entity) = root_query.single() {
-        for entity in &nodes_to_update {
-            let mut depth = 0.0;
-            let mut current_entity = entity;
+    // Start the traversal from the root entity.
+    if let Ok((root_entity, root_children)) = root_query.single() {
+        commands.entity(root_entity).insert(UiDepth(0.0));
 
-            // Traverse up the hierarchy to the rootkk
-            while let Ok(parent) = parents_query.get(current_entity) {
-                depth += 1.0;
-                current_entity = parent.0;
-                if current_entity == root_entity {
-                    break;
-                }
-            }
+        // Recursively apply depth to all children.
+        // NOTE: We now iterate directly over `root_children` thanks to Bevy's `Deref` implementation.
+        for &child_entity in root_children {
+            apply_depth_recursively(
+                &mut commands,
+                &children_query,
+                child_entity,
+                1.0, // initial depth for children of the root
+            );
+        }
+    }
+}
 
-            commands.entity(entity).insert(UiDepth(depth));
+/// A recursive helper function to traverse the UI tree and apply depth.
+fn apply_depth_recursively(
+    // Output (inserted depth component)
+    commands: &mut Commands,
+
+    // Input
+    children_query: &Query<&Children, With<Node>>,
+    current_entity: Entity,
+    current_depth: f32,
+) {
+    commands
+        .entity(current_entity)
+        .insert(UiDepth(current_depth));
+
+    // If this node has children, recurse into them.
+    if let Ok(children) = children_query.get(current_entity) {
+        // NOTE: We also iterate directly over `children` here.
+        for &child_entity in children {
+            apply_depth_recursively(commands, children_query, child_entity, current_depth + 1.0);
         }
     }
 }

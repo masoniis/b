@@ -1,5 +1,5 @@
 use crate::prelude::*;
-use bevy_ecs::{entity::Entity, prelude::Component};
+use bevy_ecs::prelude::Component;
 
 // INFO: ----------------------
 //         UI Hierarchy
@@ -13,12 +13,6 @@ pub struct UiRoot;
 
 #[derive(Component)]
 pub struct Node; // marker for any entit in the ui tree
-
-#[derive(Component)]
-pub struct Parent(pub Entity);
-
-#[derive(Component, Default)]
-pub struct Children(pub Vec<Entity>);
 
 // INFO: ------------------
 //         Styling
@@ -83,3 +77,6 @@ pub struct CalculatedLayout {
     /// The absolute screen-space size (Width, Height) of the node.
     pub size: Vec2,
 }
+
+#[derive(Component)]
+pub struct MyTextMarker;

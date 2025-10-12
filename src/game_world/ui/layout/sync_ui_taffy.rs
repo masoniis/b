@@ -9,14 +9,21 @@ use crate::{
     prelude::*,
 };
 use bevy_ecs::prelude::*;
-use std::collections::HashMap;
+use std::{
+    collections::HashMap,
+    ops::{Deref, DerefMut},
+};
 
 use taffy::{self, TaffyTree};
 
-/// The Taffy tree that represents our UI layout.
+// INFO: -------------------
+//         Resources
+// -------------------------
+
+/// The Taffy tree that represents the UI layout.
 ///
 /// It is to be instantiated as a NonSend resource because
-/// Taffy is not Send/Sync.
+/// Taffy is not Send/Sync, unfortunately.
 pub struct UiLayoutTree(pub TaffyTree<Entity>);
 
 impl Default for UiLayoutTree {
@@ -25,57 +32,176 @@ impl Default for UiLayoutTree {
     }
 }
 
+impl Deref for UiLayoutTree {
+    type Target = TaffyTree<Entity>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl DerefMut for UiLayoutTree {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
 /// A map from our ECS entities to Taffy node IDs.
 #[derive(Resource, Default)]
 pub struct EntityToNodeMap(pub HashMap<Entity, taffy::NodeId>);
 
-/// A system that syncs the ECS UI entities and their styles into the Taffy layout system.
+impl Deref for EntityToNodeMap {
+    type Target = HashMap<Entity, taffy::NodeId>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl DerefMut for EntityToNodeMap {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
+// INFO: -----------------
+//         Systems
+// -----------------------
+
+/// A system that synchronizes the UI entity hierarchy from the ECS into the Taffy layout tree.
 ///
-/// This does not perform any layout calculations; it only ensures the Taffy tree reflects
-/// the current state of the ECS UI entities.
+/// This system does not perform any layout computations. It solely ensures that Taffy has all
+/// the proper nodes that the ECS world provides.
 pub fn sync_ui_to_taffy_system(
     mut commands: Commands,
     mut ui_tree: NonSendMut<UiLayoutTree>,
     query: Query<(
         Entity,
+        Option<&Children>,
         &game::Style,
-        Option<&game::Children>,
         Option<&game::UiText>,
     )>,
 ) {
     let mut entity_to_node = EntityToNodeMap::default();
-    ui_tree.0.clear();
+    ui_tree.clear();
 
-    // Convert entities into taffy nodes
-    for (entity, style, _, maybe_text) in query.iter() {
+    debug!(target: "ui_efficiency", "Syncing UI entities to Taffy...");
+
+    // First pass: create all Taffy nodes for each entity.
+    for (entity, _, style, maybe_text) in query.iter() {
         let taffy_style: taffy::style::Style = style.into();
 
-        // If it has text we need to use custom measurement
-        // so taffy can size it properly.
+        // If the entity has text, it needs a custom measure function.
+        // We provide the entity as "context" so the layout computation step
+        // can query for the text content and font system to measure it.
         let node_id = if maybe_text.is_some() {
-            ui_tree.0.new_leaf_with_context(taffy_style, entity)
+            ui_tree.new_leaf_with_context(taffy_style, entity)
         } else {
-            ui_tree.0.new_leaf(taffy_style)
+            ui_tree.new_leaf(taffy_style)
         }
         .unwrap();
-        entity_to_node.0.insert(entity, node_id);
+        entity_to_node.insert(entity, node_id);
     }
 
-    // Build the taffy hierarchy
-    for (entity, _, maybe_children, _) in query.iter() {
+    // Second pass: build the hierarchy within Taffy by connecting nodes.
+    for (entity, maybe_children, _, _) in query.iter() {
         if let Some(children) = maybe_children {
-            let parent_node = entity_to_node.0[&entity];
+            let parent_node = entity_to_node[&entity];
             let child_nodes: Vec<taffy::NodeId> =
-                children.0.iter().map(|e| entity_to_node.0[e]).collect();
-            ui_tree.0.set_children(parent_node, &child_nodes).unwrap();
+                children.iter().map(|e| entity_to_node[&e]).collect();
+            ui_tree.set_children(parent_node, &child_nodes).unwrap();
         }
     }
 
+    // Insert the map as a resource for the layout computation system to use.
     commands.insert_resource(entity_to_node);
 }
 
-/// A function that computes the layout using Taffy and applies the results back to the ECS entities.
-pub fn compute_and_apply_layout(world: &mut World) {
+/// Since taffy only computes position *relative to the parent*, we need to
+/// recurse the hierarchy to create the absolute screen position for nodes.
+///
+/// Then the final absolute position and size is inserted into the ECS world.
+fn apply_layouts_recursively(
+    world: &mut World,
+    ui_tree: &TaffyTree<Entity>,
+    entity_to_node_map: &EntityToNodeMap,
+    entity: Entity,
+    parent_absolute_pos: Vec2,
+) {
+    // Get the taffy node for the current entity, do nothing if it doesn't exist in the map.
+    let Some(node_id) = entity_to_node_map.get(&entity) else {
+        return;
+    };
+    let Ok(layout) = ui_tree.layout(*node_id) else {
+        return;
+    };
+
+    // Calculate the absolute position using the position relative to the parent
+    let relative_pos = Vec2::new(layout.location.x, layout.location.y);
+    let absolute_pos = parent_absolute_pos + relative_pos;
+
+    let calculated_layout = CalculatedLayout {
+        position: absolute_pos,
+        size: Vec2::new(layout.size.width, layout.size.height),
+    };
+
+    // Log the final absolute layout for debugging
+    if world.get::<game::UiText>(entity).is_some() {
+        debug!(
+            target: "ui_layout",
+            "[Layout] Text Entity {:?}: abs_pos=({},{}), size=({},{})",
+            entity,
+            absolute_pos.x,
+            absolute_pos.y,
+            calculated_layout.size.x,
+            calculated_layout.size.y
+        );
+    } else if world.get::<game::UiRoot>(entity).is_some() {
+        debug!(
+            target: "ui_layout",
+            "[Layout] Root Entity {:?}: abs_pos=({},{}), size=({},{})",
+            entity,
+            absolute_pos.x,
+            absolute_pos.y,
+            calculated_layout.size.x,
+            calculated_layout.size.y
+        );
+    } else {
+        debug!(
+            target: "ui_layout",
+            "[Layout] UI Entity {:?}: abs_pos=({},{}), size=({},{})",
+            entity,
+            absolute_pos.x,
+            absolute_pos.y,
+            calculated_layout.size.x,
+            calculated_layout.size.y
+        );
+    }
+
+    // Insert the component with the absolute layout
+    if let Ok(mut entity_mut) = world.get_entity_mut(entity) {
+        entity_mut.insert(calculated_layout);
+    }
+
+    // Recurse for children.
+    let children: Option<Vec<Entity>> = world.get::<Children>(entity).map(|c| c.iter().collect());
+    if let Some(children_vec) = children {
+        for child_entity in children_vec {
+            apply_layouts_recursively(
+                world,
+                ui_tree,
+                entity_to_node_map,
+                child_entity,
+                absolute_pos,
+            );
+        }
+    }
+}
+
+/// A system that computes the layout using Taffy and applies the results back to the ECS entities.
+pub fn compute_and_apply_layout_system(world: &mut World) {
+    debug!(target: "ui_efficiency", "Recomputing the UI layout...");
+
     let mut root_query = world.query_filtered::<Entity, With<game::UiRoot>>();
     let root_entity = match root_query.single(world) {
         Ok(entity) => entity,
@@ -89,14 +215,13 @@ pub fn compute_and_apply_layout(world: &mut World) {
     let entity_to_node = world.remove_resource::<EntityToNodeMap>().unwrap();
     let window_size = world.resource::<WindowSizeResource>();
 
-    let root_node = entity_to_node.0[&root_entity];
+    let root_node = entity_to_node[&root_entity];
     let viewport_size = taffy::Size {
         width: taffy::AvailableSpace::Definite(window_size.width as f32),
         height: taffy::AvailableSpace::Definite(window_size.height as f32),
     };
 
     ui_tree
-        .0
         .compute_layout_with_measure(
             root_node,
             viewport_size,
@@ -124,18 +249,13 @@ pub fn compute_and_apply_layout(world: &mut World) {
         )
         .unwrap();
 
-    // Apply the results back to the ECS
-    for (entity, node_id) in &entity_to_node.0 {
-        let layout = ui_tree.0.layout(*node_id).unwrap();
-        let calculated_layout = CalculatedLayout {
-            position: Vec2::new(layout.location.x, layout.location.y),
-            size: Vec2::new(layout.size.width, layout.size.height),
-        };
-
-        if let Ok(mut entity_mut) = world.get_entity_mut(*entity) {
-            entity_mut.insert(calculated_layout);
-        }
-    }
+    apply_layouts_recursively(
+        world,
+        &ui_tree,
+        &entity_to_node,
+        root_entity,
+        Vec2::ZERO, // root "parent" is the screen at (0,0)
+    );
 
     // Put the resources back
     world.insert_non_send_resource(ui_tree);
@@ -146,7 +266,7 @@ pub fn compute_and_apply_layout(world: &mut World) {
 //         conversion utils
 // --------------------------------
 
-// Conversion from the gameworld component Style to Taffy's Style
+/// Conversion from the gameworld component Style to Taffy's Style
 impl From<&game::Style> for taffy::Style {
     fn from(value: &game::Style) -> Self {
         let to_dim = |size: game::Size| -> taffy::Dimension {

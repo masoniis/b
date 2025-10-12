@@ -26,6 +26,11 @@ pub fn prepare_ui_view_system(
     // Output (insert resource)
     mut commands: Commands,
 ) {
+    debug!(
+        target : "ui_efficiency",
+        "Updating UI view (this should only happen the screen was resized)..."
+    );
+
     let device = &gfx.context.device;
 
     let projection_matrix =

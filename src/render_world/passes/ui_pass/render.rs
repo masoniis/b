@@ -1,11 +1,18 @@
+use crate::prelude::*;
+use crate::render_world::extract::RenderWindowSizeResource;
 use crate::render_world::passes::{
     render_graph::{RenderContext, RenderNode},
     ui_pass::{
+        prepare::UiRenderBatch,
         queue::{RenderPhase, UiPhaseItem},
-        startup::{UiMaterialBuffer, UiObjectBuffer, UiPipeline},
+        startup::{
+            GlyphonAtlas, GlyphonCache, GlyphonFontSystem, GlyphonRenderer, GlyphonViewport,
+            UiMaterialBuffer, UiObjectBuffer, UiPipeline,
+        },
     },
 };
 use bevy_ecs::world::World;
+use glyphon::{cosmic_text::Family, Attrs, Buffer, Metrics, Shaping, TextArea, TextBounds};
 
 use super::{prepare::UiViewBindGroup, startup::ScreenQuadResource};
 
@@ -16,24 +23,21 @@ impl RenderNode for UiPassNode {
         //         Resource fetching
         // ---------------------------------
 
-        let ui_phase = world
-            .get_resource::<RenderPhase<UiPhaseItem>>()
-            .expect("UiPhaseItem resource not found");
-        let pipeline = world
-            .get_resource::<UiPipeline>()
-            .expect("UiPipeline resource not found");
-        let quad = world
-            .get_resource::<ScreenQuadResource>()
-            .expect("GpuQuad resource not found");
-        let view_bind_group = world
-            .get_resource::<UiViewBindGroup>()
-            .expect("UiViewBindGroup resource not found");
-        let material_buffer = world
-            .get_resource::<UiMaterialBuffer>()
-            .expect("UiMaterialBuffer resource not found");
-        let object_buffer = world
-            .get_resource::<UiObjectBuffer>()
-            .expect("UiObjectBuffer resource not found");
+        let ui_phase = world.get_resource::<RenderPhase<UiPhaseItem>>().unwrap();
+        let pipeline = world.get_resource::<UiPipeline>().unwrap();
+        let quad = world.get_resource::<ScreenQuadResource>().unwrap();
+        let view_bind_group = world.get_resource::<UiViewBindGroup>().unwrap();
+        let material_buffer = world.get_resource::<UiMaterialBuffer>().unwrap();
+        let object_buffer = world.get_resource::<UiObjectBuffer>().unwrap();
+        // --- FIX: Get window size for coordinate conversion ---
+        let window_size = world.get_resource::<RenderWindowSizeResource>().unwrap();
+
+        // Glyphon resources
+        let font_system = world.get_resource::<GlyphonFontSystem>().unwrap();
+        let cache = world.get_resource::<GlyphonCache>().unwrap();
+        let atlas = world.get_resource::<GlyphonAtlas>().unwrap();
+        let viewport = world.get_resource::<GlyphonViewport>().unwrap();
+        let renderer = world.get_resource::<GlyphonRenderer>().unwrap();
 
         // INFO: ----------------------
         //         Render logic
@@ -58,20 +62,153 @@ impl RenderNode for UiPassNode {
                     occlusion_query_set: None,
                 });
 
-        render_pass.set_pipeline(&pipeline.pipeline);
-        render_pass.set_bind_group(0, &view_bind_group.bind_group, &[]);
-        render_pass.set_vertex_buffer(0, quad.vertex_buffer.slice(..));
-        render_pass.set_index_buffer(quad.index_buffer.slice(..), wgpu::IndexFormat::Uint16);
-        render_pass.set_bind_group(2, &object_buffer.bind_group, &[]);
+        let mut is_panel_pipeline_set = false;
 
         for batch in &ui_phase.queue {
-            let material_offset = batch.material_index * material_buffer.stride;
-            render_pass.set_bind_group(1, &material_buffer.bind_group, &[material_offset]);
-            render_pass.draw_indexed(
-                0..quad.index_count,
-                0,
-                batch.first_instance..batch.first_instance + batch.instance_count,
-            );
+            match batch {
+                UiRenderBatch::Panel(panel_batch) => {
+                    if !is_panel_pipeline_set {
+                        render_pass.set_pipeline(&pipeline.pipeline);
+                        render_pass.set_bind_group(0, &view_bind_group.bind_group, &[]);
+                        render_pass.set_vertex_buffer(0, quad.vertex_buffer.slice(..));
+                        render_pass.set_index_buffer(
+                            quad.index_buffer.slice(..),
+                            wgpu::IndexFormat::Uint16,
+                        );
+                        render_pass.set_bind_group(2, &object_buffer.bind_group, &[]);
+                        is_panel_pipeline_set = true;
+                    }
+
+                    let material_offset = panel_batch.material_index * material_buffer.stride;
+                    render_pass.set_bind_group(1, &material_buffer.bind_group, &[material_offset]);
+                    render_pass.draw_indexed(
+                        0..quad.index_count,
+                        0,
+                        panel_batch.first_instance
+                            ..panel_batch.first_instance + panel_batch.instance_count,
+                    );
+                }
+                UiRenderBatch::Text(text_batch) => {
+                    info!(
+                        "Rendering a text batch with {} items",
+                        text_batch.texts.len()
+                    );
+                    is_panel_pipeline_set = false;
+
+                    let mut font_system = font_system.0.write().unwrap();
+
+                    // Create buffers that live for the scope of this batch rendering
+                    let buffers: Vec<Buffer> = text_batch
+                        .texts
+                        .iter()
+                        .map(|text_kind| {
+                            if let crate::render_world::extract::ui::UiElementKind::Text {
+                                content,
+                                bounds,
+                                font_size,
+                                ..
+                            } = text_kind
+                            {
+                                let mut buffer = Buffer::new(
+                                    &mut font_system,
+                                    Metrics::new(*font_size, *font_size),
+                                );
+                                buffer.set_text(
+                                    &mut font_system,
+                                    content,
+                                    &Attrs::new().family(Family::Name("Miracode")),
+                                    Shaping::Advanced,
+                                );
+                                buffer.set_size(&mut font_system, Some(bounds.x), Some(bounds.y));
+                                buffer
+                            } else {
+                                unreachable!();
+                            }
+                        })
+                        .collect();
+
+                    // Create TextAreas that borrow from the buffers
+                    let text_areas: Vec<TextArea> = buffers
+                        .iter()
+                        .zip(text_batch.texts.iter())
+                        .map(|(buffer, text_kind)| {
+                            if let crate::render_world::extract::ui::UiElementKind::Text {
+                                content,
+                                position,
+                                bounds,
+                                color,
+                                ..
+                            } = text_kind
+                            {
+                                let area_color = glyphon::Color::rgba(
+                                    (color[0] * 255.0) as u8,
+                                    (color[1] * 255.0) as u8,
+                                    (color[2] * 255.0) as u8,
+                                    (color[3] * 255.0) as u8,
+                                );
+                                
+                                // --- FIX: Coordinate System Conversion ---
+                                // Taffy's (0,0) is top-left, Y-down.
+                                // Glyphon's (0,0) is bottom-left, Y-up.
+                                // We must convert the Y coordinate.
+                                // We also subtract the text's height because Taffy's position
+                                // is the top-left corner, but Glyphon expects the bottom-left.
+                                let text_height = bounds.y;
+                                let converted_y = window_size.height as f32 - position.y - text_height;
+
+                                info!(
+                                    "Text Area: left={}, top={}, converted_top={}, color={:?}, content='{}'",
+                                    position.x, position.y, converted_y, area_color, content
+                                );
+
+                                TextArea {
+                                    buffer,
+                                    left: 41.5,
+                                    top: converted_y, // Use the converted Y coordinate
+                                    scale: 1.0,
+                                    bounds: TextBounds {
+                                        left: 0,
+                                        top: 0,
+                                        right: 1000 as i32,
+                                        bottom: 1000 as i32,
+                                    },
+                                    default_color: area_color,
+                                    custom_glyphs: &[],
+                                }
+                            } else {
+                                unreachable!();
+                            }
+                        })
+                        .collect();
+
+                    renderer
+                        .0
+                        .write()
+                        .unwrap()
+                        .prepare(
+                            &render_context.device,
+                            &render_context.queue,
+                            &mut font_system,
+                            &mut atlas.0.write().unwrap(),
+                            &mut viewport.0.write().unwrap(),
+                            text_areas,
+                            &mut cache.0.write().unwrap(),
+                        )
+                        .unwrap();
+
+                    renderer
+                        .0
+                        .read()
+                        .unwrap()
+                        .render(
+                            &atlas.0.read().unwrap(),
+                            &viewport.0.read().unwrap(),
+                            &mut render_pass,
+                        )
+                        .unwrap();
+                }
+            }
         }
     }
 }
+

@@ -7,6 +7,7 @@ use crate::{
 };
 use bevy_ecs::prelude::*;
 
+#[derive(Clone, Debug)]
 pub enum UiElementKind {
     Panel {
         position: Vec2,
@@ -25,35 +26,18 @@ pub enum UiElementKind {
 /// A component that marks an entity as a renderable UI element.
 #[derive(Component)]
 pub struct RenderableUiElement {
+    entity_key: Entity,
     pub sort_key: f32,
     pub kind: UiElementKind,
 }
 
-#[derive(Component, Debug)]
-pub struct ExtractedUiNode {
-    pub layout: CalculatedLayout,
-    pub material: UiBackground,
-}
-
-/// A struct that extracts UI node information for rendering.
-pub struct UiNodeExtractor;
-
-impl ExtractComponent for UiNodeExtractor {
-    type Extracted = ExtractedUiNode;
-    type QueryComponents = (&'static CalculatedLayout, &'static UiBackground);
-    type QueryFilter = With<Node>;
-
-    fn extract(
-        _entity: Entity,
-        (layout, material): (&CalculatedLayout, &UiBackground),
-    ) -> Self::Extracted {
-        ExtractedUiNode {
-            layout: *layout,
-            material: material.clone(),
-        }
+impl ContainsEntity for RenderableUiElement {
+    fn entity(&self) -> Entity {
+        self.entity_key
     }
 }
 
+/// A struct that extracts UI panel information for rendering.
 pub struct UiPanelExtractor;
 
 impl ExtractComponent for UiPanelExtractor {
@@ -69,11 +53,19 @@ impl ExtractComponent for UiPanelExtractor {
     // Ensure we only run this on Nodes
     type QueryFilter = With<Node>;
 
+    type ChangeTracked = Or<(
+        Changed<CalculatedLayout>,
+        Changed<UiBackground>,
+        Changed<UiDepth>,
+        Added<Node>,
+    )>;
+
     fn extract(
-        _entity: Entity,
+        entity: Entity,
         (layout, background, depth): (&CalculatedLayout, &UiBackground, &UiDepth),
     ) -> Self::Extracted {
         RenderableUiElement {
+            entity_key: entity,
             sort_key: depth.0,
             kind: UiElementKind::Panel {
                 position: layout.position,
@@ -87,21 +79,27 @@ impl ExtractComponent for UiPanelExtractor {
     }
 }
 
-// --- Extractor for UI Text ---
-
+/// A struct that extracts UI text information for rendering.
 pub struct UiTextExtractor;
 
 impl ExtractComponent for UiTextExtractor {
     type Extracted = RenderableUiElement;
-    // Query for layout, text, AND our new depth component
     type QueryComponents = (&'static CalculatedLayout, &'static UiText, &'static UiDepth);
+
     type QueryFilter = With<Node>;
+    type ChangeTracked = Or<(
+        Changed<CalculatedLayout>,
+        Changed<UiText>,
+        Changed<UiDepth>,
+        Added<Node>,
+    )>;
 
     fn extract(
-        _entity: Entity,
+        entity: Entity,
         (layout, text, depth): (&CalculatedLayout, &UiText, &UiDepth),
     ) -> Self::Extracted {
         RenderableUiElement {
+            entity_key: entity,
             // Add a small bias to the sort key to ensure text always renders
             // on top of its parent panel (which will have the same integer depth).
             sort_key: depth.0 + 0.1,
