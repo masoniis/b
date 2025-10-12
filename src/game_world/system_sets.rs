@@ -1,7 +1,7 @@
 use bevy_ecs::prelude::SystemSet;
 
 #[derive(SystemSet, Debug, Hash, PartialEq, Eq, Clone)]
-pub enum CoreSet {
+pub enum GameSet {
     /// Process raw OS input and publish game-specific events.
     Input,
     /// Handle state transitions and other pre-logic tasks.
@@ -14,6 +14,4 @@ pub enum CoreSet {
     PostUpdate,
     /// Collect all data needed for rendering into queues/buffers.
     RenderPrep,
-    /// Perform the actual rendering operations based on the ECS world.
-    Render,
 }

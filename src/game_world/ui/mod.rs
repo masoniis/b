@@ -10,6 +10,7 @@ pub mod text;
 use crate::{
     ecs_core::{EcsBuilder, Plugin},
     game_world::{schedules::GameSchedule, ui::layout::should_relayout_ui},
+    GameSet,
 };
 use bevy_ecs::prelude::*;
 use {
@@ -37,8 +38,9 @@ impl Plugin for UiPlugin {
                 compute_and_apply_layout_system,
                 compute_ui_depth_system,
             )
+                .chain()
                 .run_if(should_relayout_ui)
-                .chain(),
+                .in_set(GameSet::RenderPrep),
         );
     }
 }

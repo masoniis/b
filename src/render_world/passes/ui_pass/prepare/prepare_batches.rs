@@ -12,10 +12,7 @@ use crate::{
     },
 };
 use bevy_ecs::prelude::*;
-use std::{
-    cmp::Ordering,
-    ops::{Deref, DerefMut},
-};
+use std::ops::{Deref, DerefMut};
 
 // INFO: -------------------
 //         Resources
@@ -63,6 +60,26 @@ impl DerefMut for TextBatch {
     }
 }
 
+/// A buffer used to store UI elements for sorting.
+///
+/// By using a buffer, it is guaranteed no new vec is
+/// allocated every time which improves performance.
+#[derive(Resource, Default)]
+pub struct UiElementSortBufferResource(Vec<RenderableUiElement>);
+
+impl Deref for UiElementSortBufferResource {
+    type Target = Vec<RenderableUiElement>;
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl DerefMut for UiElementSortBufferResource {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
 // INFO: -----------------
 //         Systems
 // -----------------------
@@ -70,8 +87,11 @@ impl DerefMut for TextBatch {
 pub fn prepare_ui_batches_system(
     // Input
     gfx: Res<GraphicsContextResource>,
-    extracted_panels: Res<ExtractedBy<UiPanelExtractor>>,
-    extracted_texts: Res<ExtractedBy<UiTextExtractor>>,
+    mut extracted_panels: ResMut<ExtractedBy<UiPanelExtractor>>,
+    mut extracted_texts: ResMut<ExtractedBy<UiTextExtractor>>,
+
+    // In/Out (persistent storage buffer)
+    mut sort_buffer: ResMut<UiElementSortBufferResource>,
 
     // Output (buffers)
     mut material_buffer: ResMut<UiMaterialBuffer>,
@@ -81,6 +101,7 @@ pub fn prepare_ui_batches_system(
     material_buffer.materials.clear();
     object_buffer.objects.clear();
     prepared_batches.batches.clear();
+    sort_buffer.clear();
 
     // INFO: ---------------------------------
     //         Sort all items by depth
@@ -88,23 +109,26 @@ pub fn prepare_ui_batches_system(
 
     debug!(
         target : "ui_efficiency",
-        "Preparing UI batches (this should only happen if UI updated)..."
+        "Preparing UI batches (only needs to run if UI updated)..."
     );
 
-    let mut all_items: Vec<&RenderableUiElement> = extracted_panels
-        .items
-        .iter()
-        .chain(extracted_texts.items.iter())
-        .collect();
-    all_items.sort_by(|a, b| {
-        a.sort_key
-            .partial_cmp(&b.sort_key)
-            .unwrap_or(Ordering::Equal)
-    });
+    // We use a sort buffer and extend it with all extracted items
+    // since this is quicker than re-allocating a new vec every frame.
+    // This flushes the extracted items, but since this is the only
+    // system that requires them it shouldn't be a problem I'm hoping.
+    sort_buffer.extend(extracted_panels.items.drain(..));
+    sort_buffer.extend(extracted_texts.items.drain(..));
 
-    if all_items.is_empty() {
+    // Sort unstably for faster sorting. If two UI elements overlap on the same
+    // depth this may lead to flickering but for now I'm just considering that
+    // developer error, you should adjust the Z index for those or something.
+    sort_buffer.sort_unstable_by(|a, b| a.sort_key.total_cmp(&b.sort_key));
+
+    if sort_buffer.is_empty() {
         return;
     }
+
+    debug!(target: "ui_efficiency", "Sorted {} UI elements for batching.", sort_buffer.len());
 
     // INFO: -----------------------------------
     //         Create UI Batches for GPU
@@ -114,7 +138,7 @@ pub fn prepare_ui_batches_system(
     let mut current_panel_material_color: Option<[u32; 4]> = None;
     let mut current_text_batch: Option<TextBatch> = None;
 
-    for item in all_items {
+    for item in sort_buffer.drain(..) {
         match &item.kind {
             UiElementKind::Panel {
                 color,
@@ -164,6 +188,8 @@ pub fn prepare_ui_batches_system(
                 if current_text_batch.is_none() {
                     current_text_batch = Some(TextBatch::default());
                 }
+
+                debug!(target: "ui_batching", "Added text to batch: {:?}", item.kind);
 
                 // Add the text to the current text batch
                 current_text_batch

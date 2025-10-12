@@ -4,7 +4,7 @@ use crate::{
         EcsBuilder, Plugin,
     },
     game_world::schedules::GameSchedule,
-    prelude::CoreSet,
+    prelude::GameSet,
 };
 use bevy_ecs::prelude::*;
 
@@ -40,9 +40,9 @@ impl Plugin for AppLifecyclePlugin {
             (
                 apply_state_transition_system::<AppState>,
                 apply_state_transition_system::<GameState>,
-                update_app_time_system, // TODO: The main system needs to run every frame, even during loading
+                update_app_time_system,
             )
-                .in_set(CoreSet::PreUpdate),
+                .in_set(GameSet::PreUpdate),
         );
     }
 }

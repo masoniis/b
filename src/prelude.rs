@@ -3,7 +3,7 @@
 /// at a system ecs module level (eg plugin) as there will be many modules.
 pub use crate::{
     ecs_core::{CommonEcsInterface, EcsBuilder, Plugin, PluginGroup, ScheduleBuilder},
-    game_world::system_sets::CoreSet,
+    game_world::system_sets::GameSet,
     utils::*,
 };
 

@@ -2,6 +2,7 @@ pub mod prepare;
 pub mod queue;
 pub mod render;
 pub mod startup;
+pub mod utils;
 
 // INFO: ---------------------------
 //         Plugin definition
@@ -17,6 +18,7 @@ use crate::{
             ui::{UiPanelExtractor, UiTextExtractor},
             RenderWindowSizeResource,
         },
+        passes::ui_pass::{prepare::UiElementSortBufferResource, utils::ui_was_extracted},
         RenderSchedule,
     },
 };
@@ -27,12 +29,9 @@ pub struct RenderUiPlugin;
 
 impl Plugin for RenderUiPlugin {
     fn build(&self, builder: &mut EcsBuilder) {
-        builder.init_resource::<ExtractedBy<UiPanelExtractor>>();
-        builder.init_resource::<ExtractedBy<UiTextExtractor>>();
-        builder.init_resource::<PreparedUiBatches>();
-        builder
-            .world
-            .insert_resource(RenderPhase::<UiRenderBatch>::default());
+        // INFO: -----------------
+        //         Startup
+        // -----------------------
 
         builder.schedule_entry(RenderSchedule::Startup).add_systems(
             (
@@ -45,20 +44,40 @@ impl Plugin for RenderUiPlugin {
                 .chain(),
         );
 
+        // INFO: -----------------
+        //         Extract
+        // -----------------------
+
         builder
+            // resources
+            .init_resource::<ExtractedBy<UiPanelExtractor>>()
+            .init_resource::<ExtractedBy<UiTextExtractor>>()
+            // systems
             .schedule_entry(RenderSchedule::Extract)
             .add_systems((
                 extract::extract_component_system::<UiPanelExtractor>,
                 extract::extract_component_system::<UiTextExtractor>,
             ));
 
+        // INFO: -----------------
+        //         Prepare
+        // -----------------------
+
+        builder
+            // resources
+            .init_resource::<PreparedUiBatches>()
+            .init_resource::<UiElementSortBufferResource>();
+        builder
+            .world
+            .insert_resource(RenderPhase::<UiRenderBatch>::default());
+
         builder.schedule_entry(RenderSchedule::Prepare).add_systems(
             (
-                prepare::prepare_ui_batches_system.run_if(
-                    resource_changed::<ExtractedBy<UiPanelExtractor>>
-                        .or(resource_changed::<ExtractedBy<UiTextExtractor>>),
-                ),
-                prepare::prepare_ui_view_system
+                prepare::prepare_ui_batches_system.run_if(ui_was_extracted),
+                (
+                    prepare::prepare_ui_view_system,
+                    prepare::prepare_glyphon_view_system,
+                )
                     .run_if(resource_changed::<RenderWindowSizeResource>),
             )
                 .chain(),

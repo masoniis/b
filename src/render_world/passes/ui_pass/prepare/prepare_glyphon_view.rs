@@ -1,0 +1,31 @@
+use crate::{
+    prelude::*,
+    render_world::{
+        extract::RenderWindowSizeResource, passes::ui_pass::startup::GlyphonViewport,
+        resources::GraphicsContextResource,
+    },
+};
+use bevy_ecs::prelude::*;
+
+/// A system that creates the orthographic projection matrix for the UI camera.
+///
+/// Run condition: If the window size or the view bind group layout changes.
+pub fn prepare_glyphon_view_system(
+    // Input
+    gfx: Res<GraphicsContextResource>,
+    window_size: Res<RenderWindowSizeResource>,
+    glyphon_viewport: Res<GlyphonViewport>,
+) {
+    debug!(
+        target : "ui_efficiency",
+        "Updating Glyphon viewport (this should only happen the screen was resized)..."
+    );
+
+    glyphon_viewport.0.write().unwrap().update(
+        &gfx.context.queue,
+        glyphon::Resolution {
+            width: window_size.width as u32,
+            height: window_size.height as u32,
+        },
+    );
+}

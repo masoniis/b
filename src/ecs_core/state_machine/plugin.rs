@@ -30,10 +30,10 @@ impl<T: State> Plugin for StatePlugin<T> {
         // Add the transition system for this specific state type
         builder
             .schedule_entry(GameSchedule::Loading)
-            .add_systems(apply_state_transition_system::<T>.in_set(CoreSet::PostUpdate));
+            .add_systems(apply_state_transition_system::<T>.in_set(GameSet::PostUpdate));
 
         builder
             .schedule_entry(GameSchedule::Main)
-            .add_systems(apply_state_transition_system::<T>.in_set(CoreSet::PostUpdate));
+            .add_systems(apply_state_transition_system::<T>.in_set(GameSet::PostUpdate));
     }
 }

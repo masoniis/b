@@ -1,5 +1,6 @@
-use crate::game_world::ui::components::UiText;
-use crate::game_world::ui::layout::compute_depth::UiDepth;
+use crate::game_world::ui::{
+    components::TextAlign, components::UiText, layout::compute_depth::UiDepth,
+};
 use crate::prelude::*;
 use crate::{
     game_world::ui::components::{CalculatedLayout, Node, UiBackground},
@@ -20,6 +21,7 @@ pub enum UiElementKind {
         bounds: Vec2,
         font_size: f32,
         color: [f32; 4],
+        align: glyphon::cosmic_text::Align,
     },
 }
 
@@ -109,6 +111,11 @@ impl ExtractComponent for UiTextExtractor {
                 bounds: layout.size,
                 font_size: text.font_size,
                 color: text.color,
+                align: match text.align {
+                    TextAlign::Start => glyphon::cosmic_text::Align::Left,
+                    TextAlign::Center => glyphon::cosmic_text::Align::Center,
+                    TextAlign::End => glyphon::cosmic_text::Align::Right,
+                },
             },
         }
     }

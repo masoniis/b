@@ -77,13 +77,12 @@ pub fn configure_game_world(registry: TextureRegistry, window: &Window) -> EcsBu
     // Configure core schedule sets before adding plugins
     builder.schedules.entry(GameSchedule::Main).configure_sets(
         (
-            CoreSet::Input,
-            CoreSet::PreUpdate,
-            CoreSet::Update,
-            CoreSet::Physics,
-            CoreSet::PostUpdate,
-            CoreSet::RenderPrep,
-            CoreSet::Render,
+            GameSet::Input,
+            GameSet::PreUpdate,
+            GameSet::Update,
+            GameSet::Physics,
+            GameSet::PostUpdate,
+            GameSet::RenderPrep,
         )
             .chain(),
     );

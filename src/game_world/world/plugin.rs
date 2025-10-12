@@ -20,7 +20,7 @@ impl Plugin for WorldModulePlugin {
 
         builder.schedule_entry(GameSchedule::Main).add_systems(
             (main_system::time_system,)
-                .in_set(CoreSet::PreUpdate)
+                .in_set(GameSet::PreUpdate)
                 .run_if(in_state(AppState::Running)),
         );
     }

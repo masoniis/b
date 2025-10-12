@@ -66,6 +66,16 @@ pub struct UiText {
     pub content: String,
     pub font_size: f32,
     pub color: [f32; 4],
+    pub align: TextAlign,
+}
+
+// Create an enum for text alignment
+#[derive(Clone, Copy, Debug, Default)]
+pub enum TextAlign {
+    #[default]
+    Start,
+    Center,
+    End,
 }
 
 // INFO: Output

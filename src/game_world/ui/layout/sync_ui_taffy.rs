@@ -117,6 +117,70 @@ pub fn sync_ui_to_taffy_system(
     commands.insert_resource(entity_to_node);
 }
 
+/// A system that computes the layout using Taffy and applies the results back to the ECS entities.
+pub fn compute_and_apply_layout_system(world: &mut World) {
+    debug!(target: "ui_efficiency", "Recomputing the UI layout...");
+
+    let mut root_query = world.query_filtered::<Entity, With<game::UiRoot>>();
+    let root_entity = match root_query.single(world) {
+        Ok(entity) => entity,
+        Err(e) => {
+            error!("Error finding single UI Root: {:?}", e);
+            return;
+        }
+    };
+
+    let mut ui_tree = world.remove_non_send_resource::<UiLayoutTree>().unwrap();
+    let entity_to_node = world.remove_resource::<EntityToNodeMap>().unwrap();
+    let window_size = world.resource::<WindowSizeResource>();
+
+    let root_node = entity_to_node[&root_entity];
+    let viewport_size = taffy::Size {
+        width: taffy::AvailableSpace::Definite(window_size.width as f32),
+        height: taffy::AvailableSpace::Definite(window_size.height as f32),
+    };
+
+    ui_tree
+        .compute_layout_with_measure(
+            root_node,
+            viewport_size,
+            |known_dimensions, available_space, _node_id, node_context, _style| {
+                if let Some(entity) = node_context {
+                    let text = match world.get::<game::UiText>(*entity) {
+                        Some(text) => text.clone(),
+                        None => return taffy::Size::ZERO, // no text means no internal size constraint
+                    };
+
+                    return world.get_resource_mut::<FontSystemResource>().map_or(
+                        taffy::Size::ZERO,
+                        |mut font_system_res| {
+                            measure_text_node(
+                                known_dimensions,
+                                available_space,
+                                &text,
+                                &mut font_system_res.font_system,
+                            )
+                        },
+                    );
+                }
+                taffy::Size::ZERO // no text means no internal size constraint
+            },
+        )
+        .unwrap();
+
+    apply_layouts_recursively(
+        world,
+        &ui_tree,
+        &entity_to_node,
+        root_entity,
+        Vec2::ZERO, // root "parent" is the screen at (0,0)
+    );
+
+    // Put the resources back
+    world.insert_non_send_resource(ui_tree);
+    world.insert_resource(entity_to_node);
+}
+
 /// Since taffy only computes position *relative to the parent*, we need to
 /// recurse the hierarchy to create the absolute screen position for nodes.
 ///
@@ -198,70 +262,6 @@ fn apply_layouts_recursively(
     }
 }
 
-/// A system that computes the layout using Taffy and applies the results back to the ECS entities.
-pub fn compute_and_apply_layout_system(world: &mut World) {
-    debug!(target: "ui_efficiency", "Recomputing the UI layout...");
-
-    let mut root_query = world.query_filtered::<Entity, With<game::UiRoot>>();
-    let root_entity = match root_query.single(world) {
-        Ok(entity) => entity,
-        Err(e) => {
-            error!("Error finding single UI Root: {:?}", e);
-            return;
-        }
-    };
-
-    let mut ui_tree = world.remove_non_send_resource::<UiLayoutTree>().unwrap();
-    let entity_to_node = world.remove_resource::<EntityToNodeMap>().unwrap();
-    let window_size = world.resource::<WindowSizeResource>();
-
-    let root_node = entity_to_node[&root_entity];
-    let viewport_size = taffy::Size {
-        width: taffy::AvailableSpace::Definite(window_size.width as f32),
-        height: taffy::AvailableSpace::Definite(window_size.height as f32),
-    };
-
-    ui_tree
-        .compute_layout_with_measure(
-            root_node,
-            viewport_size,
-            |known_dimensions, available_space, _node_id, node_context, _style| {
-                if let Some(entity) = node_context {
-                    let text = match world.get::<game::UiText>(*entity) {
-                        Some(text) => text.clone(),
-                        None => return taffy::Size::ZERO, // no text means no internal size constraint
-                    };
-
-                    return world.get_resource_mut::<FontSystemResource>().map_or(
-                        taffy::Size::ZERO,
-                        |mut font_system_res| {
-                            measure_text_node(
-                                known_dimensions,
-                                available_space,
-                                &text,
-                                &mut font_system_res.font_system,
-                            )
-                        },
-                    );
-                }
-                taffy::Size::ZERO // no text means no internal size constraint
-            },
-        )
-        .unwrap();
-
-    apply_layouts_recursively(
-        world,
-        &ui_tree,
-        &entity_to_node,
-        root_entity,
-        Vec2::ZERO, // root "parent" is the screen at (0,0)
-    );
-
-    // Put the resources back
-    world.insert_non_send_resource(ui_tree);
-    world.insert_resource(entity_to_node);
-}
-
 // INFO: --------------------------
 //         conversion utils
 // --------------------------------
@@ -290,36 +290,52 @@ impl From<&game::Style> for taffy::Style {
 }
 
 /// Measures the size of a text node using the provided FontSystem.
+///
+/// Note: Text alignment doesn't show up here because alignment does
+/// not impact the size of measaurement.
 fn measure_text_node(
-    _known_dimensions: taffy::Size<Option<f32>>,
+    known_dimensions: taffy::Size<Option<f32>>,
     available_space: taffy::Size<taffy::AvailableSpace>,
     text: &game::UiText,
     font_system: &mut glyphon::FontSystem,
 ) -> taffy::Size<f32> {
-    let max_width = match available_space.width {
-        taffy::AvailableSpace::Definite(space) => space,
-        taffy::AvailableSpace::MaxContent => f32::INFINITY,
-        taffy::AvailableSpace::MinContent => 0.0,
-    };
+    // Determine constraints
+    let width_constraint = known_dimensions.width.or(match available_space.width {
+        taffy::AvailableSpace::MinContent => Some(0.0),
+        taffy::AvailableSpace::MaxContent => None,
+        taffy::AvailableSpace::Definite(width) => Some(width),
+    });
 
+    // Create the buffer and size it
     let mut buffer = glyphon::Buffer::new(
         font_system,
         glyphon::Metrics::new(text.font_size, text.font_size),
     );
 
-    buffer.set_size(font_system, Some(max_width), Some(f32::INFINITY));
-
+    buffer.set_size(font_system, width_constraint, None);
     buffer.set_text(
         font_system,
         &text.content,
         &glyphon::Attrs::new().family(glyphon::Family::Name("Miracode")),
         glyphon::Shaping::Advanced,
     );
-
     buffer.shape_until_scroll(font_system, false);
 
     let (measured_width, measured_height) = (buffer.size().0, buffer.size().1);
 
+    debug!(
+        target: "ui_layout",
+        "[Measure] Text '{}' (font size {}): measured size=({:?},{:?}), width_constraint={:?}, avilable_space=({:?},{:?})",
+        text.content,
+        text.font_size,
+        measured_width,
+        measured_height,
+        width_constraint,
+        available_space.width,
+        available_space.height
+    );
+
+    // Return the size
     match (measured_width, measured_height) {
         (Some(w), Some(h)) => taffy::Size {
             width: w,

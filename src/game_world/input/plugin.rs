@@ -13,7 +13,7 @@ use crate::{
             RawDeviceEvent, RawWindowEvent,
         },
         schedules::{GameSchedule, OnExit},
-        CoreSet,
+        GameSet,
     },
 };
 use bevy_ecs::{event::Events, schedule::IntoScheduleConfigs};
@@ -54,7 +54,7 @@ impl Plugin for InputModulePlugin {
                     .after(processing::window_events_system)
                     .after(processing::device_events_system),
             )
-                .in_set(CoreSet::Input),
+                .in_set(GameSet::Input),
         );
 
         builder

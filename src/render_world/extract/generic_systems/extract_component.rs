@@ -1,4 +1,3 @@
-use crate::prelude::*;
 use crate::render_world::extract::run_extract_schedule::GameWorld;
 use bevy_ecs::prelude::*;
 use bevy_ecs::query::{QueryData, QueryFilter};
@@ -55,14 +54,8 @@ pub fn extract_component_system<T: ExtractComponent>(
         .val
         .query_filtered::<(Entity, T::QueryComponents), (T::QueryFilter, T::ChangeTracked)>();
 
-    info!(
-        "Querying for changed components of type {}",
-        std::any::type_name::<T>()
-    );
-
     // Update existing items by entity lookup
     for (entity, components) in query.iter(&main_world.val) {
-        info!("Extracted new component for entity {:?}", entity);
         let extracted_item = T::extract(entity, components);
 
         // Find and update existing, or push new
@@ -76,8 +69,6 @@ pub fn extract_component_system<T: ExtractComponent>(
             extracted.items.push(extracted_item);
         }
     }
-
-    info!("Extracted last: {:?}", extracted.last_changed());
 
     // Handle removals separately if needed
 }

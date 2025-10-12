@@ -1,5 +1,3 @@
-use crate::prelude::*;
-use crate::render_world::extract::RenderWindowSizeResource;
 use crate::render_world::passes::{
     render_graph::{RenderContext, RenderNode},
     ui_pass::{
@@ -12,7 +10,7 @@ use crate::render_world::passes::{
     },
 };
 use bevy_ecs::world::World;
-use glyphon::{cosmic_text::Family, Attrs, Buffer, Metrics, Shaping, TextArea, TextBounds};
+use glyphon::{Buffer, Metrics, TextArea, TextBounds};
 
 use super::{prepare::UiViewBindGroup, startup::ScreenQuadResource};
 
@@ -29,8 +27,6 @@ impl RenderNode for UiPassNode {
         let view_bind_group = world.get_resource::<UiViewBindGroup>().unwrap();
         let material_buffer = world.get_resource::<UiMaterialBuffer>().unwrap();
         let object_buffer = world.get_resource::<UiObjectBuffer>().unwrap();
-        // --- FIX: Get window size for coordinate conversion ---
-        let window_size = world.get_resource::<RenderWindowSizeResource>().unwrap();
 
         // Glyphon resources
         let font_system = world.get_resource::<GlyphonFontSystem>().unwrap();
@@ -89,10 +85,6 @@ impl RenderNode for UiPassNode {
                     );
                 }
                 UiRenderBatch::Text(text_batch) => {
-                    info!(
-                        "Rendering a text batch with {} items",
-                        text_batch.texts.len()
-                    );
                     is_panel_pipeline_set = false;
 
                     let mut font_system = font_system.0.write().unwrap();
@@ -106,6 +98,7 @@ impl RenderNode for UiPassNode {
                                 content,
                                 bounds,
                                 font_size,
+                                align,
                                 ..
                             } = text_kind
                             {
@@ -113,13 +106,19 @@ impl RenderNode for UiPassNode {
                                     &mut font_system,
                                     Metrics::new(*font_size, *font_size),
                                 );
-                                buffer.set_text(
+
+                                let attrs =
+                                    glyphon::Attrs::new().family(glyphon::Family::Name("Miracode"));
+                                buffer.set_rich_text(
                                     &mut font_system,
-                                    content,
-                                    &Attrs::new().family(Family::Name("Miracode")),
-                                    Shaping::Advanced,
+                                    [(content.as_str(), attrs.clone())],
+                                    &attrs,
+                                    glyphon::Shaping::Advanced,
+                                    Some(*align),
                                 );
+
                                 buffer.set_size(&mut font_system, Some(bounds.x), Some(bounds.y));
+
                                 buffer
                             } else {
                                 unreachable!();
@@ -133,46 +132,31 @@ impl RenderNode for UiPassNode {
                         .zip(text_batch.texts.iter())
                         .map(|(buffer, text_kind)| {
                             if let crate::render_world::extract::ui::UiElementKind::Text {
-                                content,
                                 position,
                                 bounds,
                                 color,
                                 ..
                             } = text_kind
                             {
-                                let area_color = glyphon::Color::rgba(
+                                let text_color = glyphon::Color::rgba(
                                     (color[0] * 255.0) as u8,
                                     (color[1] * 255.0) as u8,
                                     (color[2] * 255.0) as u8,
                                     (color[3] * 255.0) as u8,
                                 );
-                                
-                                // --- FIX: Coordinate System Conversion ---
-                                // Taffy's (0,0) is top-left, Y-down.
-                                // Glyphon's (0,0) is bottom-left, Y-up.
-                                // We must convert the Y coordinate.
-                                // We also subtract the text's height because Taffy's position
-                                // is the top-left corner, but Glyphon expects the bottom-left.
-                                let text_height = bounds.y;
-                                let converted_y = window_size.height as f32 - position.y - text_height;
-
-                                info!(
-                                    "Text Area: left={}, top={}, converted_top={}, color={:?}, content='{}'",
-                                    position.x, position.y, converted_y, area_color, content
-                                );
 
                                 TextArea {
                                     buffer,
-                                    left: 41.5,
-                                    top: converted_y, // Use the converted Y coordinate
+                                    left: position.x,
+                                    top: position.y,
                                     scale: 1.0,
                                     bounds: TextBounds {
-                                        left: 0,
-                                        top: 0,
-                                        right: 1000 as i32,
-                                        bottom: 1000 as i32,
+                                        left: position.x as i32,
+                                        top: position.y as i32,
+                                        right: position.x as i32 + bounds.x as i32,
+                                        bottom: position.y as i32 + bounds.y as i32,
                                     },
-                                    default_color: area_color,
+                                    default_color: text_color,
                                     custom_glyphs: &[],
                                 }
                             } else {
@@ -211,4 +195,3 @@ impl RenderNode for UiPassNode {
         }
     }
 }
-
