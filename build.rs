@@ -63,7 +63,8 @@ fn main() {
     let compiler = Wesl::new("assets/shaders"); // src dir for shaders
 
     // Specific final shaders
-    compiler.build_artifact(&"package::ui::main".parse().unwrap(), "ui_main");
+    compiler.build_artifact(&"package::ui::main_vert".parse().unwrap(), "ui_main_vert");
+    compiler.build_artifact(&"package::ui::main_frag".parse().unwrap(), "ui_main_frag");
     compiler.build_artifact(&"package::scene::simple".parse().unwrap(), "scene_simple");
 }
 

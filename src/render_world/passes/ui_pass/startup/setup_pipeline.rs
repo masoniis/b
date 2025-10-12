@@ -69,9 +69,14 @@ pub fn setup_ui_pipeline(
     });
 
     // Create the rendering pipeline
-    let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
-        label: Some("UI Shader"),
-        source: wgpu::ShaderSource::Wgsl(include_wesl!("ui_main").into()),
+    let vs_shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
+        label: Some("UI Vertex Shader"),
+        source: wgpu::ShaderSource::Wgsl(include_wesl!("ui_main_vert").into()),
+    });
+
+    let fs_shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
+        label: Some("UI Fragment Shader"),
+        source: wgpu::ShaderSource::Wgsl(include_wesl!("ui_main_frag").into()),
     });
 
     let pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
@@ -79,7 +84,7 @@ pub fn setup_ui_pipeline(
         layout: Some(&pipeline_layout),
         cache: None,
         vertex: wgpu::VertexState {
-            module: &shader,
+            module: &vs_shader,
             entry_point: Some("vs_main"),
             buffers: &[wgpu::VertexBufferLayout {
                 array_stride: (2 * std::mem::size_of::<f32>()) as wgpu::BufferAddress,
@@ -89,7 +94,7 @@ pub fn setup_ui_pipeline(
             compilation_options: Default::default(),
         },
         fragment: Some(wgpu::FragmentState {
-            module: &shader,
+            module: &fs_shader,
             entry_point: Some("fs_main"),
             targets: &[Some(wgpu::ColorTargetState {
                 format: surface_format,

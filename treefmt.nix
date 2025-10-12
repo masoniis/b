@@ -14,6 +14,9 @@
 
   settings.formatter.wgslfmt = {
     command = "wgslfmt"; # provided by wgsl analyzer from the flake
-    includes = [ "*.wgsl" ];
+    includes = [
+      "*.wgsl"
+      "*.wesl"
+    ];
   };
 }

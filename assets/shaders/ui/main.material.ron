@@ -1,6 +1,7 @@
 MaterialDefinition(
     vertex_buffers: [],
     bind_group_layouts: {
+				// Per material data
         1: BindGroupLayoutDef(
             bindings: [
                 BindingDef(
@@ -14,6 +15,7 @@ MaterialDefinition(
                 ),
             ],
         ),
+				// Per object data
         2: BindGroupLayoutDef(
             bindings: [
                 BindingDef(
