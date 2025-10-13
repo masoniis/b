@@ -1,7 +1,7 @@
 use crate::{
     prelude::*,
     render_world::{
-        extract::RenderWindowSizeResource, passes::ui_pass::startup::GlyphonViewport,
+        extract::RenderWindowSizeResource, passes::ui_pass::startup::GlyphonViewportResource,
         resources::GraphicsContextResource,
     },
 };
@@ -14,14 +14,16 @@ pub fn prepare_glyphon_view_system(
     // Input
     gfx: Res<GraphicsContextResource>,
     window_size: Res<RenderWindowSizeResource>,
-    glyphon_viewport: Res<GlyphonViewport>,
+
+    // Output (updated viewport)
+    mut glyphon_viewport: ResMut<GlyphonViewportResource>,
 ) {
     debug!(
         target : "ui_efficiency",
         "Updating Glyphon viewport (this should only happen the screen was resized)..."
     );
 
-    glyphon_viewport.0.write().unwrap().update(
+    glyphon_viewport.0.update(
         &gfx.context.queue,
         glyphon::Resolution {
             width: window_size.width as u32,

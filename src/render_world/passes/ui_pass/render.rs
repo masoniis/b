@@ -1,16 +1,14 @@
 use crate::render_world::passes::{
     render_graph::{RenderContext, RenderNode},
     ui_pass::{
-        prepare::UiRenderBatch,
-        queue::{RenderPhase, UiPhaseItem},
+        queue::{PreparedUiBatches, UiRenderBatch},
         startup::{
-            GlyphonAtlas, GlyphonCache, GlyphonFontSystem, GlyphonRenderer, GlyphonViewport,
+            GlyphonAtlasResource, GlyphonRendererResource, GlyphonViewportResource,
             UiMaterialBuffer, UiObjectBuffer, UiPipeline,
         },
     },
 };
 use bevy_ecs::world::World;
-use glyphon::{Buffer, Metrics, TextArea, TextBounds};
 
 use super::{prepare::UiViewBindGroup, startup::ScreenQuadResource};
 
@@ -21,7 +19,8 @@ impl RenderNode for UiPassNode {
         //         Resource fetching
         // ---------------------------------
 
-        let ui_phase = world.get_resource::<RenderPhase<UiPhaseItem>>().unwrap();
+        // Custom resources
+        let ui_phase = world.get_resource::<PreparedUiBatches>().unwrap();
         let pipeline = world.get_resource::<UiPipeline>().unwrap();
         let quad = world.get_resource::<ScreenQuadResource>().unwrap();
         let view_bind_group = world.get_resource::<UiViewBindGroup>().unwrap();
@@ -29,11 +28,9 @@ impl RenderNode for UiPassNode {
         let object_buffer = world.get_resource::<UiObjectBuffer>().unwrap();
 
         // Glyphon resources
-        let font_system = world.get_resource::<GlyphonFontSystem>().unwrap();
-        let cache = world.get_resource::<GlyphonCache>().unwrap();
-        let atlas = world.get_resource::<GlyphonAtlas>().unwrap();
-        let viewport = world.get_resource::<GlyphonViewport>().unwrap();
-        let renderer = world.get_resource::<GlyphonRenderer>().unwrap();
+        let text_atlas = world.get_resource::<GlyphonAtlasResource>().unwrap();
+        let glyphon_viewport = world.get_resource::<GlyphonViewportResource>().unwrap();
+        let text_renderer = world.get_resource::<GlyphonRendererResource>().unwrap();
 
         // INFO: ----------------------
         //         Render logic
@@ -60,7 +57,7 @@ impl RenderNode for UiPassNode {
 
         let mut is_panel_pipeline_set = false;
 
-        for batch in &ui_phase.queue {
+        for batch in &ui_phase.batches {
             match batch {
                 UiRenderBatch::Panel(panel_batch) => {
                     if !is_panel_pipeline_set {
@@ -84,111 +81,12 @@ impl RenderNode for UiPassNode {
                             ..panel_batch.first_instance + panel_batch.instance_count,
                     );
                 }
-                UiRenderBatch::Text(text_batch) => {
+                UiRenderBatch::Text(_) => {
                     is_panel_pipeline_set = false;
 
-                    let mut font_system = font_system.0.write().unwrap();
-
-                    // Create buffers that live for the scope of this batch rendering
-                    let buffers: Vec<Buffer> = text_batch
-                        .texts
-                        .iter()
-                        .map(|text_kind| {
-                            if let crate::render_world::extract::ui::UiElementKind::Text {
-                                content,
-                                bounds,
-                                font_size,
-                                align,
-                                ..
-                            } = text_kind
-                            {
-                                let mut buffer = Buffer::new(
-                                    &mut font_system,
-                                    Metrics::new(*font_size, *font_size),
-                                );
-
-                                let attrs =
-                                    glyphon::Attrs::new().family(glyphon::Family::Name("Miracode"));
-                                buffer.set_rich_text(
-                                    &mut font_system,
-                                    [(content.as_str(), attrs.clone())],
-                                    &attrs,
-                                    glyphon::Shaping::Advanced,
-                                    Some(*align),
-                                );
-
-                                buffer.set_size(&mut font_system, Some(bounds.x), Some(bounds.y));
-
-                                buffer
-                            } else {
-                                unreachable!();
-                            }
-                        })
-                        .collect();
-
-                    // Create TextAreas that borrow from the buffers
-                    let text_areas: Vec<TextArea> = buffers
-                        .iter()
-                        .zip(text_batch.texts.iter())
-                        .map(|(buffer, text_kind)| {
-                            if let crate::render_world::extract::ui::UiElementKind::Text {
-                                position,
-                                bounds,
-                                color,
-                                ..
-                            } = text_kind
-                            {
-                                let text_color = glyphon::Color::rgba(
-                                    (color[0] * 255.0) as u8,
-                                    (color[1] * 255.0) as u8,
-                                    (color[2] * 255.0) as u8,
-                                    (color[3] * 255.0) as u8,
-                                );
-
-                                TextArea {
-                                    buffer,
-                                    left: position.x,
-                                    top: position.y,
-                                    scale: 1.0,
-                                    bounds: TextBounds {
-                                        left: position.x as i32,
-                                        top: position.y as i32,
-                                        right: position.x as i32 + bounds.x as i32,
-                                        bottom: position.y as i32 + bounds.y as i32,
-                                    },
-                                    default_color: text_color,
-                                    custom_glyphs: &[],
-                                }
-                            } else {
-                                unreachable!();
-                            }
-                        })
-                        .collect();
-
-                    renderer
-                        .0
-                        .write()
-                        .unwrap()
-                        .prepare(
-                            &render_context.device,
-                            &render_context.queue,
-                            &mut font_system,
-                            &mut atlas.0.write().unwrap(),
-                            &mut viewport.0.write().unwrap(),
-                            text_areas,
-                            &mut cache.0.write().unwrap(),
-                        )
-                        .unwrap();
-
-                    renderer
-                        .0
-                        .read()
-                        .unwrap()
-                        .render(
-                            &atlas.0.read().unwrap(),
-                            &viewport.0.read().unwrap(),
-                            &mut render_pass,
-                        )
+                    // Trigger the render for the next text batch (set in the prepare_glyphon_text system)
+                    text_renderer
+                        .render(&text_atlas, &glyphon_viewport, &mut render_pass)
                         .unwrap();
                 }
             }

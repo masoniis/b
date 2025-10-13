@@ -12,7 +12,7 @@ use crate::{
     },
 };
 use bevy_ecs::prelude::*;
-use std::ops::{Deref, DerefMut};
+use derive_more::{Deref, DerefMut};
 
 // INFO: -------------------
 //         Resources
@@ -42,49 +42,23 @@ pub enum UiRenderBatch {
 /// A vector of prepared UI render batches ready for rendering.
 ///
 /// They should be ordered by depth (back to front).
-#[derive(Resource, Default)]
+#[derive(Resource, Default, Deref, DerefMut)]
 pub struct PreparedUiBatches {
     pub batches: Vec<UiRenderBatch>,
-}
-
-impl Deref for TextBatch {
-    type Target = Vec<UiElementKind>;
-    fn deref(&self) -> &Self::Target {
-        &self.texts
-    }
-}
-
-impl DerefMut for TextBatch {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.texts
-    }
 }
 
 /// A buffer used to store UI elements for sorting.
 ///
 /// By using a buffer, it is guaranteed no new vec is
 /// allocated every time which improves performance.
-#[derive(Resource, Default)]
+#[derive(Resource, Default, Deref, DerefMut)]
 pub struct UiElementSortBufferResource(Vec<RenderableUiElement>);
-
-impl Deref for UiElementSortBufferResource {
-    type Target = Vec<RenderableUiElement>;
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
-impl DerefMut for UiElementSortBufferResource {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.0
-    }
-}
 
 // INFO: -----------------
 //         Systems
 // -----------------------
 
-pub fn prepare_ui_batches_system(
+pub fn queue_ui_system(
     // Input
     gfx: Res<GraphicsContextResource>,
     mut extracted_panels: ResMut<ExtractedBy<UiPanelExtractor>>,
@@ -150,14 +124,14 @@ pub fn prepare_ui_batches_system(
                 let color_key = color.map(|f| f.to_bits());
                 let object_index = object_buffer.objects.len() as u32;
 
-                // Check if this panel can be part of the current panel batch
+                // check if this panel can be part of the current panel batch
                 if current_panel_material_color == Some(color_key) && current_panel_batch.is_some()
                 {
-                    // It can, just extend the instance count
+                    // it can, just extend the instance count
                     let batch = current_panel_batch.as_mut().unwrap();
                     batch.instance_count += 1;
                 } else {
-                    // It can't, so flush the old panel batch and start a new one
+                    // it can't, so flush the old panel batch and start a new one
                     flush_panel_batch(current_panel_batch.take(), &mut prepared_batches.batches);
 
                     let material_index = material_buffer.materials.len() as u32;
@@ -184,14 +158,14 @@ pub fn prepare_ui_batches_system(
                 flush_panel_batch(current_panel_batch.take(), &mut prepared_batches.batches);
                 current_panel_material_color = None;
 
-                // Ensure a text batch is active
+                // ensure a text batch is active
                 if current_text_batch.is_none() {
                     current_text_batch = Some(TextBatch::default());
                 }
 
                 debug!(target: "ui_batching", "Added text to batch: {:?}", item.kind);
 
-                // Add the text to the current text batch
+                // add the text to the current text batch
                 current_text_batch
                     .as_mut()
                     .unwrap()
@@ -201,14 +175,13 @@ pub fn prepare_ui_batches_system(
         }
     }
 
-    // 3. Flush any remaining batches after the loop
+    // flush any remaining batches after the loop
     flush_panel_batch(current_panel_batch.take(), &mut prepared_batches.batches);
     flush_text_batch(current_text_batch.take(), &mut prepared_batches.batches);
 
     debug!("Prepared {} UI batches", prepared_batches.batches.len());
 
-    // 4. Write panel data to GPU buffers
-    // The text data in `PreparedUiBatches` will be used by a separate text render pass
+    // write material data to GPU buffers
     for (i, material) in material_buffer.materials.iter().enumerate() {
         let offset = (i as u64) * (material_buffer.stride as u64);
         let bytes = bytemuck::bytes_of(material);
@@ -217,6 +190,7 @@ pub fn prepare_ui_batches_system(
             .write_buffer(&material_buffer.buffer, offset, bytes);
     }
 
+    // write object data to GPU buffer
     if !object_buffer.objects.is_empty() {
         let object_bytes = bytemuck::cast_slice(&object_buffer.objects);
         gfx.context
@@ -227,16 +201,16 @@ pub fn prepare_ui_batches_system(
 
 /// Flushes a panel batch into the list of render batches if it exists.
 fn flush_panel_batch(batch: Option<PanelBatch>, batches: &mut Vec<UiRenderBatch>) {
-    if let Some(b) = batch {
-        batches.push(UiRenderBatch::Panel(b));
+    if let Some(batch) = batch {
+        batches.push(UiRenderBatch::Panel(batch));
     }
 }
 
 /// Flushes a panel batch into the list of render batches if it exists.
 fn flush_text_batch(batch: Option<TextBatch>, batches: &mut Vec<UiRenderBatch>) {
-    if let Some(b) = batch {
-        if !b.texts.is_empty() {
-            batches.push(UiRenderBatch::Text(b));
+    if let Some(batch) = batch {
+        if !batch.texts.is_empty() {
+            batches.push(UiRenderBatch::Text(batch));
         }
     }
 }

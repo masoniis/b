@@ -253,6 +253,7 @@ version = "0.0.1"
 dependencies = [
  "bevy_ecs",
  "bytemuck",
+ "derive_more 2.0.1",
  "futures-lite",
  "glam 0.30.6",
  "glob",

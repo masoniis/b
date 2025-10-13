@@ -32,16 +32,17 @@ pub struct RenderPlugin;
 
 impl Plugin for RenderPlugin {
     fn build(&self, builder: &mut EcsBuilder) {
-        // Resources
-        builder.init_resource::<RenderTimeResource>();
-        builder.init_resource::<RenderCameraResource>();
-        builder.init_resource::<RenderMeshStorageResource>();
-        builder.init_resource::<MeshPipelineLayoutsResource>();
-        builder.init_resource::<Opaque3dRenderPhase>();
-        builder.init_resource::<PipelineCacheResource>();
-        builder.init_resource::<ViewBindGroup>();
-        builder.init_resource::<MainTextureBindGroup>();
-        builder.init_resource::<ModelBindGroup>();
+        // Resources for rendering
+        builder
+            .init_resource::<RenderTimeResource>()
+            .init_resource::<RenderCameraResource>()
+            .init_resource::<RenderMeshStorageResource>()
+            .init_resource::<MeshPipelineLayoutsResource>()
+            .init_resource::<Opaque3dRenderPhase>()
+            .init_resource::<PipelineCacheResource>()
+            .init_resource::<ViewBindGroup>()
+            .init_resource::<MainTextureBindGroup>()
+            .init_resource::<ModelBindGroup>();
 
         // Specifically implemented plugins
         builder.add_plugin(RenderUiPlugin);

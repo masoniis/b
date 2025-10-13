@@ -8,7 +8,6 @@ pub mod utils;
 //         Plugin definition
 // ---------------------------------
 
-use self::queue::RenderPhase;
 use crate::{
     ecs_core::{EcsBuilder, Plugin},
     render_world::{
@@ -18,12 +17,14 @@ use crate::{
             ui::{UiPanelExtractor, UiTextExtractor},
             RenderWindowSizeResource,
         },
-        passes::ui_pass::{prepare::UiElementSortBufferResource, utils::ui_was_extracted},
+        passes::ui_pass::{
+            queue::{PreparedUiBatches, UiElementSortBufferResource},
+            utils::ui_was_extracted,
+        },
         RenderSchedule,
     },
 };
 use bevy_ecs::prelude::*;
-use prepare::{PreparedUiBatches, UiRenderBatch};
 
 pub struct RenderUiPlugin;
 
@@ -67,24 +68,22 @@ impl Plugin for RenderUiPlugin {
             // resources
             .init_resource::<PreparedUiBatches>()
             .init_resource::<UiElementSortBufferResource>();
-        builder
-            .world
-            .insert_resource(RenderPhase::<UiRenderBatch>::default());
 
         builder.schedule_entry(RenderSchedule::Prepare).add_systems(
-            (
-                prepare::prepare_ui_batches_system.run_if(ui_was_extracted),
-                (
-                    prepare::prepare_ui_view_system,
-                    prepare::prepare_glyphon_view_system,
-                )
-                    .run_if(resource_changed::<RenderWindowSizeResource>),
+            ((
+                prepare::prepare_ui_view_system,
+                prepare::prepare_glyphon_view_system,
             )
+                .run_if(resource_changed::<RenderWindowSizeResource>),)
                 .chain(),
         );
 
-        builder
-            .schedule_entry(RenderSchedule::Queue)
-            .add_systems(queue::queue_ui_system);
+        builder.schedule_entry(RenderSchedule::Queue).add_systems(
+            (
+                queue::queue_ui_system.run_if(ui_was_extracted),
+                queue::preprocess_glyphon_text_system,
+            )
+                .chain(),
+        );
     }
 }
