@@ -72,7 +72,6 @@ impl RenderNode for RenderPassNode {
                 .begin_render_pass(&wgpu::RenderPassDescriptor {
                     label: Some("Main Scene Render Pass"),
                     color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                        // Use the view provided by the RenderContext
                         view: render_context.surface_texture_view,
                         resolve_target: None,
                         ops: wgpu::Operations {
@@ -84,7 +83,7 @@ impl RenderNode for RenderPassNode {
                     depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
                         view: &depth_texture.view,
                         depth_ops: Some(wgpu::Operations {
-                            load: wgpu::LoadOp::Clear(1.0),
+                            load: wgpu::LoadOp::Clear(0.0),
                             store: wgpu::StoreOp::Store,
                         }),
                         stencil_ops: None,

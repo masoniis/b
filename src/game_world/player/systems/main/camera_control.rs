@@ -85,8 +85,11 @@ pub fn camera_control_system(
 
     // (projection matrix is expensive, only update if dirty)
     if camera.projection_dirty {
-        camera.projection_matrix =
-            Mat4::perspective_rh(camera.zoom.to_radians(), window.aspect_ratio(), 1.0, 1000.0);
+        camera.projection_matrix = Mat4::perspective_infinite_reverse_rh(
+            camera.zoom.to_radians(),
+            window.aspect_ratio(),
+            1.0,
+        );
         camera.projection_dirty = false;
     }
 }
