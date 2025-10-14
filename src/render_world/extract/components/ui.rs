@@ -1,10 +1,8 @@
 use crate::prelude::*;
+use crate::render_world::extract::run_extract_schedule::SimulationWorld;
+use crate::simulation_world::ui::components::{CalculatedLayout, Node, UiBackground};
 use crate::simulation_world::ui::{
     components::TextAlign, components::UiText, layout::compute_depth::UiDepth,
-};
-use crate::{
-    render_world::extract::ExtractComponent,
-    simulation_world::ui::components::{CalculatedLayout, Node, UiBackground},
 };
 use bevy_ecs::prelude::*;
 
@@ -26,7 +24,7 @@ pub enum UiElementKind {
 }
 
 /// A component that marks an entity as a renderable UI element.
-#[derive(Component)]
+#[derive(Component, Clone)]
 pub struct RenderableUiElement {
     entity_key: Entity,
     pub sort_key: f32,
@@ -39,34 +37,52 @@ impl ContainsEntity for RenderableUiElement {
     }
 }
 
-/// A struct that extracts UI panel information for rendering.
-pub struct UiPanelExtractor;
+/// A resource holding extracted UI events for rendering.
+#[derive(Resource, Default)]
+pub struct ExtractedUiEvents {
+    pub panel_events: Vec<ExtractedUiEvent>,
+    pub text_events: Vec<ExtractedUiEvent>,
+}
 
-impl ExtractComponent for UiPanelExtractor {
-    type Extracted = RenderableUiElement;
+pub enum ExtractedUiEvent {
+    AddOrUpdate(RenderableUiElement),
+    Remove(Entity),
+}
 
-    // Query for layout, material, AND our new depth component
-    type QueryComponents = (
-        &'static CalculatedLayout,
-        &'static UiBackground,
-        &'static UiDepth,
-    );
+pub fn extract_ui_events_system(
+    // Input (world to query)
+    mut simulation_world: ResMut<SimulationWorld>,
 
-    // Ensure we only run this on Nodes
-    type QueryFilter = With<Node>;
+    // Output (pushed events)
+    mut extracted_events: ResMut<ExtractedUiEvents>,
+) {
+    extracted_events.panel_events.clear();
+    extracted_events.text_events.clear();
 
-    type ChangeTracked = Or<(
-        Changed<CalculatedLayout>,
-        Changed<UiBackground>,
-        Changed<UiDepth>,
-        Added<Node>,
-    )>;
+    // INFO: ------------------------------
+    //         Extract panel events
+    // ------------------------------------
 
-    fn extract(
-        entity: Entity,
-        (layout, background, depth): (&CalculatedLayout, &UiBackground, &UiDepth),
-    ) -> Self::Extracted {
-        RenderableUiElement {
+    // removed panel events
+    let panel_removal_id = simulation_world.val.component_id::<UiBackground>().unwrap();
+    for entity in simulation_world.val.removed_with_id(panel_removal_id) {
+        extracted_events
+            .panel_events
+            .push(ExtractedUiEvent::Remove(entity));
+    }
+
+    // changed panel events
+    let mut panel_query = simulation_world
+        .val
+        .query_filtered::<(Entity, &CalculatedLayout, &UiBackground, &UiDepth), Or<(
+            Changed<CalculatedLayout>,
+            Changed<UiBackground>,
+            Changed<UiDepth>,
+            Added<Node>,
+        )>>();
+
+    for (entity, layout, background, depth) in panel_query.iter(&simulation_world.val) {
+        let renderable_element = RenderableUiElement {
             entity_key: entity,
             sort_key: depth.0,
             kind: UiElementKind::Panel {
@@ -77,34 +93,39 @@ impl ExtractComponent for UiPanelExtractor {
                     UiBackground::Image { color } => *color,
                 },
             },
-        }
+        };
+
+        extracted_events
+            .panel_events
+            .push(ExtractedUiEvent::AddOrUpdate(renderable_element));
     }
-}
 
-/// A struct that extracts UI text information for rendering.
-pub struct UiTextExtractor;
+    // INFO: -----------------------------
+    //         Extract text events
+    // -----------------------------------
 
-impl ExtractComponent for UiTextExtractor {
-    type Extracted = RenderableUiElement;
-    type QueryComponents = (&'static CalculatedLayout, &'static UiText, &'static UiDepth);
+    // removed text events
+    let text_removal_id = simulation_world.val.component_id::<UiText>().unwrap();
+    for entity in simulation_world.val.removed_with_id(text_removal_id) {
+        extracted_events
+            .text_events
+            .push(ExtractedUiEvent::Remove(entity));
+    }
 
-    type QueryFilter = With<Node>;
-    type ChangeTracked = Or<(
-        Changed<CalculatedLayout>,
-        Changed<UiText>,
-        Changed<UiDepth>,
-        Added<Node>,
-    )>;
+    // changed text events
+    let mut text_query = simulation_world
+        .val
+        .query_filtered::<(Entity, &CalculatedLayout, &UiText, &UiDepth), Or<(
+            Changed<CalculatedLayout>,
+            Changed<UiText>,
+            Changed<UiDepth>,
+            Added<Node>,
+        )>>();
 
-    fn extract(
-        entity: Entity,
-        (layout, text, depth): (&CalculatedLayout, &UiText, &UiDepth),
-    ) -> Self::Extracted {
-        RenderableUiElement {
+    for (entity, layout, text, depth) in text_query.iter(&simulation_world.val) {
+        let renderable_element = RenderableUiElement {
             entity_key: entity,
-            // Add a small bias to the sort key to ensure text always renders
-            // on top of its parent panel (which will have the same integer depth).
-            sort_key: depth.0 + 0.1,
+            sort_key: depth.0 + 0.1, // depth bias to ensure text of same-depth renders above panels
             kind: UiElementKind::Text {
                 content: text.content.clone(),
                 position: layout.position,
@@ -118,6 +139,9 @@ impl ExtractComponent for UiTextExtractor {
                     TextAlign::Justified => glyphon::cosmic_text::Align::Justified,
                 },
             },
-        }
+        };
+        extracted_events
+            .text_events
+            .push(ExtractedUiEvent::AddOrUpdate(renderable_element));
     }
 }

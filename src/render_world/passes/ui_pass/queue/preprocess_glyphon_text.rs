@@ -4,11 +4,24 @@ use super::super::startup::{
 };
 use crate::render_world::{
     extract::ui::UiElementKind,
-    passes::ui_pass::queue::queue_ui::{PreparedUiBatches, UiRenderBatch},
+    passes::ui_pass::{
+        prepare::UiChanges,
+        queue::{batch_ui_elements::UiRenderBatch, IsGlyphonDirty, PreparedUiBatches},
+    },
     resources::GraphicsContextResource,
 };
 use bevy_ecs::prelude::*;
 use glyphon::{Buffer, Metrics, TextArea, TextBounds};
+
+/// A conditional system that marks Glyphon as dirty if relevant UI changes occurred.
+pub fn mark_glyphon_dirty_system(
+    ui_changes: Res<UiChanges>,
+    mut is_glyphon_dirty: ResMut<IsGlyphonDirty>,
+) {
+    if ui_changes.text_content_change_occured || ui_changes.structural_change_occured {
+        is_glyphon_dirty.0 = true;
+    }
+}
 
 /// Preprocesses all UI text for rendering by shaping it and preparing it with the Glyphon renderer.
 ///
@@ -26,11 +39,13 @@ pub fn preprocess_glyphon_text_system(
     mut atlas: ResMut<GlyphonAtlasResource>,
     mut viewport: ResMut<GlyphonViewportResource>,
     mut renderer: ResMut<GlyphonRendererResource>,
+
+    mut is_glyphon_dirty: ResMut<IsGlyphonDirty>, // sets flag to false
 ) {
-    // Iterate over text batches only
+    // iterate over text batches only
     for batch in ui_queue.batches.iter() {
         if let UiRenderBatch::Text(text_batch) = batch {
-            // Create buffers that live for the scope of this function
+            // create buffers that live for the scope of this function
             let buffers: Vec<Buffer> = text_batch
                 .texts
                 .iter()
@@ -63,7 +78,7 @@ pub fn preprocess_glyphon_text_system(
                 })
                 .collect();
 
-            // Create TextAreas that borrow from the local buffers
+            // create TextAreas that borrow from the local buffers
             let text_areas: Vec<TextArea> = buffers
                 .iter()
                 .zip(text_batch.texts.iter())
@@ -115,4 +130,6 @@ pub fn preprocess_glyphon_text_system(
                 .unwrap();
         }
     }
+
+    is_glyphon_dirty.0 = false;
 }

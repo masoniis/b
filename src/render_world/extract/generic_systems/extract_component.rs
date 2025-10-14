@@ -1,6 +1,8 @@
+use crate::prelude::*;
 use crate::render_world::extract::run_extract_schedule::SimulationWorld;
 use bevy_ecs::prelude::*;
 use bevy_ecs::query::{QueryData, QueryFilter};
+use std::collections::HashSet;
 
 /// A resource in the RenderWorld that will store the extracted component data.
 /// The `T` is a marker to make each collection of extracted items a unique resource type.
@@ -32,6 +34,9 @@ pub trait ExtractComponent: Send + Sync + 'static {
     /// Example: `Changed<Transform>`
     type ChangeTracked: QueryFilter;
 
+    /// The component whose removal signals that this extracted item is stale.
+    type RemovalMarker: Component;
+
     /// The function that maps the queried components to the final extracted data structure.
     fn extract(
         entity: Entity,
@@ -49,16 +54,39 @@ pub fn extract_component_system<T: ExtractComponent>(
     mut simulation_world: ResMut<SimulationWorld>,
     mut extracted: ResMut<ExtractedBy<T>>,
 ) {
-    // Query only changed components
+    // Handle removals
+    let removal_marker_id = simulation_world
+        .val
+        .component_id::<T::RemovalMarker>()
+        .unwrap();
+
+    let removed_entities: HashSet<Entity> = simulation_world
+        .val
+        .removed_with_id(removal_marker_id)
+        .collect();
+
+    if !removed_entities.is_empty() {
+        info!(
+            "ExtractComponent: Removed {} entities for {}",
+            removed_entities.len(),
+            std::any::type_name::<T>()
+        );
+
+        extracted.items.retain(|item| {
+            let entity_key = T::entity_key(item);
+            !removed_entities.contains(&entity_key)
+        });
+    }
+
+    // Query for entities with changed components that still exist.
     let mut query = simulation_world
         .val
         .query_filtered::<(Entity, T::QueryComponents), (T::QueryFilter, T::ChangeTracked)>();
 
-    // Update existing items by entity lookup
     for (entity, components) in query.iter(&simulation_world.val) {
         let extracted_item = T::extract(entity, components);
 
-        // Find and update existing, or push new
+        // Find and update an existing item, or push a new one.
         if let Some(existing) = extracted
             .items
             .iter_mut()
@@ -69,6 +97,4 @@ pub fn extract_component_system<T: ExtractComponent>(
             extracted.items.push(extracted_item);
         }
     }
-
-    // Handle removals separately if needed
 }

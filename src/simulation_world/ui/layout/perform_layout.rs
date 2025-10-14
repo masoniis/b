@@ -5,6 +5,7 @@ use crate::{
         ui::{
             components::{self as simulation, CalculatedLayout, UiRoot, UiText},
             layout::IsLayoutDirty,
+            screens::spawn_root::UiRootNodeResource,
             text::systems::FontSystemResource,
         },
     },
@@ -48,17 +49,7 @@ pub fn compute_and_apply_layout_system(world: &mut World) {
 
     // Get the viewport size and root node
     let (root_entity, root_node, viewport_size) = {
-        let root_entity = match world
-            .query_filtered::<Entity, With<simulation::UiRoot>>()
-            .single(world)
-        {
-            Ok(entity) => entity,
-            Err(e) => {
-                error!("Error finding single UI Root: {:?}", e);
-                return;
-            }
-        };
-
+        let root_entity = world.get_resource::<UiRootNodeResource>().unwrap().0;
         let entity_to_node = world.resource::<EntityToNodeMap>();
         let window_size = world.resource::<WindowSizeResource>();
 

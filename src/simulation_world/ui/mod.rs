@@ -1,6 +1,6 @@
 pub mod components;
-pub mod creation;
 pub mod layout;
+pub mod screens;
 pub mod text;
 
 // INFO: ----------------
@@ -8,16 +8,18 @@ pub mod text;
 // ----------------------
 
 use crate::ecs_core::{EcsBuilder, Plugin};
+use crate::simulation_world::app_lifecycle::AppState;
 use crate::simulation_world::ui::layout::handle_window_resize_system;
-use crate::simulation_world::{SimulationSchedule, SimulationSet};
+use crate::simulation_world::ui::screens::loading_screen::despawn_loading_ui_system;
+use crate::simulation_world::{OnExit, SimulationSchedule, SimulationSet};
 use bevy_ecs::prelude::*;
 use {
-    creation::create_test_ui_system,
     layout::{
         compute_and_apply_layout_system, compute_ui_depth_system, handle_hierarchy_changes_system,
         handle_structural_changes_system, update_changed_styles_system, EntityToNodeMap,
         IsLayoutDirty, UiLayoutTree,
     },
+    screens::{spawn_loading_ui_system, spawn_ui_root_system},
     text::setup_font_system,
 };
 
@@ -33,7 +35,21 @@ impl Plugin for UiPlugin {
 
         builder
             .schedule_entry(SimulationSchedule::Startup)
-            .add_systems((create_test_ui_system, setup_font_system));
+            .add_systems(
+                (
+                    (setup_font_system, spawn_ui_root_system),
+                    spawn_loading_ui_system,
+                )
+                    .chain(),
+            );
+
+        builder
+            .schedule_entry(OnExit(AppState::Loading))
+            .add_systems(despawn_loading_ui_system);
+
+        // builder
+        //     .schedule_entry(OnEnter(AppState::Running))
+        //     .add_systems(create_test_ui_system);
 
         builder
             .schedule_entry(SimulationSchedule::Main)

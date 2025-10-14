@@ -2,7 +2,6 @@ pub mod prepare;
 pub mod queue;
 pub mod render;
 pub mod startup;
-pub mod utils;
 
 // INFO: ---------------------------
 //         Plugin definition
@@ -11,15 +10,12 @@ pub mod utils;
 use crate::{
     ecs_core::{EcsBuilder, Plugin},
     render_world::{
-        extract::{
-            self,
-            extract_component::ExtractedBy,
-            ui::{UiPanelExtractor, UiTextExtractor},
-            RenderWindowSizeResource,
-        },
+        extract::{self, ui::ExtractedUiEvents, RenderWindowSizeResource},
         passes::ui_pass::{
-            queue::{PreparedUiBatches, UiElementSortBufferResource},
-            utils::ui_was_extracted,
+            prepare::UiChanges,
+            queue::{
+                IsGlyphonDirty, PreparedUiBatches, UiElementCache, UiElementSortBufferResource,
+            },
         },
         RenderSchedule,
     },
@@ -51,14 +47,10 @@ impl Plugin for RenderUiPlugin {
 
         builder
             // resources
-            .init_resource::<ExtractedBy<UiPanelExtractor>>()
-            .init_resource::<ExtractedBy<UiTextExtractor>>()
+            .add_resource(ExtractedUiEvents::default())
             // systems
             .schedule_entry(RenderSchedule::Extract)
-            .add_systems((
-                extract::extract_component_system::<UiPanelExtractor>,
-                extract::extract_component_system::<UiTextExtractor>,
-            ));
+            .add_systems(extract::ui::extract_ui_events_system);
 
         // INFO: -----------------
         //         Prepare
@@ -67,21 +59,38 @@ impl Plugin for RenderUiPlugin {
         builder
             // resources
             .init_resource::<PreparedUiBatches>()
-            .init_resource::<UiElementSortBufferResource>();
+            .init_resource::<UiElementSortBufferResource>()
+            .init_resource::<IsGlyphonDirty>()
+            .init_resource::<UiChanges>()
+            .init_resource::<UiElementCache>()
+            // schedule
+            .schedule_entry(RenderSchedule::Prepare)
+            .add_systems((
+                (
+                    prepare::prepare_ui_view_system,
+                    prepare::prepare_glyphon_view_system,
+                )
+                    .run_if(resource_changed::<RenderWindowSizeResource>),
+                (prepare::process_ui_events_system,).chain(),
+            ));
 
-        builder.schedule_entry(RenderSchedule::Prepare).add_systems(
-            ((
-                prepare::prepare_ui_view_system,
-                prepare::prepare_glyphon_view_system,
-            )
-                .run_if(resource_changed::<RenderWindowSizeResource>),)
-                .chain(),
-        );
+        // INFO: ---------------
+        //         Queue
+        // ---------------------
+
+        fn should_rebuild_batches(ui_changes: Res<UiChanges>) -> bool {
+            ui_changes.structural_change_occured || ui_changes.panel_content_change_occured
+        }
 
         builder.schedule_entry(RenderSchedule::Queue).add_systems(
             (
-                queue::queue_ui_system.run_if(ui_was_extracted),
-                queue::preprocess_glyphon_text_system,
+                // make decisions based on the UiChanges determined above
+                (
+                    queue::mark_glyphon_dirty_system,
+                    queue::rebuild_ui_batches_system.run_if(should_rebuild_batches),
+                ),
+                // makes changes based on the buffers from the systems just before it
+                queue::preprocess_glyphon_text_system.run_if(resource_equals(IsGlyphonDirty(true))),
             )
                 .chain(),
         );

@@ -1,17 +1,23 @@
 use crate::prelude::*;
-use crate::simulation_world::ui::components::{
-    Node, Size, Style, TextAlign, UiBackground, UiRoot, UiText,
-};
+use crate::simulation_world::ui::components::{Node, Size, Style, TextAlign, UiBackground, UiText};
+use crate::simulation_world::ui::screens::spawn_root::UiRootNodeResource;
 use bevy_ecs::prelude::*;
 
-/// A system that tests the UI by spawning in a few UI entities using the builder pattern.
-pub fn create_test_ui_system(mut commands: Commands) {
-    info!("Spawning test UI with");
+/// A marker component for all entities that are part of the test UI screen.
+#[derive(Component)]
+pub struct TestUiElement;
 
-    commands
+/// Spawns a test UI by attaching it to the persistent root node.
+pub fn create_test_ui_system(mut commands: Commands, root_node: Res<UiRootNodeResource>) {
+    info!("Spawning test UI");
+
+    // Get the persistent root entity from the resource.
+    let root_entity = root_node.0;
+
+    let test_ui_container = commands
         .spawn((
+            TestUiElement,
             Node,
-            UiRoot,
             Style {
                 width: Size::Percent(100.0),
                 height: Size::Percent(100.0),
@@ -21,6 +27,7 @@ pub fn create_test_ui_system(mut commands: Commands) {
             },
         ))
         .with_children(|parent| {
+            // Red box child
             parent
                 .spawn((
                     Node,
@@ -31,9 +38,7 @@ pub fn create_test_ui_system(mut commands: Commands) {
                         align_items: Some(taffy::AlignItems::Center),
                         ..Default::default()
                     },
-                    UiBackground::SolidColor {
-                        color: [1.0, 0.0, 0.0, 0.5],
-                    },
+                    UiBackground::SolidColor { color: [1.0, 0.0, 0.0, 0.5] },
                 ))
                 .with_children(|parent| {
                     parent
@@ -46,9 +51,7 @@ pub fn create_test_ui_system(mut commands: Commands) {
                                 align_items: Some(taffy::AlignItems::Center),
                                 ..Default::default()
                             },
-                            UiBackground::SolidColor {
-                                color: [0.8, 0.9, 0.1, 0.5],
-                            },
+                            UiBackground::SolidColor { color: [0.8, 0.9, 0.1, 0.5] },
                         ))
                         .with_children(|parent| {
                             parent.spawn((
@@ -67,33 +70,38 @@ pub fn create_test_ui_system(mut commands: Commands) {
                             ));
                         });
                 });
-            parent.spawn((
-                Node,
-                Style {
-                    width: Size::Percent(25.0),
-                    height: Size::Percent(25.0),
-                    align_items: Some(taffy::AlignItems::Center),
-                    justify_content: Some(taffy::JustifyContent::Center),
-                    ..Default::default()
-                },
-                UiBackground::SolidColor {
-                    color: [0.0, 1.0, 0.0, 1.0],
-                },
-            )).with_children(|parent| {
-                parent.spawn((
+
+            // Green box child
+            parent
+                .spawn((
                     Node,
                     Style {
-                        width: Size::Percent(100.0),
-                        height: Size::Percent(100.0),
+                        width: Size::Percent(25.0),
+                        height: Size::Percent(25.0),
+                        align_items: Some(taffy::AlignItems::Center),
+                        justify_content: Some(taffy::JustifyContent::Center),
                         ..Default::default()
                     },
-                    UiText {
-                        content: "Another Text Node 😈😈😈".to_string(),
-                        font_size: 48.0,
-                        color: [1.0, 1.0, 1.0, 1.0],
-                        align: TextAlign::End,
-                    },
-                ));
-            });
-        });
+                    UiBackground::SolidColor { color: [0.0, 1.0, 0.0, 1.0] },
+                ))
+                .with_children(|parent| {
+                    parent.spawn((
+                        Node,
+                        Style {
+                            width: Size::Percent(100.0),
+                            height: Size::Percent(100.0),
+                            ..Default::default()
+                        },
+                        UiText {
+                            content: "Another Text Node 😈😈😈".to_string(),
+                            font_size: 48.0,
+                            color: [1.0, 1.0, 1.0, 1.0],
+                            align: TextAlign::End,
+                        },
+                    ));
+                });
+        })
+        .id();
+
+    commands.entity(root_entity).add_child(test_ui_container);
 }

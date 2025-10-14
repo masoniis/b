@@ -6,43 +6,57 @@ use crate::ecs_core::worlds::SimulationWorldMarker;
 use crate::prelude::*;
 pub use crate::simulation_world::schedules::{OnEnter, OnExit};
 use bevy_ecs::prelude::*;
+use std::any::type_name;
 
 pub fn apply_state_transition_system<T: State>(world: &mut World) {
-    // Because we are running schedules we need to extract next state first
-    let next_state_opt = world
-        .get_resource_mut::<NextState<T>>()
-        .and_then(|mut next_state_res| next_state_res.val.take());
+    // Decide if a transition should occur or not
+    let transition = {
+        let Some(mut next_state_res) = world.get_resource_mut::<NextState<T>>() else {
+            return; // No NextState resource exists, so nothing to do.
+        };
 
-    // If a state transition was requested...
-    if let Some(new_state) = next_state_opt {
-        let is_simulation_world = world.get_resource::<SimulationWorldMarker>().is_some();
+        let Some(new_state) = next_state_res.val.take() else {
+            return; // `NextState` resource exists, but no state is pending.
+        };
 
         let old_state = world.resource::<CurrentState<T>>().val.clone();
 
+        // If the states are the same return none, otherwise return the transition
         if old_state == new_state {
-            return;
+            None
+        } else {
+            Some((old_state, new_state))
         }
+    };
 
+    // Apply transitions
+    if let Some((old_state, new_state)) = transition {
+        let is_simulation_world = world.get_resource::<SimulationWorldMarker>().is_some();
         if is_simulation_world {
-            info!("\n\nState transition: {:?} -> {:?}\n", old_state, new_state);
+            let state_type_name = type_name::<T>().split("::").last().unwrap_or_default();
+            info!(
+                "\n\nState Transition ({}): {:?} -> {:?}\n",
+                state_type_name, old_state, new_state
+            );
         }
-
-        // INFO: Try-run the transition schedules
 
         let curr_world = if is_simulation_world {
             "simulation"
         } else {
             "render"
         };
-        if let Err(e) = world.try_run_schedule(OnExit(old_state.clone())) {
+
+        // Run the OnExit schedule for the old state.
+        if let Err(e) = world.try_run_schedule(OnExit(old_state)) {
             warn!("({} world) {}", curr_world, e);
         }
 
-        // Update the CurrentState resource before running OnEnter
+        // Update the CurrentState resource with the new state.
         let mut current_state_res = world.resource_mut::<CurrentState<T>>();
         current_state_res.val = new_state.clone();
 
-        if let Err(e) = world.try_run_schedule(OnEnter(new_state.clone())) {
+        // Run the OnEnter schedule for the new state.
+        if let Err(e) = world.try_run_schedule(OnEnter(new_state)) {
             warn!("({} world) {}", curr_world, e);
         }
     }

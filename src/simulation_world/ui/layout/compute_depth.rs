@@ -1,4 +1,4 @@
-use crate::simulation_world::ui::components::{Node, UiRoot};
+use crate::simulation_world::ui::{components::Node, screens::spawn_root::UiRootNodeResource};
 use bevy_ecs::prelude::*;
 
 #[derive(Component, Debug)]
@@ -9,26 +9,31 @@ pub struct UiDepth(pub f32);
 /// Depth is computed as integer values starting from 0 at the root.
 pub fn compute_ui_depth_system(
     // Input (queries)
-    root_query: Query<(Entity, &Children), With<UiRoot>>,
+    root: ResMut<UiRootNodeResource>,
     children_query: Query<&Children, With<Node>>,
 
     // Output (spawned entities)
     mut commands: Commands,
 ) {
-    // Start the traversal from the root entity.
-    if let Ok((root_entity, root_children)) = root_query.single() {
-        commands.entity(root_entity).insert(UiDepth(0.0));
+    let root_entity = root.0;
+    let root_children = if let Ok(children) = children_query.get(root_entity) {
+        children
+    } else {
+        return;
+    };
 
-        // Recursively apply depth to all children.
-        // NOTE: We now iterate directly over `root_children` thanks to Bevy's `Deref` implementation.
-        for &child_entity in root_children {
-            apply_depth_recursively(
-                &mut commands,
-                &children_query,
-                child_entity,
-                1.0, // initial depth for children of the root
-            );
-        }
+    // Start the traversal from the root entity.
+    commands.entity(root_entity).insert(UiDepth(0.0));
+
+    // Recursively apply depth to all children.
+    // NOTE: We now iterate directly over `root_children` thanks to Bevy's `Deref` implementation.
+    for &child_entity in root_children {
+        apply_depth_recursively(
+            &mut commands,
+            &children_query,
+            child_entity,
+            1.0, // initial depth for children of the root
+        );
     }
 }
 

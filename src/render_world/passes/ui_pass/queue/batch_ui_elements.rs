@@ -1,10 +1,9 @@
+use std::collections::HashMap;
+
 use crate::{
     prelude::*,
     render_world::{
-        extract::{
-            extract_component::ExtractedBy,
-            ui::{RenderableUiElement, UiElementKind, UiPanelExtractor, UiTextExtractor},
-        },
+        extract::ui::{RenderableUiElement, UiElementKind},
         passes::ui_pass::startup::{
             UiMaterialBuffer, UiMaterialData, UiObjectBuffer, UiObjectData,
         },
@@ -54,59 +53,54 @@ pub struct PreparedUiBatches {
 #[derive(Resource, Default, Deref, DerefMut)]
 pub struct UiElementSortBufferResource(Vec<RenderableUiElement>);
 
+/// A persistent cache of all renderable UI elements in the render world.
+/// This is the "single source of truth" for the UI batching system.
+#[derive(Resource, Default)]
+pub struct UiElementCache {
+    pub elements: HashMap<Entity, RenderableUiElement>,
+}
+
+/// A marker resource that indicates whether the glyphon text atlas and buffers need to be updated.
+#[derive(Resource, Default, Deref, DerefMut, PartialEq)]
+pub struct IsGlyphonDirty(pub bool);
+
 // INFO: -----------------
 //         Systems
 // -----------------------
 
-pub fn queue_ui_system(
-    // Input
+pub fn rebuild_ui_batches_system(
+    // Inputs
     gfx: Res<GraphicsContextResource>,
-    mut extracted_panels: ResMut<ExtractedBy<UiPanelExtractor>>,
-    mut extracted_texts: ResMut<ExtractedBy<UiTextExtractor>>,
-
-    // In/Out (persistent storage buffer)
+    element_cache: Res<UiElementCache>,
     mut sort_buffer: ResMut<UiElementSortBufferResource>,
 
-    // Output (buffers)
+    // Outputs
     mut material_buffer: ResMut<UiMaterialBuffer>,
     mut object_buffer: ResMut<UiObjectBuffer>,
     mut prepared_batches: ResMut<PreparedUiBatches>,
 ) {
+    debug!(
+        target: "ui_efficiency",
+        "Structural or panel content change detected. Performing full batch rebuild..."
+    );
+
     material_buffer.materials.clear();
     object_buffer.objects.clear();
     prepared_batches.batches.clear();
     sort_buffer.clear();
 
-    // INFO: ---------------------------------
-    //         Sort all items by depth
-    // ---------------------------------------
-
-    debug!(
-        target : "ui_efficiency",
-        "Preparing UI batches (only needs to run if UI updated)..."
-    );
-
-    // We use a sort buffer and extend it with all extracted items
-    // since this is quicker than re-allocating a new vec every frame.
-    // This flushes the extracted items, but since this is the only
-    // system that requires them it shouldn't be a problem I'm hoping.
-    sort_buffer.extend(extracted_panels.items.drain(..));
-    sort_buffer.extend(extracted_texts.items.drain(..));
-
-    // Sort unstably for faster sorting. If two UI elements overlap on the same
-    // depth this may lead to flickering but for now I'm just considering that
-    // developer error, you should adjust the Z index for those or something.
+    sort_buffer.extend(element_cache.elements.values().cloned());
     sort_buffer.sort_unstable_by(|a, b| a.sort_key.total_cmp(&b.sort_key));
 
     if sort_buffer.is_empty() {
         return;
     }
 
-    debug!(target: "ui_efficiency", "Sorted {} UI elements for batching.", sort_buffer.len());
-
-    // INFO: -----------------------------------
-    //         Create UI Batches for GPU
-    // -----------------------------------------
+    debug!(
+        target: "ui_efficiency",
+        "Sorted buffer wasn't empty, {} UI elements have been sorted for batching.",
+        sort_buffer.len()
+    );
 
     let mut current_panel_batch: Option<PanelBatch> = None;
     let mut current_panel_material_color: Option<[u32; 4]> = None;
@@ -124,14 +118,11 @@ pub fn queue_ui_system(
                 let color_key = color.map(|f| f.to_bits());
                 let object_index = object_buffer.objects.len() as u32;
 
-                // check if this panel can be part of the current panel batch
                 if current_panel_material_color == Some(color_key) && current_panel_batch.is_some()
                 {
-                    // it can, just extend the instance count
                     let batch = current_panel_batch.as_mut().unwrap();
                     batch.instance_count += 1;
                 } else {
-                    // it can't, so flush the old panel batch and start a new one
                     flush_panel_batch(current_panel_batch.take(), &mut prepared_batches.batches);
 
                     let material_index = material_buffer.materials.len() as u32;
@@ -147,7 +138,6 @@ pub fn queue_ui_system(
                     current_panel_material_color = Some(color_key);
                 }
 
-                // Add the panel's data to the object buffer
                 let model_matrix = Mat4::from_translation(position.extend(0.0))
                     * Mat4::from_scale(size.extend(1.0));
                 object_buffer.objects.push(UiObjectData {
@@ -158,14 +148,12 @@ pub fn queue_ui_system(
                 flush_panel_batch(current_panel_batch.take(), &mut prepared_batches.batches);
                 current_panel_material_color = None;
 
-                // ensure a text batch is active
                 if current_text_batch.is_none() {
                     current_text_batch = Some(TextBatch::default());
                 }
 
                 debug!(target: "ui_batching", "Added text to batch: {:?}", item.kind);
 
-                // add the text to the current text batch
                 current_text_batch
                     .as_mut()
                     .unwrap()
@@ -175,13 +163,11 @@ pub fn queue_ui_system(
         }
     }
 
-    // flush any remaining batches after the loop
     flush_panel_batch(current_panel_batch.take(), &mut prepared_batches.batches);
     flush_text_batch(current_text_batch.take(), &mut prepared_batches.batches);
 
     debug!("Prepared {} UI batches", prepared_batches.batches.len());
 
-    // write material data to GPU buffers
     for (i, material) in material_buffer.materials.iter().enumerate() {
         let offset = (i as u64) * (material_buffer.stride as u64);
         let bytes = bytemuck::bytes_of(material);
@@ -190,7 +176,6 @@ pub fn queue_ui_system(
             .write_buffer(&material_buffer.buffer, offset, bytes);
     }
 
-    // write object data to GPU buffer
     if !object_buffer.objects.is_empty() {
         let object_bytes = bytemuck::cast_slice(&object_buffer.objects);
         gfx.context
