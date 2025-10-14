@@ -1,5 +1,5 @@
 use crate::{
-    game_world::global_resources::asset_storage::AssetId, render_world::types::mesh::GpuMesh,
+    render_world::types::mesh::GpuMesh, simulation_world::global_resources::asset_storage::AssetId,
 };
 use bevy_ecs::prelude::Resource;
 use std::{collections::HashMap, sync::Arc};

@@ -1,5 +1,5 @@
 use crate::prelude::*;
-use crate::render_world::extract::utils::run_extract_schedule::GameWorld;
+use crate::render_world::extract::utils::run_extract_schedule::SimulationWorld;
 use crate::render_world::RenderSchedule;
 use crate::{EcsBuilder, Plugin};
 use bevy_ecs::prelude::*;
@@ -11,18 +11,18 @@ use std::marker::PhantomData;
 //         Trait for components to implement
 // -------------------------------------------------
 
-/// A trait for components in the GameWorld that should be mirrored to the RenderWorld.
+/// A trait for components in the SimulationWorld that should be mirrored to the RenderWorld.
 pub trait MirrorableComponent: Component {
-    /// Other components from the GameWorld entity that are needed to create the RenderBundle.
+    /// Other components from the SimulationWorld entity that are needed to create the RenderBundle.
     type Dependencies: QueryData;
 
     /// The bundle of components to spawn in the RenderWorld.
     type RenderBundle: Bundle;
 
-    /// An arbitrary query to run across the GameWorld to find entities needing extraction.
+    /// An arbitrary query to run across the SimulationWorld to find entities needing extraction.
     type Filter: QueryFilter;
 
-    /// Creates the RenderBundle from the GameWorld components.
+    /// Creates the RenderBundle from the SimulationWorld components.
     fn to_render_bundle(
         &self,
         dependencies: <<<Self as MirrorableComponent>::Dependencies as QueryData>::ReadOnly as QueryData>::Item<'_>,
@@ -72,7 +72,7 @@ impl<T: MirrorableComponent> Plugin for ExtractComponentPlugin<T> {
 fn extract_mirrorable_components_system<T: MirrorableComponent>(
     mut commands: Commands,
     mut entity_map: ResMut<EntityMap<T>>,
-    mut main_world: ResMut<GameWorld>,
+    mut simulation_world: ResMut<SimulationWorld>,
     mut removed_components: RemovedComponents<T>,
 ) {
     // Despawn entities when the MirrorableComponent is removed
@@ -95,11 +95,11 @@ fn extract_mirrorable_components_system<T: MirrorableComponent>(
         }
     }
 
-    let mut query = main_world
+    let mut query = simulation_world
         .val
         .query_filtered::<(Entity, &T, T::Dependencies), T::Filter>();
 
-    for (main_entity, main_component, dependencies) in query.iter(&main_world.val) {
+    for (main_entity, main_component, dependencies) in query.iter(&simulation_world.val) {
         let render_bundle = main_component.to_render_bundle(dependencies);
 
         // Decide whether to spawn a new entity or update an existing one.

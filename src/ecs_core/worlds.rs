@@ -52,7 +52,7 @@ impl CommonEcsInterface {
 // The state machine, for example, only should log state changed
 // when it occurs in app, otherwise we get duplicate logs.
 #[derive(Resource)]
-pub struct GameWorldMarker;
+pub struct SimulationWorldMarker;
 #[derive(Resource)]
 pub struct RenderWorldMarker;
 

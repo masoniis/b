@@ -1,9 +1,9 @@
 use crate::{
-    game_world::{
+    render_world::extract::MirrorableComponent,
+    simulation_world::{
         global_resources::asset_storage::{Handle, MeshAsset},
         graphics_old::{MeshComponent, TransformComponent},
     },
-    render_world::extract::MirrorableComponent,
 };
 use bevy_ecs::prelude::*;
 use glam::Mat4;
@@ -28,7 +28,7 @@ pub struct RenderTransformComponent {
 //         GameWorld extraction logic
 // ------------------------------------------
 
-// We want to mirror properties of `MeshComponent` from the game world
+// We want to mirror properties of `MeshComponent` from the simulation world
 impl MirrorableComponent for MeshComponent {
     type Dependencies = &'static TransformComponent;
     type RenderBundle = (RenderMeshComponent, RenderTransformComponent);

@@ -1,17 +1,13 @@
 use super::extract::{
-    game_world_resource_changed, ExtractComponentPlugin, RenderWindowSizeResource,
+    simulation_world_resource_changed, ExtractComponentPlugin, RenderWindowSizeResource,
 };
 use super::passes;
 use super::passes::ui_pass::RenderUiPlugin;
-use crate::game_world::graphics_old::MeshComponent;
-use crate::game_world::input::resources::WindowSizeResource;
 use crate::prelude::*;
+use crate::simulation_world::graphics_old::MeshComponent;
+use crate::simulation_world::input::resources::WindowSizeResource;
 use crate::{
     ecs_core::state_machine::{self, in_state, StatePlugin},
-    game_world::{
-        app_lifecycle::{AppState, GameState},
-        global_resources::{AssetStorageResource, MeshAsset},
-    },
     render_world::{
         extract::{self, RenderCameraResource, RenderMeshStorageResource, RenderTimeResource},
         passes::main_pass::{
@@ -23,6 +19,10 @@ use crate::{
         },
         resources::PipelineCacheResource,
         RenderSchedule,
+    },
+    simulation_world::{
+        app_lifecycle::{AppState, GameState},
+        global_resources::{AssetStorageResource, MeshAsset},
     },
 };
 use bevy_ecs::prelude::*;
@@ -59,7 +59,7 @@ impl Plugin for RenderPlugin {
                     extract::clone_resource_system::<AssetStorageResource<MeshAsset>>,
                     extract::extract_resource_system::<RenderTimeResource>,
                     (extract::extract_resource_system::<RenderWindowSizeResource>)
-                        .run_if(game_world_resource_changed::<WindowSizeResource>),
+                        .run_if(simulation_world_resource_changed::<WindowSizeResource>),
                     extract::extract_state_system::<GameState>,
                     extract::extract_state_system::<AppState>,
                 ),

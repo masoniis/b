@@ -1,10 +1,10 @@
-use crate::game_world::ui::{
+use crate::prelude::*;
+use crate::simulation_world::ui::{
     components::TextAlign, components::UiText, layout::compute_depth::UiDepth,
 };
-use crate::prelude::*;
 use crate::{
-    game_world::ui::components::{CalculatedLayout, Node, UiBackground},
     render_world::extract::ExtractComponent,
+    simulation_world::ui::components::{CalculatedLayout, Node, UiBackground},
 };
 use bevy_ecs::prelude::*;
 

@@ -1,12 +1,10 @@
-use crate::ecs_core::{
-    state_machine::{
-        resources::{CurrentState, NextState},
-        State,
-    },
-    worlds::GameWorldMarker,
+use crate::ecs_core::state_machine::{
+    resources::{CurrentState, NextState},
+    State,
 };
-pub use crate::game_world::schedules::{OnEnter, OnExit};
+use crate::ecs_core::worlds::SimulationWorldMarker;
 use crate::prelude::*;
+pub use crate::simulation_world::schedules::{OnEnter, OnExit};
 use bevy_ecs::prelude::*;
 
 pub fn apply_state_transition_system<T: State>(world: &mut World) {
@@ -17,7 +15,7 @@ pub fn apply_state_transition_system<T: State>(world: &mut World) {
 
     // If a state transition was requested...
     if let Some(new_state) = next_state_opt {
-        let is_game_world = world.get_resource::<GameWorldMarker>().is_some();
+        let is_simulation_world = world.get_resource::<SimulationWorldMarker>().is_some();
 
         let old_state = world.resource::<CurrentState<T>>().val.clone();
 
@@ -25,13 +23,17 @@ pub fn apply_state_transition_system<T: State>(world: &mut World) {
             return;
         }
 
-        if is_game_world {
+        if is_simulation_world {
             info!("\n\nState transition: {:?} -> {:?}\n", old_state, new_state);
         }
 
         // INFO: Try-run the transition schedules
 
-        let curr_world = if is_game_world { "game" } else { "render" };
+        let curr_world = if is_simulation_world {
+            "simulation"
+        } else {
+            "render"
+        };
         if let Err(e) = world.try_run_schedule(OnExit(old_state.clone())) {
             warn!("({} world) {}", curr_world, e);
         }

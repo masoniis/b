@@ -1,4 +1,4 @@
-use crate::render_world::extract::run_extract_schedule::GameWorld;
+use crate::render_world::extract::run_extract_schedule::SimulationWorld;
 use bevy_ecs::prelude::*;
 use bevy_ecs::query::{QueryData, QueryFilter};
 
@@ -15,12 +15,12 @@ impl<T: ExtractComponent> Default for ExtractedBy<T> {
     }
 }
 
-/// A trait that defines how to extract data from a set of components in the GameWorld.
+/// A trait that defines how to extract data from a set of components in the SimulationWorld.
 pub trait ExtractComponent: Send + Sync + 'static {
     /// The final data structure that will be stored in the RenderWorld.
     type Extracted: Send + Sync + 'static + ContainsEntity;
 
-    /// The tuple of components to query for in the GameWorld.
+    /// The tuple of components to query for in the SimulationWorld.
     /// Example: `(&'static Transform, &'static Handle<Mesh>)`
     type QueryComponents: QueryData;
 
@@ -44,18 +44,18 @@ pub trait ExtractComponent: Send + Sync + 'static {
     }
 }
 
-/// A generic system that extracts components from the GameWorld and stores them in the RenderWorld.
+/// A generic system that extracts components from the SimulationWorld and stores them in the RenderWorld.
 pub fn extract_component_system<T: ExtractComponent>(
-    mut main_world: ResMut<GameWorld>,
+    mut simulation_world: ResMut<SimulationWorld>,
     mut extracted: ResMut<ExtractedBy<T>>,
 ) {
     // Query only changed components
-    let mut query = main_world
+    let mut query = simulation_world
         .val
         .query_filtered::<(Entity, T::QueryComponents), (T::QueryFilter, T::ChangeTracked)>();
 
     // Update existing items by entity lookup
-    for (entity, components) in query.iter(&main_world.val) {
+    for (entity, components) in query.iter(&simulation_world.val) {
         let extracted_item = T::extract(entity, components);
 
         // Find and update existing, or push new

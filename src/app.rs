@@ -1,15 +1,14 @@
 use crate::{
-    game_world::{
-        app_lifecycle::AppState,
-        build_game_world, configure_game_world,
-        input::events::{RawDeviceEvent, RawWindowEvent},
-        schedules::GameSchedule,
-        GameWorldInterface,
-    },
     prelude::*,
     render_world::{
         context::GraphicsContext, extract::run_extract_schedule, RenderSchedule,
         RenderWorldInterface,
+    },
+    simulation_world::{
+        app_lifecycle::AppState,
+        build_simulation_world, configure_simulation_world,
+        input::events::{RawDeviceEvent, RawWindowEvent},
+        SimulationSchedule, SimulationWorldInterface,
     },
 };
 use std::{error::Error, sync::Arc};
@@ -27,7 +26,7 @@ pub struct App {
     // a window reference with a static lifetime (like Arc) for safety.
     window: Option<Arc<Window>>,
 
-    game_world: Option<GameWorldInterface>,
+    simulation_world: Option<SimulationWorldInterface>,
     render_world: Option<RenderWorldInterface>,
 }
 
@@ -35,7 +34,7 @@ impl App {
     fn new() -> Self {
         Self {
             window: None,
-            game_world: None,
+            simulation_world: None,
             render_world: None,
         }
     }
@@ -69,15 +68,16 @@ impl ApplicationHandler for App {
             let (graphics_context, texture_map) =
                 pollster::block_on(GraphicsContext::new(window.clone()));
 
-            let mut game_world = build_game_world(configure_game_world(texture_map, &window));
+            let mut simulation_world =
+                build_simulation_world(configure_simulation_world(texture_map, &window));
             let mut render_world = RenderWorldInterface::new(graphics_context);
 
             info!("Running startup systems...\n\n\n");
-            game_world.run_schedule(GameSchedule::Startup);
+            simulation_world.run_schedule(SimulationSchedule::Startup);
             render_world.run_schedule(RenderSchedule::Startup); // TODO: Async handling for loading screen?
 
             self.window = Some(window.clone());
-            self.game_world = Some(game_world);
+            self.simulation_world = Some(simulation_world);
             self.render_world = Some(render_world);
         }
     }
@@ -88,14 +88,14 @@ impl ApplicationHandler for App {
         _id: winit::event::DeviceId,
         event: DeviceEvent,
     ) {
-        if let Some(game_world) = &mut self.game_world {
-            game_world.send_event(RawDeviceEvent(event.clone()));
+        if let Some(simulation_world) = &mut self.simulation_world {
+            simulation_world.send_event(RawDeviceEvent(event.clone()));
         }
     }
 
     fn window_event(&mut self, event_loop: &ActiveEventLoop, _id: WindowId, event: WindowEvent) {
-        if let Some(game_world) = &mut self.game_world {
-            game_world.send_event(RawWindowEvent(event.clone()));
+        if let Some(simulation_world) = &mut self.simulation_world {
+            simulation_world.send_event(RawWindowEvent(event.clone()));
 
             // NOTE: The events handled here should only be events that rely on the event loop
             // or window. Any other event should be fine to handle within the ECS world itself.
@@ -105,14 +105,14 @@ impl ApplicationHandler for App {
                     event_loop.exit();
                 }
                 WindowEvent::RedrawRequested => {
-                    if let (Some(game_world), Some(render_world)) =
-                        (self.game_world.as_mut(), self.render_world.as_mut())
+                    if let (Some(simulation_world), Some(render_world)) =
+                        (self.simulation_world.as_mut(), self.render_world.as_mut())
                     {
-                        let current_app_state = game_world.get_app_state();
+                        let current_app_state = simulation_world.get_app_state();
 
                         match current_app_state {
                             AppState::Loading => {
-                                game_world.run_schedule(GameSchedule::Loading);
+                                simulation_world.run_schedule(SimulationSchedule::Loading);
                             }
                             AppState::Running => {
                                 // We run the main schedule regardless of running state
@@ -123,15 +123,15 @@ impl ApplicationHandler for App {
                             }
                         };
 
-                        game_world.run_schedule(GameSchedule::Main);
+                        simulation_world.run_schedule(SimulationSchedule::Main);
 
                         run_extract_schedule(
-                            game_world.borrow(),
+                            simulation_world.borrow(),
                             render_world.borrow(),
                             RenderSchedule::Extract,
                         );
 
-                        game_world.clear_trackers();
+                        simulation_world.clear_trackers();
 
                         // TODO: These schedules can run in parallel with the next frame of the game (in theory)
 
@@ -146,7 +146,9 @@ impl ApplicationHandler for App {
                             window.request_redraw();
                         }
                     } else {
-                        warn!("Redraw requested but game or render world is not initialized.");
+                        warn!(
+                            "Redraw requested but simulation or render world is not initialized."
+                        );
                     }
                 }
                 _ => {}

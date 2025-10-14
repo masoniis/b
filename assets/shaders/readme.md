@@ -45,7 +45,7 @@ To improve ergonomics and performance, the engine reserves specific bind group s
 
 This group is managed entirely by the engine and provides data that is constant for a single camera's view. A shader can opt-in to this data by declaring a compatible bind group at this slot.
 
-- **Content**: Camera projection/view matrices, viewport size, game time.
+- **Content**: Camera projection/view matrices, viewport size, simulation time.
 - **Update Frequency**: Once per view, per frame.
 - **Managed By**: The engine's renderer. **Do not** define this group in a `.material.ron` file.
 

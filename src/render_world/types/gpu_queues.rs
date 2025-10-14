@@ -1,4 +1,4 @@
-use crate::game_world::global_resources::asset_storage::{Handle, MeshAsset};
+use crate::simulation_world::global_resources::asset_storage::{Handle, MeshAsset};
 use bevy_ecs::prelude::Entity;
 use glyphon::Color;
 

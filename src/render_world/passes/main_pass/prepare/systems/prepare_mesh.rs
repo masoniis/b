@@ -1,11 +1,11 @@
 use crate::{
-    game_world::global_resources::{AssetStorageResource, MeshAsset},
     prelude::*,
     render_world::types::mesh::create_gpu_mesh_from_data,
     render_world::{
         extract::{mesh::RenderMeshComponent, resources::RenderMeshStorageResource},
         resources::GraphicsContextResource,
     },
+    simulation_world::global_resources::{AssetStorageResource, MeshAsset},
 };
 use bevy_ecs::prelude::*;
 use std::sync::Arc;

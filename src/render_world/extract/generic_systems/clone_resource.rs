@@ -1,4 +1,4 @@
-use crate::{prelude::*, render_world::extract::utils::run_extract_schedule::GameWorld};
+use crate::{prelude::*, render_world::extract::utils::run_extract_schedule::SimulationWorld};
 use bevy_ecs::prelude::*;
 
 /// A generic system that clones a resource of type `T` from the main world
@@ -8,9 +8,9 @@ use bevy_ecs::prelude::*;
 /// such as Arc.
 pub fn clone_resource_system<T: Resource + Clone>(
     mut commands: Commands,
-    main_world: Res<GameWorld>,
+    simulation_world: Res<SimulationWorld>,
 ) {
-    if let Some(resource_to_clone) = main_world.val.get_resource::<T>() {
+    if let Some(resource_to_clone) = simulation_world.val.get_resource::<T>() {
         commands.insert_resource(resource_to_clone.clone());
     } else {
         warn!(
