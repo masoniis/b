@@ -8,13 +8,15 @@ pub mod text;
 // ----------------------
 
 use crate::ecs_core::{EcsBuilder, Plugin};
-use crate::simulation_world::{ui::layout::should_relayout_ui, SimulationSchedule, SimulationSet};
+use crate::simulation_world::ui::layout::handle_window_resize_system;
+use crate::simulation_world::{SimulationSchedule, SimulationSet};
 use bevy_ecs::prelude::*;
 use {
     creation::create_test_ui_system,
     layout::{
-        compute_and_apply_layout_system, compute_ui_depth_system, sync_ui_to_taffy_system,
-        UiLayoutTree,
+        compute_and_apply_layout_system, compute_ui_depth_system, handle_hierarchy_changes_system,
+        handle_structural_changes_system, update_changed_styles_system, EntityToNodeMap,
+        IsLayoutDirty, UiLayoutTree,
     },
     text::setup_font_system,
 };
@@ -26,20 +28,30 @@ impl Plugin for UiPlugin {
         builder.world.init_non_send_resource::<UiLayoutTree>();
 
         builder
+            .add_resource(EntityToNodeMap::default())
+            .add_resource(IsLayoutDirty::default());
+
+        builder
             .schedule_entry(SimulationSchedule::Startup)
             .add_systems((create_test_ui_system, setup_font_system));
 
         builder
             .schedule_entry(SimulationSchedule::Main)
-            .add_systems(
+            .add_systems((
                 (
-                    sync_ui_to_taffy_system,
-                    compute_and_apply_layout_system,
-                    compute_ui_depth_system,
+                    handle_window_resize_system,
+                    (
+                        handle_structural_changes_system,
+                        handle_hierarchy_changes_system,
+                        update_changed_styles_system,
+                        handle_window_resize_system,
+                    )
+                        .chain(),
                 )
-                    .chain()
-                    .run_if(should_relayout_ui)
+                    .in_set(SimulationSet::Update),
+                (compute_and_apply_layout_system, compute_ui_depth_system)
+                    .run_if(resource_equals(IsLayoutDirty(true)))
                     .in_set(SimulationSet::RenderPrep),
-            );
+            ));
     }
 }

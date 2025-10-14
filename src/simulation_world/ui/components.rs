@@ -12,7 +12,23 @@ use bevy_ecs::prelude::Component;
 pub struct UiRoot;
 
 #[derive(Component)]
-pub struct Node; // marker for any entit in the ui tree
+pub struct Node; // marker for any entity in the ui tree
+
+// INFO: ---------------------
+//         Interaction
+// ---------------------------
+
+/// The current interaction state of a UI node.
+///
+/// This is updated by an interaction system and can be used
+/// by styling systems to visually change the UI element.
+#[derive(Component, Clone, Copy, Debug, PartialEq, Eq, Default)]
+pub enum Interaction {
+    #[default]
+    Normal,
+    Hovered,
+    Pressed,
+}
 
 // INFO: ------------------
 //         Styling
@@ -76,9 +92,12 @@ pub enum TextAlign {
     Start,
     Center,
     End,
+    Justified,
 }
 
-// INFO: Output
+// INFO: ------------------------------
+//         Output for rendering
+// ------------------------------------
 
 #[derive(Component, Debug, Default, Clone, Copy)]
 pub struct CalculatedLayout {
@@ -87,6 +106,3 @@ pub struct CalculatedLayout {
     /// The absolute screen-space size (Width, Height) of the node.
     pub size: Vec2,
 }
-
-#[derive(Component)]
-pub struct MyTextMarker;

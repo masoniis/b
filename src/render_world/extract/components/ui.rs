@@ -115,6 +115,7 @@ impl ExtractComponent for UiTextExtractor {
                     TextAlign::Start => glyphon::cosmic_text::Align::Left,
                     TextAlign::Center => glyphon::cosmic_text::Align::Center,
                     TextAlign::End => glyphon::cosmic_text::Align::Right,
+                    TextAlign::Justified => glyphon::cosmic_text::Align::Justified,
                 },
             },
         }
