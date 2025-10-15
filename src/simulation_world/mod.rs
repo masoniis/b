@@ -10,7 +10,6 @@ use crate::render_world::{
 use crate::simulation_world::global_resources::MeshAsset;
 use crate::simulation_world::input::InputModulePlugin;
 use crate::simulation_world::player::PlayerModulePlugin;
-use crate::simulation_world::screen_text::ScreenTextModulePlugin;
 use crate::simulation_world::world::WorldModulePlugin;
 use app_lifecycle::{AppLifecyclePlugin, AppState};
 use bevy_ecs::prelude::*;
@@ -26,7 +25,6 @@ pub mod graphics_old;
 pub mod input;
 pub mod player;
 pub mod schedules;
-pub mod screen_text;
 pub mod system_sets;
 pub mod ui;
 pub mod world;
@@ -149,7 +147,6 @@ impl PluginGroup for ClientOnlyPlugins {
             .add_resource(global_resources::asset_storage::AssetStorageResource::<
                 MeshAsset,
             >::default())
-            .add_plugin(ScreenTextModulePlugin)
             .add_plugin(UiPlugin)
             .add_plugin(InputModulePlugin);
     }

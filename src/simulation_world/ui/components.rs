@@ -43,10 +43,14 @@ pub enum Size {
 
 #[derive(Component)]
 pub struct Style {
+    // basic
     pub width: Size,
     pub height: Size,
     pub padding: f32,
     pub position: taffy::style::Position,
+
+    // flex
+    pub flex_direction: taffy::style::FlexDirection,
     pub justify_content: Option<taffy::style::JustifyContent>,
     pub align_items: Option<taffy::style::AlignItems>,
 }
@@ -61,6 +65,7 @@ impl Default for Style {
             position: taffy::style::Position::default(),
             justify_content: None,
             align_items: None,
+            flex_direction: taffy::FlexDirection::Row,
         }
     }
 }

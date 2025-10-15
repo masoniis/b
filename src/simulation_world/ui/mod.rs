@@ -11,7 +11,9 @@ use crate::ecs_core::{EcsBuilder, Plugin};
 use crate::simulation_world::app_lifecycle::AppState;
 use crate::simulation_world::input::{ActionStateResource, SimulationAction};
 use crate::simulation_world::ui::layout::handle_window_resize_system;
-use crate::simulation_world::ui::screens::debug::toggle_debug_diagnostics_system;
+use crate::simulation_world::ui::screens::debug::{
+    diagnostic_ui_is_visible, toggle_debug_diagnostics_system, update_fps_counter_system,
+};
 use crate::simulation_world::ui::screens::loading_screen::despawn_loading_ui_system;
 use crate::simulation_world::{OnExit, SimulationSchedule, SimulationSet};
 use bevy_ecs::prelude::*;
@@ -53,21 +55,22 @@ impl Plugin for UiPlugin {
             .schedule_entry(SimulationSchedule::Main)
             .add_systems((
                 (
-                    handle_window_resize_system,
                     toggle_debug_diagnostics_system.run_if(
                         |action_state: Res<ActionStateResource>| {
                             action_state.just_happened(SimulationAction::ToggleDiagnostics)
                         },
                     ),
-                    (
-                        handle_structural_changes_system,
-                        handle_hierarchy_changes_system,
-                        update_changed_styles_system,
-                        handle_window_resize_system,
-                    )
-                        .chain(),
+                    handle_window_resize_system,
+                    (update_fps_counter_system,).run_if(diagnostic_ui_is_visible),
                 )
                     .in_set(SimulationSet::Update),
+                (
+                    handle_structural_changes_system,
+                    handle_hierarchy_changes_system,
+                    update_changed_styles_system,
+                )
+                    .chain()
+                    .in_set(SimulationSet::PostUpdate),
                 (compute_and_apply_layout_system, compute_ui_depth_system)
                     .run_if(resource_equals(IsLayoutDirty(true)))
                     .in_set(SimulationSet::RenderPrep),

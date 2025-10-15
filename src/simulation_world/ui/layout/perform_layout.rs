@@ -219,6 +219,7 @@ impl From<&simulation::Style> for taffy::Style {
             position: value.position,
             justify_content: value.justify_content,
             align_items: value.align_items,
+            flex_direction: value.flex_direction,
             ..Default::default()
         }
     }
