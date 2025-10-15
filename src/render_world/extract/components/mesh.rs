@@ -1,8 +1,8 @@
 use crate::{
     render_world::extract::MirrorableComponent,
     simulation_world::{
+        chunk::{MeshComponent, TransformComponent},
         global_resources::asset_storage::{Handle, MeshAsset},
-        graphics_old::{MeshComponent, TransformComponent},
     },
 };
 use bevy_ecs::prelude::*;

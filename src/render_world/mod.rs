@@ -8,6 +8,10 @@ pub mod textures;
 pub mod types;
 pub mod uniforms;
 
+// INFO: --------------------------------
+//         Render world interface
+// --------------------------------------
+
 use crate::{
     ecs_core::worlds::RenderWorldMarker, prelude::*, render_world::textures::load_texture_array,
 };
@@ -26,10 +30,6 @@ pub enum RenderSchedule {
     Queue,
     Render,
 }
-
-// INFO: --------------------------------
-//         Render world interface
-// --------------------------------------
 
 pub struct RenderWorldInterface {
     pub common: CommonEcsInterface,

@@ -4,7 +4,7 @@ use super::extract::{
 use super::passes;
 use super::passes::ui_pass::RenderUiPlugin;
 use crate::prelude::*;
-use crate::simulation_world::graphics_old::MeshComponent;
+use crate::simulation_world::chunk::MeshComponent;
 use crate::simulation_world::input::resources::WindowSizeResource;
 use crate::{
     ecs_core::state_machine::{self, in_state, StatePlugin},

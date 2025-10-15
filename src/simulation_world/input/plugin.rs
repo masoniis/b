@@ -5,7 +5,7 @@ use super::{
     ActionStateResource, InputActionMapResource,
 };
 use crate::ecs_core::{EcsBuilder, Plugin};
-use crate::simulation_world::schedules::OnExit;
+use crate::simulation_world::scheduling::OnExit;
 use crate::simulation_world::{
     app_lifecycle::AppState,
     input::events::{

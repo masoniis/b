@@ -1,6 +1,8 @@
 use crate::prelude::*;
-use crate::simulation_world::ui::components::{Node, Size, Style, TextAlign, UiBackground, UiText};
-use crate::simulation_world::ui::screens::spawn_root::UiRootNodeResource;
+use crate::simulation_world::user_interface::components::{
+    Node, Size, Style, TextAlign, UiBackground, UiText,
+};
+use crate::simulation_world::user_interface::screens::spawn_root::UiRootNodeResource;
 use bevy_ecs::prelude::*;
 use bevy_ecs::relationship::RelatedSpawnerCommands;
 

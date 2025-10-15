@@ -1,4 +1,4 @@
-use crate::simulation_world::world::utils::types::{block::Block, chunk::Chunk};
+use crate::simulation_world::chunk::types::{block::Block, chunk::Chunk};
 
 pub const CHUNK_WIDTH: usize = 16;
 pub const CHUNK_HEIGHT: usize = 256;

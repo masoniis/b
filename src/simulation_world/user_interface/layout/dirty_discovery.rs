@@ -2,7 +2,7 @@ use crate::{
     prelude::*,
     simulation_world::{
         input::resources::WindowSizeResource,
-        ui::{
+        user_interface::{
             components::{self as simulation},
             layout::{EntityToNodeMap, UiLayoutTree},
         },

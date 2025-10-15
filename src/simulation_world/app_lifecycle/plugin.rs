@@ -1,7 +1,6 @@
 use crate::{
     ecs_core::{systems::apply_state_transition_system, EcsBuilder, Plugin, StatePlugin},
-    simulation_world::SimulationSchedule,
-    simulation_world::SimulationSet,
+    simulation_world::{time::time_system, SimulationSchedule, SimulationSet},
 };
 use bevy_ecs::prelude::*;
 
@@ -27,13 +26,7 @@ impl Plugin for AppLifecyclePlugin {
 
         builder
             .schedule_entry(SimulationSchedule::Loading)
-            .add_systems(
-                (
-                    finalize_loading_system,
-                    crate::simulation_world::world::systems::main::time::time_system, // Add time_system
-                )
-                    .chain(),
-            );
+            .add_systems((finalize_loading_system, time_system).chain());
 
         builder
             .schedule_entry(SimulationSchedule::Main)

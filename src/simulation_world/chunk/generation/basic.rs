@@ -1,10 +1,12 @@
 use crate::render_world::types::{TextureId, Vertex};
+use crate::simulation_world::chunk::components::{MeshComponent, TransformComponent};
+use crate::simulation_world::chunk::generation::flat_world::{
+    generate_flat_world_chunk, CHUNK_HEIGHT,
+};
+use crate::simulation_world::chunk::types::chunk::Chunk;
 use crate::simulation_world::global_resources::asset_storage::AssetStorageResource;
 use crate::simulation_world::global_resources::asset_storage::MeshAsset;
 use crate::simulation_world::global_resources::texture_map::TextureMapResource;
-use crate::simulation_world::graphics_old::components::{MeshComponent, TransformComponent};
-use crate::simulation_world::world::utils::types::chunk::Chunk;
-use crate::simulation_world::world::world_gen::{generate_flat_world_chunk, CHUNK_HEIGHT};
 use bevy_ecs::prelude::{Commands, Res};
 use glam::Vec3;
 use tracing::info;

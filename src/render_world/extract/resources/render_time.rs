@@ -1,6 +1,6 @@
 use crate::{
     render_world::extract::extract_resource::ExtractResource,
-    simulation_world::global_resources::time::TimeResource,
+    simulation_world::global_resources::time::WorldTimeResource,
 };
 use bevy_ecs::{
     prelude::Resource,
@@ -13,7 +13,7 @@ pub struct RenderTimeResource {
 }
 
 impl ExtractResource for RenderTimeResource {
-    type Source = TimeResource;
+    type Source = WorldTimeResource;
     type Output = RenderTimeResource;
 
     /// Extracts the time resource. Because time always changes, this performs

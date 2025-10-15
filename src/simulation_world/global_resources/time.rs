@@ -5,14 +5,14 @@ use std::time::{Duration, Instant};
 const FPS_SMOOTHING_FACTOR: f32 = 0.025;
 
 #[derive(Resource)]
-pub struct TimeResource {
+pub struct WorldTimeResource {
     pub current: Instant,
     pub since_last_update: Duration,
     pub total_elapse: Duration,
     pub smoothed_fps: f32,
 }
 
-impl Default for TimeResource {
+impl Default for WorldTimeResource {
     fn default() -> Self {
         Self {
             current: Instant::now(),
@@ -23,7 +23,7 @@ impl Default for TimeResource {
     }
 }
 
-impl TimeResource {
+impl WorldTimeResource {
     pub fn update_fps(&mut self) {
         let current_raw_fps = if self.since_last_update.as_secs_f32() > 0.0 {
             1.0 / self.since_last_update.as_secs_f32()

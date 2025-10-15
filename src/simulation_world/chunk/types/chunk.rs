@@ -1,5 +1,7 @@
 use super::block::Block;
-use crate::simulation_world::world::world_gen::{CHUNK_DEPTH, CHUNK_HEIGHT, CHUNK_WIDTH};
+use crate::simulation_world::chunk::generation::flat_world::{
+    CHUNK_DEPTH, CHUNK_HEIGHT, CHUNK_WIDTH,
+};
 
 #[derive(Clone)]
 pub struct Chunk {

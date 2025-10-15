@@ -1,14 +1,16 @@
 use crate::prelude::*;
 use crate::simulation_world::{
-    global_resources::TimeResource,
-    ui::{components::UiText, screens::debug::debug_screen::FpsCounterTextElementMarker},
+    global_resources::WorldTimeResource,
+    user_interface::{
+        components::UiText, screens::debug::debug_screen::FpsCounterTextElementMarker,
+    },
 };
 use bevy_ecs::prelude::*;
 
 /// Updates the content of the FPS counter text element.
 pub fn update_fps_counter_system(
     // Input
-    time: Res<TimeResource>,
+    time: Res<WorldTimeResource>,
 
     // Output (updated component)
     mut query: Query<&mut UiText, With<FpsCounterTextElementMarker>>,

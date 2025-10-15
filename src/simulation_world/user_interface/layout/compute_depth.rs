@@ -1,4 +1,6 @@
-use crate::simulation_world::ui::{components::Node, screens::spawn_root::UiRootNodeResource};
+use crate::simulation_world::user_interface::{
+    components::Node, screens::spawn_root::UiRootNodeResource,
+};
 use bevy_ecs::prelude::*;
 
 #[derive(Component, Debug)]

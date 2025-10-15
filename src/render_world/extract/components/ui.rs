@@ -1,7 +1,7 @@
 use crate::prelude::*;
 use crate::render_world::extract::run_extract_schedule::SimulationWorld;
-use crate::simulation_world::ui::components::{CalculatedLayout, Node, UiBackground};
-use crate::simulation_world::ui::{
+use crate::simulation_world::user_interface::components::{CalculatedLayout, Node, UiBackground};
+use crate::simulation_world::user_interface::{
     components::TextAlign, components::UiText, layout::compute_depth::UiDepth,
 };
 use bevy_ecs::prelude::*;

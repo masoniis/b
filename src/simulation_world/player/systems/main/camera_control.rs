@@ -1,4 +1,4 @@
-use crate::simulation_world::global_resources::{camera::CameraResource, time::TimeResource};
+use crate::simulation_world::global_resources::{camera::CameraResource, time::WorldTimeResource};
 use crate::simulation_world::input::resources::WindowSizeResource;
 use crate::simulation_world::input::{
     resources::CursorMovement, types::simulation_action::SimulationAction, ActionStateResource,
@@ -10,7 +10,7 @@ pub fn camera_control_system(
     // Input
     movement: Res<CursorMovement>,
     action_state: Res<ActionStateResource>,
-    time: Res<TimeResource>,
+    time: Res<WorldTimeResource>,
     window: Res<WindowSizeResource>,
 
     // Output

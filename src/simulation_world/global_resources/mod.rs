@@ -6,4 +6,4 @@ pub mod time;
 pub use asset_storage::{AssetStorageResource, MeshAsset};
 pub use camera::CameraResource;
 pub use texture_map::TextureMapResource;
-pub use time::TimeResource;
+pub use time::WorldTimeResource;

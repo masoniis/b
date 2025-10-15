@@ -1,5 +1,5 @@
 use crate::prelude::*;
-use crate::simulation_world::ui::components::{Node, Size, Style};
+use crate::simulation_world::user_interface::components::{Node, Size, Style};
 use bevy_ecs::prelude::*;
 
 #[derive(Resource)]
@@ -15,8 +15,7 @@ pub fn spawn_ui_root_system(mut commands: Commands) {
         .spawn((
             Node,
             Style {
-                position_type: taffy::style::Position::Absolute,
-                P
+                position: taffy::style::Position::Absolute,
                 width: Size::Percent(100.0),
                 height: Size::Percent(100.0),
                 ..Default::default()

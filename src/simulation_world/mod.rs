@@ -1,5 +1,17 @@
-pub use self::schedules::{OnExit, SimulationSchedule};
-pub use self::system_sets::SimulationSet;
+pub mod app_lifecycle;
+pub mod chunk;
+pub mod global_resources;
+pub mod input;
+pub mod player;
+pub mod scheduling;
+pub mod time;
+pub mod user_interface;
+
+// INFO: ------------------------------
+//         Game world interface
+// ------------------------------------
+
+pub use self::scheduling::{OnExit, SimulationSchedule, SimulationSet};
 use crate::ecs_core::{
     state_machine::resources::CurrentState, worlds::SimulationWorldMarker, CommonEcsInterface,
     EcsBuilder, PluginGroup,
@@ -7,31 +19,19 @@ use crate::ecs_core::{
 use crate::render_world::{
     extract::utils::initialize_simulation_world_for_extract, textures::TextureRegistry,
 };
+use crate::simulation_world::chunk::ChunkGenerationPlugin;
 use crate::simulation_world::global_resources::MeshAsset;
 use crate::simulation_world::input::InputModulePlugin;
 use crate::simulation_world::player::PlayerModulePlugin;
-use crate::simulation_world::world::WorldModulePlugin;
+use crate::simulation_world::time::TimeControlPlugin;
+
 use app_lifecycle::{AppLifecyclePlugin, AppState};
 use bevy_ecs::prelude::*;
 use global_resources::TextureMapResource;
 use input::resources::WindowSizeResource;
 use std::ops::{Deref, DerefMut};
-use ui::UiPlugin;
+use user_interface::UiPlugin;
 use winit::window::Window;
-
-pub mod app_lifecycle;
-pub mod global_resources;
-pub mod graphics_old;
-pub mod input;
-pub mod player;
-pub mod schedules;
-pub mod system_sets;
-pub mod ui;
-pub mod world;
-
-// INFO: ------------------------------
-//         Game world interface
-// ------------------------------------
 
 pub struct SimulationWorldInterface {
     pub common: CommonEcsInterface,
@@ -72,12 +72,12 @@ impl DerefMut for SimulationWorldInterface {
 pub fn configure_simulation_world(registry: TextureRegistry, window: &Window) -> EcsBuilder {
     let mut builder = EcsBuilder::new();
 
-    // Add resources built from the app
+    // add resources built from the app
     builder
         .add_resource(WindowSizeResource::new(window.inner_size()))
         .add_resource(TextureMapResource { registry });
 
-    // Configure core schedule sets before adding plugins
+    // configure core schedule sets before adding plugins
     builder
         .schedules
         .entry(SimulationSchedule::Main)
@@ -93,7 +93,7 @@ pub fn configure_simulation_world(registry: TextureRegistry, window: &Window) ->
                 .chain(),
         );
 
-    // Now add plugins, which can safely use the configured sets
+    // now add plugins, which can safely use the configured sets
     builder
         .add_plugins(SharedPlugins)
         .add_plugins(ClientOnlyPlugins);
@@ -131,9 +131,10 @@ struct SharedPlugins;
 impl PluginGroup for SharedPlugins {
     fn build(self, builder: &mut EcsBuilder) {
         builder
-            .add_resource(global_resources::time::TimeResource::default())
+            .add_resource(global_resources::time::WorldTimeResource::default())
             .add_plugin(AppLifecyclePlugin)
-            .add_plugin(WorldModulePlugin)
+            .add_plugin(ChunkGenerationPlugin)
+            .add_plugin(TimeControlPlugin)
             .add_plugin(PlayerModulePlugin);
     }
 }

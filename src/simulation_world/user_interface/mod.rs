@@ -7,14 +7,14 @@ pub mod text;
 //         Plugin
 // ----------------------
 
+use self::layout::handle_window_resize_system;
+use self::screens::debug::{
+    diagnostic_ui_is_visible, toggle_debug_diagnostics_system, update_fps_counter_system,
+};
+use self::screens::loading_screen::despawn_loading_ui_system;
 use crate::ecs_core::{EcsBuilder, Plugin};
 use crate::simulation_world::app_lifecycle::AppState;
 use crate::simulation_world::input::{ActionStateResource, SimulationAction};
-use crate::simulation_world::ui::layout::handle_window_resize_system;
-use crate::simulation_world::ui::screens::debug::{
-    diagnostic_ui_is_visible, toggle_debug_diagnostics_system, update_fps_counter_system,
-};
-use crate::simulation_world::ui::screens::loading_screen::despawn_loading_ui_system;
 use crate::simulation_world::{OnExit, SimulationSchedule, SimulationSet};
 use bevy_ecs::prelude::*;
 use {

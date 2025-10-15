@@ -1,9 +1,9 @@
-use crate::simulation_world::global_resources::time::TimeResource;
+use crate::simulation_world::global_resources::time::WorldTimeResource;
 use bevy_ecs::prelude::*;
 use std::time::Instant;
 use tracing::debug;
 
-pub fn time_system(mut time: ResMut<TimeResource>) {
+pub fn time_system(mut time: ResMut<WorldTimeResource>) {
     let current_time = Instant::now();
     let since_last_update = current_time.duration_since(time.current);
 
