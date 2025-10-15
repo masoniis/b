@@ -131,7 +131,6 @@ struct SharedPlugins;
 impl PluginGroup for SharedPlugins {
     fn build(self, builder: &mut EcsBuilder) {
         builder
-            .add_resource(global_resources::time::WorldTimeResource::default())
             .add_plugin(AppLifecyclePlugin)
             .add_plugin(ChunkGenerationPlugin)
             .add_plugin(TimeControlPlugin)

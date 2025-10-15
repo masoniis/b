@@ -1,6 +1,5 @@
 use crate::{
-    render_world::extract::extract_resource::ExtractResource,
-    simulation_world::global_resources::time::WorldTimeResource,
+    render_world::extract::extract_resource::ExtractResource, simulation_world::time::FrameClock,
 };
 use bevy_ecs::{
     prelude::Resource,
@@ -13,7 +12,7 @@ pub struct RenderTimeResource {
 }
 
 impl ExtractResource for RenderTimeResource {
-    type Source = WorldTimeResource;
+    type Source = FrameClock;
     type Output = RenderTimeResource;
 
     /// Extracts the time resource. Because time always changes, this performs
@@ -26,7 +25,7 @@ impl ExtractResource for RenderTimeResource {
         // Since elapsed time always changed we can just insert it and
         // trigger updates every frame, no point in doing conditional change checking
         commands.insert_resource(RenderTimeResource {
-            total_elapsed_seconds: source.total_elapse.as_secs_f32(),
+            total_elapsed_seconds: source.elapsed.as_secs_f32(),
         });
     }
 }

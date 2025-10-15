@@ -1,8 +1,9 @@
-use crate::simulation_world::global_resources::{camera::CameraResource, time::WorldTimeResource};
+use crate::simulation_world::global_resources::camera::CameraResource;
 use crate::simulation_world::input::resources::WindowSizeResource;
 use crate::simulation_world::input::{
     resources::CursorMovement, types::simulation_action::SimulationAction, ActionStateResource,
 };
+use crate::simulation_world::time::FrameClock;
 use bevy_ecs::prelude::*;
 use glam::{Mat4, Vec3};
 
@@ -10,14 +11,14 @@ pub fn camera_control_system(
     // Input
     movement: Res<CursorMovement>,
     action_state: Res<ActionStateResource>,
-    time: Res<WorldTimeResource>,
+    time: Res<FrameClock>,
     window: Res<WindowSizeResource>,
 
     // Output
     mut camera: ResMut<CameraResource>,
 ) {
     // Update camera position
-    let velocity = camera.movement_speed * time.since_last_update.as_secs_f32();
+    let velocity = camera.movement_speed * time.delta.as_secs_f32();
     let front = camera.front;
     let mut multiplier = 1.0;
     if action_state.is_ongoing(SimulationAction::MoveFaster) {
