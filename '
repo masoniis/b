@@ -15,7 +15,8 @@ pub fn spawn_ui_root_system(mut commands: Commands) {
         .spawn((
             Node,
             Style {
-                position: taffy::style::Position::Absolute,
+                position_type: taffy::style::Position::Absolute,
+                P
                 width: Size::Percent(100.0),
                 height: Size::Percent(100.0),
                 ..Default::default()

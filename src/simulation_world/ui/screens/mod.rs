@@ -1,4 +1,5 @@
 pub mod create_test_ui;
+pub mod debug;
 pub mod loading_screen;
 pub mod spawn_root;
 

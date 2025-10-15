@@ -210,6 +210,13 @@ impl From<&simulation::Style> for taffy::Style {
                 width: to_dim(value.width),
                 height: to_dim(value.height),
             },
+            padding: taffy::geometry::Rect {
+                left: taffy::LengthPercentage::length(value.padding),
+                right: taffy::LengthPercentage::length(value.padding),
+                top: taffy::LengthPercentage::length(value.padding),
+                bottom: taffy::LengthPercentage::length(value.padding),
+            },
+            position: value.position,
             justify_content: value.justify_content,
             align_items: value.align_items,
             ..Default::default()
@@ -227,20 +234,24 @@ fn measure_text_node(
     text: &simulation::UiText,
     font_system: &mut glyphon::FontSystem,
 ) -> taffy::Size<f32> {
-    // Determine constraints
+    // constraints
     let width_constraint = known_dimensions.width.or(match available_space.width {
         taffy::AvailableSpace::MinContent => Some(0.0),
         taffy::AvailableSpace::MaxContent => None,
         taffy::AvailableSpace::Definite(width) => Some(width),
     });
 
-    // Create the buffer and size it
+    let height_constraint = known_dimensions.height.or(match available_space.height {
+        taffy::AvailableSpace::Definite(height) => Some(height),
+        _ => None,
+    });
+
+    // shape the text
     let mut buffer = glyphon::Buffer::new(
         font_system,
         glyphon::Metrics::new(text.font_size, text.font_size),
     );
-
-    buffer.set_size(font_system, width_constraint, None);
+    buffer.set_size(font_system, width_constraint, height_constraint);
     buffer.set_text(
         font_system,
         &text.content,
@@ -249,26 +260,32 @@ fn measure_text_node(
     );
     buffer.shape_until_scroll(font_system, false);
 
-    let (measured_width, measured_height) = (buffer.size().0, buffer.size().1);
+    // calculate metrics (width/height)
+    let measured_width = buffer
+        .layout_runs()
+        .fold(0.0f32, |max_width, run| max_width.max(run.line_w));
+
+    let line_height = buffer.metrics().line_height;
+    let measured_height = buffer.lines.len() as f32 * line_height;
+
+    let final_height = if text.content.is_empty() {
+        0.0
+    } else {
+        measured_height
+    };
 
     debug!(
         target: "ui_layout",
-        "[Measure] Text '{}' (font size {}): measured size=({:?},{:?}), width_constraint={:?}, avilable_space=({:?},{:?})",
+        "[Measure] Text '{}': final_size=({}, {}), available_space=({:?},{:?})",
         text.content,
-        text.font_size,
         measured_width,
-        measured_height,
-        width_constraint,
+        final_height,
         available_space.width,
         available_space.height
     );
 
-    // Return the size
-    match (measured_width, measured_height) {
-        (Some(w), Some(h)) => taffy::Size {
-            width: w,
-            height: h,
-        },
-        _ => taffy::Size::default(),
+    taffy::Size {
+        width: measured_width.ceil(),
+        height: final_height.ceil(),
     }
 }

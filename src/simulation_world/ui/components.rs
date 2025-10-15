@@ -45,6 +45,8 @@ pub enum Size {
 pub struct Style {
     pub width: Size,
     pub height: Size,
+    pub padding: f32,
+    pub position: taffy::style::Position,
     pub justify_content: Option<taffy::style::JustifyContent>,
     pub align_items: Option<taffy::style::AlignItems>,
 }
@@ -55,6 +57,8 @@ impl Default for Style {
         Self {
             width: Size::Auto,
             height: Size::Auto,
+            padding: 0.0,
+            position: taffy::style::Position::default(),
             justify_content: None,
             align_items: None,
         }

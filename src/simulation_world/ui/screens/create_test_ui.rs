@@ -19,6 +19,7 @@ pub fn create_test_ui_system(mut commands: Commands, root_node: Res<UiRootNodeRe
             TestUiElement,
             Node,
             Style {
+                position: taffy::style::Position::Absolute,
                 width: Size::Percent(100.0),
                 height: Size::Percent(100.0),
                 justify_content: Some(taffy::JustifyContent::SpaceBetween),

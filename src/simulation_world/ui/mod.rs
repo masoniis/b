@@ -9,7 +9,9 @@ pub mod text;
 
 use crate::ecs_core::{EcsBuilder, Plugin};
 use crate::simulation_world::app_lifecycle::AppState;
+use crate::simulation_world::input::{ActionStateResource, SimulationAction};
 use crate::simulation_world::ui::layout::handle_window_resize_system;
+use crate::simulation_world::ui::screens::debug::toggle_debug_diagnostics_system;
 use crate::simulation_world::ui::screens::loading_screen::despawn_loading_ui_system;
 use crate::simulation_world::{OnExit, SimulationSchedule, SimulationSet};
 use bevy_ecs::prelude::*;
@@ -47,15 +49,16 @@ impl Plugin for UiPlugin {
             .schedule_entry(OnExit(AppState::Loading))
             .add_systems(despawn_loading_ui_system);
 
-        // builder
-        //     .schedule_entry(OnEnter(AppState::Running))
-        //     .add_systems(create_test_ui_system);
-
         builder
             .schedule_entry(SimulationSchedule::Main)
             .add_systems((
                 (
                     handle_window_resize_system,
+                    toggle_debug_diagnostics_system.run_if(
+                        |action_state: Res<ActionStateResource>| {
+                            action_state.just_happened(SimulationAction::ToggleDiagnostics)
+                        },
+                    ),
                     (
                         handle_structural_changes_system,
                         handle_hierarchy_changes_system,
