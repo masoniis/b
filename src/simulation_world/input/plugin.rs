@@ -4,15 +4,16 @@ use super::{
     systems::{processing, utils},
     ActionStateResource, InputActionMapResource,
 };
-use crate::ecs_core::{EcsBuilder, Plugin};
-use crate::simulation_world::scheduling::OnExit;
-use crate::simulation_world::{
-    app_lifecycle::AppState,
-    input::events::{
-        KeyboardInputEvent, MouseButtonInputEvent, MouseMoveEvent, MouseScrollEvent,
-        RawDeviceEvent, RawWindowEvent,
+use crate::{
+    ecs_core::{state_machine::AppState, EcsBuilder, Plugin},
+    simulation_world::{
+        input::events::{
+            KeyboardInputEvent, MouseButtonInputEvent, MouseMoveEvent, MouseScrollEvent,
+            RawDeviceEvent, RawWindowEvent,
+        },
+        scheduling::OnExit,
+        SimulationSchedule, SimulationSet,
     },
-    SimulationSchedule, SimulationSet,
 };
 use bevy_ecs::{event::Events, schedule::IntoScheduleConfigs};
 use winit::{event::MouseButton, keyboard::PhysicalKey};
@@ -58,7 +59,7 @@ impl Plugin for InputModulePlugin {
             );
 
         builder
-            .schedule_entry(OnExit(AppState::Loading))
+            .schedule_entry(OnExit(AppState::StartingUp))
             .add_systems(utils::clear_stale_input_events_system);
     }
 }

@@ -1,12 +1,11 @@
 use crate::{
+    ecs_core::async_loading::LoadingTracker,
     prelude::*,
     render_world::{
-        context::GraphicsContext, extract::run_extract_schedule, RenderSchedule,
+        context::GraphicsContext, extract::run_extract_schedule, scheduling::RenderSchedule,
         RenderWorldInterface,
     },
     simulation_world::{
-        app_lifecycle::AppState,
-        build_simulation_world, configure_simulation_world,
         input::events::{RawDeviceEvent, RawWindowEvent},
         SimulationSchedule, SimulationWorldInterface,
     },
@@ -26,8 +25,11 @@ pub struct App {
     // a window reference with a static lifetime (like Arc) for safety.
     window: Option<Arc<Window>>,
 
+    // The worlds
     simulation_world: Option<SimulationWorldInterface>,
     render_world: Option<RenderWorldInterface>,
+    // And a loading tracker to orchestrate async tasks between the two worlds
+    loading_tracker: LoadingTracker,
 }
 
 impl App {
@@ -36,6 +38,7 @@ impl App {
             window: None,
             simulation_world: None,
             render_world: None,
+            loading_tracker: LoadingTracker::default(),
         }
     }
 
@@ -68,13 +71,12 @@ impl ApplicationHandler for App {
             let (graphics_context, texture_map) =
                 pollster::block_on(GraphicsContext::new(window.clone()));
 
-            let mut simulation_world =
-                build_simulation_world(configure_simulation_world(texture_map, &window));
+            let mut simulation_world = SimulationWorldInterface::new(texture_map, &window);
             let mut render_world = RenderWorldInterface::new(graphics_context);
 
             info!("Running startup systems...\n\n\n");
             simulation_world.run_schedule(SimulationSchedule::Startup);
-            render_world.run_schedule(RenderSchedule::Startup); // TODO: Async handling for loading screen?
+            render_world.run_schedule(RenderSchedule::Startup);
 
             self.window = Some(window.clone());
             self.simulation_world = Some(simulation_world);
@@ -108,23 +110,12 @@ impl ApplicationHandler for App {
                     if let (Some(simulation_world), Some(render_world)) =
                         (self.simulation_world.as_mut(), self.render_world.as_mut())
                     {
-                        let current_app_state = simulation_world.get_app_state();
+                        self.loading_tracker = simulation_world.run_schedule_with_non_send(
+                            std::mem::take(&mut self.loading_tracker),
+                            SimulationSchedule::Main,
+                        );
 
-                        match current_app_state {
-                            AppState::Loading => {
-                                simulation_world.run_schedule(SimulationSchedule::Loading);
-                            }
-                            AppState::Running => {
-                                // We run the main schedule regardless of running state
-                                // Not sure yet if this case will need anything
-                            }
-                            AppState::Closing => {
-                                // Save data or something
-                            }
-                        };
-
-                        simulation_world.run_schedule(SimulationSchedule::Main);
-
+                        // the special extract schedule needs mutable access to the simulation world
                         run_extract_schedule(
                             simulation_world.borrow(),
                             render_world.borrow(),
@@ -135,9 +126,10 @@ impl ApplicationHandler for App {
 
                         // TODO: These schedules can run in parallel with the next frame of the game (in theory)
 
-                        render_world.run_schedule(RenderSchedule::Prepare);
-                        render_world.run_schedule(RenderSchedule::Queue);
-                        render_world.run_schedule(RenderSchedule::Render);
+                        self.loading_tracker = render_world.run_schedule_with_non_send(
+                            std::mem::take(&mut self.loading_tracker),
+                            RenderSchedule::Main,
+                        );
 
                         render_world.clear_trackers();
 

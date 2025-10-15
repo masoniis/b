@@ -17,7 +17,7 @@ use crate::{
                 IsGlyphonDirty, PreparedUiBatches, UiElementCache, UiElementSortBufferResource,
             },
         },
-        RenderSchedule,
+        scheduling::{RenderSchedule, RenderSet},
     },
 };
 use bevy_ecs::prelude::*;
@@ -64,15 +64,18 @@ impl Plugin for RenderUiPlugin {
             .init_resource::<UiChanges>()
             .init_resource::<UiElementCache>()
             // schedule
-            .schedule_entry(RenderSchedule::Prepare)
-            .add_systems((
+            .schedule_entry(RenderSchedule::Main)
+            .add_systems(
                 (
-                    prepare::prepare_ui_view_system,
-                    prepare::prepare_glyphon_view_system,
+                    (
+                        prepare::prepare_ui_view_system,
+                        prepare::prepare_glyphon_view_system,
+                    )
+                        .run_if(resource_changed::<RenderWindowSizeResource>),
+                    (prepare::process_ui_events_system,).chain(),
                 )
-                    .run_if(resource_changed::<RenderWindowSizeResource>),
-                (prepare::process_ui_events_system,).chain(),
-            ));
+                    .in_set(RenderSet::Prepare),
+            );
 
         // INFO: ---------------
         //         Queue
@@ -82,7 +85,7 @@ impl Plugin for RenderUiPlugin {
             ui_changes.structural_change_occured || ui_changes.panel_content_change_occured
         }
 
-        builder.schedule_entry(RenderSchedule::Queue).add_systems(
+        builder.schedule_entry(RenderSchedule::Main).add_systems(
             (
                 // make decisions based on the UiChanges determined above
                 (
@@ -92,6 +95,7 @@ impl Plugin for RenderUiPlugin {
                 // makes changes based on the buffers from the systems just before it
                 queue::preprocess_glyphon_text_system.run_if(resource_equals(IsGlyphonDirty(true))),
             )
+                .in_set(RenderSet::Queue)
                 .chain(),
         );
     }

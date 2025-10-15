@@ -1,6 +1,6 @@
 use crate::prelude::*;
 use crate::render_world::extract::utils::run_extract_schedule::SimulationWorld;
-use crate::render_world::RenderSchedule;
+use crate::render_world::scheduling::RenderSchedule;
 use crate::{EcsBuilder, Plugin};
 use bevy_ecs::prelude::*;
 use bevy_ecs::query::{QueryData, QueryFilter};

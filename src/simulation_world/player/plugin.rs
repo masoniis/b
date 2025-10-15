@@ -1,6 +1,9 @@
 use crate::{
-    ecs_core::{in_state, EcsBuilder, Plugin},
-    simulation_world::{app_lifecycle::AppState, SimulationSchedule, SimulationSet},
+    ecs_core::{
+        state_machine::{utils::in_state, AppState},
+        EcsBuilder, Plugin,
+    },
+    simulation_world::{SimulationSchedule, SimulationSet},
 };
 use bevy_ecs::prelude::*;
 

@@ -1,6 +1,6 @@
 use super::ViewBindGroupLayout;
-use crate::render_world::material::MaterialDefinition;
 use crate::render_world::resources::GraphicsContextResource;
+use crate::render_world::types::{BindingDef, MaterialDefinition};
 use bevy_ecs::prelude::*;
 use std::collections::BTreeMap;
 use std::fs;
@@ -122,9 +122,7 @@ pub fn setup_ui_pipeline(
 }
 
 // Helper function to convert our RON definition into a wgpu layout entry
-fn create_layout_entry_from_metadata(
-    binding_def: &crate::render_world::material::BindingDef,
-) -> wgpu::BindGroupLayoutEntry {
+fn create_layout_entry_from_metadata(binding_def: &BindingDef) -> wgpu::BindGroupLayoutEntry {
     let visibility = binding_def
         .visibility
         .iter()

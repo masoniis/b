@@ -12,10 +12,14 @@ use self::screens::debug::{
     diagnostic_ui_is_visible, toggle_debug_diagnostics_system, update_fps_counter_system,
 };
 use self::screens::loading_screen::despawn_loading_ui_system;
-use crate::ecs_core::{EcsBuilder, Plugin};
-use crate::simulation_world::app_lifecycle::AppState;
-use crate::simulation_world::input::{ActionStateResource, SimulationAction};
-use crate::simulation_world::{OnExit, SimulationSchedule, SimulationSet};
+use crate::ecs_core::state_machine::AppState;
+use crate::{
+    ecs_core::{EcsBuilder, Plugin},
+    simulation_world::{
+        input::{ActionStateResource, SimulationAction},
+        OnExit, SimulationSchedule, SimulationSet,
+    },
+};
 use bevy_ecs::prelude::*;
 use {
     layout::{
@@ -48,7 +52,7 @@ impl Plugin for UiPlugin {
             );
 
         builder
-            .schedule_entry(OnExit(AppState::Loading))
+            .schedule_entry(OnExit(AppState::StartingUp))
             .add_systems(despawn_loading_ui_system);
 
         builder

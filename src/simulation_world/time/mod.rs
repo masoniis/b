@@ -9,11 +9,12 @@ pub use world_clock::WorldClockResource;
 //         Time plugin
 // ---------------------------
 
+use crate::ecs_core::state_machine::AppState;
 use crate::simulation_world::time::frame_clock::update_frame_clock_system;
 use crate::simulation_world::time::world_clock::update_world_clock_system;
 use crate::{
-    ecs_core::{in_state, EcsBuilder, Plugin},
-    simulation_world::{app_lifecycle::AppState, SimulationSchedule, SimulationSet},
+    ecs_core::{state_machine::utils::in_state, EcsBuilder, Plugin},
+    simulation_world::{SimulationSchedule, SimulationSet},
 };
 use bevy_ecs::prelude::*;
 

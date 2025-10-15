@@ -11,11 +11,9 @@ use bevy_ecs::schedule::ScheduleLabel;
 pub enum SimulationSchedule {
     /// A schedule that runs once on application startup.
     Startup,
-    /// A schedule that runs continuously the game is loading resources, worlds, etc.
-    Loading,
-    /// A schedule that runs at a fixed timestep based on tickrate, ideal for physics and game logic.
+    /// A schedule that runs at a fixed timestep based on tickrate, the "simulation" itself.
     FixedUpdate,
-    /// A schedule that runs every frame variably, ideal for non-simulation state logic.
+    /// A schedule that runs every frame (and thus runs at an unpredictable rate), ideal for non-simulation state logic.
     Main,
 }
 
@@ -24,7 +22,7 @@ pub enum SimulationSchedule {
 pub enum FixedUpdateSet {
     /// Handle state transitions and other pre-logic tasks.
     PreUpdate,
-    /// The main game logic: player movement, AI, block breaking, etc.
+    /// The main sim logic: player movement, AI, block breaking, etc.
     MainLogic,
 }
 

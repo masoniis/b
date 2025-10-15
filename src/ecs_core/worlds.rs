@@ -29,6 +29,21 @@ impl CommonEcsInterface {
         }
     }
 
+    /// Run a schedule with a single, temporary non-send resource.
+    pub fn run_schedule_with_non_send<R: 'static>(
+        &mut self,
+        resource: R,
+        schedule: impl ScheduleLabel,
+    ) -> R {
+        self.world.insert_non_send_resource(resource);
+        self.world.run_schedule(schedule);
+        if let Some(res) = self.world.remove_non_send_resource::<R>() {
+            return res;
+        } else {
+            panic!("Failed to retrieve non-send resource after schedule run");
+        }
+    }
+
     /// Clears the world's internal change trackers.
     ///
     /// This MUST be called at the end of a world's update cycle to ensure

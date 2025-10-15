@@ -1,4 +1,6 @@
-use crate::{prelude::*, simulation_world::app_lifecycle::LoadingTaskComponent};
+use crate::{
+    ecs_core::async_loading::loading_task::SimulationWorldLoadingTaskComponent, prelude::*,
+};
 use bevy_ecs::prelude::*;
 
 pub fn start_fake_work_system(mut commands: Commands) {
@@ -13,7 +15,7 @@ pub fn start_fake_work_system(mut commands: Commands) {
         info!("(Background Thread) Fake work finished!");
     });
 
-    commands.spawn(LoadingTaskComponent {
+    commands.spawn(SimulationWorldLoadingTaskComponent {
         handle: task_handle,
     });
 }

@@ -1,9 +1,7 @@
 (
 	display_name: "Stone",
 	textures: (
-		all: "stone",
+		fallback: "stone",
 	),
-	is_solid: true,
 	is_transparent: false,
-	hardness: 3.0,
 )

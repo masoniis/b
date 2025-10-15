@@ -59,6 +59,7 @@ futures-lite = "2.6.1"
 derive_more = { version = "2.0.1", features = ["deref", "deref_mut"] }
 serde = { version = "1.0.228", features = ["derive"] }                 # serializing
 ron = "0.11.0"                                                         # parsing RON files
+thiserror = "2.0.17"
 
 [build-dependencies]
 glob = "0.3.3"

@@ -32,10 +32,6 @@ impl<T: State> Plugin for StatePlugin<T> {
 
         // Add the transition system for this specific state type
         builder
-            .schedule_entry(SimulationSchedule::Loading)
-            .add_systems(apply_state_transition_system::<T>.in_set(SimulationSet::PostUpdate));
-
-        builder
             .schedule_entry(SimulationSchedule::Main)
             .add_systems(apply_state_transition_system::<T>.in_set(SimulationSet::PostUpdate));
     }

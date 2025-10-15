@@ -1,4 +1,5 @@
 pub mod app_lifecycle;
+pub mod block;
 pub mod chunk;
 pub mod global_resources;
 pub mod input;
@@ -7,15 +8,11 @@ pub mod scheduling;
 pub mod time;
 pub mod user_interface;
 
-// INFO: ------------------------------
-//         Game world interface
-// ------------------------------------
+// INFO: -----------------------------
+//         Sim world interface
+// -----------------------------------
 
 pub use self::scheduling::{OnExit, SimulationSchedule, SimulationSet};
-use crate::ecs_core::{
-    state_machine::resources::CurrentState, worlds::SimulationWorldMarker, CommonEcsInterface,
-    EcsBuilder, PluginGroup,
-};
 use crate::render_world::{
     extract::utils::initialize_simulation_world_for_extract, textures::TextureRegistry,
 };
@@ -24,8 +21,10 @@ use crate::simulation_world::global_resources::MeshAsset;
 use crate::simulation_world::input::InputModulePlugin;
 use crate::simulation_world::player::PlayerModulePlugin;
 use crate::simulation_world::time::TimeControlPlugin;
-
-use app_lifecycle::{AppLifecyclePlugin, AppState};
+use crate::{
+    ecs_core::{worlds::SimulationWorldMarker, CommonEcsInterface, EcsBuilder, PluginGroup},
+    simulation_world::app_lifecycle::AppLifecyclePlugin,
+};
 use bevy_ecs::prelude::*;
 use global_resources::TextureMapResource;
 use input::resources::WindowSizeResource;
@@ -40,15 +39,6 @@ pub struct SimulationWorldInterface {
 impl SimulationWorldInterface {
     pub fn send_event<E: Event>(&mut self, event: E) {
         self.common.world.send_event(event);
-    }
-
-    pub fn get_app_state(&self) -> AppState {
-        self.common
-            .world
-            .get_resource::<CurrentState<AppState>>()
-            .unwrap()
-            .val
-            .clone()
     }
 }
 
@@ -65,61 +55,59 @@ impl DerefMut for SimulationWorldInterface {
     }
 }
 
-// INFO: ----------------------------
-//         Game World Builder
-// ----------------------------------
+impl SimulationWorldInterface {
+    pub fn new(registry: TextureRegistry, window: &Window) -> Self {
+        let mut builder = EcsBuilder::new();
 
-pub fn configure_simulation_world(registry: TextureRegistry, window: &Window) -> EcsBuilder {
-    let mut builder = EcsBuilder::new();
+        // add resources built from the app
+        builder
+            .add_resource(WindowSizeResource::new(window.inner_size()))
+            .add_resource(TextureMapResource { registry });
 
-    // add resources built from the app
-    builder
-        .add_resource(WindowSizeResource::new(window.inner_size()))
-        .add_resource(TextureMapResource { registry });
+        // configure core schedule sets before adding plugins
+        builder
+            .schedules
+            .entry(SimulationSchedule::Main)
+            .configure_sets(
+                (
+                    SimulationSet::Input,
+                    SimulationSet::PreUpdate,
+                    SimulationSet::Update,
+                    SimulationSet::Physics,
+                    SimulationSet::PostUpdate,
+                    SimulationSet::RenderPrep,
+                )
+                    .chain(),
+            );
 
-    // configure core schedule sets before adding plugins
-    builder
-        .schedules
-        .entry(SimulationSchedule::Main)
-        .configure_sets(
-            (
-                SimulationSet::Input,
-                SimulationSet::PreUpdate,
-                SimulationSet::Update,
-                SimulationSet::Physics,
-                SimulationSet::PostUpdate,
-                SimulationSet::RenderPrep,
-            )
-                .chain(),
-        );
+        // now add plugins, which can safely use the configured sets
+        builder
+            .add_plugins(SharedPlugins)
+            .add_plugins(ClientOnlyPlugins);
 
-    // now add plugins, which can safely use the configured sets
-    builder
-        .add_plugins(SharedPlugins)
-        .add_plugins(ClientOnlyPlugins);
-
-    builder
-}
-
-pub fn build_simulation_world(mut builder: EcsBuilder) -> SimulationWorldInterface {
-    for (_, schedule) in builder.schedules.drain_schedules() {
-        builder.world.add_schedule(schedule);
+        return Self::build_simulation_world(builder);
     }
 
-    let mut interface = SimulationWorldInterface {
-        common: CommonEcsInterface {
-            world: builder.world,
-        },
-    };
+    fn build_simulation_world(mut builder: EcsBuilder) -> SimulationWorldInterface {
+        for (_, schedule) in builder.schedules.drain_schedules() {
+            builder.world.add_schedule(schedule);
+        }
 
-    initialize_simulation_world_for_extract(&mut interface.common.world);
+        let mut interface = SimulationWorldInterface {
+            common: CommonEcsInterface {
+                world: builder.world,
+            },
+        };
 
-    interface
-        .common
-        .world
-        .insert_resource(SimulationWorldMarker);
+        initialize_simulation_world_for_extract(&mut interface.common.world);
 
-    return interface;
+        interface
+            .common
+            .world
+            .insert_resource(SimulationWorldMarker);
+
+        return interface;
+    }
 }
 
 // INFO: ---------------------------------

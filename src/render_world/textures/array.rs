@@ -1,10 +1,26 @@
 pub use super::{super::types::TextureId, TextureRegistry};
+use crate::prelude::*;
 use image::RgbaImage;
 use std::{collections::HashMap, path::Path};
+use thiserror::Error;
 use wgpu::{
     Device, Extent3d, Queue, Sampler, TexelCopyBufferLayout, TexelCopyTextureInfo, Texture,
     TextureView,
 };
+
+#[derive(Error, Debug)]
+pub enum TextureLoadError {
+    #[error("Failed to read texture directory at '{0}': {1}")]
+    DirectoryRead(String, std::io::Error),
+    #[error("Failed to open or decode image at '{0}': {1}")]
+    ImageError(String, image::ImageError),
+    #[error("No valid textures found to determine dimensions.")]
+    NoTexturesFound,
+    #[error("Texture '{0}' has dimensions {1}x{2}, but expected {3}x{4}.")]
+    DimensionMismatch(String, u32, u32, u32, u32),
+    #[error("The required TextureId::Missing was not found in the manifest.")]
+    MissingTextureNotInManifest,
+}
 
 pub struct TextureArray {
     pub texture: Texture,
@@ -12,84 +28,124 @@ pub struct TextureArray {
     pub sampler: Sampler,
 }
 
-/// Loads a texture array onto the device based on the compile-time `TextureId` enum manifest.
+/// Loads a texture array into the wgpu device based on the compile-time `TextureId` enum.
 ///
 /// Any png added to the textures folder will be loaded here. Note that all files
-/// in the texture folder msut be identical in size, or this function will error.
+/// in the texture folder must be identical in size, or this function will error.
 pub fn load_texture_array(
     device: &Device,
     queue: &Queue,
-) -> Result<(TextureArray, TextureRegistry), String> {
+) -> Result<(TextureArray, TextureRegistry), TextureLoadError> {
+    info!("Loading texture array from assets/textures/...");
+
+    // prepping the textures from filesystem
+    let (mut images, texture_map) = load_images_from_manifest()?;
+    let (width, height) = determine_texture_dimensions(&images)?;
+    generate_and_insert_missing_texture(&mut images, &texture_map, width, height)?;
+    validate_image_dimensions(&images, width, height)?;
+
+    // create the wgpu texture array
+    let texture_array = create_wgpu_texture_array(device, queue, &images, width, height);
+
+    // crate the public facing interface for textures
+    let missing_texture_index = texture_map[&TextureId::Missing];
+    let registry = TextureRegistry::new(texture_map, missing_texture_index);
+
+    info!(
+        "Successfully loaded {} textures into texture array.",
+        images.len()
+    );
+    Ok((texture_array, registry))
+}
+
+// INFO: --------------------------
+//         Helper functions
+// --------------------------------
+
+/// Iterates the `TextureId` manifest and loads the corresponding PNG files.
+fn load_images_from_manifest() -> Result<(Vec<RgbaImage>, HashMap<TextureId, u32>), TextureLoadError>
+{
     let path = Path::new("assets/textures");
-
-    let mut images = Vec::with_capacity(TextureId::ALL.len()); // for temp image processing
-    let mut texture_map = HashMap::with_capacity(TextureId::ALL.len()); // for texture registry
-
-    let mut width = 0;
-    let mut height = 0;
-
-    // INFO: -----------------------
-    //         Loading files
-    // -----------------------------
+    let mut images = Vec::with_capacity(TextureId::ALL.len());
+    let mut texture_map = HashMap::with_capacity(TextureId::ALL.len());
 
     for (i, &texture_id) in TextureId::ALL.iter().enumerate() {
         let image = if texture_id == TextureId::Missing {
-            // placeholder for missing texture until it gets generated
-            RgbaImage::new(0, 0)
+            RgbaImage::new(0, 0) // placeholder till we generate a real missing image later
         } else {
             let texture_name = texture_id.name();
             let file_path = path.join(format!("{}.png", texture_name));
+            let path_str = file_path.display().to_string();
             image::open(&file_path)
-                .map_err(|e| format!("Failed to open image {:?}: {}", file_path, e))?
+                .map_err(|e| TextureLoadError::ImageError(path_str.clone(), e))?
                 .to_rgba8()
         };
-
-        if i == 1 {
-            (width, height) = image.dimensions();
-        }
-
         images.push(image);
         texture_map.insert(texture_id, i as u32);
     }
+    Ok((images, texture_map))
+}
 
-    // Now that we know the dimensions, generate the actual missing texture
-    if let Some(missing_index) = texture_map.get(&TextureId::Missing) {
-        images[*missing_index as usize] = generate_missing_texture(width, height);
-    } else {
-        return Err("TextureId::Missing was not found in the manifest.".to_string());
-    }
+/// Finds the first valid, non-placeholder image to determine the reference dimensions.
+fn determine_texture_dimensions(images: &[RgbaImage]) -> Result<(u32, u32), TextureLoadError> {
+    images
+        .iter()
+        .find(|img| img.width() > 0 && img.height() > 0)
+        .map(|img| img.dimensions())
+        .ok_or(TextureLoadError::NoTexturesFound)
+}
 
-    if images.len() < 2 {
-        return Err(format!("No textures found in directory: {:?}", path));
-    }
+/// Generates the missing texture and inserts it into the correct slot in the image vector.
+fn generate_and_insert_missing_texture(
+    images: &mut [RgbaImage],
+    texture_map: &HashMap<TextureId, u32>,
+    width: u32,
+    height: u32,
+) -> Result<(), TextureLoadError> {
+    let missing_index = *texture_map
+        .get(&TextureId::Missing)
+        .ok_or(TextureLoadError::MissingTextureNotInManifest)?;
+    images[missing_index as usize] = generate_missing_texture_image(width, height);
+    Ok(())
+}
 
-    // Verify all images have the same dimensions.
+/// Validates that all images in the vector match the reference dimensions.
+fn validate_image_dimensions(
+    images: &[RgbaImage],
+    width: u32,
+    height: u32,
+) -> Result<(), TextureLoadError> {
     for (i, img) in images.iter().enumerate() {
         if img.dimensions() != (width, height) {
-            let texture_id = TextureId::ALL[i];
-            return Err(format!(
-                "Texture dimension mismatch for '{:?}': expected {}x{}, but got {}x{}",
-                texture_id,
+            let texture_id_name = TextureId::ALL[i].name().to_string();
+            return Err(TextureLoadError::DimensionMismatch(
+                texture_id_name,
+                img.width(),
+                img.height(),
                 width,
                 height,
-                img.width(),
-                img.height()
             ));
         }
     }
+    Ok(())
+}
 
-    // INFO: ---------------------------
-    //         Set up WGPU array
-    // ---------------------------------
-
-    let array_layers = images.len() as u32;
-
+/// Creates the WGPU texture array and writes the image data to it.
+fn create_wgpu_texture_array(
+    device: &Device,
+    queue: &Queue,
+    images: &[RgbaImage],
+    width: u32,
+    height: u32,
+) -> TextureArray {
+    // size of the texture array
     let texture_size = Extent3d {
         width,
         height,
-        depth_or_array_layers: array_layers,
+        depth_or_array_layers: images.len() as u32,
     };
 
+    // create the (empty) array on the gpu
     let texture = device.create_texture(&wgpu::TextureDescriptor {
         label: Some("texture_array"),
         size: texture_size,
@@ -101,7 +157,7 @@ pub fn load_texture_array(
         view_formats: &[],
     });
 
-    // Copy each loaded image into the correct texture array layer.
+    // load each image into its respective layer in the array
     for (i, img) in images.iter().enumerate() {
         queue.write_texture(
             TexelCopyTextureInfo {
@@ -110,13 +166,14 @@ pub fn load_texture_array(
                 origin: wgpu::Origin3d {
                     x: 0,
                     y: 0,
-                    z: i as u32,
+                    z: i as u32, // array index
                 },
                 aspect: wgpu::TextureAspect::All,
             },
             img.as_raw(),
             TexelCopyBufferLayout {
                 offset: 0,
+                // each row has `width * 4` bytes for RGBA8
                 bytes_per_row: Some(4 * width),
                 rows_per_image: Some(height),
             },
@@ -128,13 +185,17 @@ pub fn load_texture_array(
         );
     }
 
+    // create the texture view for shaders
     let view = texture.create_view(&wgpu::TextureViewDescriptor {
+        label: Some("texture_array_view"),
         dimension: Some(wgpu::TextureViewDimension::D2Array),
         ..Default::default()
     });
 
+    // create the sampler
     let sampler = device.create_sampler(&wgpu::SamplerDescriptor {
         label: Some("texture_array_sampler"),
+        // ClampToEdge prevents "bleeding" from adjacent textures in the array.
         address_mode_u: wgpu::AddressMode::ClampToEdge,
         address_mode_v: wgpu::AddressMode::ClampToEdge,
         address_mode_w: wgpu::AddressMode::ClampToEdge,
@@ -144,28 +205,18 @@ pub fn load_texture_array(
         ..Default::default()
     });
 
-    // INFO: ---------------------------------
-    //         Create texture registry
-    // ---------------------------------------
-
-    let missing_texture_index = texture_map[&TextureId::Missing];
-    let registry = TextureRegistry::new(texture_map, missing_texture_index);
-
-    Ok((
-        TextureArray {
-            texture,
-            view,
-            sampler,
-        },
-        registry,
-    ))
+    TextureArray {
+        texture,
+        view,
+        sampler,
+    }
 }
 
 /// Generates the missing texture programmatically as a purple and black checkerboard pattern.
 ///
 /// This is necessary because our texture folder supports textures of any scale, and the texture
 /// array must have all textures be the same size. Thus, we generate this texture to match size.
-fn generate_missing_texture(width: u32, height: u32) -> RgbaImage {
+fn generate_missing_texture_image(width: u32, height: u32) -> RgbaImage {
     let mut img = RgbaImage::new(width, height);
     let checker_size = (width / 2).max(1); // 2x2 checkerboard pattern
 
