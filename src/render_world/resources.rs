@@ -1,4 +1,4 @@
-use crate::{render_world::context::GraphicsContext, render_world::textures::TextureArray};
+use crate::{render_world::context::GraphicsContext, render_world::textures::GpuTextureArray};
 use bevy_ecs::prelude::Resource;
 use std::collections::HashMap;
 use wgpu::RenderPipeline;
@@ -10,7 +10,7 @@ pub struct GraphicsContextResource {
 
 #[derive(Resource)]
 pub struct TextureArrayResource {
-    pub array: TextureArray,
+    pub array: GpuTextureArray,
 }
 
 pub type PipelineId = u64;

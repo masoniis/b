@@ -1,3 +1,4 @@
+pub mod extract;
 pub mod prepare;
 pub mod queue;
 pub mod render;
@@ -10,8 +11,9 @@ pub mod startup;
 use crate::{
     ecs_core::{EcsBuilder, Plugin},
     render_world::{
-        extract::{self, ui::ExtractedUiEvents, RenderWindowSizeResource},
+        global_extract::resources::RenderWindowSizeResource,
         passes::ui_pass::{
+            extract::ExtractedUiEvents,
             prepare::UiChanges,
             queue::{
                 IsGlyphonDirty, PreparedUiBatches, UiElementCache, UiElementSortBufferResource,
@@ -50,7 +52,7 @@ impl Plugin for RenderUiPlugin {
             .add_resource(ExtractedUiEvents::default())
             // systems
             .schedule_entry(RenderSchedule::Extract)
-            .add_systems(extract::ui::extract_ui_events_system);
+            .add_systems(extract::extract_ui_events_system);
 
         // INFO: -----------------
         //         Prepare

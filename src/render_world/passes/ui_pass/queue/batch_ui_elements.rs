@@ -3,9 +3,9 @@ use std::collections::HashMap;
 use crate::{
     prelude::*,
     render_world::{
-        extract::ui::{RenderableUiElement, UiElementKind},
-        passes::ui_pass::startup::{
-            UiMaterialBuffer, UiMaterialData, UiObjectBuffer, UiObjectData,
+        passes::ui_pass::{
+            extract::{RenderableUiElement, UiElementKind},
+            startup::{UiMaterialBuffer, UiMaterialData, UiObjectBuffer, UiObjectData},
         },
         resources::GraphicsContextResource,
     },

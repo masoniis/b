@@ -1,3 +1,5 @@
+use crate::render_world::textures::TextureLoadError;
+
 use super::super::types::TextureId;
 use std::collections::HashMap;
 
@@ -12,11 +14,15 @@ pub struct TextureRegistry {
 
 impl TextureRegistry {
     /// Creates a new texture registry from a pre-populated map and the missing texture index.
-    pub fn new(map: HashMap<TextureId, u32>, missing_texture_index: u32) -> Self {
-        Self {
+    pub fn new(map: HashMap<TextureId, u32>) -> Result<Self, TextureLoadError> {
+        let missing_texture_index = *map
+            .get(&TextureId::Missing)
+            .ok_or(TextureLoadError::MissingTextureNotInManifest)?;
+
+        Ok(Self {
             map,
             missing_texture_index,
-        }
+        })
     }
 
     /// Gets the texture index for a given ID, panicking if not found.

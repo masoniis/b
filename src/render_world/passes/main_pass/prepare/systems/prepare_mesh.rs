@@ -2,7 +2,9 @@ use crate::{
     prelude::*,
     render_world::types::mesh::create_gpu_mesh_from_data,
     render_world::{
-        extract::{mesh::RenderMeshComponent, resources::RenderMeshStorageResource},
+        global_extract::{
+            components::mesh::RenderMeshComponent, resources::RenderMeshStorageResource,
+        },
         resources::GraphicsContextResource,
     },
     simulation_world::global_resources::{AssetStorageResource, MeshAsset},

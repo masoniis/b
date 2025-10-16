@@ -1,5 +1,5 @@
 use crate::render_world::{
-    extract::{
+    global_extract::{
         mesh::{RenderMeshComponent, RenderTransformComponent},
         RenderCameraResource,
     },

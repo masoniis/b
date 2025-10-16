@@ -1,5 +1,5 @@
 use crate::prelude::*;
-use crate::render_world::extract::run_extract_schedule::SimulationWorld;
+use crate::render_world::global_extract::utils::run_extract_schedule::SimulationWorld;
 use bevy_ecs::prelude::*;
 use bevy_ecs::query::{QueryData, QueryFilter};
 use std::collections::HashSet;

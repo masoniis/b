@@ -1,8 +1,8 @@
 use std::collections::hash_map::Entry;
 
-use crate::render_world::{
-    extract::ui::{ExtractedUiEvent, ExtractedUiEvents, UiElementKind},
-    passes::ui_pass::queue::UiElementCache,
+use crate::render_world::passes::ui_pass::{
+    extract::{ExtractedUiEvent, ExtractedUiEvents, UiElementKind},
+    queue::UiElementCache,
 };
 use bevy_ecs::prelude::*;
 

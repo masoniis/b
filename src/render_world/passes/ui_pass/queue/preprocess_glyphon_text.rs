@@ -3,8 +3,8 @@ use super::super::startup::{
     GlyphonViewportResource,
 };
 use crate::render_world::{
-    extract::ui::UiElementKind,
     passes::ui_pass::{
+        extract::UiElementKind,
         prepare::UiChanges,
         queue::{batch_ui_elements::UiRenderBatch, IsGlyphonDirty, PreparedUiBatches},
     },

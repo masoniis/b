@@ -1,5 +1,5 @@
 use crate::{
-    render_world::extract::MirrorableComponent,
+    render_world::global_extract::MirrorableComponent,
     simulation_world::{
         chunk::{MeshComponent, TransformComponent},
         global_resources::asset_storage::{Handle, MeshAsset},

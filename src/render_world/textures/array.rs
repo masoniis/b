@@ -1,28 +1,13 @@
 pub use super::{super::types::TextureId, TextureRegistry};
-use crate::prelude::*;
+use crate::{prelude::*, render_world::textures::TextureLoadError};
 use image::RgbaImage;
 use std::{collections::HashMap, path::Path};
-use thiserror::Error;
 use wgpu::{
     Device, Extent3d, Queue, Sampler, TexelCopyBufferLayout, TexelCopyTextureInfo, Texture,
     TextureView,
 };
 
-#[derive(Error, Debug)]
-pub enum TextureLoadError {
-    #[error("Failed to read texture directory at '{0}': {1}")]
-    DirectoryRead(String, std::io::Error),
-    #[error("Failed to open or decode image at '{0}': {1}")]
-    ImageError(String, image::ImageError),
-    #[error("No valid textures found to determine dimensions.")]
-    NoTexturesFound,
-    #[error("Texture '{0}' has dimensions {1}x{2}, but expected {3}x{4}.")]
-    DimensionMismatch(String, u32, u32, u32, u32),
-    #[error("The required TextureId::Missing was not found in the manifest.")]
-    MissingTextureNotInManifest,
-}
-
-pub struct TextureArray {
+pub struct GpuTextureArray {
     pub texture: Texture,
     pub view: TextureView,
     pub sampler: Sampler,
@@ -35,7 +20,7 @@ pub struct TextureArray {
 pub fn load_texture_array(
     device: &Device,
     queue: &Queue,
-) -> Result<(TextureArray, TextureRegistry), TextureLoadError> {
+) -> Result<(GpuTextureArray, TextureRegistry), TextureLoadError> {
     info!("Loading texture array from assets/textures/...");
 
     // prepping the textures from filesystem
@@ -48,8 +33,7 @@ pub fn load_texture_array(
     let texture_array = create_wgpu_texture_array(device, queue, &images, width, height);
 
     // crate the public facing interface for textures
-    let missing_texture_index = texture_map[&TextureId::Missing];
-    let registry = TextureRegistry::new(texture_map, missing_texture_index);
+    let registry = TextureRegistry::new(texture_map)?;
 
     info!(
         "Successfully loaded {} textures into texture array.",
@@ -137,7 +121,7 @@ fn create_wgpu_texture_array(
     images: &[RgbaImage],
     width: u32,
     height: u32,
-) -> TextureArray {
+) -> GpuTextureArray {
     // size of the texture array
     let texture_size = Extent3d {
         width,
@@ -205,7 +189,7 @@ fn create_wgpu_texture_array(
         ..Default::default()
     });
 
-    TextureArray {
+    GpuTextureArray {
         texture,
         view,
         sampler,

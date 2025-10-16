@@ -1,5 +1,5 @@
 pub mod context;
-pub mod extract;
+pub mod global_extract;
 pub mod passes;
 pub mod resources;
 pub mod scheduling;
@@ -13,18 +13,20 @@ pub mod uniforms;
 
 use crate::ecs_core::async_loading::poll_render_loading_tasks;
 use crate::ecs_core::state_machine::{AppState, GameState};
+use crate::ecs_core::worlds::RenderWorldMarker;
 use crate::prelude::*;
-use crate::render_world::extract::{
+use crate::render_world::global_extract::{
     simulation_world_resource_changed, ExtractComponentPlugin, RenderWindowSizeResource,
 };
 use crate::render_world::passes::ui_pass::RenderUiPlugin;
 use crate::render_world::scheduling::{RenderSchedule, RenderSet};
+use crate::render_world::textures::GpuTextureArray;
 use crate::simulation_world::chunk::MeshComponent;
 use crate::simulation_world::input::resources::WindowSizeResource;
 use crate::{
     ecs_core::state_machine::{self, in_state, StatePlugin},
     render_world::{
-        extract::{RenderCameraResource, RenderMeshStorageResource, RenderTimeResource},
+        global_extract::{RenderCameraResource, RenderMeshStorageResource, RenderTimeResource},
         passes::main_pass::{
             prepare::{
                 self, MainTextureBindGroup, MeshPipelineLayoutsResource, ModelBindGroup,
@@ -36,7 +38,6 @@ use crate::{
     },
     simulation_world::global_resources::{AssetStorageResource, MeshAsset},
 };
-use crate::{ecs_core::worlds::RenderWorldMarker, render_world::textures::load_texture_array};
 use bevy_ecs::schedule::IntoScheduleConfigs;
 use context::GraphicsContext;
 use passes::setup_render_graph;
@@ -62,37 +63,39 @@ impl DerefMut for RenderWorldInterface {
 
 impl RenderWorldInterface {
     /// Creates a new render world with a sane default configuration
-    pub fn new(graphics_context: GraphicsContext) -> Self {
+    pub fn new(graphics_context: GraphicsContext, texture_array: GpuTextureArray) -> Self {
         let mut builder = EcsBuilder::new();
 
-        builder
-            .schedules
-            .entry(RenderSchedule::Main)
-            .configure_sets((RenderSet::Prepare, RenderSet::Queue, RenderSet::Render).chain());
+        // TODO: Texture could have it's own module that depends on graphics context instead of
+        // hardcoding it here in the interface potentially
 
-        // As a root resource that requites input from app, graphics context must be
-        // inserted before we do any other system building.
-        //
-        // This is because systems can't create it themselves like most other resources.
-        let (texture_array, _texture_registry) =
-            load_texture_array(&graphics_context.device, &graphics_context.queue).unwrap();
+        // INFO: -----------------------------------------------------
+        //         Set up graphics-context dependent resources
+        // -----------------------------------------------------------
 
         // Setup render graph runs as an early system since it needs mutable world access
         setup_render_graph(&mut builder.world);
 
         // Add any resources that require specific app input
         builder
-            .add_resource(TextureArrayResource {
-                array: texture_array,
-            })
+            // GraphicsContextResource is a resource initialized here because
+            // it requires the graphics_context passed directly from the app.
             .add_resource(GraphicsContextResource {
                 context: graphics_context,
+            })
+            .add_resource(TextureArrayResource {
+                array: texture_array,
             })
             .add_resource(RenderWorldMarker);
 
         // INFO: --------------------------------
         //         Non-mod specific setup
         // --------------------------------------
+
+        builder
+            .schedules
+            .entry(RenderSchedule::Main)
+            .configure_sets((RenderSet::Prepare, RenderSet::Queue, RenderSet::Render).chain());
 
         // Resources for rendering
         builder
@@ -122,14 +125,14 @@ impl RenderWorldInterface {
             .schedule_entry(RenderSchedule::Extract)
             .add_systems((
                 (
-                    extract::clone_resource_system::<AssetStorageResource<MeshAsset>>,
-                    extract::extract_resource_system::<RenderTimeResource>,
-                    (extract::extract_resource_system::<RenderWindowSizeResource>)
+                    global_extract::clone_resource_system::<AssetStorageResource<MeshAsset>>,
+                    global_extract::extract_resource_system::<RenderTimeResource>,
+                    (global_extract::extract_resource_system::<RenderWindowSizeResource>)
                         .run_if(simulation_world_resource_changed::<WindowSizeResource>),
-                    extract::extract_state_system::<GameState>,
-                    extract::extract_state_system::<AppState>,
+                    global_extract::extract_state_system::<GameState>,
+                    global_extract::extract_state_system::<AppState>,
                 ),
-                (extract::extract_resource_system::<RenderCameraResource>)
+                (global_extract::extract_resource_system::<RenderCameraResource>)
                     .run_if(in_state(AppState::Running)),
             ));
 

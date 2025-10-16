@@ -1,7 +1,4 @@
-use crate::{
-    prelude::*,
-    render_world::textures::{load_texture_array, TextureRegistry},
-};
+use crate::prelude::*;
 use std::sync::Arc;
 use wgpu::{
     Adapter, Device, DeviceDescriptor, Instance, InstanceDescriptor, PowerPreference, PresentMode,
@@ -21,7 +18,7 @@ pub struct GraphicsContext {
 
 impl GraphicsContext {
     /// Creates a new `GraphicsContext` with the given window.
-    pub async fn new(window: Arc<Window>) -> (Self, TextureRegistry) {
+    pub async fn new(window: Arc<Window>) -> Self {
         let wgpu_instance = Instance::new(&InstanceDescriptor::default());
 
         let surface = wgpu_instance
@@ -80,19 +77,14 @@ impl GraphicsContext {
             config.present_mode,
         );
 
-        let (_texture_array, texture_map) = load_texture_array(&device, &queue).unwrap();
-
-        (
-            Self {
-                instance: wgpu_instance,
-                surface,
-                config,
-                adapter,
-                device,
-                queue,
-            },
-            texture_map,
-        )
+        Self {
+            instance: wgpu_instance,
+            surface,
+            config,
+            adapter,
+            device,
+            queue,
+        }
     }
 
     /// Let the graphics context know that the window associated with the graphics

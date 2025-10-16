@@ -2,8 +2,8 @@ use crate::{
     ecs_core::async_loading::LoadingTracker,
     prelude::*,
     render_world::{
-        context::GraphicsContext, extract::run_extract_schedule, scheduling::RenderSchedule,
-        RenderWorldInterface,
+        context::GraphicsContext, global_extract::utils::run_extract_schedule,
+        scheduling::RenderSchedule, textures::load_texture_array, RenderWorldInterface,
     },
     simulation_world::{
         input::events::{RawDeviceEvent, RawWindowEvent},
@@ -15,7 +15,7 @@ use winit::{
     application::ApplicationHandler,
     event::{DeviceEvent, WindowEvent},
     event_loop::{ActiveEventLoop, EventLoop},
-    window::{Window, WindowId},
+    window::{CursorGrabMode, Window, WindowId},
 };
 
 /// The main application container, responsible for orchestrating OS
@@ -28,7 +28,7 @@ pub struct App {
     // The worlds
     simulation_world: Option<SimulationWorldInterface>,
     render_world: Option<RenderWorldInterface>,
-    // And a loading tracker to orchestrate async tasks between the two worlds
+    // + a loading tracker to orchestrate async tasks between the two worlds
     loading_tracker: LoadingTracker,
 }
 
@@ -58,21 +58,28 @@ impl ApplicationHandler for App {
         if self.window.is_none() {
             info!("App started/resumed, creating window and renderer...");
 
-            let window_attributes = Window::default_attributes()
-                .with_title("🅱️")
-                .with_inner_size(LogicalSize::new(1280, 720));
-            let window = Arc::new(event_loop.create_window(window_attributes).unwrap());
+            let window = Arc::new(
+                event_loop
+                    .create_window(
+                        Window::default_attributes()
+                            .with_title("🅱️")
+                            .with_inner_size(LogicalSize::new(1280, 720)),
+                    )
+                    .unwrap(),
+            );
 
             window.set_cursor_visible(false);
-            if let Err(err) = window.set_cursor_grab(winit::window::CursorGrabMode::Confined) {
+            if let Err(err) = window.set_cursor_grab(CursorGrabMode::Confined) {
                 error!("Failed to grab cursor: {:?}", err);
             }
 
-            let (graphics_context, texture_map) =
-                pollster::block_on(GraphicsContext::new(window.clone()));
+            // world dependencies that the app must create (due to window)
+            let graphics_context = pollster::block_on(GraphicsContext::new(window.clone()));
+            let (texture_array, texture_registry) =
+                load_texture_array(&graphics_context.device, &graphics_context.queue).unwrap();
 
-            let mut simulation_world = SimulationWorldInterface::new(texture_map, &window);
-            let mut render_world = RenderWorldInterface::new(graphics_context);
+            let mut simulation_world = SimulationWorldInterface::new(&window, texture_registry);
+            let mut render_world = RenderWorldInterface::new(graphics_context, texture_array);
 
             info!("Running startup systems...\n\n\n");
             simulation_world.run_schedule(SimulationSchedule::Startup);

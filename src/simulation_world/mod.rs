@@ -14,7 +14,7 @@ pub mod user_interface;
 
 pub use self::scheduling::{OnExit, SimulationSchedule, SimulationSet};
 use crate::render_world::{
-    extract::utils::initialize_simulation_world_for_extract, textures::TextureRegistry,
+    global_extract::utils::initialize_simulation_world_for_extract, textures::TextureRegistry,
 };
 use crate::simulation_world::chunk::ChunkGenerationPlugin;
 use crate::simulation_world::global_resources::MeshAsset;
@@ -56,7 +56,7 @@ impl DerefMut for SimulationWorldInterface {
 }
 
 impl SimulationWorldInterface {
-    pub fn new(registry: TextureRegistry, window: &Window) -> Self {
+    pub fn new(window: &Window, registry: TextureRegistry) -> Self {
         let mut builder = EcsBuilder::new();
 
         // add resources built from the app

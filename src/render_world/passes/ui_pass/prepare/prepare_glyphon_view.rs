@@ -1,8 +1,8 @@
 use crate::{
     prelude::*,
     render_world::{
-        extract::RenderWindowSizeResource, passes::ui_pass::startup::GlyphonViewportResource,
-        resources::GraphicsContextResource,
+        global_extract::resources::RenderWindowSizeResource,
+        passes::ui_pass::startup::GlyphonViewportResource, resources::GraphicsContextResource,
     },
 };
 use bevy_ecs::prelude::*;
