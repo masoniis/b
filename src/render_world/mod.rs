@@ -1,5 +1,5 @@
-pub mod context;
 pub mod global_extract;
+pub mod graphics_context;
 pub mod passes;
 pub mod resources;
 pub mod scheduling;
@@ -18,6 +18,7 @@ use crate::prelude::*;
 use crate::render_world::global_extract::{
     simulation_world_resource_changed, ExtractComponentPlugin, RenderWindowSizeResource,
 };
+use crate::render_world::graphics_context::{reconfigure_wgpu_surface_system, GraphicsContext};
 use crate::render_world::passes::ui_pass::RenderUiPlugin;
 use crate::render_world::scheduling::{RenderSchedule, RenderSet};
 use crate::render_world::textures::GpuTextureArray;
@@ -38,8 +39,8 @@ use crate::{
     },
     simulation_world::global_resources::{AssetStorageResource, MeshAsset},
 };
+use bevy_ecs::schedule::common_conditions::resource_changed_or_removed;
 use bevy_ecs::schedule::IntoScheduleConfigs;
-use context::GraphicsContext;
 use passes::setup_render_graph;
 use resources::{GraphicsContextResource, TextureArrayResource};
 use std::ops::{Deref, DerefMut};
@@ -138,6 +139,8 @@ impl RenderWorldInterface {
 
         builder.schedule_entry(RenderSchedule::Main).add_systems(
             (
+                reconfigure_wgpu_surface_system
+                    .run_if(resource_changed_or_removed::<RenderWindowSizeResource>),
                 (
                     prepare::prepare_render_buffers_system,
                     prepare::prepare_pipelines_system,

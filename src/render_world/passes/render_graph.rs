@@ -159,8 +159,8 @@ pub fn render_graph_system(world: &mut World) {
     let gfx = &gfx_resource.context;
     let output_texture = match gfx.surface.get_current_texture() {
         Ok(texture) => texture,
-        Err(wgpu::SurfaceError::Lost) => {
-            warn!("Surface lost. Reconfiguring...");
+        Err(wgpu::SurfaceError::Lost | wgpu::SurfaceError::Outdated) => {
+            warn!("Surface lost or outdated. Reconfiguring...");
             gfx.surface.configure(&gfx.device, &gfx.config);
             world.insert_resource(render_graph);
             return;

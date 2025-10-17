@@ -2,7 +2,7 @@ use crate::{
     ecs_core::{async_loading::LoadingTracker, frame_sync::FrameSync},
     prelude::*,
     render_world::{
-        context::GraphicsContext, global_extract::utils::run_extract_schedule,
+        global_extract::utils::run_extract_schedule, graphics_context::GraphicsContext,
         scheduling::RenderSchedule, textures::load_texture_array, RenderWorldInterface,
     },
     simulation_world::{
