@@ -108,7 +108,7 @@ pub enum TextAlign {
 //         Output for rendering
 // ------------------------------------
 
-#[derive(Component, Debug, Default, Clone, Copy)]
+#[derive(Component, Debug, Default, Clone, Copy, PartialEq)]
 pub struct CalculatedLayout {
     /// The absolute screen-space position (X, Y) of the node's top-left corner.
     pub position: Vec2,

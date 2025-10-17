@@ -40,6 +40,12 @@ pub fn handle_structural_changes_system(
 ) {
     // Handle additions
     if !add_query.is_empty() {
+        debug!(
+            target: "ui_efficiency",
+            "Adding {} new UI layout nodes... Marking layout as dirty.",
+            add_query.iter().count()
+        );
+
         is_dirty.0 = true;
         for (entity, style, maybe_text) in &add_query {
             let taffy_style: taffy::style::Style = style.into();
@@ -55,6 +61,12 @@ pub fn handle_structural_changes_system(
 
     // Handle removals
     if !removed_components.is_empty() {
+        debug!(
+            target: "ui_efficiency",
+            "Removing {} UI layout nodes... Marking layout as dirty.",
+            removed_components.len()
+        );
+
         is_dirty.0 = true;
         for entity in removed_components.read() {
             if let Some(node_id) = entity_to_node.remove(&entity) {
@@ -77,6 +89,12 @@ pub fn handle_hierarchy_changes_system(
     mut is_dirty: ResMut<IsLayoutDirty>,
 ) {
     if !hierarchy_query.is_empty() {
+        debug!(
+            target: "ui_efficiency",
+            "Updating hierarchy for {} UI layout nodes... Marking layout as dirty.",
+            hierarchy_query.iter().count()
+        );
+
         is_dirty.0 = true;
         for (parent_entity, children) in &hierarchy_query {
             // Get the Taffy node for the parent entity.
@@ -115,6 +133,12 @@ pub fn update_changed_styles_system(
     // Update styles for nodes where the Style component changed
     for (entity, style) in &style_query {
         if let Some(node) = entity_to_node.get(&entity) {
+            debug!(
+                target: "ui_efficiency",
+                "Updating style for UI layout node {:?}... Marking layout as dirty.",
+                entity
+            );
+
             let taffy_style: taffy::style::Style = style.into();
             ui_tree.set_style(*node, taffy_style).unwrap();
             is_dirty.0 = true;
@@ -125,6 +149,12 @@ pub fn update_changed_styles_system(
     // that the node's intrinsic size may have changed. `mark_dirty` does exactly this.
     for entity in &text_query {
         if let Some(node) = entity_to_node.get(&entity) {
+            debug!(
+                target: "ui_efficiency",
+                "Marking UI layout node {:?} as dirty due to text change.",
+                entity
+            );
+
             ui_tree.mark_dirty(*node).unwrap();
             is_dirty.0 = true;
         }
@@ -136,6 +166,10 @@ pub fn handle_window_resize_system(
     mut is_dirty: ResMut<IsLayoutDirty>,
 ) {
     if window_size.is_changed() {
+        debug!(
+            target: "ui_efficiency",
+            "Window size changed. Marking layout as dirty.",
+        );
         // If the window size is different from the last time this system ran,
         // the entire layout must be re-calculated.
         is_dirty.0 = true;

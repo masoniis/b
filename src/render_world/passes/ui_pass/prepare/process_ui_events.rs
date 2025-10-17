@@ -1,5 +1,6 @@
 use std::collections::hash_map::Entry;
 
+use crate::prelude::*;
 use crate::render_world::passes::ui_pass::{
     extract::{ExtractedUiEvent, ExtractedUiEvents, UiElementKind},
     queue::UiElementCache,
@@ -25,6 +26,13 @@ pub fn process_ui_events_system(
     mut ui_changes: ResMut<UiChanges>,
 ) {
     *ui_changes = UiChanges::default(); // new frame = new flags
+
+    debug!(
+        target: "ui_efficiency",
+        "Processing {} panel events and {} text events...",
+        extracted_events.panel_events.len(),
+        extracted_events.text_events.len()
+    );
 
     let process_event = |event: ExtractedUiEvent,
                          cache: &mut UiElementCache,

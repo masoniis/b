@@ -7,8 +7,9 @@ use crate::render_world::{
         main_pass::{
             prepare::{
                 bind_groups::ModelBindGroup,
-                resources::{DepthTextureResource, MainTextureBindGroup, ViewBindGroup},
+                resources::{MainTextureBindGroup, ViewBindGroup},
                 systems::prepare_pipelines::MESH_PIPELINE_ID,
+                DepthTextureResource,
             },
             queue::Opaque3dRenderPhase,
         },

@@ -1,7 +1,17 @@
-use crate::render_world::passes::main_pass::prepare::DepthTextureResource;
 use crate::render_world::resources::GraphicsContextResource;
+use bevy_ecs::prelude::Resource;
 use bevy_ecs::prelude::*;
 use bevy_ecs::system::Commands;
+use wgpu::{Texture, TextureView};
+
+/// A resource to hold the depth texture and its view, used for depth testing.
+#[derive(Resource)]
+pub struct DepthTextureResource {
+    /// The depth texture itself. We must hold this to prevent it from being dropped.
+    pub texture: Texture,
+    /// The view of the depth texture, which is what render passes use.
+    pub view: TextureView,
+}
 
 pub const DEPTH_FORMAT: wgpu::TextureFormat = wgpu::TextureFormat::Depth32Float;
 

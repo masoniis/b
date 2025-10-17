@@ -8,10 +8,6 @@ use wgpu::BindGroup;
 
 use super::MeshPipelineLayoutsResource;
 
-pub const SHADER_PATH: &str = "assets/shaders/scene/simple.wesl";
-pub const LOADING_SHADER_PATH: &str = "assets/shaders/loading_screen/loading.wesl";
-pub const MAX_TRANSFORMS: u64 = 1000;
-
 pub const MAX_MODELS_PER_FRAME: u64 = 250;
 
 #[derive(Resource)]

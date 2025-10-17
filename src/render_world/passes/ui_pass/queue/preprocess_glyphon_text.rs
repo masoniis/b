@@ -2,6 +2,7 @@ use super::super::startup::{
     GlyphonAtlasResource, GlyphonCacheResource, GlyphonFontSystemResource, GlyphonRendererResource,
     GlyphonViewportResource,
 };
+use crate::prelude::*;
 use crate::render_world::{
     passes::ui_pass::{
         extract::UiElementKind,
@@ -25,9 +26,8 @@ pub fn mark_glyphon_dirty_system(
 
 /// Preprocesses all UI text for rendering by shaping it and preparing it with the Glyphon renderer.
 ///
-/// This is a CPU-intensive system that should be run before the main render graph execution.
-/// It populates the internal buffers of the GlyphonRenderer, which are then used by the
-/// UiPassNode to issue the final draw commands.
+/// This is a CPU-intensive system that should be run before the main render graph execution. It populates the
+/// internal buffers of the GlyphonRenderer, which are then used by the UiPassNode to issue the final draw commands.
 pub fn preprocess_glyphon_text_system(
     // Input
     gfx: Res<GraphicsContextResource>,
@@ -42,6 +42,11 @@ pub fn preprocess_glyphon_text_system(
 
     mut is_glyphon_dirty: ResMut<IsGlyphonDirty>, // sets flag to false
 ) {
+    debug!(
+        target : "ui_efficiency",
+        "Preprocessing Glyphon text (this should only happen when UI text changes)..."
+    );
+
     // iterate over text batches only
     for batch in ui_queue.batches.iter() {
         if let UiRenderBatch::Text(text_batch) = batch {

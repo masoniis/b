@@ -13,6 +13,7 @@ pub fn compute_ui_depth_system(
     // Input (queries)
     root: ResMut<UiRootNodeResource>,
     children_query: Query<&Children, With<Node>>,
+    mut depth_query: Query<&mut UiDepth>,
 
     // Output (spawned entities)
     mut commands: Commands,
@@ -33,6 +34,7 @@ pub fn compute_ui_depth_system(
         apply_depth_recursively(
             &mut commands,
             &children_query,
+            &mut depth_query,
             child_entity,
             1.0, // initial depth for children of the root
         );
@@ -46,18 +48,32 @@ fn apply_depth_recursively(
 
     // Input
     children_query: &Query<&Children, With<Node>>,
+    depth_query: &mut Query<&mut UiDepth>,
     current_entity: Entity,
     current_depth: f32,
 ) {
-    commands
-        .entity(current_entity)
-        .insert(UiDepth(current_depth));
+    // do an uptate or insert of the depth component
+    if let Ok(mut depth_component) = depth_query.get_mut(current_entity) {
+        if depth_component.0 != current_depth {
+            depth_component.0 = current_depth;
+        }
+    } else {
+        commands
+            .entity(current_entity)
+            .insert(UiDepth(current_depth));
+    }
 
     // If this node has children, recurse into them.
     if let Ok(children) = children_query.get(current_entity) {
         // NOTE: We also iterate directly over `children` here.
         for &child_entity in children {
-            apply_depth_recursively(commands, children_query, child_entity, current_depth + 1.0);
+            apply_depth_recursively(
+                commands,
+                children_query,
+                depth_query,
+                child_entity,
+                current_depth + 1.0,
+            );
         }
     }
 }

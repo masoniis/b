@@ -5,6 +5,7 @@ use crate::{
     render_world::{
         passes::ui_pass::{
             extract::{RenderableUiElement, UiElementKind},
+            prepare::UiChanges,
             startup::{UiMaterialBuffer, UiMaterialData, UiObjectBuffer, UiObjectData},
         },
         resources::GraphicsContextResource,
@@ -68,27 +69,79 @@ pub struct IsGlyphonDirty(pub bool);
 //         Systems
 // -----------------------
 
+// The system now needs the UiChanges resource to make decisions
 pub fn rebuild_ui_batches_system(
     // Inputs
     gfx: Res<GraphicsContextResource>,
     element_cache: Res<UiElementCache>,
     mut sort_buffer: ResMut<UiElementSortBufferResource>,
+    ui_changes: Res<UiChanges>, // The decider
 
     // Outputs
     mut material_buffer: ResMut<UiMaterialBuffer>,
     mut object_buffer: ResMut<UiObjectBuffer>,
     mut prepared_batches: ResMut<PreparedUiBatches>,
 ) {
-    debug!(
-        target: "ui_efficiency",
-        "Structural or panel content change detected. Performing full batch rebuild..."
-    );
+    if ui_changes.structural_change_occured || ui_changes.panel_content_change_occured {
+        debug!(
+            target: "ui_efficiency",
+            "Panel data changed. Re-uploading panel GPU buffers..."
+        );
 
-    material_buffer.materials.clear();
-    object_buffer.objects.clear();
+        material_buffer.materials.clear();
+        object_buffer.objects.clear();
+
+        // sort all elements to get a stable order for processing panels
+        sort_buffer.clear();
+        sort_buffer.extend(element_cache.elements.values().cloned());
+        sort_buffer.sort_unstable_by(|a, b| a.sort_key.total_cmp(&b.sort_key));
+
+        let mut material_map: HashMap<[u32; 4], u32> = HashMap::new();
+        for element in sort_buffer.iter() {
+            if let UiElementKind::Panel {
+                color,
+                position,
+                size,
+            } = &element.kind
+            {
+                // add new materials if they haven't been seen yet
+                let color_key = color.map(|f| f.to_bits());
+                material_map.entry(color_key).or_insert_with(|| {
+                    let new_material_index = material_buffer.materials.len() as u32;
+                    material_buffer
+                        .materials
+                        .push(UiMaterialData { color: *color });
+                    new_material_index
+                });
+
+                // add the panel's transform to the object buffer
+                let model_matrix = Mat4::from_translation(position.extend(0.0))
+                    * Mat4::from_scale(size.extend(1.0));
+                object_buffer.objects.push(UiObjectData {
+                    model_matrix: model_matrix.to_cols_array(),
+                });
+            }
+        }
+
+        // write to the GPU buffers
+        for (i, material) in material_buffer.materials.iter().enumerate() {
+            let offset = (i as u64) * (material_buffer.stride as u64);
+            let bytes = bytemuck::bytes_of(material);
+            gfx.context
+                .queue
+                .write_buffer(&material_buffer.buffer, offset, bytes);
+        }
+
+        if !object_buffer.objects.is_empty() {
+            let object_bytes = bytemuck::cast_slice(&object_buffer.objects);
+            gfx.context
+                .queue
+                .write_buffer(&object_buffer.buffer, 0, object_bytes);
+        }
+    }
+
     prepared_batches.batches.clear();
     sort_buffer.clear();
-
     sort_buffer.extend(element_cache.elements.values().cloned());
     sort_buffer.sort_unstable_by(|a, b| a.sort_key.total_cmp(&b.sort_key));
 
@@ -96,53 +149,42 @@ pub fn rebuild_ui_batches_system(
         return;
     }
 
-    debug!(
-        target: "ui_efficiency",
-        "Sorted buffer wasn't empty, {} UI elements have been sorted for batching.",
-        sort_buffer.len()
-    );
+    // rebuild the material map from the buffer's current state (it's either new or from a previous frame
+    let material_map: HashMap<[u32; 4], u32> = material_buffer
+        .materials
+        .iter()
+        .enumerate()
+        .map(|(i, mat)| (mat.color.map(|f| f.to_bits()), i as u32))
+        .collect();
 
     let mut current_panel_batch: Option<PanelBatch> = None;
     let mut current_panel_material_color: Option<[u32; 4]> = None;
     let mut current_text_batch: Option<TextBatch> = None;
+    let mut object_index_counter = 0;
 
     for item in sort_buffer.drain(..) {
         match &item.kind {
-            UiElementKind::Panel {
-                color,
-                position,
-                size,
-            } => {
+            UiElementKind::Panel { color, .. } => {
                 flush_text_batch(current_text_batch.take(), &mut prepared_batches.batches);
 
                 let color_key = color.map(|f| f.to_bits());
-                let object_index = object_buffer.objects.len() as u32;
-
                 if current_panel_material_color == Some(color_key) && current_panel_batch.is_some()
                 {
-                    let batch = current_panel_batch.as_mut().unwrap();
-                    batch.instance_count += 1;
+                    current_panel_batch.as_mut().unwrap().instance_count += 1;
                 } else {
                     flush_panel_batch(current_panel_batch.take(), &mut prepared_batches.batches);
 
-                    let material_index = material_buffer.materials.len() as u32;
-                    material_buffer
-                        .materials
-                        .push(UiMaterialData { color: *color });
-
+                    let material_index = *material_map
+                        .get(&color_key)
+                        .expect("Material should exist in map");
                     current_panel_batch = Some(PanelBatch {
                         material_index,
-                        first_instance: object_index,
+                        first_instance: object_index_counter,
                         instance_count: 1,
                     });
                     current_panel_material_color = Some(color_key);
                 }
-
-                let model_matrix = Mat4::from_translation(position.extend(0.0))
-                    * Mat4::from_scale(size.extend(1.0));
-                object_buffer.objects.push(UiObjectData {
-                    model_matrix: model_matrix.to_cols_array(),
-                });
+                object_index_counter += 1;
             }
             UiElementKind::Text { .. } => {
                 flush_panel_batch(current_panel_batch.take(), &mut prepared_batches.batches);
@@ -151,9 +193,6 @@ pub fn rebuild_ui_batches_system(
                 if current_text_batch.is_none() {
                     current_text_batch = Some(TextBatch::default());
                 }
-
-                debug!(target: "ui_batching", "Added text to batch: {:?}", item.kind);
-
                 current_text_batch
                     .as_mut()
                     .unwrap()
@@ -165,23 +204,6 @@ pub fn rebuild_ui_batches_system(
 
     flush_panel_batch(current_panel_batch.take(), &mut prepared_batches.batches);
     flush_text_batch(current_text_batch.take(), &mut prepared_batches.batches);
-
-    debug!("Prepared {} UI batches", prepared_batches.batches.len());
-
-    for (i, material) in material_buffer.materials.iter().enumerate() {
-        let offset = (i as u64) * (material_buffer.stride as u64);
-        let bytes = bytemuck::bytes_of(material);
-        gfx.context
-            .queue
-            .write_buffer(&material_buffer.buffer, offset, bytes);
-    }
-
-    if !object_buffer.objects.is_empty() {
-        let object_bytes = bytemuck::cast_slice(&object_buffer.objects);
-        gfx.context
-            .queue
-            .write_buffer(&object_buffer.buffer, 0, object_bytes);
-    }
 }
 
 /// Flushes a panel batch into the list of render batches if it exists.

@@ -83,16 +83,12 @@ impl Plugin for RenderUiPlugin {
         //         Queue
         // ---------------------
 
-        fn should_rebuild_batches(ui_changes: Res<UiChanges>) -> bool {
-            ui_changes.structural_change_occured || ui_changes.panel_content_change_occured
-        }
-
         builder.schedule_entry(RenderSchedule::Main).add_systems(
             (
                 // make decisions based on the UiChanges determined above
                 (
                     queue::mark_glyphon_dirty_system,
-                    queue::rebuild_ui_batches_system.run_if(should_rebuild_batches),
+                    queue::rebuild_ui_batches_system,
                 ),
                 // makes changes based on the buffers from the systems just before it
                 queue::preprocess_glyphon_text_system.run_if(resource_equals(IsGlyphonDirty(true))),

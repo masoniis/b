@@ -133,7 +133,14 @@ pub fn compute_and_apply_layout_system(world: &mut World) {
         }
 
         if let Ok(mut entity_mut) = world.get_entity_mut(entity) {
-            entity_mut.insert(calculated_layout);
+            // update or insert the CalculatedLayout component
+            if let Some(mut existing_layout) = entity_mut.get_mut::<CalculatedLayout>() {
+                if *existing_layout != calculated_layout {
+                    *existing_layout = calculated_layout;
+                }
+            } else {
+                entity_mut.insert(calculated_layout);
+            }
         }
     }
 
