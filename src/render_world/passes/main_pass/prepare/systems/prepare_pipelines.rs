@@ -27,7 +27,7 @@ pub fn prepare_pipelines_system(
         // Compile Pipeline
         let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("Mesh Shader"),
-            source: wgpu::ShaderSource::Wgsl(include_wesl!("scene_simple").into()),
+            source: wgpu::ShaderSource::Wgsl(include_wesl!("scene_main").into()),
         });
 
         let render_pipeline_layout =
