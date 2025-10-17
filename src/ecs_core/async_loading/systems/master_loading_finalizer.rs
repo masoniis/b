@@ -12,7 +12,7 @@ use bevy_ecs::prelude::*;
 /// on when to transition the app's state.
 pub fn master_finalize_loading_system(
     // Input
-    loading_tracker: Option<NonSend<LoadingTracker>>,
+    loading_tracker: Res<LoadingTracker>,
     on_complete: Option<Res<OnLoadComplete<AppState>>>,
 
     // Output (set the next state)
@@ -20,8 +20,8 @@ pub fn master_finalize_loading_system(
     mut commands: Commands,
 ) {
     // if we have both the tracker and the "what to do next" instruction
-    if let (Some(tracker), Some(on_complete)) = (loading_tracker, on_complete) {
-        if tracker.is_all_ready() {
+    if let Some(on_complete) = on_complete {
+        if loading_tracker.is_all_ready() {
             info!(
                 "All worlds are ready. Transitioning to {:?}.",
                 on_complete.destination

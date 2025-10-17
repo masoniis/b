@@ -9,14 +9,17 @@ use bevy_ecs::prelude::*;
 
 /// Polls simulation-specific tasks and updates the shared `LoadingTracker`.
 pub fn poll_simulation_loading_tasks(
+    // Input
     mut commands: Commands,
     tasks: Query<(Entity, &SimulationWorldLoadingTaskComponent)>,
-    mut loading_tracker: NonSendMut<LoadingTracker>,
+
+    // Output (update the shared tracker)
+    loading_tracker: Res<LoadingTracker>,
 ) {
     let remaining = poll_loading_tasks(&mut commands, &tasks);
-    if remaining == 0 && !loading_tracker.is_simulation_ready {
+    if remaining == 0 && !loading_tracker.is_simulation_ready() {
         info!("Simulation world is ready.");
-        loading_tracker.is_simulation_ready = true;
+        loading_tracker.set_simulation_ready(true);
     }
 }
 
@@ -26,13 +29,13 @@ pub fn poll_render_loading_tasks(
     mut commands: Commands,
     tasks: Query<(Entity, &SimulationWorldLoadingTaskComponent)>,
 
-    // Output
-    mut loading_tracker: NonSendMut<LoadingTracker>,
+    // Output (update the shared tracker)
+    loading_tracker: Res<LoadingTracker>,
 ) {
     let remaining = poll_loading_tasks(&mut commands, &tasks);
-    if remaining == 0 && !loading_tracker.is_renderer_ready {
+    if remaining == 0 && !loading_tracker.is_renderer_ready() {
         info!("Render world is ready.");
-        loading_tracker.is_renderer_ready = true;
+        loading_tracker.set_renderer_ready(true);
     }
 }
 

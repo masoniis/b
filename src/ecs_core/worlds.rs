@@ -29,19 +29,9 @@ impl CommonEcsInterface {
         }
     }
 
-    /// Run a schedule with a single, temporary non-send resource.
-    pub fn run_schedule_with_non_send<R: 'static>(
-        &mut self,
-        resource: R,
-        schedule: impl ScheduleLabel,
-    ) -> R {
-        self.world.insert_non_send_resource(resource);
-        self.world.run_schedule(schedule);
-        if let Some(res) = self.world.remove_non_send_resource::<R>() {
-            return res;
-        } else {
-            panic!("Failed to retrieve non-send resource after schedule run");
-        }
+    /// Adds a resource to the world via insertion.
+    pub fn add_resource<R: Resource>(&mut self, resource: R) {
+        self.world.insert_resource(resource);
     }
 
     /// Clears the world's internal change trackers.
@@ -52,6 +42,7 @@ impl CommonEcsInterface {
         self.world.clear_trackers();
     }
 
+    /// Provides mutable access to the underlying world.
     pub fn borrow(&mut self) -> &mut World {
         &mut self.world
     }
