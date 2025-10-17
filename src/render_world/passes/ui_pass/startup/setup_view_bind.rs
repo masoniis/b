@@ -1,3 +1,4 @@
+use crate::prelude::*;
 use crate::render_world::resources::GraphicsContextResource;
 use bevy_ecs::prelude::*;
 
@@ -6,6 +7,7 @@ use bevy_ecs::prelude::*;
 pub struct ViewBindGroupLayout(pub wgpu::BindGroupLayout);
 
 // A system to setup the view bind group (should run once at startup)
+#[instrument(skip_all)]
 pub fn setup_view_bind_group_layout(mut commands: Commands, gfx: Res<GraphicsContextResource>) {
     let device = &gfx.context.device;
     let layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {

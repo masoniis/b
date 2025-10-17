@@ -8,6 +8,7 @@ pub struct UiRootNodeResource(pub Entity);
 /// A system that spawns the single UI root node and registers it as a resource.
 ///
 /// This should only run once at app startup.
+#[instrument(skip_all)]
 pub fn spawn_ui_root_system(mut commands: Commands) {
     info!("Setting up UI Root Node...");
 

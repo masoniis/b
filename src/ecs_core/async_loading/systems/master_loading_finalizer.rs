@@ -10,6 +10,7 @@ use bevy_ecs::prelude::*;
 /// The master system that runs in the simulation world. It checks the shared
 /// LoadingTracker and the OnLoadComplete resource to make the final decision
 /// on when to transition the app's state.
+#[instrument(skip_all)]
 pub fn master_finalize_loading_system(
     // Input
     loading_tracker: Res<LoadingTracker>,

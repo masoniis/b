@@ -91,6 +91,7 @@ impl FrameClock {
 // -----------------------------
 
 /// A system that updates the `FrameClock` resource every frame.
+#[instrument(skip_all)]
 pub fn update_frame_clock_system(mut clock: ResMut<FrameClock>) {
     clock.update_all();
 }

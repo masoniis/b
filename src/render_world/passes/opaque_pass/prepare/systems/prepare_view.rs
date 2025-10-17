@@ -1,15 +1,16 @@
-// In a new file like `render_world/prepare/camera.rs`
 use crate::{
+    prelude::*,
     render_world::uniforms::CameraUniform,
     render_world::{
         global_extract::resources::RenderCameraResource,
-        passes::main_pass::prepare::resources::bind_groups::ViewBindGroup,
+        passes::opaque_pass::prepare::resources::bind_groups::ViewBindGroup,
         resources::GraphicsContextResource,
     },
 };
 use bevy_ecs::prelude::*;
 
 /// Takes the extracted camera data and uploads it to the GPU buffer for the ViewBindGroup.
+#[instrument(skip_all)]
 pub fn prepare_view_bind_group_system(
     // Input
     camera_info: Res<RenderCameraResource>,

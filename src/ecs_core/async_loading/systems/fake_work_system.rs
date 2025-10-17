@@ -3,6 +3,7 @@ use crate::{
 };
 use bevy_ecs::prelude::*;
 
+#[instrument(skip_all)]
 pub fn start_fake_work_system(mut commands: Commands) {
     info!("Spawning fake work task on a background thread...");
 

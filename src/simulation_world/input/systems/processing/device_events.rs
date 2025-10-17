@@ -1,6 +1,9 @@
-use crate::simulation_world::input::{
-    events::{MouseMoveEvent, MouseScrollEvent, RawDeviceEvent},
-    resources::CursorMovement,
+use crate::{
+    prelude::*,
+    simulation_world::input::{
+        events::{MouseMoveEvent, MouseScrollEvent, RawDeviceEvent},
+        resources::CursorMovement,
+    },
 };
 use bevy_ecs::{
     event::{EventReader, EventWriter},
@@ -9,6 +12,7 @@ use bevy_ecs::{
 
 /// A system to handle external raw input events from the OS (via winit),
 /// and simultaneously update the input resource with device information.
+#[instrument(skip_all)]
 pub fn device_events_system(
     // Input from OS bridge
     mut raw_device_events: EventReader<RawDeviceEvent>,

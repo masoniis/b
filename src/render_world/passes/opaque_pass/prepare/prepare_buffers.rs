@@ -1,3 +1,4 @@
+use crate::prelude::*;
 use crate::render_world::resources::GraphicsContextResource;
 use bevy_ecs::prelude::Resource;
 use bevy_ecs::prelude::*;
@@ -16,6 +17,7 @@ pub struct DepthTextureResource {
 pub const DEPTH_FORMAT: wgpu::TextureFormat = wgpu::TextureFormat::Depth32Float;
 
 // This system runs once to create long-lived GPU resources.
+#[instrument(skip_all)]
 pub fn prepare_render_buffers_system(
     mut commands: Commands,
     gfx_context: Res<GraphicsContextResource>,

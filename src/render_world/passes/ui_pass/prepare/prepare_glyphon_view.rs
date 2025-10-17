@@ -10,6 +10,7 @@ use bevy_ecs::prelude::*;
 /// A system that creates the orthographic projection matrix for the UI camera.
 ///
 /// Run condition: If the window size or the view bind group layout changes.
+#[instrument(skip_all)]
 pub fn prepare_glyphon_view_system(
     // Input
     gfx: Res<GraphicsContextResource>,

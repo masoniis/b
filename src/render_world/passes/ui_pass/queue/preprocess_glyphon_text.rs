@@ -15,6 +15,7 @@ use bevy_ecs::prelude::*;
 use glyphon::{Buffer, Metrics, TextArea, TextBounds};
 
 /// A conditional system that marks Glyphon as dirty if relevant UI changes occurred.
+#[instrument(skip_all)]
 pub fn mark_glyphon_dirty_system(
     ui_changes: Res<UiChanges>,
     mut is_glyphon_dirty: ResMut<IsGlyphonDirty>,
@@ -28,6 +29,7 @@ pub fn mark_glyphon_dirty_system(
 ///
 /// This is a CPU-intensive system that should be run before the main render graph execution. It populates the
 /// internal buffers of the GlyphonRenderer, which are then used by the UiPassNode to issue the final draw commands.
+#[instrument(skip_all)]
 pub fn preprocess_glyphon_text_system(
     // Input
     gfx: Res<GraphicsContextResource>,

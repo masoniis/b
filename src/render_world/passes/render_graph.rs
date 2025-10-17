@@ -1,4 +1,4 @@
-use super::main_pass::render::RenderPassNode;
+use super::opaque_pass::render::OpaquePassRenderNode;
 use super::ui_pass::render::UiPassNode;
 use crate::prelude::*;
 use crate::render_world::resources::GraphicsContextResource;
@@ -130,12 +130,12 @@ impl RenderGraph {
 pub fn setup_render_graph(world: &mut World) {
     let mut render_graph = RenderGraph::default();
 
-    let main_pass_node = RenderPassNode::new(world);
+    let main_pass_node = OpaquePassRenderNode::new(world);
     let ui_pass_node = UiPassNode;
 
-    render_graph.add_node::<RenderPassNode, _>("MainPass3d", main_pass_node, true);
+    render_graph.add_node::<OpaquePassRenderNode, _>("MainPass3d", main_pass_node, true);
     render_graph.add_node::<UiPassNode, _>("UiPass", ui_pass_node, true);
-    render_graph.add_node_dependency::<UiPassNode, RenderPassNode>();
+    render_graph.add_node_dependency::<UiPassNode, OpaquePassRenderNode>();
 
     world.insert_resource(render_graph);
 
@@ -143,6 +143,7 @@ pub fn setup_render_graph(world: &mut World) {
 }
 
 /// A system to run the configured render graph each frame.
+#[instrument(skip_all)]
 pub fn render_graph_system(world: &mut World) {
     let Some(mut render_graph) = world.remove_resource::<RenderGraph>() else {
         return;

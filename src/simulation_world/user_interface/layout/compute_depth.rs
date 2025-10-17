@@ -2,6 +2,7 @@ use crate::simulation_world::user_interface::{
     components::Node, screens::spawn_root::UiRootNodeResource,
 };
 use bevy_ecs::prelude::*;
+use tracing::instrument;
 
 #[derive(Component, Debug)]
 pub struct UiDepth(pub f32);
@@ -9,6 +10,7 @@ pub struct UiDepth(pub f32);
 /// A system that runs after layout to calculate the depth of each UI node.
 ///
 /// Depth is computed as integer values starting from 0 at the root.
+#[instrument(skip_all, fields(name = "compute_ui_depth_system"))]
 pub fn compute_ui_depth_system(
     // Input (queries)
     root: ResMut<UiRootNodeResource>,
@@ -18,6 +20,8 @@ pub fn compute_ui_depth_system(
     // Output (spawned entities)
     mut commands: Commands,
 ) {
+    // let _span = info_span!("compute_ui_depth_system").entered();
+
     let root_entity = root.0;
     let root_children = if let Ok(children) = children_query.get(root_entity) {
         children

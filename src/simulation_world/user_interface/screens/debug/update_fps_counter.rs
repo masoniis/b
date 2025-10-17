@@ -6,6 +6,7 @@ use crate::simulation_world::user_interface::{
 use bevy_ecs::prelude::*;
 
 /// Updates the content of the FPS counter text element.
+#[instrument(skip_all)]
 pub fn update_fps_counter_system(
     // Input (frame clock info)
     frame_clock: Res<FrameClock>,

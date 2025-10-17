@@ -5,6 +5,7 @@ use crate::render_world::{
 use bevy_ecs::prelude::*;
 
 // A system that reacts to window size changes and reconfigures the wgpu surface.
+#[instrument(skip_all)]
 pub fn reconfigure_wgpu_surface_system(
     window_size: Res<RenderWindowSizeResource>,
     mut gfx: ResMut<GraphicsContextResource>,

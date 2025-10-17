@@ -1,3 +1,4 @@
+use crate::prelude::*;
 use crate::render_world::types::{TextureId, Vertex};
 use crate::simulation_world::chunk::components::{MeshComponent, TransformComponent};
 use crate::simulation_world::global_resources::asset_storage::AssetStorageResource;
@@ -5,8 +6,8 @@ use crate::simulation_world::global_resources::asset_storage::MeshAsset;
 use crate::simulation_world::global_resources::texture_map::TextureMapResource;
 use bevy_ecs::prelude::{Commands, Res};
 use glam::Vec3;
-use tracing::info;
 
+#[instrument(skip_all)]
 pub fn cube_array_generation_system(
     mut commands: Commands,
     mesh_assets: Res<AssetStorageResource<MeshAsset>>,

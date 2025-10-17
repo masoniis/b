@@ -11,6 +11,7 @@ use bevy_ecs::{
     event::{EventReader, EventWriter},
     system::ResMut,
 };
+use tracing::instrument;
 use winit::{
     event::{ElementState, MouseButton, WindowEvent},
     keyboard::PhysicalKey,
@@ -75,6 +76,7 @@ pub fn window_events_system(
 }
 
 /// A system that listens for `WindowResizedEvent`s and updates relevant resources.
+#[instrument(skip_all)]
 pub fn handle_resize_system(
     mut resize_events: EventReader<WindowResizeEvent>,
     mut window_resource: ResMut<WindowSizeResource>,

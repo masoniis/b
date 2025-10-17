@@ -1,3 +1,4 @@
+use crate::prelude::*;
 use crate::render_world::{
     passes::ui_pass::startup::UiPipeline, resources::GraphicsContextResource,
 };
@@ -32,6 +33,7 @@ pub struct UiObjectBuffer {
     pub objects: Vec<UiObjectData>,
 }
 
+#[instrument(skip_all)]
 pub fn setup_ui_buffers(
     mut commands: Commands,
     gfx: Res<GraphicsContextResource>,

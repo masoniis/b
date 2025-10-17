@@ -50,6 +50,7 @@ pub trait ExtractComponent: Send + Sync + 'static {
 }
 
 /// A generic system that extracts components from the SimulationWorld and stores them in the RenderWorld.
+#[instrument(skip_all)]
 pub fn extract_component_system<T: ExtractComponent>(
     mut simulation_world: ResMut<SimulationWorld>,
     mut extracted: ResMut<ExtractedBy<T>>,

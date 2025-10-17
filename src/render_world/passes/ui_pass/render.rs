@@ -1,10 +1,13 @@
-use crate::render_world::passes::{
-    render_graph::{RenderContext, RenderNode},
-    ui_pass::{
-        queue::{PreparedUiBatches, UiRenderBatch},
-        startup::{
-            GlyphonAtlasResource, GlyphonRendererResource, GlyphonViewportResource,
-            UiMaterialBuffer, UiObjectBuffer, UiPipeline,
+use crate::{
+    prelude::*,
+    render_world::passes::{
+        render_graph::{RenderContext, RenderNode},
+        ui_pass::{
+            queue::{PreparedUiBatches, UiRenderBatch},
+            startup::{
+                GlyphonAtlasResource, GlyphonRendererResource, GlyphonViewportResource,
+                UiMaterialBuffer, UiObjectBuffer, UiPipeline,
+            },
         },
     },
 };
@@ -14,6 +17,7 @@ use super::{prepare::UiViewBindGroup, startup::ScreenQuadResource};
 
 pub struct UiPassNode;
 impl RenderNode for UiPassNode {
+    #[instrument(skip_all, name = "ui_pass_render_node")]
     fn run(&mut self, render_context: &mut RenderContext, world: &World) {
         // INFO: ---------------------------
         //         Resource fetching

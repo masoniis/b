@@ -1,3 +1,4 @@
+use crate::prelude::*;
 use crate::render_world::resources::GraphicsContextResource;
 use bevy_ecs::prelude::*;
 use wgpu::util::DeviceExt;
@@ -14,6 +15,7 @@ pub struct ScreenQuadResource {
 ///
 /// The quad is intended to be the root canvas for all drawing, and
 /// as such it covers the entire screen.
+#[instrument(skip_all)]
 pub fn setup_ui_screen_quad_system(
     // Input
     gfx: Res<GraphicsContextResource>,

@@ -23,7 +23,7 @@ use taffy::{self, TaffyTree};
 ///
 /// It is to be instantiated as a NonSend resource because
 /// Taffy is not Send/Sync, unfortunately.
-#[derive(Deref, DerefMut)]
+#[derive(Deref, DerefMut, Debug)]
 pub struct UiLayoutTree(pub TaffyTree<Entity>);
 
 impl Default for UiLayoutTree {
@@ -33,7 +33,7 @@ impl Default for UiLayoutTree {
 }
 
 /// A map from our ECS entities to Taffy node IDs.
-#[derive(Resource, Default, Deref, DerefMut)]
+#[derive(Resource, Default, Deref, DerefMut, Debug)]
 pub struct EntityToNodeMap(pub HashMap<Entity, taffy::NodeId>);
 
 // INFO: -----------------------------------
@@ -44,6 +44,7 @@ pub struct EntityToNodeMap(pub HashMap<Entity, taffy::NodeId>);
 ///
 /// This is an expensive system that should only be run when the layout is "dirty". It also is an
 /// exclusive system because the taffy tree is a NonSend resource.
+#[instrument(skip_all)]
 pub fn compute_and_apply_layout_system(world: &mut World) {
     debug!(target: "ui_efficiency", "Recomputing the UI layout because it is dirty...");
 

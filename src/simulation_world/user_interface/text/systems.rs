@@ -11,6 +11,7 @@ pub struct FontSystemResource {
 const FONT_PATH: &str = "assets/fonts/Miracode.ttf";
 
 /// A startup system to load and insert font state
+#[instrument(skip_all)]
 pub fn setup_font_system(mut commands: Commands) {
     let font_bytes = std::fs::read(FONT_PATH).expect("Failed to load font");
     let source = Source::Binary(Arc::new(font_bytes));

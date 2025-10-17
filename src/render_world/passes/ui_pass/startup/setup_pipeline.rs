@@ -1,4 +1,5 @@
 use super::ViewBindGroupLayout;
+use crate::prelude::*;
 use crate::render_world::resources::GraphicsContextResource;
 use crate::render_world::types::{BindingDef, MaterialDefinition};
 use bevy_ecs::prelude::*;
@@ -17,7 +18,8 @@ pub struct UiPipeline {
 
 const MATERIAL_PATH: &str = "assets/shaders/ui/main.material.ron";
 
-// Setup the UI pipeline using the shader and material definition
+/// Setup the UI pipeline using the shader and material definition
+#[instrument(skip_all)]
 pub fn setup_ui_pipeline(
     mut commands: Commands,
     gfx: Res<GraphicsContextResource>,

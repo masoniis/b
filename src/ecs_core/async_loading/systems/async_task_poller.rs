@@ -8,6 +8,7 @@ use crate::{
 use bevy_ecs::prelude::*;
 
 /// Polls simulation-specific tasks and updates the shared `LoadingTracker`.
+#[instrument(skip_all)]
 pub fn poll_simulation_loading_tasks(
     // Input
     mut commands: Commands,
@@ -24,6 +25,7 @@ pub fn poll_simulation_loading_tasks(
 }
 
 /// Polls render-specific tasks and updates the shared `LoadingTracker`.
+#[instrument(skip_all)]
 pub fn poll_render_loading_tasks(
     // Input
     mut commands: Commands,

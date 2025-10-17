@@ -1,3 +1,4 @@
+use crate::prelude::*;
 use bevy_ecs::prelude::*;
 use bevy_ecs::schedule::ScheduleLabel;
 
@@ -16,6 +17,7 @@ pub struct SimulationWorld {
 /// resource. Doesn't waste time on any allocations 😎
 ///
 /// The `simulation_world` is returned to its original state after the schedule has run.
+#[instrument(skip_all, fields(name = "run_extract_schedule"))]
 pub fn run_extract_schedule(
     simulation_world: &mut World,
     render_world: &mut World,

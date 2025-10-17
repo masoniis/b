@@ -1,9 +1,10 @@
 use crate::render_world::{
-    passes::main_pass::prepare::MeshPipelineLayoutsResource,
+    passes::opaque_pass::prepare::MeshPipelineLayoutsResource,
     resources::{GraphicsContextResource, PipelineCacheResource, PipelineId},
     types::vertex::Vertex,
 };
 use bevy_ecs::prelude::*;
+use tracing::instrument;
 use wesl::include_wesl;
 
 // --- Constants ---
@@ -14,6 +15,7 @@ pub const MESH_PIPELINE_ID: PipelineId = 0;
 
 /// A one-time system that is completely self-contained for compiling pipelines.
 /// It defines all the layouts it needs locally for MVP simplicity.
+#[instrument(skip_all)]
 pub fn prepare_pipelines_system(
     mut cache: ResMut<PipelineCacheResource>,
     gfx_context: Res<GraphicsContextResource>,

@@ -1,12 +1,16 @@
-use crate::simulation_world::global_resources::camera::CameraResource;
-use crate::simulation_world::input::resources::WindowSizeResource;
-use crate::simulation_world::input::{
-    resources::CursorMovement, types::simulation_action::SimulationAction, ActionStateResource,
-};
 use crate::simulation_world::time::FrameClock;
+use crate::{
+    simulation_world::global_resources::camera::CameraResource,
+    simulation_world::input::resources::WindowSizeResource,
+    simulation_world::input::{
+        resources::CursorMovement, types::simulation_action::SimulationAction, ActionStateResource,
+    },
+};
 use bevy_ecs::prelude::*;
 use glam::{Mat4, Vec3};
+use tracing::instrument;
 
+#[instrument(skip_all)]
 pub fn camera_control_system(
     // Input
     movement: Res<CursorMovement>,

@@ -17,6 +17,7 @@ pub struct UiViewBindGroup {
 /// A system that creates the orthographic projection matrix for the UI camera.
 ///
 /// Run condition: If the window size or the view bind group layout changes.
+#[instrument(skip_all)]
 pub fn prepare_ui_view_system(
     // Input
     gfx: Res<GraphicsContextResource>,

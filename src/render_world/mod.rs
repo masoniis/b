@@ -28,7 +28,7 @@ use crate::{
     ecs_core::state_machine::{self, in_state, StatePlugin},
     render_world::{
         global_extract::{RenderCameraResource, RenderMeshStorageResource, RenderTimeResource},
-        passes::main_pass::{
+        passes::opaque_pass::{
             prepare::{
                 self, MainTextureBindGroup, MeshPipelineLayoutsResource, ModelBindGroup,
                 ViewBindGroup,

@@ -33,6 +33,7 @@
                 # Rust
                 pkgs-unstable.cargo
                 pkgs-unstable.wgsl-analyzer
+                pkgs-unstable.tracy-glfw
 
                 # Utils
                 just
@@ -46,6 +47,9 @@
                 mesa
               ]);
 
+              shellHook = ''
+                export PATH="$HOME/.cargo/bin:$PATH"
+              '';
             }
             // (lib.optionalAttrs stdenv.isLinux {
               RUST_SRC_PATH = "${pkgs.rust.packages.stable.rustPlatform.rustLibSrc}";

@@ -69,6 +69,7 @@ impl<T: MirrorableComponent> Plugin for ExtractComponentPlugin<T> {
 }
 
 /// Generic system that performs the stateful, mirroring extraction for a component.
+#[instrument(skip_all)]
 fn extract_mirrorable_components_system<T: MirrorableComponent>(
     mut commands: Commands,
     mut entity_map: ResMut<EntityMap<T>>,

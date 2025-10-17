@@ -49,6 +49,7 @@ pub enum ExtractedUiEvent {
     Remove(Entity),
 }
 
+#[instrument(skip_all)]
 pub fn extract_ui_events_system(
     // Input (world to query)
     mut simulation_world: ResMut<SimulationWorld>,

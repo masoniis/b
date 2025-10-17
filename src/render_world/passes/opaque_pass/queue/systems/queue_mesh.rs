@@ -1,9 +1,12 @@
-use crate::render_world::{
-    global_extract::{
-        mesh::{RenderMeshComponent, RenderTransformComponent},
-        RenderCameraResource,
+use crate::{
+    prelude::*,
+    render_world::{
+        global_extract::{
+            components::mesh::{RenderMeshComponent, RenderTransformComponent},
+            resources::RenderCameraResource,
+        },
+        passes::opaque_pass::queue::{Opaque3dRenderPhase, PhaseItem},
     },
-    passes::main_pass::queue::{Opaque3dRenderPhase, PhaseItem},
 };
 use bevy_ecs::prelude::*;
 
@@ -11,6 +14,7 @@ use bevy_ecs::prelude::*;
 ///
 /// Performs a query for all entities that have been extracted into the render
 /// world and adds them to a list of draw calls for the renderer to consume.
+#[instrument(skip_all)]
 pub fn queue_mesh_system(
     // Input
     camera_info: Res<RenderCameraResource>,

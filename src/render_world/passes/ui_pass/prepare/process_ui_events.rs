@@ -17,6 +17,7 @@ pub struct UiChanges {
 
 /// A system that processes extracted UI events, updates the `UiElementCache`,
 /// and flags what kind of changes occurred.
+#[instrument(skip_all)]
 pub fn process_ui_events_system(
     // Input (events from extract stage)
     mut extracted_events: ResMut<ExtractedUiEvents>,

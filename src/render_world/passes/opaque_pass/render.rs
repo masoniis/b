@@ -1,10 +1,11 @@
+use crate::prelude::*;
 use crate::render_world::{
     global_extract::{
         mesh::{RenderMeshComponent, RenderTransformComponent},
         RenderMeshStorageResource,
     },
     passes::{
-        main_pass::{
+        opaque_pass::{
             prepare::{
                 bind_groups::ModelBindGroup,
                 resources::{MainTextureBindGroup, ViewBindGroup},
@@ -20,13 +21,13 @@ use crate::render_world::{
 };
 use bevy_ecs::prelude::*;
 
-pub struct RenderPassNode {
+pub struct OpaquePassRenderNode {
     // caches the queries
     mesh_query: QueryState<&'static RenderMeshComponent>,
     transform_query: QueryState<&'static RenderTransformComponent>,
 }
 
-impl RenderPassNode {
+impl OpaquePassRenderNode {
     pub fn new(world: &mut World) -> Self {
         Self {
             mesh_query: world.query::<&RenderMeshComponent>(),
@@ -35,7 +36,8 @@ impl RenderPassNode {
     }
 }
 
-impl RenderNode for RenderPassNode {
+impl RenderNode for OpaquePassRenderNode {
+    #[instrument(skip_all, name = "opaque_pass_render_node")]
     fn run(&mut self, render_context: &mut RenderContext, world: &World) {
         // --- 1. Get all necessary resources from the world ---
         let phase = world.get_resource::<Opaque3dRenderPhase>().unwrap();

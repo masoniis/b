@@ -8,6 +8,7 @@ use bevy_ecs::prelude::*;
 ///
 /// Typically we only want to clone resources that are tiny or clone "smartly"
 /// such as Arc.
+#[instrument(skip_all)]
 pub fn clone_resource_system<T: Resource + Clone>(
     mut commands: Commands,
     simulation_world: Res<SimulationWorld>,

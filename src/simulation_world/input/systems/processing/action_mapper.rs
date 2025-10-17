@@ -1,12 +1,16 @@
-use crate::simulation_world::input::{
-    resources::{action::ActionStateResource, buttons::Buttons, input_action_map::Input},
-    InputActionMapResource,
+use crate::{
+    prelude::*,
+    simulation_world::input::{
+        resources::{action::ActionStateResource, buttons::Buttons, input_action_map::Input},
+        InputActionMapResource,
+    },
 };
 use bevy_ecs::prelude::{Res, ResMut};
 use winit::{event::MouseButton, keyboard::PhysicalKey};
 
 /// A system that translates the raw state from `Buttons` resources into abstract,
 /// stateful actions in `ActionStateResource`, using the bindings from `InputActionMapResource`.
+#[instrument(skip_all)]
 pub fn update_action_state_system(
     // Input state
     keyboard_input: Res<Buttons<PhysicalKey>>,

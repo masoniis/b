@@ -7,7 +7,7 @@ pub use crate::{
     utils::*,
 };
 
-pub use tracing::{debug, error, info, warn};
+pub use tracing::{debug, error, info, info_span, instrument, warn};
 
 pub use glam::{Mat3, Mat4, Vec2, Vec3, Vec4};
 

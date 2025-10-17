@@ -9,8 +9,10 @@ pub mod utils;
 pub use prelude::*;
 
 #[tokio::main]
+#[instrument(skip_all, fields(name = "main"))]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     utils::logger::attach_logger();
+
     info!("Logger attached...");
     info!("Running app...");
 

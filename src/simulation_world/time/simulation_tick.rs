@@ -1,4 +1,7 @@
-use crate::simulation_world::{time::FrameClock, SimulationSchedule};
+use crate::{
+    prelude::*,
+    simulation_world::{time::FrameClock, SimulationSchedule},
+};
 use bevy_ecs::prelude::*;
 use std::time::Duration;
 
@@ -11,6 +14,7 @@ pub struct SimulationTick {
 }
 
 /// Updates the simulation tick and clocks
+#[instrument(skip_all)]
 pub fn run_fixed_update_schedule(
     mut frame_clock: ResMut<FrameClock>,
     mut sim_tick: ResMut<SimulationTick>,

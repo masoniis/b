@@ -20,6 +20,7 @@ tracing-subscriber = { version = "0.3.20", features = [
   "local-time",
   "env-filter",
 ] }
+tracing-tracy = "=0.11.1"
 
 # INFO: ------------------
 #         graphics

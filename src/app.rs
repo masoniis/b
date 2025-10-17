@@ -118,6 +118,7 @@ impl ApplicationHandler for App {
             let sim_world_for_render = simulation_world.clone();
 
             let render_thread = thread::spawn(move || {
+                let _span = info_span!("Render thread").entered();
                 loop {
                     // wait until we are signaled to extract form the sim world
 
@@ -126,6 +127,7 @@ impl ApplicationHandler for App {
                         let mut sim_guard = sim_world_for_render.lock().unwrap();
                         let mut render_guard = render_world_for_render.lock().unwrap();
 
+                        let _extract_phase_span = tracing::info_span!("extract_schedule").entered();
                         // the special extract schedule needs mutable access to the simulation world
                         run_extract_schedule(
                             &mut sim_guard.borrow(),
@@ -140,8 +142,12 @@ impl ApplicationHandler for App {
                     // perform rendering now that sim is active again
 
                     let mut render_world = render_world_for_render.lock().unwrap();
-                    render_world.run_schedule(RenderSchedule::Main);
-                    render_world.clear_trackers();
+                    {
+                        let _render_phase_span =
+                            tracing::info_span!("main_render_schedule").entered();
+                        render_world.run_schedule(RenderSchedule::Main);
+                        render_world.clear_trackers();
+                    }
                 }
             });
 
@@ -188,10 +194,14 @@ impl ApplicationHandler for App {
                     if let Some(simulation_world) = self.simulation_world.as_mut() {
                         // wait for the sim signal and run
                         self.frame_sync.wait_for_simulation();
-                        simulation_world
-                            .lock()
-                            .unwrap()
-                            .run_schedule(SimulationSchedule::Main);
+                        {
+                            let _main_loop_span =
+                                tracing::info_span!("main_simulation_schedule").entered();
+                            simulation_world
+                                .lock()
+                                .unwrap()
+                                .run_schedule(SimulationSchedule::Main);
+                        }
                         self.frame_sync.finish_simulation();
 
                         // request the next frame

@@ -1,3 +1,4 @@
+use crate::prelude::*;
 use bevy_ecs::prelude::*;
 use std::time::Duration;
 
@@ -39,6 +40,7 @@ impl WorldClockResource {
 // ----------------------------------
 
 /// A system that runs every tick to advance the in-game calendar.
+#[instrument(skip_all)]
 pub fn update_world_clock_system(
     // Input
     sim_tick: Res<SimulationTick>,

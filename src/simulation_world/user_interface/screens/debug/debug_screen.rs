@@ -94,6 +94,7 @@ fn spawn_diagnostic_ui(commands: &mut Commands, root_node: &Res<UiRootNodeResour
 }
 
 /// Toggles the debug diagnostics UI by spawning or despawning it.
+#[instrument(skip_all)]
 pub fn toggle_debug_diagnostics_system(
     // Input
     root_node: Res<UiRootNodeResource>,

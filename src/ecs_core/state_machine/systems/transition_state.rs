@@ -8,6 +8,7 @@ pub use crate::simulation_world::scheduling::{OnEnter, OnExit};
 use bevy_ecs::prelude::*;
 use std::any::type_name;
 
+#[instrument(skip_all)]
 pub fn apply_state_transition_system<T: State>(world: &mut World) {
     // Decide if a transition should occur or not
     let transition = {

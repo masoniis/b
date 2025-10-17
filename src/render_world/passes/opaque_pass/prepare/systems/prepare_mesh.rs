@@ -13,6 +13,7 @@ use bevy_ecs::prelude::*;
 use std::sync::Arc;
 use tracing::warn;
 
+#[instrument(skip_all)]
 pub fn prepare_meshes_system(
     gfx_context: Res<GraphicsContextResource>,
     // This is a clone of the main world's asset storage.

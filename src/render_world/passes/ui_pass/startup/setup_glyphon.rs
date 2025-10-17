@@ -1,3 +1,4 @@
+use crate::prelude::*;
 use crate::render_world::resources::GraphicsContextResource;
 use bevy_ecs::prelude::*;
 use derive_more::{Deref, DerefMut};
@@ -19,6 +20,7 @@ pub struct GlyphonViewportResource(pub Viewport);
 #[derive(Resource, Deref, DerefMut)]
 pub struct GlyphonRendererResource(pub TextRenderer);
 
+#[instrument(skip_all)]
 pub fn setup_glyphon_resources(mut commands: Commands, gfx: Res<GraphicsContextResource>) {
     let font_bytes = include_bytes!("../../../../../assets/fonts/Miracode.ttf");
     let source = Source::Binary(Arc::new(font_bytes));

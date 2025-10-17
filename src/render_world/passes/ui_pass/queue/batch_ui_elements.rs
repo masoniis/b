@@ -70,6 +70,7 @@ pub struct IsGlyphonDirty(pub bool);
 // -----------------------
 
 // The system now needs the UiChanges resource to make decisions
+#[instrument(skip_all)]
 pub fn rebuild_ui_batches_system(
     // Inputs
     gfx: Res<GraphicsContextResource>,

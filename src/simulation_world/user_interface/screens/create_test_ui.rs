@@ -10,6 +10,7 @@ use bevy_ecs::prelude::*;
 pub struct TestUiElement;
 
 /// Spawns a test UI by attaching it to the persistent root node.
+#[instrument(skip_all)]
 pub fn create_test_ui_system(mut commands: Commands, root_node: Res<UiRootNodeResource>) {
     info!("Spawning test UI");
 

@@ -23,6 +23,7 @@ pub trait ExtractResource {
 
 /// A generic system that extracts resources using the `ExtractResource` trait.
 /// It delegates the update logic to the trait's implementation.
+#[instrument(skip_all)]
 pub fn extract_resource_system<T: ExtractResource>(
     mut commands: Commands,
     simulation_world: Res<SimulationWorld>,

@@ -68,6 +68,7 @@ pub fn spawn_loading_ui_system(mut commands: Commands, root_node: Res<UiRootNode
 }
 
 /// Clears the Loading UI by finding and despawning all entities with the `LoadingUiElement` marker.
+#[instrument(skip_all)]
 pub fn despawn_loading_ui_system(
     // Input (ui entity)
     loading_ui_query: Query<Entity, With<LoadingUiElement>>,

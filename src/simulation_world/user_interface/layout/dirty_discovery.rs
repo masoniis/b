@@ -11,13 +11,14 @@ use crate::{
 use bevy_ecs::prelude::*;
 use derive_more::{Deref, DerefMut};
 use taffy::{self};
+use tracing::info_span;
 
 // INFO: -------------------
 //         Resources
 // -------------------------
 
 /// A marker resource that indicates whether the layout needs to be recomputed.
-#[derive(Resource, Default, Deref, DerefMut, PartialEq)]
+#[derive(Resource, Default, Deref, DerefMut, PartialEq, Debug)]
 pub struct IsLayoutDirty(pub bool);
 
 // INFO: -----------------------
@@ -25,6 +26,7 @@ pub struct IsLayoutDirty(pub bool);
 // -----------------------------
 
 /// A system that handles structural changes to the UI hierarchy (adding/removing nodes).
+#[instrument(skip_all)]
 pub fn handle_structural_changes_system(
     // Input (added styles)
     add_query: Query<
@@ -38,6 +40,8 @@ pub fn handle_structural_changes_system(
     mut entity_to_node: ResMut<EntityToNodeMap>,
     mut is_dirty: ResMut<IsLayoutDirty>,
 ) {
+    let _span = info_span!("handle_structural_changes_system").entered();
+
     // Handle additions
     if !add_query.is_empty() {
         debug!(
@@ -79,6 +83,7 @@ pub fn handle_structural_changes_system(
 
 /// A system that detects changes in the ECS hierarchy (the `Children` component)
 /// and synchronizes it to the Taffy tree.
+#[instrument(skip_all)]
 pub fn handle_hierarchy_changes_system(
     // Input (changed hierarchy)
     hierarchy_query: Query<(Entity, &Children), Changed<Children>>,
@@ -120,6 +125,7 @@ pub fn handle_hierarchy_changes_system(
 }
 
 /// A system that detects changes in Style or UiText components and updates the Taffy tree.
+#[instrument(skip_all)]
 pub fn update_changed_styles_system(
     // Input (node queries)
     entity_to_node: Res<EntityToNodeMap>,
@@ -161,6 +167,7 @@ pub fn update_changed_styles_system(
     }
 }
 
+#[instrument(skip_all)]
 pub fn handle_window_resize_system(
     window_size: Res<WindowSizeResource>,
     mut is_dirty: ResMut<IsLayoutDirty>,

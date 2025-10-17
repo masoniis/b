@@ -6,6 +6,7 @@ use bevy_ecs::prelude::*;
 
 /// Detects a state change in the simulation_world and queues a
 /// corresponding state change in the render_world.
+#[instrument(skip_all)]
 pub fn extract_state_system<T: State>(
     // Input
     simulation_world: Res<SimulationWorld>,
