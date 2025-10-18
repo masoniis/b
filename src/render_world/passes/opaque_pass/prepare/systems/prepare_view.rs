@@ -1,11 +1,8 @@
 use crate::{
     prelude::*,
     render_world::{
-        global_extract::resources::RenderCameraResource,
-        passes::{
-            core::ViewBindGroupLayout, opaque_pass::prepare::resources::bind_groups::ViewBindGroup,
-        },
-        resources::GraphicsContextResource,
+        global_extract::resources::RenderCameraResource, graphics_context::resources::RenderQueue,
+        passes::opaque_pass::prepare::resources::bind_groups::ViewBindGroup,
         uniforms::CameraUniform,
     },
 };
@@ -20,17 +17,10 @@ pub struct OpaquePassViewBindGroup {
 #[instrument(skip_all)]
 pub fn prepare_view_bind_group_system(
     // Input
-    gfx: Res<GraphicsContextResource>,
+    queue: Res<RenderQueue>,
     camera_info: Res<RenderCameraResource>,
-    view_bind_group: Res<ViewBindGroup>, // We get the buffer from this resource
-    view_layout: Res<ViewBindGroupLayout>,
-    gfx_context: Res<GraphicsContextResource>,
-
-    // Output (insert resource)
-    commands: Commands,
+    view_bind_group: Res<ViewBindGroup>, // buffer from this resource
 ) {
-    let device = &gfx.context.device;
-
     let view_proj_matrix = camera_info.projection_matrix * camera_info.view_matrix;
 
     // Create the GPU-compatible uniform data struct
@@ -39,22 +29,9 @@ pub fn prepare_view_bind_group_system(
     };
 
     // Update the buffer on the GPU with the new matrix data for this frame.
-    gfx_context.context.queue.write_buffer(
+    queue.0.write_buffer(
         &view_bind_group.buffer,
         0,
         bytemuck::cast_slice(&[camera_uniform]),
     );
-
-    // NEW:
-
-    // let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
-    //     label: Some("UI View Bind Group"),
-    //     layout: &view_layout.0,
-    //     entries: &[wgpu::BindGroupEntry {
-    //         binding: 0,
-    //         resource: view_bind_group.buffer.as_entire_binding(),
-    //     }],
-    // });
-    //
-    // commands.insert_resource(OpaquePassViewBindGroup { bind_group });
 }

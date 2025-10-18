@@ -3,12 +3,12 @@ use std::collections::HashMap;
 use crate::{
     prelude::*,
     render_world::{
+        graphics_context::resources::RenderQueue,
         passes::ui_pass::{
             extract::{RenderableUiElement, UiElementKind},
             prepare::UiChanges,
             startup::{UiMaterialBuffer, UiMaterialData, UiObjectBuffer, UiObjectData},
         },
-        resources::GraphicsContextResource,
     },
 };
 use bevy_ecs::prelude::*;
@@ -73,7 +73,7 @@ pub struct IsGlyphonDirty(pub bool);
 #[instrument(skip_all)]
 pub fn rebuild_ui_batches_system(
     // Inputs
-    gfx: Res<GraphicsContextResource>,
+    queue: Res<RenderQueue>,
     element_cache: Res<UiElementCache>,
     mut sort_buffer: ResMut<UiElementSortBufferResource>,
     ui_changes: Res<UiChanges>, // The decider
@@ -128,16 +128,12 @@ pub fn rebuild_ui_batches_system(
         for (i, material) in material_buffer.materials.iter().enumerate() {
             let offset = (i as u64) * (material_buffer.stride as u64);
             let bytes = bytemuck::bytes_of(material);
-            gfx.context
-                .queue
-                .write_buffer(&material_buffer.buffer, offset, bytes);
+            queue.write_buffer(&material_buffer.buffer, offset, bytes);
         }
 
         if !object_buffer.objects.is_empty() {
             let object_bytes = bytemuck::cast_slice(&object_buffer.objects);
-            gfx.context
-                .queue
-                .write_buffer(&object_buffer.buffer, 0, object_bytes);
+            queue.write_buffer(&object_buffer.buffer, 0, object_bytes);
         }
     }
 

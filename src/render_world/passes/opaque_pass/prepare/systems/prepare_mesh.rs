@@ -5,7 +5,7 @@ use crate::{
         global_extract::{
             components::mesh::RenderMeshComponent, resources::RenderMeshStorageResource,
         },
-        resources::GraphicsContextResource,
+        graphics_context::resources::RenderDevice,
     },
     simulation_world::global_resources::{AssetStorageResource, MeshAsset},
 };
@@ -15,7 +15,7 @@ use tracing::warn;
 
 #[instrument(skip_all)]
 pub fn prepare_meshes_system(
-    gfx_context: Res<GraphicsContextResource>,
+    device: Res<RenderDevice>,
     // This is a clone of the main world's asset storage.
     // It's cheap to clone because it uses Arcs internally.
     cpu_mesh_assets: Res<AssetStorageResource<MeshAsset>>,
@@ -32,7 +32,8 @@ pub fn prepare_meshes_system(
             if let Some(mesh_asset) = cpu_mesh_assets.get(handle) {
                 // Perform the GPU buffer creation.
                 let gpu_mesh = create_gpu_mesh_from_data(
-                    &gfx_context.context.device,
+                    // Use the device from the resource
+                    &device.0,
                     &mesh_asset.vertices,
                     &mesh_asset.indices,
                 );

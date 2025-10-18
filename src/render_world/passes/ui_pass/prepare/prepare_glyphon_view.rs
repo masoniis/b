@@ -2,7 +2,8 @@ use crate::{
     prelude::*,
     render_world::{
         global_extract::resources::RenderWindowSizeResource,
-        passes::ui_pass::startup::GlyphonViewportResource, resources::GraphicsContextResource,
+        graphics_context::resources::RenderQueue,
+        passes::ui_pass::startup::GlyphonViewportResource,
     },
 };
 use bevy_ecs::prelude::*;
@@ -13,7 +14,7 @@ use bevy_ecs::prelude::*;
 #[instrument(skip_all)]
 pub fn prepare_glyphon_view_system(
     // Input
-    gfx: Res<GraphicsContextResource>,
+    queue: Res<RenderQueue>,
     window_size: Res<RenderWindowSizeResource>,
 
     // Output (updated viewport)
@@ -25,7 +26,7 @@ pub fn prepare_glyphon_view_system(
     );
 
     glyphon_viewport.0.update(
-        &gfx.context.queue,
+        &queue,
         glyphon::Resolution {
             width: window_size.width as u32,
             height: window_size.height as u32,

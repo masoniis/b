@@ -1,5 +1,5 @@
 use crate::prelude::*;
-use crate::render_world::resources::GraphicsContextResource;
+use crate::render_world::graphics_context::resources::RenderDevice;
 use bevy_ecs::prelude::*;
 use wgpu::util::DeviceExt;
 
@@ -18,12 +18,12 @@ pub struct ScreenQuadResource {
 #[instrument(skip_all)]
 pub fn setup_ui_screen_quad_system(
     // Input
-    gfx: Res<GraphicsContextResource>,
+    device: Res<RenderDevice>,
 
     // Output (spawn entity)
     mut commands: Commands,
 ) {
-    let device = &gfx.context.device;
+    let device = &device.0;
 
     let vertices: &[f32] = &[0.0, 0.0, 1.0, 0.0, 1.0, 1.0, 0.0, 1.0];
     let indices: &[u16] = &[0, 3, 2, 0, 2, 1];

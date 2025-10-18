@@ -18,7 +18,7 @@ use crate::prelude::*;
 use crate::render_world::global_extract::{
     simulation_world_resource_changed, ExtractComponentPlugin, RenderWindowSizeResource,
 };
-use crate::render_world::graphics_context::{reconfigure_wgpu_surface_system, GraphicsContext};
+use crate::render_world::graphics_context::{GraphicsContext, GraphicsContextPlugin};
 use crate::render_world::passes::core::{
     render_graph_system, setup_render_graph, setup_view_bind_group_layout_system,
 };
@@ -32,16 +32,13 @@ use crate::{
     ecs_core::state_machine::{self, in_state, StatePlugin},
     render_world::{
         global_extract::{RenderCameraResource, RenderMeshStorageResource, RenderTimeResource},
-        passes::opaque_pass::prepare::{
-            self, MainTextureBindGroup, MeshPipelineLayoutsResource, ModelBindGroup, ViewBindGroup,
-        },
+        passes::opaque_pass::prepare::{self},
         resources::PipelineCacheResource,
     },
     simulation_world::global_resources::{AssetStorageResource, MeshAsset},
 };
-use bevy_ecs::schedule::common_conditions::resource_changed_or_removed;
 use bevy_ecs::schedule::IntoScheduleConfigs;
-use resources::{GraphicsContextResource, TextureArrayResource};
+use resources::TextureArrayResource;
 use std::ops::{Deref, DerefMut};
 
 pub struct RenderWorldInterface {
@@ -80,9 +77,9 @@ impl RenderWorldInterface {
         builder
             // GraphicsContextResource is a resource initialized here because
             // it requires the graphics_context passed directly from the app.
-            .add_resource(GraphicsContextResource {
-                context: graphics_context,
-            })
+            // .add_resource(GraphicsContextResource {
+            //     context: graphics_context,
+            // })
             .add_resource(TextureArrayResource {
                 array: texture_array,
             })
@@ -102,16 +99,13 @@ impl RenderWorldInterface {
             .init_resource::<RenderTimeResource>()
             .init_resource::<RenderCameraResource>()
             .init_resource::<RenderMeshStorageResource>()
-            .init_resource::<MeshPipelineLayoutsResource>()
-            .init_resource::<PipelineCacheResource>()
-            .init_resource::<ViewBindGroup>()
-            .init_resource::<MainTextureBindGroup>()
-            .init_resource::<ModelBindGroup>();
+            .init_resource::<PipelineCacheResource>();
 
         // Specifically implemented plugins
         builder
-            .add_plugin(RenderUiPlugin)
-            .add_plugin(OpaqueRenderPassPlugin);
+            .add_plugin(GraphicsContextPlugin::new(graphics_context))
+            .add_plugin(OpaqueRenderPassPlugin)
+            .add_plugin(RenderUiPlugin);
         // Generic auto-constructed plugins
         builder
             .add_plugin(StatePlugin::<AppState>::default())
@@ -144,8 +138,6 @@ impl RenderWorldInterface {
 
         builder.schedule_entry(RenderSchedule::Main).add_systems(
             (
-                reconfigure_wgpu_surface_system
-                    .run_if(resource_changed_or_removed::<RenderWindowSizeResource>),
                 (
                     prepare::prepare_render_buffers_system,
                     prepare::prepare_pipelines_system,

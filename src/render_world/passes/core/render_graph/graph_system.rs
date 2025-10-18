@@ -1,8 +1,10 @@
 use crate::prelude::*;
+use crate::render_world::graphics_context::resources::{
+    RenderDevice, RenderQueue, RenderSurface, RenderSurfaceConfig,
+};
 use crate::render_world::passes::core::{RenderContext, RenderGraph};
 use crate::render_world::passes::opaque_pass::render::OpaquePassRenderNode;
 use crate::render_world::passes::ui_pass::render::UiPassNode;
-use crate::render_world::resources::GraphicsContextResource;
 use bevy_ecs::prelude::*;
 
 // INFO: --------------------------------------------------------
@@ -26,27 +28,47 @@ pub fn setup_render_graph(world: &mut World) {
     info!("Render graph created and configured!");
 }
 
-/// A system to run the configured render graph each frame.
 #[instrument(skip_all)]
 pub fn render_graph_system(world: &mut World) {
+    // Take ownership of the graph
     let Some(mut render_graph) = world.remove_resource::<RenderGraph>() else {
         return;
     };
-    let Some(gfx_resource) = world.get_resource::<GraphicsContextResource>() else {
-        world.insert_resource(render_graph); // re-add the graph if we can't get gfx
+
+    // --- Get all required granular resources ---
+    // We use .get_resource() on the world.
+    let Some(device) = world.get_resource::<RenderDevice>() else {
+        world.insert_resource(render_graph); // Put graph back
         return;
     };
+    let Some(queue) = world.get_resource::<RenderQueue>() else {
+        world.insert_resource(render_graph); // Put graph back
+        return;
+    };
+    let Some(surface) = world.get_resource::<RenderSurface>() else {
+        world.insert_resource(render_graph); // Put graph back
+        return;
+    };
+    let Some(config) = world.get_resource::<RenderSurfaceConfig>() else {
+        world.insert_resource(render_graph); // Put graph back
+        return;
+    };
+
+    // Clone the Arcs to satisfy lifetimes
+    let device = device.0.clone();
+    let queue = queue.0.clone();
+    let surface = surface.0.clone();
 
     // INFO: --------------------------------------
     //         Set up the rendering context
     // --------------------------------------------
 
-    let gfx = &gfx_resource.context;
-    let output_texture = match gfx.surface.get_current_texture() {
+    let output_texture = match surface.get_current_texture() {
         Ok(texture) => texture,
         Err(wgpu::SurfaceError::Lost | wgpu::SurfaceError::Outdated) => {
             warn!("Surface lost or outdated. Reconfiguring...");
-            gfx.surface.configure(&gfx.device, &gfx.config);
+            // Pass the inner config data
+            surface.configure(&device, &config.0);
             world.insert_resource(render_graph);
             return;
         }
@@ -61,28 +83,27 @@ pub fn render_graph_system(world: &mut World) {
         .texture
         .create_view(&wgpu::TextureViewDescriptor::default());
 
-    let mut encoder = gfx
-        .device
-        .create_command_encoder(&wgpu::CommandEncoderDescriptor {
-            label: Some("Rendergraph Encoder"),
-        });
+    let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
+        label: Some("Rendergraph Encoder"),
+    });
 
     // INFO: -----------------------------------
-    //       Execute the render pipeline
+    //         Execute the render pipeline
     // -----------------------------------------
 
     render_graph.run(
         &mut RenderContext {
-            device: &gfx.device,
-            queue: &gfx.queue,
+            device: &device,
+            queue: &queue,
             encoder: &mut encoder,
             surface_texture_view: &output_view,
         },
-        world,
+        world, // Pass the world here
     );
 
-    gfx.queue.submit(std::iter::once(encoder.finish()));
+    queue.submit(std::iter::once(encoder.finish()));
     output_texture.present();
 
+    // Put the graph back when we're done
     world.insert_resource(render_graph);
 }

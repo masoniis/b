@@ -1,8 +1,8 @@
-use std::num::NonZero;
-
-use crate::render_world::resources::{GraphicsContextResource, TextureArrayResource};
+use crate::render_world::graphics_context::resources::RenderDevice;
+use crate::render_world::resources::TextureArrayResource;
 use crate::render_world::uniforms::{CameraUniform, ModelUniform};
 use bevy_ecs::prelude::*;
+use std::num::NonZeroU64;
 use wgpu::util::DeviceExt;
 use wgpu::BindGroup;
 
@@ -22,10 +22,12 @@ impl FromWorld for ModelBindGroup {
         let layouts = world
             .get_resource::<MeshPipelineLayoutsResource>()
             .expect("MeshPipelineLayouts not initialized");
-        let gfx_context = world
-            .get_resource::<GraphicsContextResource>()
-            .expect("GraphicsContextResource not initialized");
-        let device = &gfx_context.context.device;
+
+        // Use the granular RenderDevice resource
+        let device = world
+            .get_resource::<RenderDevice>()
+            .expect("RenderDevice not initialized");
+        let device = &device.0; // Deref to get &wgpu::Device
 
         let min_alignment = device.limits().min_uniform_buffer_offset_alignment;
         let model_uniform_size = std::mem::size_of::<ModelUniform>() as u64;
@@ -37,7 +39,9 @@ impl FromWorld for ModelBindGroup {
             (model_uniform_size + alignment - 1) & !(alignment - 1)
         };
 
-        let buffer_size = MAX_MODELS_PER_FRAME * std::mem::size_of::<ModelUniform>() as u64;
+        // --- BUG FIX ---
+        // The buffer size must account for the stride, not the base size
+        let buffer_size = MAX_MODELS_PER_FRAME * stride;
 
         // Create an empty/default buffer for our initial "dummy" model uniform
         let model_buffer = device.create_buffer(&wgpu::BufferDescriptor {
@@ -55,7 +59,7 @@ impl FromWorld for ModelBindGroup {
                 resource: wgpu::BindingResource::Buffer(wgpu::BufferBinding {
                     buffer: &model_buffer,
                     offset: 0,
-                    size: NonZero::new(256), // Size of ONE element, not the whole buffer
+                    size: NonZeroU64::new(stride),
                 }),
             }],
         });
@@ -79,8 +83,12 @@ pub struct ViewBindGroup {
 impl FromWorld for ViewBindGroup {
     fn from_world(world: &mut World) -> Self {
         let layouts = world.get_resource::<MeshPipelineLayoutsResource>().unwrap();
-        let gfx_context = world.get_resource::<GraphicsContextResource>().unwrap();
-        let device = &gfx_context.context.device;
+
+        // Use the granular RenderDevice resource
+        let device = world
+            .get_resource::<RenderDevice>()
+            .expect("RenderDevice not initialized");
+        let device = &device.0; // Deref to get &wgpu::Device
 
         // Create an empty/default buffer for our initial "dummy" bind group
         let camera_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
@@ -117,14 +125,16 @@ impl FromWorld for MainTextureBindGroup {
         let layouts = world
             .get_resource::<MeshPipelineLayoutsResource>()
             .expect("MeshPipelineLayouts not initialized");
-        let gfx_context = world
-            .get_resource::<GraphicsContextResource>()
-            .expect("GraphicsContextResource not initialized");
+
+        // Use the granular RenderDevice resource
+        let device = world
+            .get_resource::<RenderDevice>()
+            .expect("RenderDevice not initialized");
+        let device = &device.0; // Deref to get &wgpu::Device
+
         let texture_array = world
             .get_resource::<TextureArrayResource>()
             .expect("TextureArrayResource not initialized");
-
-        let device = &gfx_context.context.device;
 
         // --- Create the BindGroup ---
         let texture_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {

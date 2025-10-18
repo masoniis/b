@@ -4,12 +4,12 @@ use super::super::startup::{
 };
 use crate::prelude::*;
 use crate::render_world::{
+    graphics_context::resources::{RenderDevice, RenderQueue},
     passes::ui_pass::{
         extract::UiElementKind,
         prepare::UiChanges,
         queue::{batch_ui_elements::UiRenderBatch, IsGlyphonDirty, PreparedUiBatches},
     },
-    resources::GraphicsContextResource,
 };
 use bevy_ecs::prelude::*;
 use glyphon::{Buffer, Metrics, TextArea, TextBounds};
@@ -32,7 +32,8 @@ pub fn mark_glyphon_dirty_system(
 #[instrument(skip_all)]
 pub fn preprocess_glyphon_text_system(
     // Input
-    gfx: Res<GraphicsContextResource>,
+    device: Res<RenderDevice>,
+    queue: Res<RenderQueue>,
     ui_queue: Res<PreparedUiBatches>,
 
     // Output (update glyphon resources)
@@ -126,8 +127,8 @@ pub fn preprocess_glyphon_text_system(
 
             renderer
                 .prepare(
-                    &gfx.context.device,
-                    &gfx.context.queue,
+                    &device,
+                    &queue,
                     &mut font_system,
                     &mut atlas,
                     &mut viewport,

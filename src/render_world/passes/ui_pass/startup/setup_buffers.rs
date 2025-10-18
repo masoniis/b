@@ -1,6 +1,6 @@
 use crate::prelude::*;
 use crate::render_world::{
-    passes::ui_pass::startup::UiPipeline, resources::GraphicsContextResource,
+    graphics_context::resources::RenderDevice, passes::ui_pass::startup::UiPipeline,
 };
 use bevy_ecs::prelude::*;
 use bytemuck::{Pod, Zeroable};
@@ -59,12 +59,13 @@ pub struct UiObjectData {
 
 #[instrument(skip_all)]
 pub fn setup_ui_buffers(
-    mut commands: Commands,
-    gfx: Res<GraphicsContextResource>,
+    // Input
+    device: Res<RenderDevice>,
     pipeline: Res<UiPipeline>,
-) {
-    let device = &gfx.context.device;
 
+    // Output (insert buffer resources into world)
+    mut commands: Commands,
+) {
     // INFO: view buffer creation
     let view_buffer = device.create_buffer(&wgpu::BufferDescriptor {
         label: Some("UI View Buffer"),

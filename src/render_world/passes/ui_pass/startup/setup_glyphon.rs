@@ -1,5 +1,7 @@
 use crate::prelude::*;
-use crate::render_world::resources::GraphicsContextResource;
+use crate::render_world::graphics_context::resources::{
+    RenderDevice, RenderQueue, RenderSurfaceConfig,
+};
 use bevy_ecs::prelude::*;
 use derive_more::{Deref, DerefMut};
 use glyphon::{fontdb::Source, Cache, FontSystem, SwashCache, TextAtlas, TextRenderer, Viewport};
@@ -21,30 +23,30 @@ pub struct GlyphonViewportResource(pub Viewport);
 pub struct GlyphonRendererResource(pub TextRenderer);
 
 #[instrument(skip_all)]
-pub fn setup_glyphon_resources(mut commands: Commands, gfx: Res<GraphicsContextResource>) {
+pub fn setup_glyphon_resources(
+    mut commands: Commands,
+    device: Res<RenderDevice>,
+    queue: Res<RenderQueue>,
+    config: Res<RenderSurfaceConfig>,
+) {
     let font_bytes = include_bytes!("../../../../../assets/fonts/Miracode.ttf");
     let source = Source::Binary(Arc::new(font_bytes));
     let font_system = FontSystem::new_with_fonts(vec![source]);
 
     let cache = SwashCache::new();
-    let viewport_cache = Cache::new(&gfx.context.device);
-    let mut viewport = Viewport::new(&gfx.context.device, &viewport_cache);
+    let viewport_cache = Cache::new(&device);
+    let mut viewport = Viewport::new(&device, &viewport_cache);
     viewport.update(
-        &gfx.context.queue,
+        &queue.0,
         glyphon::Resolution {
-            width: gfx.context.config.width,
-            height: gfx.context.config.height,
+            width: config.0.width,
+            height: config.0.height,
         },
     );
-    let mut atlas = TextAtlas::new(
-        &gfx.context.device,
-        &gfx.context.queue,
-        &viewport_cache,
-        gfx.context.config.format,
-    );
+    let mut atlas = TextAtlas::new(&device, &queue, &viewport_cache, config.format);
     let renderer = TextRenderer::new(
         &mut atlas,
-        &gfx.context.device,
+        &device.0,
         wgpu::MultisampleState::default(),
         None,
     );

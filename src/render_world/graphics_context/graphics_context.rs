@@ -9,36 +9,39 @@ use winit::window::Window;
 /// A container for the core WGPU state and the renderer that the app holds.
 pub struct GraphicsContext {
     pub config: SurfaceConfiguration,
-    pub surface: Surface<'static>,
+    pub surface: Arc<Surface<'static>>,
     pub device: Arc<Device>,
-    pub instance: Instance,
+    pub instance: Arc<Instance>,
     pub queue: Arc<Queue>,
-    pub adapter: Adapter,
+    pub adapter: Arc<Adapter>,
 }
 
 impl GraphicsContext {
     /// Creates a new `GraphicsContext` with the given window.
     pub async fn new(window: Arc<Window>) -> Self {
-        let wgpu_instance = Instance::new(&InstanceDescriptor::default());
+        let instance = Arc::new(Instance::new(&InstanceDescriptor::default()));
 
-        let surface = wgpu_instance
-            .create_surface(window.clone())
-            .expect("Failed to create surface from window");
+        let surface = Arc::new(
+            instance
+                .create_surface(window.clone())
+                .expect("Failed to create surface from window"),
+        );
 
-        let adapter = wgpu_instance
-            .request_adapter(&RequestAdapterOptions {
-                power_preference: PowerPreference::default(),
-                compatible_surface: Some(&surface),
-                force_fallback_adapter: false,
-            })
-            .await
-            .unwrap();
+        let adapter = Arc::new(
+            instance
+                .request_adapter(&RequestAdapterOptions {
+                    power_preference: PowerPreference::default(),
+                    compatible_surface: Some(&surface),
+                    force_fallback_adapter: false,
+                })
+                .await
+                .unwrap(),
+        );
 
         let (device, queue) = adapter
             .request_device(&DeviceDescriptor::default())
             .await
             .unwrap();
-
         let device = Arc::new(device);
         let queue = Arc::new(queue);
 
@@ -78,7 +81,7 @@ impl GraphicsContext {
         );
 
         Self {
-            instance: wgpu_instance,
+            instance,
             surface,
             config,
             adapter,

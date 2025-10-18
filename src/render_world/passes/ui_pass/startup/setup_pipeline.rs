@@ -1,10 +1,10 @@
 use crate::prelude::*;
+use crate::render_world::graphics_context::resources::{RenderDevice, RenderSurfaceConfig};
 use crate::render_world::passes::core::create_render_pipeline::{
     CreatedPipeline, PipelineDefinition,
 };
 use crate::render_world::passes::core::create_render_pipeline_from_def;
 use crate::render_world::passes::core::setup_view_layout::ViewBindGroupLayout;
-use crate::render_world::resources::GraphicsContextResource;
 use bevy_ecs::prelude::*;
 use derive_more::{Deref, DerefMut};
 use wesl::include_wesl;
@@ -25,14 +25,15 @@ const UI_VERTEX_BUFFER_LAYOUT: wgpu::VertexBufferLayout = wgpu::VertexBufferLayo
 #[instrument(skip_all)]
 pub fn setup_ui_pipeline(
     mut commands: Commands,
-    gfx: Res<GraphicsContextResource>,
+    device: Res<RenderDevice>,
+    config: Res<RenderSurfaceConfig>,
     view_layout: Res<ViewBindGroupLayout>,
 ) {
-    let device = &gfx.context.device;
+    let device = &device;
 
     // define the specific fragment target for UI (with alpha blending)
     let ui_fragment_target = [Some(wgpu::ColorTargetState {
-        format: gfx.context.config.format,
+        format: config.format,
         blend: Some(wgpu::BlendState::ALPHA_BLENDING),
         write_mask: wgpu::ColorWrites::ALL,
     })];

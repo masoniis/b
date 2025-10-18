@@ -1,6 +1,7 @@
 use crate::render_world::{
+    graphics_context::resources::{RenderDevice, RenderSurfaceConfig},
     passes::opaque_pass::prepare::MeshPipelineLayoutsResource,
-    resources::{GraphicsContextResource, PipelineCacheResource, PipelineId},
+    resources::{PipelineCacheResource, PipelineId},
     types::vertex::Vertex,
 };
 use bevy_ecs::prelude::*;
@@ -18,11 +19,12 @@ pub const MESH_PIPELINE_ID: PipelineId = 0;
 #[instrument(skip_all)]
 pub fn prepare_pipelines_system(
     mut cache: ResMut<PipelineCacheResource>,
-    gfx_context: Res<GraphicsContextResource>,
+    device: Res<RenderDevice>,
+    config: Res<RenderSurfaceConfig>,
     mesh_layouts: Res<MeshPipelineLayoutsResource>,
 ) {
-    let device = &gfx_context.context.device;
-    let surface_format = gfx_context.context.config.format;
+    let device = &device.0;
+    let surface_format = config.0.format;
 
     // --- Create Main Mesh Render Pipeline ---
     if cache.get(MESH_PIPELINE_ID).is_none() {

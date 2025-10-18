@@ -1,14 +1,7 @@
-use crate::{
-    render_world::graphics_context::GraphicsContext, render_world::textures::GpuTextureArray,
-};
+use crate::render_world::textures::GpuTextureArray;
 use bevy_ecs::prelude::Resource;
 use std::collections::HashMap;
 use wgpu::RenderPipeline;
-
-#[derive(Resource)]
-pub struct GraphicsContextResource {
-    pub context: GraphicsContext,
-}
 
 #[derive(Resource)]
 pub struct TextureArrayResource {

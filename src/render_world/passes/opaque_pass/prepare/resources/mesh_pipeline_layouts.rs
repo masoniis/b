@@ -1,7 +1,6 @@
+use crate::render_world::graphics_context::resources::RenderDevice;
 use bevy_ecs::prelude::*;
 use wgpu::BindGroupLayout;
-
-use crate::render_world::resources::GraphicsContextResource;
 
 /// A resource that holds the bind group layouts needed for the mesh pipeline.
 #[derive(Resource)]
@@ -13,13 +12,13 @@ pub struct MeshPipelineLayoutsResource {
 
 impl FromWorld for MeshPipelineLayoutsResource {
     fn from_world(world: &mut World) -> Self {
-        let gfx_context = world.get_resource::<GraphicsContextResource>().expect(
+        let device = world.get_resource::<RenderDevice>().expect(
             "
-            The GraphicsContextResource is required to create the MeshPipelineLayoutsResource.
+            The RenderDevice is required to create the MeshPipelineLayoutsResource.
             ",
         );
 
-        let device = &gfx_context.context.device;
+        let device = &device.0;
 
         // INFO: Camera bind
         let camera_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {

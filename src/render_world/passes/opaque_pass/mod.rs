@@ -10,7 +10,12 @@ pub mod startup;
 use crate::{
     ecs_core::{EcsBuilder, Plugin},
     render_world::{
-        passes::opaque_pass::queue::Opaque3dRenderPhase,
+        passes::opaque_pass::{
+            prepare::{
+                MainTextureBindGroup, MeshPipelineLayoutsResource, ModelBindGroup, ViewBindGroup,
+            },
+            queue::Opaque3dRenderPhase,
+        },
         scheduling::{RenderSchedule, RenderSet},
     },
 };
@@ -20,6 +25,12 @@ pub struct OpaqueRenderPassPlugin;
 
 impl Plugin for OpaqueRenderPassPlugin {
     fn build(&self, builder: &mut EcsBuilder) {
+        builder
+            .init_resource::<MeshPipelineLayoutsResource>()
+            .init_resource::<ViewBindGroup>()
+            .init_resource::<MainTextureBindGroup>()
+            .init_resource::<ModelBindGroup>();
+
         // INFO: -----------------
         //         Startup
         // -----------------------

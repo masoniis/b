@@ -1,5 +1,5 @@
 use crate::prelude::*;
-use crate::render_world::resources::GraphicsContextResource;
+use crate::render_world::graphics_context::resources::RenderDevice;
 use bevy_ecs::prelude::*;
 
 #[derive(Resource)]
@@ -11,11 +11,7 @@ pub struct ViewBindGroupLayout(pub wgpu::BindGroupLayout);
 /// group layout, where a single uniform buffer is expected for all the per-
 /// frame (aka view) data.
 #[instrument(skip_all)]
-pub fn setup_view_bind_group_layout_system(
-    mut commands: Commands,
-    gfx: Res<GraphicsContextResource>,
-) {
-    let device = &gfx.context.device;
+pub fn setup_view_bind_group_layout_system(mut commands: Commands, device: Res<RenderDevice>) {
     let layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
         label: Some("View Bind Group Layout"),
         entries: &[wgpu::BindGroupLayoutEntry {
