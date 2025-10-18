@@ -1,22 +1,27 @@
-use super::ViewBindGroupLayout;
 use crate::prelude::*;
+use crate::render_world::passes::core::create_render_pipeline::{
+    CreatedPipeline, PipelineDefinition,
+};
+use crate::render_world::passes::core::create_render_pipeline_from_def;
+use crate::render_world::passes::ui_pass::startup::ViewBindGroupLayout;
 use crate::render_world::resources::GraphicsContextResource;
-use crate::render_world::types::{BindingDef, MaterialDefinition};
 use bevy_ecs::prelude::*;
-use std::collections::BTreeMap;
-use std::fs;
 use wesl::include_wesl;
 
 /// A resource to hold the pipeline and bind group layouts for our UI shader.
 #[derive(Resource)]
 pub struct UiPipeline {
     pub pipeline: wgpu::RenderPipeline,
-    pub view_bind_group_layout: wgpu::BindGroupLayout, // once-per-frame
+    pub view_bind_group_layout: wgpu::BindGroupLayout,
     pub material_bind_group_layout: wgpu::BindGroupLayout,
     pub object_bind_group_layout: wgpu::BindGroupLayout,
 }
 
-const MATERIAL_PATH: &str = "assets/shaders/ui/main.material.ron";
+const UI_VERTEX_BUFFER_LAYOUT: wgpu::VertexBufferLayout = wgpu::VertexBufferLayout {
+    array_stride: (2 * std::mem::size_of::<f32>()) as wgpu::BufferAddress, // only 2d points for ui
+    step_mode: wgpu::VertexStepMode::Vertex,
+    attributes: &wgpu::vertex_attr_array![0 => Float32x2],
+};
 
 /// Setup the UI pipeline using the shader and material definition
 #[instrument(skip_all)]
@@ -26,141 +31,32 @@ pub fn setup_ui_pipeline(
     view_layout: Res<ViewBindGroupLayout>,
 ) {
     let device = &gfx.context.device;
-    let surface_format = gfx.context.config.format;
 
-    // Process shader files (including parsing the ron file)
-    let material_source = fs::read_to_string(MATERIAL_PATH).expect("Failed to read material file");
-    let material_def: MaterialDefinition =
-        ron::from_str(&material_source).expect("Failed to parse material definition");
+    // define the specific fragment target for UI (with alpha blending)
+    let ui_fragment_target = [Some(wgpu::ColorTargetState {
+        format: gfx.context.config.format,
+        blend: Some(wgpu::BlendState::ALPHA_BLENDING),
+        write_mask: wgpu::ColorWrites::ALL,
+    })];
 
-    // TODO: validate the shader against the material_def here.
-
-    // Generate layouts from the metadata
-    let mut created_layouts: BTreeMap<u32, wgpu::BindGroupLayout> = BTreeMap::new();
-
-    for (&group_index, layout_def) in &material_def.bind_group_layouts {
-        let entries: Vec<wgpu::BindGroupLayoutEntry> = layout_def
-            .bindings
-            .iter()
-            .map(|binding_def| create_layout_entry_from_metadata(binding_def))
-            .collect();
-        let layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-            label: Some(&format!("UI Bind Group Layout @group({})", group_index)),
-            entries: &entries,
-        });
-        created_layouts.insert(group_index, layout);
-    }
-
-    // Assemble final pipeline (conventions for this meantioned in `./assets/shaders/readme.me`)
-    let mut pipeline_bind_group_layouts = BTreeMap::new();
-
-    // For @group(0), it will always be the "per-view" layout
-    pipeline_bind_group_layouts.insert(0, &view_layout.0);
-
-    // For other groups, use the layouts just generated from the RON file
-    for (group_index, layout) in &created_layouts {
-        pipeline_bind_group_layouts.insert(*group_index, layout);
-    }
-    let pipeline_bind_group_layouts_ref: Vec<&wgpu::BindGroupLayout> =
-        pipeline_bind_group_layouts.values().copied().collect();
-
-    let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-        label: Some("UI Pipeline Layout"),
-        bind_group_layouts: &pipeline_bind_group_layouts_ref,
-        push_constant_ranges: &[],
-    });
-
-    // Create the rendering pipeline
-    let vs_shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
-        label: Some("UI Vertex Shader"),
-        source: wgpu::ShaderSource::Wgsl(include_wesl!("ui_main_vert").into()),
-    });
-
-    let fs_shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
-        label: Some("UI Fragment Shader"),
-        source: wgpu::ShaderSource::Wgsl(include_wesl!("ui_main_frag").into()),
-    });
-
-    let pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
-        label: Some("UI Pipeline"),
-        layout: Some(&pipeline_layout),
-        cache: None,
-        vertex: wgpu::VertexState {
-            module: &vs_shader,
-            entry_point: Some("vs_main"),
-            buffers: &[wgpu::VertexBufferLayout {
-                array_stride: (2 * std::mem::size_of::<f32>()) as wgpu::BufferAddress,
-                step_mode: wgpu::VertexStepMode::Vertex,
-                attributes: &wgpu::vertex_attr_array![0 => Float32x2],
-            }],
-            compilation_options: Default::default(),
-        },
-        fragment: Some(wgpu::FragmentState {
-            module: &fs_shader,
-            entry_point: Some("fs_main"),
-            targets: &[Some(wgpu::ColorTargetState {
-                format: surface_format,
-                blend: Some(wgpu::BlendState::ALPHA_BLENDING),
-                write_mask: wgpu::ColorWrites::ALL,
-            })],
-            compilation_options: Default::default(),
-        }),
-        primitive: wgpu::PrimitiveState::default(),
+    // create the pipeline
+    let ui_pipeline_def = PipelineDefinition {
+        label: "UI Pipeline",
+        material_path: "assets/shaders/ui/main.material.ron",
+        vs_shader_source: wgpu::ShaderSource::Wgsl(include_wesl!("ui_main_vert").into()),
+        fs_shader_source: wgpu::ShaderSource::Wgsl(include_wesl!("ui_main_frag").into()),
+        vertex_buffers: &[UI_VERTEX_BUFFER_LAYOUT],
+        fragment_targets: &ui_fragment_target,
         depth_stencil: None,
-        multisample: wgpu::MultisampleState::default(),
-        multiview: None,
-    });
-
-    commands.insert_resource(UiPipeline {
-        pipeline,
-        view_bind_group_layout: view_layout.0.clone(),
-        material_bind_group_layout: created_layouts
-            .remove(&1)
-            .expect("Material missing @group(1)"),
-        object_bind_group_layout: created_layouts
-            .remove(&2)
-            .expect("Object missing @group(2)"),
-    });
-}
-
-// Helper function to convert our RON definition into a wgpu layout entry
-fn create_layout_entry_from_metadata(binding_def: &BindingDef) -> wgpu::BindGroupLayoutEntry {
-    let visibility = binding_def
-        .visibility
-        .iter()
-        .fold(wgpu::ShaderStages::NONE, |acc, stage| {
-            acc | match stage.as_str() {
-                "Vertex" => wgpu::ShaderStages::VERTEX,
-                "Fragment" => wgpu::ShaderStages::FRAGMENT,
-                "Compute" => wgpu::ShaderStages::COMPUTE,
-                _ => panic!("Unknown shader visibility stage"),
-            }
-        });
-
-    let ty = match binding_def.ty.as_str() {
-        "Buffer" => {
-            let opts = binding_def
-                .buffer_options
-                .as_ref()
-                .expect("Buffer must have buffer_options");
-            wgpu::BindingType::Buffer {
-                ty: match opts.ty.as_str() {
-                    "Uniform" => wgpu::BufferBindingType::Uniform,
-                    "Storage" => wgpu::BufferBindingType::Storage { read_only: true },
-                    _ => panic!("Unknown buffer type"),
-                },
-                has_dynamic_offset: opts.has_dynamic_offset,
-                min_binding_size: None,
-            }
-        }
-        // TODO:  add cases for "Texture" and "Sampler"
-        _ => panic!("Unsupported binding type"),
     };
+    let created: CreatedPipeline =
+        create_render_pipeline_from_def(device, &view_layout.0, ui_pipeline_def);
 
-    wgpu::BindGroupLayoutEntry {
-        binding: binding_def.binding,
-        visibility,
-        ty,
-        count: None,
-    }
+    // Insert the specific resource
+    commands.insert_resource(UiPipeline {
+        pipeline: created.pipeline,
+        view_bind_group_layout: created.view_bind_group_layout,
+        material_bind_group_layout: created.material_bind_group_layout,
+        object_bind_group_layout: created.object_bind_group_layout,
+    });
 }
