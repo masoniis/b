@@ -1,21 +1,32 @@
 MaterialDefinition(
-    vertex_buffers: [],
     bind_group_layouts: {
-				// Per material data
+        // @group(1): Per-Material (Texture)
         1: BindGroupLayoutDef(
             bindings: [
+                // Diffuse Texture
                 BindingDef(
                     binding: 0,
                     visibility: ["Fragment"],
-                    ty: "Buffer",
-                    buffer_options: Some((
-                        ty: "Uniform",
-                        has_dynamic_offset: true,
+                    ty: "Texture",
+                    texture_options: Some((
+                        sample_type: "Float",
+                        view_dimension: "2d",
+                        multisampled: false,
+                    )),
+                ),
+                // Diffuse Sampler
+                BindingDef(
+                    binding: 1,
+                    visibility: ["Fragment"],
+                    ty: "Sampler",
+                    sampler_options: Some((
+                        ty: "Filtering",
                     )),
                 ),
             ],
         ),
-				// Per object data
+
+        // @group(2): Per-Object (Model)
         2: BindGroupLayoutDef(
             bindings: [
                 BindingDef(
@@ -23,7 +34,7 @@ MaterialDefinition(
                     visibility: ["Vertex"],
                     ty: "Buffer",
                     buffer_options: Some((
-                        ty: "Storage",
+                        ty: "Storage", // Using Storage is a flexible choice
                         has_dynamic_offset: false,
                     )),
                 ),

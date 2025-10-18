@@ -3,18 +3,16 @@ use crate::render_world::passes::core::create_render_pipeline::{
     CreatedPipeline, PipelineDefinition,
 };
 use crate::render_world::passes::core::create_render_pipeline_from_def;
-use crate::render_world::passes::ui_pass::startup::ViewBindGroupLayout;
+use crate::render_world::passes::core::setup_view_layout::ViewBindGroupLayout;
 use crate::render_world::resources::GraphicsContextResource;
 use bevy_ecs::prelude::*;
+use derive_more::{Deref, DerefMut};
 use wesl::include_wesl;
 
 /// A resource to hold the pipeline and bind group layouts for our UI shader.
-#[derive(Resource)]
+#[derive(Resource, Deref, DerefMut)]
 pub struct UiPipeline {
-    pub pipeline: wgpu::RenderPipeline,
-    pub view_bind_group_layout: wgpu::BindGroupLayout,
-    pub material_bind_group_layout: wgpu::BindGroupLayout,
-    pub object_bind_group_layout: wgpu::BindGroupLayout,
+    inner: CreatedPipeline,
 }
 
 const UI_VERTEX_BUFFER_LAYOUT: wgpu::VertexBufferLayout = wgpu::VertexBufferLayout {
@@ -49,14 +47,11 @@ pub fn setup_ui_pipeline(
         fragment_targets: &ui_fragment_target,
         depth_stencil: None,
     };
-    let created: CreatedPipeline =
-        create_render_pipeline_from_def(device, &view_layout.0, ui_pipeline_def);
 
-    // Insert the specific resource
+    let created_pipeline: CreatedPipeline =
+        create_render_pipeline_from_def(device, &view_layout, ui_pipeline_def);
+
     commands.insert_resource(UiPipeline {
-        pipeline: created.pipeline,
-        view_bind_group_layout: created.view_bind_group_layout,
-        material_bind_group_layout: created.material_bind_group_layout,
-        object_bind_group_layout: created.object_bind_group_layout,
+        inner: created_pipeline,
     });
 }

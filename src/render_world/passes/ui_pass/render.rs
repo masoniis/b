@@ -1,19 +1,19 @@
 use crate::{
     prelude::*,
     render_world::passes::{
-        render_graph::{RenderContext, RenderNode},
+        core::{RenderContext, RenderNode},
         ui_pass::{
             queue::{PreparedUiBatches, UiRenderBatch},
             startup::{
                 GlyphonAtlasResource, GlyphonRendererResource, GlyphonViewportResource,
-                UiMaterialBuffer, UiObjectBuffer, UiPipeline,
+                UiMaterialBuffer, UiObjectBuffer, UiPipeline, UiViewBuffer,
             },
         },
     },
 };
 use bevy_ecs::world::World;
 
-use super::{prepare::UiViewBindGroup, startup::ScreenQuadResource};
+use super::startup::ScreenQuadResource;
 
 pub struct UiPassNode;
 impl RenderNode for UiPassNode {
@@ -27,7 +27,7 @@ impl RenderNode for UiPassNode {
         let ui_phase = world.get_resource::<PreparedUiBatches>().unwrap();
         let pipeline = world.get_resource::<UiPipeline>().unwrap();
         let quad = world.get_resource::<ScreenQuadResource>().unwrap();
-        let view_bind_group = world.get_resource::<UiViewBindGroup>().unwrap();
+        let view_bind_group = world.get_resource::<UiViewBuffer>().unwrap();
         let material_buffer = world.get_resource::<UiMaterialBuffer>().unwrap();
         let object_buffer = world.get_resource::<UiObjectBuffer>().unwrap();
 

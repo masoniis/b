@@ -19,6 +19,10 @@ use crate::render_world::global_extract::{
     simulation_world_resource_changed, ExtractComponentPlugin, RenderWindowSizeResource,
 };
 use crate::render_world::graphics_context::{reconfigure_wgpu_surface_system, GraphicsContext};
+use crate::render_world::passes::core::{
+    render_graph_system, setup_render_graph, setup_view_bind_group_layout_system,
+};
+use crate::render_world::passes::opaque_pass::OpaqueRenderPassPlugin;
 use crate::render_world::passes::ui_pass::RenderUiPlugin;
 use crate::render_world::scheduling::{RenderSchedule, RenderSet};
 use crate::render_world::textures::GpuTextureArray;
@@ -28,12 +32,8 @@ use crate::{
     ecs_core::state_machine::{self, in_state, StatePlugin},
     render_world::{
         global_extract::{RenderCameraResource, RenderMeshStorageResource, RenderTimeResource},
-        passes::opaque_pass::{
-            prepare::{
-                self, MainTextureBindGroup, MeshPipelineLayoutsResource, ModelBindGroup,
-                ViewBindGroup,
-            },
-            queue::{self, Opaque3dRenderPhase},
+        passes::opaque_pass::prepare::{
+            self, MainTextureBindGroup, MeshPipelineLayoutsResource, ModelBindGroup, ViewBindGroup,
         },
         resources::PipelineCacheResource,
     },
@@ -41,7 +41,6 @@ use crate::{
 };
 use bevy_ecs::schedule::common_conditions::resource_changed_or_removed;
 use bevy_ecs::schedule::IntoScheduleConfigs;
-use passes::setup_render_graph;
 use resources::{GraphicsContextResource, TextureArrayResource};
 use std::ops::{Deref, DerefMut};
 
@@ -104,18 +103,24 @@ impl RenderWorldInterface {
             .init_resource::<RenderCameraResource>()
             .init_resource::<RenderMeshStorageResource>()
             .init_resource::<MeshPipelineLayoutsResource>()
-            .init_resource::<Opaque3dRenderPhase>()
             .init_resource::<PipelineCacheResource>()
             .init_resource::<ViewBindGroup>()
             .init_resource::<MainTextureBindGroup>()
             .init_resource::<ModelBindGroup>();
 
         // Specifically implemented plugins
-        builder.add_plugin(RenderUiPlugin);
+        builder
+            .add_plugin(RenderUiPlugin)
+            .add_plugin(OpaqueRenderPassPlugin);
         // Generic auto-constructed plugins
-        builder.add_plugin(StatePlugin::<AppState>::default());
-        builder.add_plugin(StatePlugin::<GameState>::default());
-        builder.add_plugin(ExtractComponentPlugin::<MeshComponent>::default());
+        builder
+            .add_plugin(StatePlugin::<AppState>::default())
+            .add_plugin(StatePlugin::<GameState>::default())
+            .add_plugin(ExtractComponentPlugin::<MeshComponent>::default());
+
+        builder
+            .schedule_entry(RenderSchedule::Startup)
+            .add_systems(setup_view_bind_group_layout_system);
 
         builder
             .schedule_entry(RenderSchedule::Main)
@@ -159,11 +164,7 @@ impl RenderWorldInterface {
 
         builder
             .schedule_entry(RenderSchedule::Main)
-            .add_systems(queue::queue_mesh_system.in_set(RenderSet::Queue));
-
-        builder
-            .schedule_entry(RenderSchedule::Main)
-            .add_systems(passes::render_graph::render_graph_system.in_set(RenderSet::Queue));
+            .add_systems(render_graph_system.in_set(RenderSet::Queue));
 
         return Self::build_render_world(builder);
     }

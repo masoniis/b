@@ -6,16 +6,14 @@ use bevy_ecs::prelude::*;
 use bytemuck::{Pod, Zeroable};
 use std::num::NonZeroU64;
 
-#[repr(C)]
-#[derive(Clone, Copy, Pod, Zeroable)]
-pub struct UiMaterialData {
-    pub color: [f32; 4],
-}
+// INFO: -----------------
+//         Buffers
+// -----------------------
 
-#[repr(C)]
-#[derive(Clone, Copy, Pod, Zeroable)]
-pub struct UiObjectData {
-    pub model_matrix: [f32; 16],
+#[derive(Resource)]
+pub struct UiViewBuffer {
+    pub buffer: wgpu::Buffer,
+    pub bind_group: wgpu::BindGroup,
 }
 
 #[derive(Resource)]
@@ -33,6 +31,32 @@ pub struct UiObjectBuffer {
     pub objects: Vec<UiObjectData>,
 }
 
+// INFO: ---------------------------
+//         Buffer data types
+// ---------------------------------
+
+#[repr(C)]
+#[derive(Clone, Copy, Pod, Zeroable)]
+pub struct UiViewData {
+    pub projection_matrix: [f32; 16],
+}
+
+#[repr(C)]
+#[derive(Clone, Copy, Pod, Zeroable)]
+pub struct UiMaterialData {
+    pub color: [f32; 4],
+}
+
+#[repr(C)]
+#[derive(Clone, Copy, Pod, Zeroable)]
+pub struct UiObjectData {
+    pub model_matrix: [f32; 16],
+}
+
+// INFO: -----------------------------
+//         System to set em up
+// -----------------------------------
+
 #[instrument(skip_all)]
 pub fn setup_ui_buffers(
     mut commands: Commands,
@@ -40,9 +64,35 @@ pub fn setup_ui_buffers(
     pipeline: Res<UiPipeline>,
 ) {
     let device = &gfx.context.device;
-    let initial_capacity = 128;
 
-    // Create material buffer
+    // INFO: view buffer creation
+    let view_buffer = device.create_buffer(&wgpu::BufferDescriptor {
+        label: Some("UI View Buffer"),
+        size: std::mem::size_of::<UiViewData>() as u64,
+        usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+        mapped_at_creation: false,
+    });
+
+    let view_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+        label: Some("UI View Bind Group"),
+        layout: &pipeline.view_bind_group_layout,
+        entries: &[wgpu::BindGroupEntry {
+            binding: 0,
+            resource: wgpu::BindingResource::Buffer(wgpu::BufferBinding {
+                buffer: &view_buffer,
+                offset: 0,
+                size: NonZeroU64::new(std::mem::size_of::<UiViewData>() as u64),
+            }),
+        }],
+    });
+
+    commands.insert_resource(UiViewBuffer {
+        buffer: view_buffer,
+        bind_group: view_bind_group,
+    });
+
+    // INFO: material buffer creation
+    let initial_capacity = 128;
     let stride = {
         let min_alignment = device.limits().min_uniform_buffer_offset_alignment;
         let instance_size = std::mem::size_of::<UiMaterialData>() as u32;
@@ -76,7 +126,7 @@ pub fn setup_ui_buffers(
         materials: Vec::with_capacity(initial_capacity),
     });
 
-    // Create object buffer
+    // INFO: object buffer creation
     let object_buffer = device.create_buffer(&wgpu::BufferDescriptor {
         label: Some("UI Object Buffer"),
         size: (initial_capacity as u64) * std::mem::size_of::<UiObjectData>() as u64,

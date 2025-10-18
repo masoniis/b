@@ -1,4 +1,4 @@
-use crate::render_world::types::{BindingDef, MaterialDefinition};
+use crate::render_world::passes::core::{BindingDef, MaterialDefinition, ViewBindGroupLayout};
 use std::collections::BTreeMap;
 use std::fs;
 
@@ -22,12 +22,12 @@ pub struct CreatedPipeline {
 /// Generic function to create a render pipeline from a material and definition
 pub fn create_render_pipeline_from_def(
     device: &wgpu::Device,
-    view_layout: &wgpu::BindGroupLayout, // Pass in the common @group(0)
-    def: PipelineDefinition,
+    view_layout: &ViewBindGroupLayout, // common binding @group(0)
+    pipeline_def: PipelineDefinition,
 ) -> CreatedPipeline {
     // process and parse the shader and ron file
     let material_source =
-        fs::read_to_string(def.material_path).expect("Failed to read material file");
+        fs::read_to_string(pipeline_def.material_path).expect("Failed to read material file");
     let material_def: MaterialDefinition =
         ron::from_str(&material_source).expect("Failed to parse material definition");
 
@@ -44,7 +44,7 @@ pub fn create_render_pipeline_from_def(
         let layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
             label: Some(&format!(
                 "{} Bind Group Layout @group({})",
-                def.label, group_index
+                pipeline_def.label, group_index
             )),
             entries: &entries,
         });
@@ -52,52 +52,53 @@ pub fn create_render_pipeline_from_def(
     }
 
     // assemble final pipeline layout
-    let pipeline_bind_group_layouts_ref: Vec<&wgpu::BindGroupLayout> = std::iter::once(view_layout) // @group(0)
-        .chain(created_layouts.values()) // @group(1), @group(2), etc
-        .collect();
+    let pipeline_bind_group_layouts_ref: Vec<&wgpu::BindGroupLayout> =
+        std::iter::once(&view_layout.0) // @group(0)
+            .chain(created_layouts.values()) // @group(1), @group(2), etc
+            .collect();
 
     let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-        label: Some(&format!("{} Pipeline Layout", def.label)),
+        label: Some(&format!("{} Pipeline Layout", pipeline_def.label)),
         bind_group_layouts: &pipeline_bind_group_layouts_ref,
         push_constant_ranges: &[],
     });
 
     // create the rendering pipeline
     let vs_shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
-        label: Some(&format!("{} Vertex Shader", def.label)),
-        source: def.vs_shader_source,
+        label: Some(&format!("{} Vertex Shader", pipeline_def.label)),
+        source: pipeline_def.vs_shader_source,
     });
 
     let fs_shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
-        label: Some(&format!("{} Fragment Shader", def.label)),
-        source: def.fs_shader_source,
+        label: Some(&format!("{} Fragment Shader", pipeline_def.label)),
+        source: pipeline_def.fs_shader_source,
     });
 
     let pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
-        label: Some(def.label),
+        label: Some(pipeline_def.label),
         layout: Some(&pipeline_layout),
         cache: None,
         vertex: wgpu::VertexState {
             module: &vs_shader,
             entry_point: Some("vs_main"),
-            buffers: def.vertex_buffers,
+            buffers: pipeline_def.vertex_buffers,
             compilation_options: Default::default(),
         },
         fragment: Some(wgpu::FragmentState {
             module: &fs_shader,
             entry_point: Some("fs_main"),
-            targets: def.fragment_targets,
+            targets: pipeline_def.fragment_targets,
             compilation_options: Default::default(),
         }),
         primitive: wgpu::PrimitiveState::default(),
-        depth_stencil: def.depth_stencil,
+        depth_stencil: pipeline_def.depth_stencil,
         multisample: wgpu::MultisampleState::default(),
         multiview: None,
     });
 
     CreatedPipeline {
         pipeline,
-        view_bind_group_layout: view_layout.clone(),
+        view_bind_group_layout: view_layout.0.clone(),
         material_bind_group_layout: created_layouts
             .remove(&1)
             .expect("Material missing @group(1)"),
@@ -137,7 +138,60 @@ fn create_layout_entry_from_metadata(binding_def: &BindingDef) -> wgpu::BindGrou
                 min_binding_size: None,
             }
         }
-        // TODO:  add cases for "Texture" and "Sampler"
+        "Texture" => {
+            let opts = binding_def
+                .texture_options
+                .as_ref()
+                .expect("Texture must have texture_options");
+
+            wgpu::BindingType::Texture {
+                sample_type: match opts.sample_type.as_str() {
+                    "Float" => wgpu::TextureSampleType::Float { filterable: true },
+
+                    "Depth" => wgpu::TextureSampleType::Depth,
+
+                    "Sint" => wgpu::TextureSampleType::Sint,
+
+                    "Uint" => wgpu::TextureSampleType::Uint,
+
+                    _ => panic!("Unknown texture sample type"),
+                },
+
+                view_dimension: match opts.view_dimension.as_str() {
+                    "1d" => wgpu::TextureViewDimension::D1,
+
+                    "2d" => wgpu::TextureViewDimension::D2,
+
+                    "2d_array" => wgpu::TextureViewDimension::D2Array,
+
+                    "cube" => wgpu::TextureViewDimension::Cube,
+
+                    "cube_array" => wgpu::TextureViewDimension::CubeArray,
+
+                    "3d" => wgpu::TextureViewDimension::D3,
+
+                    _ => panic!("Unknown texture view dimension"),
+                },
+
+                multisampled: opts.multisampled,
+            }
+        }
+        "Sampler" => {
+            let opts = binding_def
+                .sampler_options
+                .as_ref()
+                .expect("Sampler must have sampler_options");
+
+            wgpu::BindingType::Sampler(match opts.ty.as_str() {
+                "Filtering" => wgpu::SamplerBindingType::Filtering,
+
+                "NonFiltering" => wgpu::SamplerBindingType::NonFiltering,
+
+                "Comparison" => wgpu::SamplerBindingType::Comparison,
+
+                _ => panic!("Unknown sampler type"),
+            })
+        }
         _ => panic!("Unsupported binding type"),
     };
 

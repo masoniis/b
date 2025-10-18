@@ -195,8 +195,7 @@ impl ApplicationHandler for App {
                         // wait for the sim signal and run
                         self.frame_sync.wait_for_simulation();
                         {
-                            let _main_loop_span =
-                                tracing::info_span!("main_simulation_schedule").entered();
+                            let _main_loop_span = tracing::info_span!("Main simulation").entered();
                             simulation_world
                                 .lock()
                                 .unwrap()

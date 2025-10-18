@@ -8,6 +8,7 @@ pub mod startup;
 //         Plugin definition
 // ---------------------------------
 
+use crate::render_world::passes::core::setup_view_bind_group_layout_system;
 use crate::{
     ecs_core::{EcsBuilder, Plugin},
     render_world::{
@@ -34,8 +35,7 @@ impl Plugin for RenderUiPlugin {
 
         builder.schedule_entry(RenderSchedule::Startup).add_systems(
             (
-                startup::setup_view_bind_group_layout,
-                startup::setup_ui_pipeline,
+                startup::setup_ui_pipeline.after(setup_view_bind_group_layout_system),
                 startup::setup_ui_screen_quad_system,
                 startup::setup_ui_buffers,
                 startup::setup_glyphon_resources,
@@ -70,7 +70,7 @@ impl Plugin for RenderUiPlugin {
             .add_systems(
                 (
                     (
-                        prepare::prepare_ui_view_system,
+                        prepare::update_ui_view_system,
                         prepare::prepare_glyphon_view_system,
                     )
                         .run_if(resource_changed::<RenderWindowSizeResource>),

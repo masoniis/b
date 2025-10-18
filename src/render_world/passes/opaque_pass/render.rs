@@ -1,20 +1,16 @@
 use crate::prelude::*;
+use crate::render_world::passes::core::{RenderContext, RenderNode};
+use crate::render_world::passes::opaque_pass::queue::Opaque3dRenderPhase;
 use crate::render_world::{
     global_extract::{
         mesh::{RenderMeshComponent, RenderTransformComponent},
         RenderMeshStorageResource,
     },
-    passes::{
-        opaque_pass::{
-            prepare::{
-                bind_groups::ModelBindGroup,
-                resources::{MainTextureBindGroup, ViewBindGroup},
-                systems::prepare_pipelines::MESH_PIPELINE_ID,
-                DepthTextureResource,
-            },
-            queue::Opaque3dRenderPhase,
-        },
-        render_graph::{RenderContext, RenderNode},
+    passes::opaque_pass::prepare::{
+        bind_groups::ModelBindGroup,
+        resources::{MainTextureBindGroup, ViewBindGroup},
+        systems::prepare_pipelines::MESH_PIPELINE_ID,
+        DepthTextureResource,
     },
     resources::PipelineCacheResource,
     uniforms::ModelUniform,

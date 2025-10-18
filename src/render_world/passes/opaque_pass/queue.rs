@@ -1,14 +1,24 @@
 use crate::{
     prelude::*,
-    render_world::{
-        global_extract::{
-            components::mesh::{RenderMeshComponent, RenderTransformComponent},
-            resources::RenderCameraResource,
-        },
-        passes::opaque_pass::queue::{Opaque3dRenderPhase, PhaseItem},
+    render_world::global_extract::{
+        components::mesh::{RenderMeshComponent, RenderTransformComponent},
+        resources::RenderCameraResource,
     },
 };
 use bevy_ecs::prelude::*;
+
+use bevy_ecs::{entity::Entity, resource::Resource};
+
+#[derive(Debug)]
+pub struct PhaseItem {
+    pub entity: Entity,
+    pub distance: f32, // For sorting back-to-front
+}
+
+#[derive(Resource, Default)]
+pub struct Opaque3dRenderPhase {
+    pub items: Vec<PhaseItem>,
+}
 
 /// The system responsible for populating the `RenderQueueResource`.
 ///
