@@ -1,0 +1,7 @@
+(
+	display_name: "Lava",
+	textures: (
+		fallback: lava,
+	),
+	is_transparent: false,
+)

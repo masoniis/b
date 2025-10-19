@@ -14,6 +14,7 @@ use self::screens::debug::{
 use self::screens::loading_screen::despawn_loading_ui_system;
 use crate::ecs_core::state_machine::AppState;
 use crate::simulation_world::scheduling::StartupSet;
+use crate::simulation_world::user_interface::screens::debug::update_mesh_counter_system;
 use crate::{
     ecs_core::{EcsBuilder, Plugin},
     simulation_world::{
@@ -67,7 +68,8 @@ impl Plugin for UiPlugin {
                         },
                     ),
                     handle_window_resize_system,
-                    (update_fps_counter_system,).run_if(diagnostic_ui_is_visible),
+                    (update_fps_counter_system, update_mesh_counter_system)
+                        .run_if(diagnostic_ui_is_visible),
                 )
                     .in_set(SimulationSet::Update),
                 (

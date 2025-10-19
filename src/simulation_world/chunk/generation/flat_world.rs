@@ -20,11 +20,9 @@ pub fn setup_superflat_world(mut commands: Commands, blocks: Res<BlockRegistryRe
         .map(|name| blocks.get_block_by_name(name))
         .collect();
 
-    for cx in 0..25 {
-        for cz in 0..25 {
-            let chunk_x = cx - 2;
-            let chunk_z = cz - 2;
-            let mut chunk = Chunk::new(chunk_x, 0, chunk_z);
+    for cx in -12..12 {
+        for cz in -12..12 {
+            let mut chunk = Chunk::new(cx, 0, cz);
 
             for x in 0..CHUNK_WIDTH {
                 for z in 0..CHUNK_DEPTH {
@@ -41,9 +39,9 @@ pub fn setup_superflat_world(mut commands: Commands, blocks: Res<BlockRegistryRe
                 chunk,
                 TransformComponent {
                     position: Vec3::new(
-                        (chunk_x * CHUNK_WIDTH as i32) as f32,
+                        (cx * CHUNK_WIDTH as i32) as f32,
                         0.0,
-                        (chunk_z * CHUNK_DEPTH as i32) as f32,
+                        (cz * CHUNK_DEPTH as i32) as f32,
                     ),
                     rotation: Quat::IDENTITY,
                     scale: Vec3::ONE,

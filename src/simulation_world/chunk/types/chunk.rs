@@ -1,6 +1,6 @@
-use crate::simulation_world::chunk::{CHUNK_DEPTH, CHUNK_HEIGHT, CHUNK_WIDTH};
-
 use super::block::Block;
+use crate::prelude::*;
+use crate::simulation_world::chunk::{CHUNK_DEPTH, CHUNK_HEIGHT, CHUNK_WIDTH, Y_SHIFT, Z_SHIFT};
 use bevy_ecs::prelude::Component;
 
 #[derive(Clone, Component)]
@@ -21,18 +21,35 @@ impl Chunk {
         }
     }
 
+    #[inline(always)]
+    /// Gets a reference to the block at the given local coordinates within the chunk.
     pub fn get_block(&self, x: usize, y: usize, z: usize) -> Option<&Block> {
-        if x >= CHUNK_WIDTH || y >= CHUNK_HEIGHT || z >= CHUNK_DEPTH {
+        if cfg!(debug_assertions) && (x >= CHUNK_WIDTH || y >= CHUNK_HEIGHT || z >= CHUNK_DEPTH) {
+            error!(
+                "get_block: Attempted to access block out of bounds: ({}, {}, {})",
+                x, y, z
+            );
             return None;
         }
-        self.blocks
-            .get(y * CHUNK_WIDTH * CHUNK_DEPTH + z * CHUNK_WIDTH + x)
+
+        let index = (y << Y_SHIFT) | (z << Z_SHIFT) | x;
+
+        self.blocks.get(index)
     }
 
+    #[inline(always)]
+    /// Sets the block at the given local coordinates within the chunk.
     pub fn set_block(&mut self, x: usize, y: usize, z: usize, block: Block) {
-        if x >= CHUNK_WIDTH || y >= CHUNK_HEIGHT || z >= CHUNK_DEPTH {
+        if cfg!(debug_assertions) && (x >= CHUNK_WIDTH || y >= CHUNK_HEIGHT || z >= CHUNK_DEPTH) {
+            error!(
+                "set_block: Attempted to access block out of bounds: ({}, {}, {})",
+                x, y, z
+            );
             return;
         }
-        self.blocks[y * CHUNK_WIDTH * CHUNK_DEPTH + z * CHUNK_WIDTH + x] = block;
+
+        let index = (y << Y_SHIFT) | (z << Z_SHIFT) | x;
+
+        self.blocks[index] = block;
     }
 }

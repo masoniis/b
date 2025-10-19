@@ -21,7 +21,6 @@ pub fn chunk_meshing_system(
     mut commands: Commands,
 ) {
     for (entity, chunk) in new_chunk_query.iter() {
-        // Pass the registry into the builder
         let (vertices, indices) = build_chunk_mesh(chunk, &texture_map, &block_registry);
 
         if !vertices.is_empty() {
@@ -176,7 +175,7 @@ enum Face {
 }
 
 /// Returns the 4 vertices and 6 indices for a single cube face.
-/// Note: The x, y, z are the *local block coordinates* (0-15).
+/// Note: The x, y, z are the *local block coordinates*.
 fn get_face(
     face: Face,
     x: usize,
@@ -190,16 +189,16 @@ fn get_face(
 
     let verts = match face {
         Face::Top => vec![
-            Vertex::new([-0.5 + fx, 0.5 + fy, 0.5 + fz], [0.0, 0.0], tex_index), // 3
-            Vertex::new([0.5 + fx, 0.5 + fy, 0.5 + fz], [1.0, 0.0], tex_index),  // 2
-            Vertex::new([0.5 + fx, 0.5 + fy, -0.5 + fz], [1.0, 1.0], tex_index), // 7
-            Vertex::new([-0.5 + fx, 0.5 + fy, -0.5 + fz], [0.0, 1.0], tex_index), // 6
+            Vertex::new([-0.5 + fx, 0.5 + fy, 0.5 + fz], [0.0, 0.0], tex_index),
+            Vertex::new([0.5 + fx, 0.5 + fy, 0.5 + fz], [1.0, 0.0], tex_index),
+            Vertex::new([0.5 + fx, 0.5 + fy, -0.5 + fz], [1.0, 1.0], tex_index),
+            Vertex::new([-0.5 + fx, 0.5 + fy, -0.5 + fz], [0.0, 1.0], tex_index),
         ],
         Face::Bottom => vec![
-            Vertex::new([-0.5 + fx, -0.5 + fy, -0.5 + fz], [0.0, 1.0], tex_index), // 5
-            Vertex::new([0.5 + fx, -0.5 + fy, -0.5 + fz], [1.0, 0.0], tex_index),  // 4
-            Vertex::new([0.5 + fx, -0.5 + fy, 0.5 + fz], [1.0, 1.0], tex_index),   // 1
-            Vertex::new([-0.5 + fx, -0.5 + fy, 0.5 + fz], [0.0, 1.0], tex_index),  // 0
+            Vertex::new([-0.5 + fx, -0.5 + fy, -0.5 + fz], [0.0, 0.0], tex_index),
+            Vertex::new([0.5 + fx, -0.5 + fy, -0.5 + fz], [1.0, 0.0], tex_index),
+            Vertex::new([0.5 + fx, -0.5 + fy, 0.5 + fz], [1.0, 1.0], tex_index),
+            Vertex::new([-0.5 + fx, -0.5 + fy, 0.5 + fz], [0.0, 1.0], tex_index),
         ],
         Face::Left => vec![
             Vertex::new([-0.5 + fx, -0.5 + fy, -0.5 + fz], [0.0, 0.0], tex_index),

@@ -14,9 +14,9 @@ pub struct DiagnosticsUiElementMarker;
 #[derive(Component)]
 pub struct FpsCounterTextElementMarker;
 
-/// A marker component for the FPS Counter text element.
+/// A marker component for the Mesh Counter text element.
 #[derive(Component)]
-pub struct FillerMarker;
+pub struct MeshCounterTextElementMarker;
 
 /// A run condition that returns true if the diagnostic UI is currently spawned and visible.
 pub fn diagnostic_ui_is_visible(query: Query<(), With<DiagnosticsUiElementMarker>>) -> bool {
@@ -83,7 +83,11 @@ fn spawn_diagnostic_ui(commands: &mut Commands, root_node: &Res<UiRootNodeResour
                 spawn_diagnostic_line(parent, FpsCounterTextElementMarker, "FPS: 0".to_string());
             }
             {
-                spawn_diagnostic_line(parent, FillerMarker, "More diagnostics...".to_string());
+                spawn_diagnostic_line(
+                    parent,
+                    MeshCounterTextElementMarker,
+                    "Mesh count: ".to_string(),
+                );
             }
         })
         .id();
