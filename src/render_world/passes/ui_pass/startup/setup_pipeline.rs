@@ -46,6 +46,7 @@ pub fn setup_ui_pipeline(
         fs_shader_source: wgpu::ShaderSource::Wgsl(include_wesl!("ui_main_frag").into()),
         vertex_buffers: &[UI_VERTEX_BUFFER_LAYOUT],
         fragment_targets: &ui_fragment_target,
+        primitive: wgpu::PrimitiveState::default(),
         depth_stencil: None,
     };
 

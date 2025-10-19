@@ -54,8 +54,7 @@ pub fn queue_mesh_system(
         });
     }
 
-    // --- 3. Sorting ---
-    // For opaque objects, sort front-to-back (descending distance) to maximize early-Z culling.
+    // sort front-to-back (descending distance) to maximize early-Z culling.
     opaque_phase
         .items
         .sort_by(|a, b| b.distance.partial_cmp(&a.distance).unwrap());

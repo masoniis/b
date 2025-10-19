@@ -16,12 +16,11 @@ use tracing::warn;
 #[instrument(skip_all)]
 pub fn prepare_meshes_system(
     device: Res<RenderDevice>,
-    // This is a clone of the main world's asset storage.
-    // It's cheap to clone because it uses Arcs internally.
     cpu_mesh_assets: Res<AssetStorageResource<MeshAsset>>,
-    mut gpu_mesh_storage: ResMut<RenderMeshStorageResource>,
-    // Query for all entities with a mesh component in the render world.
     meshes_to_prepare: Query<&RenderMeshComponent>,
+
+    // Output (storage insertion)
+    mut gpu_mesh_storage: ResMut<RenderMeshStorageResource>,
 ) {
     for render_mesh in meshes_to_prepare.iter() {
         let handle = render_mesh.mesh_handle;
@@ -31,13 +30,11 @@ pub fn prepare_meshes_system(
             // Get the CPU-side asset data.
             if let Some(mesh_asset) = cpu_mesh_assets.get(handle) {
                 // Perform the GPU buffer creation.
-                let gpu_mesh = create_gpu_mesh_from_data(
-                    // Use the device from the resource
-                    &device.0,
-                    &mesh_asset.vertices,
-                    &mesh_asset.indices,
-                );
+                let gpu_mesh =
+                    create_gpu_mesh_from_data(&device, &mesh_asset.vertices, &mesh_asset.indices);
+
                 info!("Prepared GPU mesh for handle ID {}", handle.id());
+
                 gpu_mesh_storage
                     .meshes
                     .insert(handle.id(), Arc::new(gpu_mesh));

@@ -8,7 +8,7 @@ use wgpu::{
 };
 
 pub struct GpuTextureArray {
-    pub texture: Texture,
+    _wgpu_texture: Texture, // hold the texture to ensure it stays in GPU memory
     pub view: TextureView,
     pub sampler: Sampler,
 }
@@ -190,7 +190,7 @@ fn create_wgpu_texture_array(
     });
 
     GpuTextureArray {
-        texture,
+        _wgpu_texture: texture,
         view,
         sampler,
     }

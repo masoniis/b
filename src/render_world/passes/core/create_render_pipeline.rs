@@ -10,6 +10,7 @@ pub struct PipelineDefinition<'a> {
     pub vertex_buffers: &'a [wgpu::VertexBufferLayout<'a>],
     pub fragment_targets: &'a [Option<wgpu::ColorTargetState>],
     pub depth_stencil: Option<wgpu::DepthStencilState>,
+    pub primitive: wgpu::PrimitiveState,
 }
 
 pub struct CreatedPipeline {
@@ -90,7 +91,7 @@ pub fn create_render_pipeline_from_def(
             targets: pipeline_def.fragment_targets,
             compilation_options: Default::default(),
         }),
-        primitive: wgpu::PrimitiveState::default(),
+        primitive: pipeline_def.primitive,
         depth_stencil: pipeline_def.depth_stencil,
         multisample: wgpu::MultisampleState::default(),
         multiview: None,
@@ -147,29 +148,19 @@ fn create_layout_entry_from_metadata(binding_def: &BindingDef) -> wgpu::BindGrou
             wgpu::BindingType::Texture {
                 sample_type: match opts.sample_type.as_str() {
                     "Float" => wgpu::TextureSampleType::Float { filterable: true },
-
                     "Depth" => wgpu::TextureSampleType::Depth,
-
                     "Sint" => wgpu::TextureSampleType::Sint,
-
                     "Uint" => wgpu::TextureSampleType::Uint,
-
                     _ => panic!("Unknown texture sample type"),
                 },
 
                 view_dimension: match opts.view_dimension.as_str() {
                     "1d" => wgpu::TextureViewDimension::D1,
-
                     "2d" => wgpu::TextureViewDimension::D2,
-
                     "2d_array" => wgpu::TextureViewDimension::D2Array,
-
                     "cube" => wgpu::TextureViewDimension::Cube,
-
                     "cube_array" => wgpu::TextureViewDimension::CubeArray,
-
                     "3d" => wgpu::TextureViewDimension::D3,
-
                     _ => panic!("Unknown texture view dimension"),
                 },
 

@@ -12,7 +12,7 @@ use bevy_ecs::prelude::*;
 ///
 /// Should run if: the window size changes (view bind group layout should remain consistent).
 #[instrument(skip_all)]
-pub fn update_ui_view_system(
+pub fn update_ui_view_data_system(
     // Input
     window_size: Res<RenderWindowSizeResource>,
     ui_view_buffer: Res<UiViewBuffer>,

@@ -1,4 +1,5 @@
 MaterialDefinition(
+    vertex_buffers: [],
     bind_group_layouts: {
         // @group(1): Per-Material (Texture)
         1: BindGroupLayoutDef(
@@ -10,7 +11,7 @@ MaterialDefinition(
                     ty: "Texture",
                     texture_options: Some((
                         sample_type: "Float",
-                        view_dimension: "2d",
+                        view_dimension: "2d_array",
                         multisampled: false,
                     )),
                 ),
@@ -27,14 +28,13 @@ MaterialDefinition(
         ),
 
         // @group(2): Per-Object (Model)
-        2: BindGroupLayoutDef(
-            bindings: [
+        2: BindGroupLayoutDef( bindings: [
                 BindingDef(
                     binding: 0,
                     visibility: ["Vertex"],
                     ty: "Buffer",
                     buffer_options: Some((
-                        ty: "Storage", // Using Storage is a flexible choice
+                        ty: "Storage",
                         has_dynamic_offset: false,
                     )),
                 ),

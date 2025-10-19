@@ -17,6 +17,10 @@ pub enum RenderSchedule {
 
 #[derive(SystemSet, Debug, Hash, PartialEq, Eq, Clone)]
 pub enum RenderSet {
+    /// Used to update the state machine (for `AppState` and `SimulationState`)
+    /// before running any of the core rendering pipelines that might depend on them.
+    StateUpdate,
+
     /// This phase runs **first**. Its job is to prepare data for the GPU.
     /// This includes writing to uniform buffers (like camera matrices or lighting data)
     /// and creating bind groups.

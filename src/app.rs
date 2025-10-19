@@ -121,7 +121,6 @@ impl ApplicationHandler for App {
                 let _span = info_span!("Render thread").entered();
                 loop {
                     // wait until we are signaled to extract form the sim world
-
                     render_sync.wait_for_extraction();
                     {
                         let mut sim_guard = sim_world_for_render.lock().unwrap();
@@ -140,7 +139,6 @@ impl ApplicationHandler for App {
                     render_sync.finish_extraction();
 
                     // perform rendering now that sim is active again
-
                     let mut render_world = render_world_for_render.lock().unwrap();
                     {
                         let _render_phase_span =

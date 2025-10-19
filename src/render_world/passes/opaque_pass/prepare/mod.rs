@@ -1,7 +1,5 @@
-pub mod prepare_buffers;
-pub mod resources;
-pub mod systems;
+pub mod prepare_mesh;
+pub mod update_view_data;
 
-pub use prepare_buffers::{prepare_render_buffers_system, DepthTextureResource};
-pub use resources::*;
-pub use systems::*;
+pub use prepare_mesh::prepare_meshes_system;
+pub use update_view_data::update_opaque_view_data_system;

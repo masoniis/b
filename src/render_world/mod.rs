@@ -5,7 +5,6 @@ pub mod resources;
 pub mod scheduling;
 pub mod textures;
 pub mod types;
-pub mod uniforms;
 
 // INFO: --------------------------------
 //         Render world interface
@@ -19,11 +18,8 @@ use crate::render_world::global_extract::{
     simulation_world_resource_changed, ExtractComponentPlugin, RenderWindowSizeResource,
 };
 use crate::render_world::graphics_context::{GraphicsContext, GraphicsContextPlugin};
-use crate::render_world::passes::core::{
-    render_graph_system, setup_render_graph, setup_view_bind_group_layout_system,
-};
-use crate::render_world::passes::opaque_pass::OpaqueRenderPassPlugin;
-use crate::render_world::passes::ui_pass::RenderUiPlugin;
+use crate::render_world::passes::core::setup_render_graph;
+use crate::render_world::passes::RenderPassManagerPlugin;
 use crate::render_world::scheduling::{RenderSchedule, RenderSet};
 use crate::render_world::textures::GpuTextureArray;
 use crate::simulation_world::chunk::MeshComponent;
@@ -32,7 +28,6 @@ use crate::{
     ecs_core::state_machine::{self, in_state, StatePlugin},
     render_world::{
         global_extract::{RenderCameraResource, RenderMeshStorageResource, RenderTimeResource},
-        passes::opaque_pass::prepare::{self},
         resources::PipelineCacheResource,
     },
     simulation_world::global_resources::{AssetStorageResource, MeshAsset},
@@ -75,11 +70,6 @@ impl RenderWorldInterface {
 
         // Add any resources that require specific app input
         builder
-            // GraphicsContextResource is a resource initialized here because
-            // it requires the graphics_context passed directly from the app.
-            // .add_resource(GraphicsContextResource {
-            //     context: graphics_context,
-            // })
             .add_resource(TextureArrayResource {
                 array: texture_array,
             })
@@ -92,7 +82,15 @@ impl RenderWorldInterface {
         builder
             .schedules
             .entry(RenderSchedule::Main)
-            .configure_sets((RenderSet::Prepare, RenderSet::Queue, RenderSet::Render).chain());
+            .configure_sets(
+                (
+                    RenderSet::StateUpdate,
+                    RenderSet::Prepare,
+                    RenderSet::Queue,
+                    RenderSet::Render,
+                )
+                    .chain(),
+            );
 
         // Resources for rendering
         builder
@@ -104,17 +102,12 @@ impl RenderWorldInterface {
         // Specifically implemented plugins
         builder
             .add_plugin(GraphicsContextPlugin::new(graphics_context))
-            .add_plugin(OpaqueRenderPassPlugin)
-            .add_plugin(RenderUiPlugin);
+            .add_plugin(RenderPassManagerPlugin);
         // Generic auto-constructed plugins
         builder
             .add_plugin(StatePlugin::<AppState>::default())
             .add_plugin(StatePlugin::<GameState>::default())
             .add_plugin(ExtractComponentPlugin::<MeshComponent>::default());
-
-        builder
-            .schedule_entry(RenderSchedule::Startup)
-            .add_systems(setup_view_bind_group_layout_system);
 
         builder
             .schedule_entry(RenderSchedule::Main)
@@ -137,26 +130,13 @@ impl RenderWorldInterface {
             ));
 
         builder.schedule_entry(RenderSchedule::Main).add_systems(
+            // apply any state transitions detected during Extract phase
             (
-                (
-                    prepare::prepare_render_buffers_system,
-                    prepare::prepare_pipelines_system,
-                    // apply any state transitions detected during Extract phase
-                    state_machine::apply_state_transition_system::<AppState>,
-                    state_machine::apply_state_transition_system::<GameState>,
-                ),
-                (
-                    prepare::prepare_view_bind_group_system,
-                    prepare::prepare_meshes_system,
-                )
-                    .run_if(in_state(AppState::Running)),
+                state_machine::apply_state_transition_system::<AppState>,
+                state_machine::apply_state_transition_system::<GameState>,
             )
-                .in_set(RenderSet::Prepare),
+                .in_set(RenderSet::StateUpdate),
         );
-
-        builder
-            .schedule_entry(RenderSchedule::Main)
-            .add_systems(render_graph_system.in_set(RenderSet::Queue));
 
         return Self::build_render_world(builder);
     }

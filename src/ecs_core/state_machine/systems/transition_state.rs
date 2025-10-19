@@ -13,7 +13,7 @@ pub fn apply_state_transition_system<T: State>(world: &mut World) {
     // Decide if a transition should occur or not
     let transition = {
         let Some(mut next_state_res) = world.get_resource_mut::<NextState<T>>() else {
-            return; // No NextState resource exists, so nothing to do.
+            return; // no NextState resource exists, so nothing to do.
         };
 
         let Some(new_state) = next_state_res.val.take() else {
@@ -22,7 +22,7 @@ pub fn apply_state_transition_system<T: State>(world: &mut World) {
 
         let old_state = world.resource::<CurrentState<T>>().val.clone();
 
-        // If the states are the same return none, otherwise return the transition
+        // if the states are the same return none, otherwise return the transition
         if old_state == new_state {
             None
         } else {
@@ -47,16 +47,16 @@ pub fn apply_state_transition_system<T: State>(world: &mut World) {
             "render"
         };
 
-        // Run the OnExit schedule for the old state.
+        // run the OnExit schedule for the old state.
         if let Err(e) = world.try_run_schedule(OnExit(old_state)) {
             warn!("({} world) {}", curr_world, e);
         }
 
-        // Update the CurrentState resource with the new state.
+        // update the CurrentState resource with the new state.
         let mut current_state_res = world.resource_mut::<CurrentState<T>>();
         current_state_res.val = new_state.clone();
 
-        // Run the OnEnter schedule for the new state.
+        // run the OnEnter schedule for the new state.
         if let Err(e) = world.try_run_schedule(OnEnter(new_state)) {
             warn!("({} world) {}", curr_world, e);
         }

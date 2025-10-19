@@ -8,13 +8,15 @@ pub mod startup;
 // ---------------------------------
 
 use crate::{
-    ecs_core::{EcsBuilder, Plugin},
+    ecs_core::{
+        state_machine::{in_state, AppState},
+        EcsBuilder, Plugin,
+    },
     render_world::{
-        passes::opaque_pass::{
-            prepare::{
-                MainTextureBindGroup, MeshPipelineLayoutsResource, ModelBindGroup, ViewBindGroup,
-            },
-            queue::Opaque3dRenderPhase,
+        graphics_context::resources::RenderSurfaceConfig,
+        passes::{
+            core::{self},
+            opaque_pass::queue::Opaque3dRenderPhase,
         },
         scheduling::{RenderSchedule, RenderSet},
     },
@@ -25,15 +27,17 @@ pub struct OpaqueRenderPassPlugin;
 
 impl Plugin for OpaqueRenderPassPlugin {
     fn build(&self, builder: &mut EcsBuilder) {
-        builder
-            .init_resource::<MeshPipelineLayoutsResource>()
-            .init_resource::<ViewBindGroup>()
-            .init_resource::<MainTextureBindGroup>()
-            .init_resource::<ModelBindGroup>();
-
         // INFO: -----------------
         //         Startup
         // -----------------------
+        builder
+            .schedule_entry(RenderSchedule::Startup)
+            .add_systems(((
+                startup::setup_opaque_pipeline.after(core::setup_view_bind_group_layout_system),
+                startup::setup_opaque_buffers_and_bind_groups,
+                startup::setup_depth_texture_system,
+            )
+                .chain(),));
 
         // INFO: -----------------
         //         Extract
@@ -42,6 +46,18 @@ impl Plugin for OpaqueRenderPassPlugin {
         // INFO: -----------------
         //         Prepare
         // -----------------------
+        builder.schedule_entry(RenderSchedule::Main).add_systems(
+            (
+                (startup::setup_depth_texture_system)
+                    .run_if(resource_changed_or_removed::<RenderSurfaceConfig>),
+                (
+                    prepare::update_opaque_view_data_system,
+                    prepare::prepare_meshes_system,
+                )
+                    .run_if(in_state(AppState::Running)),
+            )
+                .in_set(RenderSet::Prepare),
+        );
 
         // INFO: ---------------
         //         Queue
