@@ -16,10 +16,12 @@ pub use self::scheduling::{OnExit, SimulationSchedule, SimulationSet};
 use crate::render_world::{
     global_extract::utils::initialize_simulation_world_for_extract, textures::TextureRegistry,
 };
+use crate::simulation_world::block::BlockPlugin;
 use crate::simulation_world::chunk::ChunkGenerationPlugin;
 use crate::simulation_world::global_resources::MeshAsset;
 use crate::simulation_world::input::InputModulePlugin;
 use crate::simulation_world::player::PlayerModulePlugin;
+use crate::simulation_world::scheduling::{FixedUpdateSet, StartupSet};
 use crate::simulation_world::time::TimeControlPlugin;
 use crate::{
     ecs_core::{worlds::SimulationWorldMarker, CommonEcsInterface, EcsBuilder, PluginGroup},
@@ -64,7 +66,17 @@ impl SimulationWorldInterface {
             .add_resource(WindowSizeResource::new(window.inner_size()))
             .add_resource(TextureMapResource { registry });
 
-        // configure core schedule sets before adding plugins
+        // configure schedule sets before adding plugins
+        builder
+            .schedules
+            .entry(SimulationSchedule::Startup)
+            .configure_sets((StartupSet::UserInterface, StartupSet::LoadingTasks).chain());
+
+        builder
+            .schedules
+            .entry(SimulationSchedule::FixedUpdate)
+            .configure_sets((FixedUpdateSet::PreUpdate, FixedUpdateSet::MainLogic).chain());
+
         builder
             .schedules
             .entry(SimulationSchedule::Main)
@@ -120,6 +132,7 @@ impl PluginGroup for SharedPlugins {
     fn build(self, builder: &mut EcsBuilder) {
         builder
             .add_plugin(AppLifecyclePlugin)
+            .add_plugin(BlockPlugin)
             .add_plugin(ChunkGenerationPlugin)
             .add_plugin(TimeControlPlugin)
             .add_plugin(PlayerModulePlugin);

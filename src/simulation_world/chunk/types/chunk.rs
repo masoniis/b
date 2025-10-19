@@ -1,9 +1,9 @@
-use super::block::Block;
-use crate::simulation_world::chunk::generation::flat_world::{
-    CHUNK_DEPTH, CHUNK_HEIGHT, CHUNK_WIDTH,
-};
+use crate::simulation_world::chunk::{CHUNK_DEPTH, CHUNK_HEIGHT, CHUNK_WIDTH};
 
-#[derive(Clone)]
+use super::block::Block;
+use bevy_ecs::prelude::Component;
+
+#[derive(Clone, Component)]
 pub struct Chunk {
     pub x: i32,
     pub y: i32,

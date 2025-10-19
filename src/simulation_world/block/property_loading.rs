@@ -1,7 +1,10 @@
 use serde::Deserialize;
 
+use crate::render_world::types::TextureId;
+
 /// Loads a `BlockProperties` struct from a RON string.
-/// This function handles the entire raw -> clean conversion process.
+///
+/// Handles the entire raw ron -> type `BlockProperties` conversion process.
 pub fn load_block_from_str(ron_string: &str) -> Result<BlockProperties, ron::Error> {
     let raw_properties: raw::BlockProperties = ron::from_str(ron_string)?;
     Ok(raw_properties.into())
@@ -16,12 +19,12 @@ pub struct BlockProperties {
 
 #[derive(Debug, Clone)]
 pub struct BlockFaceTextures {
-    pub top: String,
-    pub bottom: String,
-    pub north: String,
-    pub south: String,
-    pub east: String,
-    pub west: String,
+    pub top: TextureId,
+    pub bottom: TextureId,
+    pub north: TextureId,
+    pub south: TextureId,
+    pub east: TextureId,
+    pub west: TextureId,
 }
 
 mod raw {
@@ -38,15 +41,21 @@ mod raw {
     #[derive(Deserialize, Debug)]
     #[serde(deny_unknown_fields)]
     pub(super) struct TextureConfig {
-        pub(super) fallback: Option<String>, // default if sides not specified
+        pub(super) fallback: TextureId, // default if sides not specified
 
-        // Individual faces are optional.
-        pub(super) top: Option<String>,
-        pub(super) bottom: Option<String>,
-        pub(super) north: Option<String>,
-        pub(super) south: Option<String>,
-        pub(super) east: Option<String>,
-        pub(super) west: Option<String>,
+        // individual faces are optional
+        #[serde(default)]
+        pub top: Option<TextureId>,
+        #[serde(default)]
+        pub bottom: Option<TextureId>,
+        #[serde(default)]
+        pub north: Option<TextureId>,
+        #[serde(default)]
+        pub south: Option<TextureId>,
+        #[serde(default)]
+        pub east: Option<TextureId>,
+        #[serde(default)]
+        pub west: Option<TextureId>,
     }
 
     // convert "raw" ron into BlockProperties
@@ -55,7 +64,6 @@ mod raw {
             Self {
                 display_name: raw_props.display_name,
                 is_transparent: raw_props.is_transparent,
-                // The magic happens here: we resolve the texture configuration.
                 textures: raw_props.textures.resolve(),
             }
         }
@@ -64,9 +72,7 @@ mod raw {
     impl TextureConfig {
         /// Resolves the optional texture fields into a final, non-optional struct.
         pub(super) fn resolve(self) -> BlockFaceTextures {
-            let fallback = self
-                .fallback
-                .expect("Block texture definition in RON must have an 'fallback' field!");
+            let fallback = self.fallback;
 
             BlockFaceTextures {
                 top: self.top.unwrap_or_else(|| fallback.clone()),

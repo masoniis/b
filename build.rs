@@ -23,7 +23,6 @@ fn main() {
     .unwrap();
     writeln!(&mut f, "#[serde(rename_all = \"snake_case\")]").unwrap();
     writeln!(&mut f, "pub enum TextureId {{").unwrap();
-    writeln!(&mut f, "  Missing,").unwrap();
     let mut texture_info = Vec::new();
     for entry in glob::glob("assets/textures/*.png").expect("Failed to read glob pattern") {
         if let Ok(path) = entry {
@@ -36,7 +35,10 @@ fn main() {
             texture_info.push((enum_variant, name));
         }
     }
+    writeln!(&mut f, "  #[serde(other)]").unwrap();
+    writeln!(&mut f, "  Missing,").unwrap();
     writeln!(&mut f, "}}").unwrap();
+
     writeln!(&mut f, "\nimpl TextureId {{").unwrap();
     writeln!(&mut f, "  pub fn name(&self) -> &'static str {{").unwrap();
     writeln!(&mut f, "    match self {{").unwrap();

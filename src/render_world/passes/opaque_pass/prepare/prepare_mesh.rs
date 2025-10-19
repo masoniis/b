@@ -33,7 +33,11 @@ pub fn prepare_meshes_system(
                 let gpu_mesh =
                     create_gpu_mesh_from_data(&device, &mesh_asset.vertices, &mesh_asset.indices);
 
-                info!("Prepared GPU mesh for handle ID {}", handle.id());
+                debug!(
+                    target = "gpu_mesh_prepared",
+                    "Prepared GPU mesh for handle ID {}",
+                    handle.id()
+                );
 
                 gpu_mesh_storage
                     .meshes

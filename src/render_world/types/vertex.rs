@@ -10,6 +10,32 @@ pub struct Vertex {
     pub texture_index: u32,
 }
 
+impl Vertex {
+    const ATTRIBUTES: [wgpu::VertexAttribute; 4] = wgpu::vertex_attr_array![
+        0 => Float32x3, // position
+        1 => Float32x3, // color
+        2 => Float32x2, // tex_coords
+        3 => Uint32,    // texture_index
+    ];
+
+    pub fn new(pos: [f32; 3], tex_coords: [f32; 2], texture_index: u32) -> Self {
+        Self {
+            position: pos,
+            color: [1.0, 1.0, 1.0],
+            tex_coords,
+            texture_index,
+        }
+    }
+
+    pub fn desc() -> wgpu::VertexBufferLayout<'static> {
+        wgpu::VertexBufferLayout {
+            array_stride: std::mem::size_of::<Vertex>() as wgpu::BufferAddress,
+            step_mode: wgpu::VertexStepMode::Vertex,
+            attributes: &Self::ATTRIBUTES,
+        }
+    }
+}
+
 impl PartialEq for Vertex {
     fn eq(&self, other: &Self) -> bool {
         self.position
@@ -38,22 +64,5 @@ impl Hash for Vertex {
         self.color.iter().for_each(|f| f.to_bits().hash(state));
         self.tex_coords.iter().for_each(|f| f.to_bits().hash(state));
         self.texture_index.hash(state);
-    }
-}
-
-impl Vertex {
-    const ATTRIBUTES: [wgpu::VertexAttribute; 4] = wgpu::vertex_attr_array![
-        0 => Float32x3, // position
-        1 => Float32x3, // color
-        2 => Float32x2, // tex_coords
-        3 => Uint32,    // texture_index
-    ];
-
-    pub fn desc() -> wgpu::VertexBufferLayout<'static> {
-        wgpu::VertexBufferLayout {
-            array_stride: std::mem::size_of::<Vertex>() as wgpu::BufferAddress,
-            step_mode: wgpu::VertexStepMode::Vertex,
-            attributes: &Self::ATTRIBUTES,
-        }
     }
 }

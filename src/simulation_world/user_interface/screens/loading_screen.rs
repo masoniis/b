@@ -10,8 +10,9 @@ use bevy_ecs::prelude::*;
 pub struct LoadingUiElement;
 
 /// Spawns the Loading UI and attaches it to the persistent root node.
+#[instrument(skip_all)]
 pub fn spawn_loading_ui_system(mut commands: Commands, root_node: Res<UiRootNodeResource>) {
-    info!("Spawning Loading UI...");
+    info!("Spawning loading UI...");
 
     let root_entity = root_node.0;
 

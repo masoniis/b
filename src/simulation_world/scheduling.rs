@@ -17,6 +17,13 @@ pub enum SimulationSchedule {
     Main,
 }
 
+/// The sets for the startup schedule of the sim
+#[derive(SystemSet, Debug, Hash, PartialEq, Eq, Clone)]
+pub enum StartupSet {
+    UserInterface,
+    LoadingTasks,
+}
+
 /// The sets for the fixed schedule of the
 #[derive(SystemSet, Debug, Hash, PartialEq, Eq, Clone)]
 pub enum FixedUpdateSet {

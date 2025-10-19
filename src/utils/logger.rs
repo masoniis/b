@@ -9,7 +9,7 @@ pub fn attach_logger() {
     let env_filter = EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info"));
 
     let fmt_layer = fmt::layer()
-        .with_target(true)
+        .with_target(false)
         .with_line_number(false)
         .with_thread_names(false)
         .with_file(false)

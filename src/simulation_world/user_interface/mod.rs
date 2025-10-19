@@ -13,6 +13,7 @@ use self::screens::debug::{
 };
 use self::screens::loading_screen::despawn_loading_ui_system;
 use crate::ecs_core::state_machine::AppState;
+use crate::simulation_world::scheduling::StartupSet;
 use crate::{
     ecs_core::{EcsBuilder, Plugin},
     simulation_world::{
@@ -48,6 +49,7 @@ impl Plugin for UiPlugin {
                     (setup_font_system, spawn_ui_root_system),
                     spawn_loading_ui_system,
                 )
+                    .in_set(StartupSet::UserInterface)
                     .chain(),
             );
 

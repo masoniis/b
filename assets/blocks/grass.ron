@@ -1,0 +1,7 @@
+(
+	display_name: "Grass",
+	textures: (
+		fallback: grass,
+	),
+	is_transparent: false,
+)

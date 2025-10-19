@@ -1,4 +1,4 @@
-#[derive(Clone)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 pub struct Block {
-    pub id: u32,
+    pub id: u16,
 }
