@@ -1,12 +1,12 @@
 use crate::{
     prelude::*,
     simulation_world::input::{
-        events::{MouseMoveEvent, MouseScrollEvent, RawDeviceEvent},
+        messages::{MouseMoveMessage, MouseScrollMessage, RawDeviceMessage},
         resources::CursorMovement,
     },
 };
 use bevy_ecs::{
-    event::{EventReader, EventWriter},
+    message::{MessageReader, MessageWriter},
     system::ResMut,
 };
 
@@ -15,22 +15,22 @@ use bevy_ecs::{
 #[instrument(skip_all)]
 pub fn device_events_system(
     // Input from OS bridge
-    mut raw_device_events: EventReader<RawDeviceEvent>,
+    mut raw_device_events: MessageReader<RawDeviceMessage>,
 
     // State to modify (output)
     mut movement: ResMut<CursorMovement>,
 
     // Events to fire (output)
-    mut mouse_move_writer: EventWriter<MouseMoveEvent>,
-    mut mouse_scroll_writer: EventWriter<MouseScrollEvent>,
+    mut mouse_move_writer: MessageWriter<MouseMoveMessage>,
+    mut mouse_scroll_writer: MessageWriter<MouseScrollMessage>,
 ) {
     // Clear previous stale state (without this mouse movement would "accumulate")
     movement.reset_deltas();
 
-    for RawDeviceEvent(event) in raw_device_events.read() {
+    for RawDeviceMessage(event) in raw_device_events.read() {
         match event {
             winit::event::DeviceEvent::MouseMotion { delta } => {
-                let semantic_event = MouseMoveEvent {
+                let semantic_event = MouseMoveMessage {
                     delta: (*delta).into(),
                 };
 
@@ -43,7 +43,7 @@ pub fn device_events_system(
                     winit::event::MouseScrollDelta::LineDelta(_, y) => *y,
                     winit::event::MouseScrollDelta::PixelDelta(p) => p.y as f32,
                 };
-                let semantic_event = MouseScrollEvent {
+                let semantic_event = MouseScrollMessage {
                     delta: glam::Vec2::new(0.0, yoffset),
                 };
 

@@ -32,7 +32,7 @@ impl Plugin for ChunkGenerationPlugin {
             .add_systems(
                 setup_superflat_world
                     .after(load_block_definitions_system)
-                    .in_set(StartupSet::LoadingTasks),
+                    .in_set(StartupSet::Tasks),
             );
 
         builder

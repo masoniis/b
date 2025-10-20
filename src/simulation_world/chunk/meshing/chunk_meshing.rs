@@ -68,7 +68,11 @@ fn build_chunk_mesh(
                 let block_properties = block_registry.get(block.id);
 
                 // --- Check neighbor +Y (Top Face) ---
-                let neighbor_top = chunk.get_block(x, y + 1, z).unwrap_or(&air_block);
+                let neighbor_top = if y < CHUNK_HEIGHT - 1 {
+                    chunk.get_block(x, y + 1, z).unwrap_or(&air_block)
+                } else {
+                    &air_block
+                };
                 let neighbor_top_props = block_registry.get(neighbor_top.id);
                 if neighbor_top_props.is_transparent {
                     let base_vertex_count = vertices.len() as u32;
@@ -116,7 +120,11 @@ fn build_chunk_mesh(
                 }
 
                 // --- Check neighbor +X (Right / East Face) ---
-                let neighbor_right = chunk.get_block(x + 1, y, z).unwrap_or(&air_block);
+                let neighbor_right = if x < CHUNK_WIDTH - 1 {
+                    chunk.get_block(x + 1, y, z).unwrap_or(&air_block)
+                } else {
+                    &air_block
+                };
                 let neighbor_right_props = block_registry.get(neighbor_right.id);
 
                 if neighbor_right_props.is_transparent {
@@ -130,7 +138,11 @@ fn build_chunk_mesh(
                 }
 
                 // --- Check neighbor +Z (Front / South Face) ---
-                let neighbor_front = chunk.get_block(x, y, z + 1).unwrap_or(&air_block);
+                let neighbor_front = if z < CHUNK_DEPTH - 1 {
+                    chunk.get_block(x, y, z + 1).unwrap_or(&air_block)
+                } else {
+                    &air_block
+                };
                 let neighbor_front_props = block_registry.get(neighbor_front.id);
                 if neighbor_front_props.is_transparent {
                     let base_vertex_count = vertices.len() as u32;

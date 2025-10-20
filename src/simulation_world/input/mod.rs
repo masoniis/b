@@ -1,4 +1,4 @@
-pub mod events;
+pub mod messages;
 pub mod plugin;
 pub mod resources;
 pub mod systems;

@@ -24,6 +24,6 @@ impl Plugin for BlockPlugin {
 
         builder
             .schedule_entry(SimulationSchedule::Startup)
-            .add_systems(load_block_definitions_system.in_set(StartupSet::LoadingTasks));
+            .add_systems(load_block_definitions_system.in_set(StartupSet::Tasks));
     }
 }

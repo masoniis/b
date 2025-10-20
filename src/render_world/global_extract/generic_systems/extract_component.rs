@@ -40,7 +40,7 @@ pub trait ExtractComponent: Send + Sync + 'static {
     /// The function that maps the queried components to the final extracted data structure.
     fn extract(
         entity: Entity,
-        components: <<Self::QueryComponents as QueryData>::ReadOnly as QueryData>::Item<'_>,
+        components: <<Self::QueryComponents as QueryData>::ReadOnly as QueryData>::Item<'_, '_>,
     ) -> Self::Extracted;
 
     /// A stable key for the entity, used for change detection.

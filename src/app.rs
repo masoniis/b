@@ -6,7 +6,7 @@ use crate::{
         scheduling::RenderSchedule, textures::load_texture_array, RenderWorldInterface,
     },
     simulation_world::{
-        input::events::{RawDeviceEvent, RawWindowEvent},
+        input::messages::{RawDeviceMessage, RawWindowMessage},
         SimulationSchedule, SimulationWorldInterface,
     },
 };
@@ -170,7 +170,7 @@ impl ApplicationHandler for App {
             simulation_world
                 .lock()
                 .unwrap()
-                .send_event(RawDeviceEvent(event.clone()));
+                .send_event(RawDeviceMessage(event.clone()));
         }
     }
 
@@ -179,7 +179,7 @@ impl ApplicationHandler for App {
             simulation_world
                 .lock()
                 .unwrap()
-                .send_event(RawWindowEvent(event.clone()));
+                .send_event(RawWindowMessage(event.clone()));
 
             // NOTE: The events handled here should only be events that rely on the event loop
             // or window. Any other event should be fine to handle within the ECS world itself.

@@ -46,7 +46,7 @@ wesl = "0.2.0"
 #         simulation logic
 # --------------------------------
 
-bevy_ecs = "0.16.1"
+bevy_ecs = "0.17.2"
 pollster = "0.3"
 
 # necessary for background tasks

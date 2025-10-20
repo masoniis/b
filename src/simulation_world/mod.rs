@@ -39,8 +39,8 @@ pub struct SimulationWorldInterface {
 }
 
 impl SimulationWorldInterface {
-    pub fn send_event<E: Event>(&mut self, event: E) {
-        self.common.world.send_event(event);
+    pub fn send_event<E: Message>(&mut self, event: E) {
+        self.common.world.write_message(event);
     }
 }
 
@@ -70,7 +70,7 @@ impl SimulationWorldInterface {
         builder
             .schedules
             .entry(SimulationSchedule::Startup)
-            .configure_sets((StartupSet::UserInterface, StartupSet::LoadingTasks).chain());
+            .configure_sets((StartupSet::ResourceInitialization, StartupSet::Tasks).chain());
 
         builder
             .schedules

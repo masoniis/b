@@ -1,14 +1,15 @@
 use crate::simulation_world::{
     global_resources::CameraResource,
     input::{
-        events::{
-            internal::WindowResizeEvent, KeyboardInputEvent, MouseButtonInputEvent, RawWindowEvent,
+        messages::{
+            internal::MouseResizeMessage, KeyboardInputMessage, MouseButtonInputMessage,
+            RawWindowMessage,
         },
         resources::{Buttons, WindowSizeResource},
     },
 };
 use bevy_ecs::{
-    event::{EventReader, EventWriter},
+    message::{MessageReader, MessageWriter},
     system::ResMut,
 };
 use tracing::instrument;
@@ -25,21 +26,21 @@ pub fn window_events_system(
     mut mouse_input: ResMut<Buttons<MouseButton>>,
 
     // Input from OS bridge
-    mut raw_window_events: EventReader<RawWindowEvent>,
+    mut raw_window_events: MessageReader<RawWindowMessage>,
 
     // Output
-    mut keyboard_writer: EventWriter<KeyboardInputEvent>,
-    mut mouse_button_writer: EventWriter<MouseButtonInputEvent>,
-    mut resize_writer: EventWriter<WindowResizeEvent>,
+    mut keyboard_writer: MessageWriter<KeyboardInputMessage>,
+    mut mouse_button_writer: MessageWriter<MouseButtonInputMessage>,
+    mut resize_writer: MessageWriter<MouseResizeMessage>,
 ) {
     // Clear previous stale state
     keyboard_input.swap_previous();
     mouse_input.swap_previous();
 
-    for RawWindowEvent(event) in raw_window_events.read() {
+    for RawWindowMessage(event) in raw_window_events.read() {
         match event {
             WindowEvent::KeyboardInput { event, .. } => {
-                let semantic_event = KeyboardInputEvent {
+                let semantic_event = KeyboardInputMessage {
                     key_code: event.physical_key,
                     state: event.state,
                 };
@@ -52,7 +53,7 @@ pub fn window_events_system(
                 keyboard_writer.write(semantic_event);
             }
             WindowEvent::MouseInput { button, state, .. } => {
-                let semantic_event = MouseButtonInputEvent {
+                let semantic_event = MouseButtonInputMessage {
                     button: *button,
                     state: *state,
                 };
@@ -65,7 +66,7 @@ pub fn window_events_system(
                 mouse_button_writer.write(semantic_event);
             }
             WindowEvent::Resized(physical_size) => {
-                resize_writer.write(WindowResizeEvent {
+                resize_writer.write(MouseResizeMessage {
                     width: physical_size.width,
                     height: physical_size.height,
                 });
@@ -78,7 +79,7 @@ pub fn window_events_system(
 /// A system that listens for `WindowResizedEvent`s and updates relevant resources.
 #[instrument(skip_all)]
 pub fn handle_resize_system(
-    mut resize_events: EventReader<WindowResizeEvent>,
+    mut resize_events: MessageReader<MouseResizeMessage>,
     mut window_resource: ResMut<WindowSizeResource>,
     mut camera: ResMut<CameraResource>,
 ) {

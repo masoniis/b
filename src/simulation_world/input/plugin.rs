@@ -1,5 +1,5 @@
 use super::{
-    events::internal::WindowResizeEvent,
+    messages::internal::MouseResizeMessage,
     resources::{Buttons, CursorMovement},
     systems::{processing, utils},
     ActionStateResource, InputActionMapResource,
@@ -7,16 +7,25 @@ use super::{
 use crate::{
     ecs_core::{state_machine::AppState, EcsBuilder, Plugin},
     simulation_world::{
-        input::events::{
-            KeyboardInputEvent, MouseButtonInputEvent, MouseMoveEvent, MouseScrollEvent,
-            RawDeviceEvent, RawWindowEvent,
+        input::messages::{
+            KeyboardInputMessage, MouseButtonInputMessage, MouseMoveMessage, MouseScrollMessage,
+            RawDeviceMessage, RawWindowMessage,
         },
         scheduling::OnExit,
         SimulationSchedule, SimulationSet,
     },
 };
-use bevy_ecs::{event::Events, schedule::IntoScheduleConfigs};
+use bevy_ecs::{
+    message::Messages,
+    schedule::{IntoScheduleConfigs, SystemSet},
+};
 use winit::{event::MouseButton, keyboard::PhysicalKey};
+
+#[derive(SystemSet, Debug, Hash, PartialEq, Eq, Clone)]
+pub enum InputSystemSet {
+    WindowEvents,
+    DeviceEvents,
+}
 
 pub struct InputModulePlugin;
 
@@ -31,30 +40,46 @@ impl Plugin for InputModulePlugin {
         builder.add_resource(CursorMovement::default());
 
         // External events (comes from the app wrapper)
-        builder.world.init_resource::<Events<RawWindowEvent>>();
-        builder.world.init_resource::<Events<RawDeviceEvent>>();
+        builder.world.init_resource::<Messages<RawWindowMessage>>();
+        builder.world.init_resource::<Messages<RawDeviceMessage>>();
 
         // Internal events (an ecs system fires them)
-        builder.world.init_resource::<Events<KeyboardInputEvent>>();
-        builder.world.init_resource::<Events<MouseMoveEvent>>();
-        builder.world.init_resource::<Events<MouseScrollEvent>>();
-        builder.world.init_resource::<Events<WindowResizeEvent>>();
         builder
             .world
-            .init_resource::<Events<MouseButtonInputEvent>>();
+            .init_resource::<Messages<KeyboardInputMessage>>();
+        builder.world.init_resource::<Messages<MouseMoveMessage>>();
+        builder
+            .world
+            .init_resource::<Messages<MouseScrollMessage>>();
+        builder
+            .world
+            .init_resource::<Messages<MouseResizeMessage>>();
+        builder
+            .world
+            .init_resource::<Messages<MouseButtonInputMessage>>();
 
         // Schedules
         builder
             .schedule_entry(SimulationSchedule::Main)
             .add_systems(
-                (
-                    processing::window_events_system,
-                    processing::device_events_system,
-                    processing::handle_resize_system.after(processing::window_events_system),
-                    processing::update_action_state_system
-                        .after(processing::window_events_system)
-                        .after(processing::device_events_system),
-                )
+                processing::window_events_system
+                    .in_set(InputSystemSet::WindowEvents)
+                    .in_set(SimulationSet::Input),
+            )
+            .add_systems(
+                processing::device_events_system
+                    .in_set(InputSystemSet::DeviceEvents)
+                    .in_set(SimulationSet::Input),
+            )
+            .add_systems(
+                processing::handle_resize_system
+                    .after(InputSystemSet::WindowEvents)
+                    .in_set(SimulationSet::Input),
+            )
+            .add_systems(
+                processing::update_action_state_system
+                    .after(InputSystemSet::WindowEvents)
+                    .after(InputSystemSet::DeviceEvents)
                     .in_set(SimulationSet::Input),
             );
 

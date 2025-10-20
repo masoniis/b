@@ -8,19 +8,12 @@ pub mod text;
 // ----------------------
 
 use self::layout::handle_window_resize_system;
-use self::screens::debug::{
-    diagnostic_ui_is_visible, toggle_debug_diagnostics_system, update_fps_counter_system,
-};
-use self::screens::loading_screen::despawn_loading_ui_system;
-use crate::ecs_core::state_machine::AppState;
 use crate::simulation_world::scheduling::StartupSet;
-use crate::simulation_world::user_interface::screens::debug::update_mesh_counter_system;
+use crate::simulation_world::user_interface::screens::debug::DebugScreenPlugin;
+use crate::simulation_world::user_interface::screens::LoadingScreenPlugin;
 use crate::{
     ecs_core::{EcsBuilder, Plugin},
-    simulation_world::{
-        input::{ActionStateResource, SimulationAction},
-        OnExit, SimulationSchedule, SimulationSet,
-    },
+    simulation_world::{SimulationSchedule, SimulationSet},
 };
 use bevy_ecs::prelude::*;
 use {
@@ -29,7 +22,7 @@ use {
         handle_structural_changes_system, update_changed_styles_system, EntityToNodeMap,
         IsLayoutDirty, UiLayoutTree,
     },
-    screens::{spawn_loading_ui_system, spawn_ui_root_system},
+    screens::spawn_ui_root_system,
     text::setup_font_system,
 };
 
@@ -37,41 +30,39 @@ pub struct UiPlugin;
 
 impl Plugin for UiPlugin {
     fn build(&self, builder: &mut EcsBuilder) {
-        builder.world.init_non_send_resource::<UiLayoutTree>();
+        // INFO: -------------------
+        //         Resources
+        // -------------------------
 
+        builder.world.init_non_send_resource::<UiLayoutTree>();
         builder
             .add_resource(EntityToNodeMap::default())
             .add_resource(IsLayoutDirty::default());
 
+        // INFO: -----------------
+        //         Plugins
+        // -----------------------
+
+        builder
+            .add_plugin(LoadingScreenPlugin)
+            .add_plugin(DebugScreenPlugin);
+
+        // INFO: -----------------
+        //         Systems
+        // -----------------------
+
         builder
             .schedule_entry(SimulationSchedule::Startup)
             .add_systems(
-                (
-                    (setup_font_system, spawn_ui_root_system),
-                    spawn_loading_ui_system,
-                )
-                    .in_set(StartupSet::UserInterface)
+                (setup_font_system, spawn_ui_root_system)
+                    .in_set(StartupSet::ResourceInitialization)
                     .chain(),
             );
 
         builder
-            .schedule_entry(OnExit(AppState::StartingUp))
-            .add_systems(despawn_loading_ui_system);
-
-        builder
             .schedule_entry(SimulationSchedule::Main)
             .add_systems((
-                (
-                    toggle_debug_diagnostics_system.run_if(
-                        |action_state: Res<ActionStateResource>| {
-                            action_state.just_happened(SimulationAction::ToggleDiagnostics)
-                        },
-                    ),
-                    handle_window_resize_system,
-                    (update_fps_counter_system, update_mesh_counter_system)
-                        .run_if(diagnostic_ui_is_visible),
-                )
-                    .in_set(SimulationSet::Update),
+                (handle_window_resize_system,).in_set(SimulationSet::Update),
                 (
                     handle_structural_changes_system,
                     handle_hierarchy_changes_system,

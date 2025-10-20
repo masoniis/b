@@ -25,7 +25,7 @@ pub trait MirrorableComponent: Component {
     /// Creates the RenderBundle from the SimulationWorld components.
     fn to_render_bundle(
         &self,
-        dependencies: <<<Self as MirrorableComponent>::Dependencies as QueryData>::ReadOnly as QueryData>::Item<'_>,
+        dependencies: <<<Self as MirrorableComponent>::Dependencies as QueryData>::ReadOnly as QueryData>::Item<'_, '_>,
     ) -> Self::RenderBundle;
 }
 

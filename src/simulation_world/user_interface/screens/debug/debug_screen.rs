@@ -23,6 +23,24 @@ pub fn diagnostic_ui_is_visible(query: Query<(), With<DiagnosticsUiElementMarker
     !query.is_empty()
 }
 
+/// Toggles the debug diagnostics UI by spawning or despawning it.
+#[instrument(skip_all)]
+pub fn toggle_debug_diagnostics_system(
+    // Input
+    root_node: Res<UiRootNodeResource>,
+    query: Query<Entity, With<DiagnosticsUiElementMarker>>,
+
+    // Output (toggling UI)
+    mut commands: Commands,
+) {
+    if let Ok(ui_entity) = query.single() {
+        info!("Despawning Diagnostic UI...");
+        commands.entity(ui_entity).despawn();
+    } else {
+        spawn_diagnostic_ui(&mut commands, &root_node);
+    }
+}
+
 /// Spawns the FPS Counter UI and attaches it to the persistent root node.
 fn spawn_diagnostic_ui(commands: &mut Commands, root_node: &Res<UiRootNodeResource>) {
     info!("Spawning Diagnostic UI...");
@@ -95,22 +113,4 @@ fn spawn_diagnostic_ui(commands: &mut Commands, root_node: &Res<UiRootNodeResour
     commands
         .entity(root_entity)
         .add_child(diagnostic_ui_container);
-}
-
-/// Toggles the debug diagnostics UI by spawning or despawning it.
-#[instrument(skip_all)]
-pub fn toggle_debug_diagnostics_system(
-    // Input
-    root_node: Res<UiRootNodeResource>,
-    query: Query<Entity, With<DiagnosticsUiElementMarker>>,
-
-    // Output (toggling UI)
-    mut commands: Commands,
-) {
-    if let Ok(ui_entity) = query.single() {
-        info!("Despawning Diagnostic UI...");
-        commands.entity(ui_entity).despawn();
-    } else {
-        spawn_diagnostic_ui(&mut commands, &root_node);
-    }
 }
