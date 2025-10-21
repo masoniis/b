@@ -1,11 +1,11 @@
 use crate::prelude::*;
 use crate::render_world::types::Vertex;
+use crate::simulation_world::asset_management::{AssetStorageResource, MeshAsset};
 use crate::simulation_world::block::property_registry::BlockRegistryResource;
 use crate::simulation_world::chunk::block::Block;
 use crate::simulation_world::chunk::chunk::Chunk;
 use crate::simulation_world::chunk::{MeshComponent, CHUNK_DEPTH, CHUNK_HEIGHT, CHUNK_WIDTH};
 use crate::simulation_world::global_resources::texture_map::TextureMapResource;
-use crate::simulation_world::global_resources::{AssetStorageResource, MeshAsset};
 use bevy_ecs::prelude::*;
 
 /// Finds all new chunks and generates a mesh for them.

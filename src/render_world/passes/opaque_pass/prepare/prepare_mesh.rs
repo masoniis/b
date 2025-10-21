@@ -7,7 +7,7 @@ use crate::{
         },
         graphics_context::resources::RenderDevice,
     },
-    simulation_world::global_resources::{AssetStorageResource, MeshAsset},
+    simulation_world::asset_management::{AssetStorageResource, MeshAsset},
 };
 use bevy_ecs::prelude::*;
 use std::sync::Arc;

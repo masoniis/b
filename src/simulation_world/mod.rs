@@ -1,4 +1,5 @@
 pub mod app_lifecycle;
+pub mod asset_management;
 pub mod block;
 pub mod chunk;
 pub mod global_resources;
@@ -16,9 +17,11 @@ pub use self::scheduling::{OnExit, SimulationSchedule, SimulationSet};
 use crate::render_world::{
     global_extract::utils::initialize_simulation_world_for_extract, textures::TextureRegistry,
 };
+use crate::simulation_world::asset_management::{
+    AssetManagementPlugin, MeshAsset,
+};
 use crate::simulation_world::block::BlockPlugin;
 use crate::simulation_world::chunk::ChunkGenerationPlugin;
-use crate::simulation_world::global_resources::MeshAsset;
 use crate::simulation_world::input::InputModulePlugin;
 use crate::simulation_world::player::PlayerModulePlugin;
 use crate::simulation_world::scheduling::{FixedUpdateSet, StartupSet};
@@ -132,6 +135,7 @@ impl PluginGroup for SharedPlugins {
     fn build(self, builder: &mut EcsBuilder) {
         builder
             .add_plugin(AppLifecyclePlugin)
+            .add_plugin(AssetManagementPlugin)
             .add_plugin(BlockPlugin)
             .add_plugin(ChunkGenerationPlugin)
             .add_plugin(TimeControlPlugin)
@@ -145,9 +149,6 @@ impl PluginGroup for ClientOnlyPlugins {
     fn build(self, builder: &mut EcsBuilder) {
         builder
             .add_resource(global_resources::camera::CameraResource::default())
-            .add_resource(global_resources::asset_storage::AssetStorageResource::<
-                MeshAsset,
-            >::default())
             .add_plugin(UiPlugin)
             .add_plugin(InputModulePlugin);
     }

@@ -30,7 +30,7 @@ use crate::{
         global_extract::{RenderCameraResource, RenderMeshStorageResource, RenderTimeResource},
         resources::PipelineCacheResource,
     },
-    simulation_world::global_resources::{AssetStorageResource, MeshAsset},
+    simulation_world::asset_management::{AssetStorageResource, MeshAsset},
 };
 use bevy_ecs::schedule::IntoScheduleConfigs;
 use resources::TextureArrayResource;

@@ -1,4 +1,4 @@
-use crate::{prelude::*, render_world::types::vertex::Vertex};
+use crate::prelude::*;
 use bevy_ecs::prelude::Resource;
 use std::collections::hash_map::{Entry, HashMap};
 use std::hash::Hash;
@@ -8,44 +8,12 @@ use std::sync::{
     Arc, RwLock,
 };
 
+pub type AssetId = u32;
 pub trait Asset {
     fn name(&self) -> &str;
 }
 
-// --- Asset types (Unchanged) ---
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub struct BlockAppearance {
-    pub top_face_texture_index: u32,
-    pub bottom_face_texture_index: u32,
-    pub front_face_texture_index: u32,
-    pub back_face_texture_index: u32,
-    pub left_face_texture_index: u32,
-    pub right_face_texture_index: u32,
-}
-#[derive(Debug, Clone)]
-pub struct BlockDefAsset {
-    pub name: String,
-    pub appearance: BlockAppearance,
-    pub is_transparent: bool,
-}
-impl Asset for BlockDefAsset {
-    fn name(&self) -> &str {
-        &self.name
-    }
-}
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
-pub struct MeshAsset {
-    pub name: String,
-    pub vertices: Vec<Vertex>,
-    pub indices: Vec<u32>,
-}
-impl Asset for MeshAsset {
-    fn name(&self) -> &str {
-        &self.name
-    }
-}
-
-// --- Handle (Unchanged) ---
+/// A handle to an asset stored in the `AssetStorageResource`.
 #[derive(Debug, PartialEq, Eq, Hash)]
 pub struct Handle<T> {
     id: AssetId,
@@ -71,18 +39,17 @@ impl<T> Clone for Handle<T> {
     }
 }
 impl<T> Copy for Handle<T> {}
-pub type AssetId = u32;
 
-// INFO: ---------------------------
-//      The storage itself (Refactored for Thread Safety)
-// ---------------------------------
+// INFO: -------------------------
+//      The storage itself
+// -------------------------------
 
 /// A thread-safe, reference-counted asset storage resource.
 /// Cloning this resource is cheap and allows it to be shared across threads.
 #[derive(Resource, Clone)]
 pub struct AssetStorageResource<T> {
     storage: Arc<RwLock<HashMap<AssetId, T>>>,
-    next_id: Arc<AtomicU32>, // Atomic for lock-free increments
+    next_id: Arc<AtomicU32>,
     name_to_id: Arc<RwLock<HashMap<String, AssetId>>>,
 }
 
@@ -158,5 +125,39 @@ impl<T: Asset + Send + Sync + 'static> AssetStorageResource<T> {
     pub fn get_by_name(&self, name: &str) -> Option<Handle<T>> {
         let name_to_id = self.name_to_id.read().unwrap();
         name_to_id.get(name).map(|id| Handle::new(*id))
+    }
+
+    /// Removes an asset from the storage using its handle.
+    /// Acquires write locks. Returns the removed asset if it existed.
+    pub fn remove(&self, handle: Handle<T>) -> Option<T> {
+        // get the name for logging
+        let name = {
+            let storage_read = self.storage.read().unwrap();
+            storage_read
+                .get(&handle.id())
+                .map(|asset| asset.name().to_string())
+        };
+
+        // remove the asset from storage
+        let removed_asset = {
+            let mut storage_write = self.storage.write().unwrap();
+            storage_write.remove(&handle.id())
+        };
+
+        // log and clean up the name map
+        if let Some(asset_name) = name {
+            if removed_asset.is_some() {
+                let mut name_write = self.name_to_id.write().unwrap();
+                name_write.remove(&asset_name);
+                info!("Removed asset '{}' (ID: {})", asset_name, handle.id());
+            }
+        } else if removed_asset.is_some() {
+            warn!(
+                "Removed asset ID {} but couldn't find its name in the name map!",
+                handle.id()
+            );
+        }
+
+        removed_asset
     }
 }

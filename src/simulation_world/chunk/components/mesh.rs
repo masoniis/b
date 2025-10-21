@@ -1,5 +1,4 @@
-use crate::simulation_world::global_resources::asset_storage::Handle;
-use crate::simulation_world::global_resources::asset_storage::MeshAsset;
+use crate::simulation_world::{asset_management::asset_storage::Handle, MeshAsset};
 use bevy_ecs::prelude::Component;
 
 #[derive(Component)]
