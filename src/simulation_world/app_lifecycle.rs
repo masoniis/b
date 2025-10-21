@@ -42,14 +42,16 @@ impl Plugin for AppLifecyclePlugin {
             .add_systems(reset_loading_tracker_system);
 
         builder.add_resource(OnLoadComplete::new(AppState::Running));
+        builder.add_resource(OnLoadComplete::new(GameState::Playing));
 
         builder
             .schedule_entry(SimulationSchedule::Main)
             .add_systems(
                 (
                     apply_state_transition_system::<AppState>,
+                    master_finalize_loading_system::<AppState>,
                     apply_state_transition_system::<GameState>,
-                    master_finalize_loading_system,
+                    master_finalize_loading_system::<GameState>,
                 )
                     .in_set(SimulationSet::PreUpdate),
             );
