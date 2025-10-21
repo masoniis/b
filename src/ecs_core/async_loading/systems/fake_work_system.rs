@@ -1,5 +1,8 @@
 use crate::{
-    ecs_core::async_loading::loading_task::SimulationWorldLoadingTaskComponent, prelude::*,
+    ecs_core::async_loading::loading_task::{
+        SimulationWorldLoadingTaskComponent, TaskResultCallback,
+    },
+    prelude::*,
 };
 use bevy_ecs::prelude::*;
 
@@ -13,7 +16,12 @@ pub fn start_fake_work_system(mut commands: Commands) {
             info!("(Background Thread) Fake working... step {}/2", i);
             tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
         }
-        info!("(Background Thread) Fake work finished!");
+
+        let callback: TaskResultCallback = Box::new(|_commands| {
+            info!("(Callback) Finished performing fake work!");
+        });
+
+        callback
     });
 
     commands.spawn(SimulationWorldLoadingTaskComponent {
