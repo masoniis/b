@@ -32,30 +32,26 @@ pub struct InputModulePlugin;
 impl Plugin for InputModulePlugin {
     fn build(&self, builder: &mut EcsBuilder) {
         // Resources
-        builder.add_resource(InputActionMapResource::default());
-        builder.add_resource(ActionStateResource::default());
+        builder
+            .add_resource(InputActionMapResource::default())
+            .add_resource(ActionStateResource::default());
 
-        builder.add_resource(Buttons::<PhysicalKey>::default());
-        builder.add_resource(Buttons::<MouseButton>::default());
-        builder.add_resource(CursorMovement::default());
+        builder
+            .add_resource(Buttons::<PhysicalKey>::default())
+            .add_resource(Buttons::<MouseButton>::default())
+            .add_resource(CursorMovement::default());
 
         // External events (comes from the app wrapper)
-        builder.world.init_resource::<Messages<RawWindowMessage>>();
-        builder.world.init_resource::<Messages<RawDeviceMessage>>();
+        builder
+            .init_resource::<Messages<RawWindowMessage>>()
+            .init_resource::<Messages<RawDeviceMessage>>();
 
         // Internal events (an ecs system fires them)
         builder
-            .world
-            .init_resource::<Messages<KeyboardInputMessage>>();
-        builder.world.init_resource::<Messages<MouseMoveMessage>>();
-        builder
-            .world
-            .init_resource::<Messages<MouseScrollMessage>>();
-        builder
-            .world
-            .init_resource::<Messages<MouseResizeMessage>>();
-        builder
-            .world
+            .init_resource::<Messages<KeyboardInputMessage>>()
+            .init_resource::<Messages<MouseMoveMessage>>()
+            .init_resource::<Messages<MouseScrollMessage>>()
+            .init_resource::<Messages<MouseResizeMessage>>()
             .init_resource::<Messages<MouseButtonInputMessage>>();
 
         // Schedules

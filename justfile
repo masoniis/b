@@ -18,6 +18,9 @@ fix *args:
 #         Advanced commands
 # ---------------------------------
 
+bevy_trace *args:
+	cargo run --features bevy_ecs/trace
+
 trace *args:
 	#!/usr/bin/env bash
 	trap 'echo -e "\n\033[1;36mStopping Tracy profiler (PID: $tracy_pid)...\033[0m"; kill $tracy_pid' EXIT

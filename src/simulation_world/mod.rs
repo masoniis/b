@@ -17,9 +17,7 @@ pub use self::scheduling::{OnExit, SimulationSchedule, SimulationSet};
 use crate::render_world::{
     global_extract::utils::initialize_simulation_world_for_extract, textures::TextureRegistry,
 };
-use crate::simulation_world::asset_management::{
-    AssetManagementPlugin, MeshAsset,
-};
+use crate::simulation_world::asset_management::{AssetManagementPlugin, MeshAsset};
 use crate::simulation_world::block::BlockPlugin;
 use crate::simulation_world::chunk::ChunkGenerationPlugin;
 use crate::simulation_world::input::InputModulePlugin;

@@ -3,7 +3,7 @@ pub mod mesh_counter;
 pub mod update_fps_counter;
 
 pub use debug_screen::{diagnostic_ui_is_visible, toggle_debug_diagnostics_system};
-pub use mesh_counter::{track_mesh_count_system, update_mesh_counter_system};
+pub use mesh_counter::{update_mesh_counter_system, update_mesh_stats_system};
 pub use update_fps_counter::update_fps_counter_system;
 
 // INFO: ----------------
@@ -32,7 +32,7 @@ impl Plugin for DebugScreenPlugin {
                 toggle_debug_diagnostics_system.run_if(|action_state: Res<ActionStateResource>| {
                     action_state.just_happened(SimulationAction::ToggleDiagnostics)
                 }),
-                track_mesh_count_system,
+                update_mesh_stats_system,
                 (update_fps_counter_system, update_mesh_counter_system)
                     .after(toggle_debug_diagnostics_system)
                     .run_if(diagnostic_ui_is_visible),

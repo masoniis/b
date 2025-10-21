@@ -15,9 +15,9 @@ pub fn chunk_meshing_system(
     new_chunk_query: Query<(Entity, &Chunk), (Added<Chunk>, Without<MeshComponent>)>,
     texture_map: Res<TextureMapResource>,
     block_registry: Res<BlockRegistryResource>,
-    mesh_assets: Res<AssetStorageResource<MeshAsset>>,
 
     // Output (inserted chunk meshes)
+    mesh_assets: Res<AssetStorageResource<MeshAsset>>,
     mut commands: Commands,
 ) {
     for (entity, chunk) in new_chunk_query.iter() {
@@ -38,6 +38,7 @@ pub fn chunk_meshing_system(
                 vertices,
                 indices,
             };
+
             let mesh_handle = mesh_assets.add(mesh_asset);
 
             commands

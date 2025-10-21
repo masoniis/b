@@ -1,32 +1,61 @@
 use crate::prelude::*;
+use crate::simulation_world::asset_management::{
+    AssetStorageResource, MeshAsset, MeshComponentRemovedMessage,
+};
 use crate::simulation_world::chunk::MeshComponent;
 use crate::simulation_world::user_interface::components::UiText;
-use crate::simulation_world::user_interface::screens::debug::debug_screen::MeshCounterTextElementMarker;
+use crate::simulation_world::user_interface::screens::debug_screen::{
+    IndexCountTextMarker, MeshCountTextMarker, VertexCountTextMarker,
+};
 use bevy_ecs::prelude::*;
-use derive_more::{Deref, DerefMut};
 
-#[derive(Resource, Default, Debug, Deref, DerefMut)]
-pub struct MeshCounterResource(pub usize);
+#[derive(Resource, Default, Debug)]
+pub struct MeshCounterResource {
+    pub total_meshes: usize,
+    pub total_vertices: usize,
+    pub total_indices: usize,
+}
 
 /// Updates the content of the Mesh counter text element.
 #[instrument(skip_all)]
-pub fn track_mesh_count_system(
-    mut mesh_count: ResMut<MeshCounterResource>,
+pub fn update_mesh_stats_system(
+    // Inputs
+    added_meshes: Query<&MeshComponent, Added<MeshComponent>>,
+    mut removed_events: MessageReader<MeshComponentRemovedMessage>,
 
-    // Input queries
-    added_meshes: Query<(), Added<MeshComponent>>,
-    removed_meshes: RemovedComponents<MeshComponent>,
+    // Outputs
+    mut mesh_count: ResMut<MeshCounterResource>,
+    asset_storage: Res<AssetStorageResource<MeshAsset>>,
 ) {
-    // check for additions
-    let added_count = added_meshes.iter().count();
-    if added_count > 0 {
-        mesh_count.0 += added_count;
+    // handle additions
+    for mesh_component in added_meshes.iter() {
+        if let Some(mesh) = asset_storage.get(mesh_component.mesh_handle) {
+            mesh_count.total_meshes += 1;
+            mesh_count.total_vertices += mesh.vertices.len();
+            mesh_count.total_indices += mesh.indices.len();
+        } else {
+            warn!(
+                "MeshComponent added with an invalid handle: {:?}",
+                mesh_component.mesh_handle.id()
+            );
+        }
     }
 
-    // check for removals
-    let removed_count = removed_meshes.len();
-    if removed_count > 0 {
-        mesh_count.0 -= removed_count;
+    // handle removals
+    for event in removed_events.read() {
+        if let Some(mesh) = asset_storage.get(event.mesh_handle) {
+            // use saturating_sub to prevent panicking if counts somehow mismatch
+            mesh_count.total_meshes = mesh_count.total_meshes.saturating_sub(1);
+            mesh_count.total_vertices = mesh_count
+                .total_vertices
+                .saturating_sub(mesh.vertices.len());
+            mesh_count.total_indices = mesh_count.total_indices.saturating_sub(mesh.indices.len());
+        } else {
+            warn!(
+                "MeshComponentRemovedMessage received for an invalid handle: {:?}",
+                event.mesh_handle.id()
+            );
+        }
     }
 }
 
@@ -37,11 +66,21 @@ pub fn update_mesh_counter_system(
     mesh_counter: Res<MeshCounterResource>,
 
     // Output (updated UI)
-    mut ui_query: Query<&mut UiText, With<MeshCounterTextElementMarker>>,
+    mut text_query: Query<(
+        &mut UiText,
+        Option<&MeshCountTextMarker>,
+        Option<&VertexCountTextMarker>,
+        Option<&IndexCountTextMarker>,
+    )>,
 ) {
-    if let Ok(mut text_component) = ui_query.single_mut() {
-        text_component.content = format!("Mesh Counter: {}", mesh_counter.0);
-    } else {
-        warn!("MeshCounterTextElementMarker doesn't exist, but MeshCounter changed.");
+    // TODO: prevent this from running every frame
+    for (mut text, mesh_marker, vertex_marker, index_marker) in text_query.iter_mut() {
+        if mesh_marker.is_some() {
+            text.content = format!("{}", mesh_counter.total_meshes);
+        } else if vertex_marker.is_some() {
+            text.content = format!("{}", mesh_counter.total_vertices);
+        } else if index_marker.is_some() {
+            text.content = format!("{}", mesh_counter.total_indices);
+        }
     }
 }
