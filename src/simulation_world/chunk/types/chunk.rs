@@ -5,18 +5,12 @@ use bevy_ecs::prelude::Component;
 
 #[derive(Clone, Component)]
 pub struct Chunk {
-    pub x: i32,
-    pub y: i32,
-    pub z: i32,
     blocks: Vec<Block>,
 }
 
 impl Chunk {
-    pub fn new(x: i32, y: i32, z: i32) -> Self {
+    pub fn new() -> Self {
         Self {
-            x,
-            y,
-            z,
             blocks: vec![Block { id: 0 }; CHUNK_WIDTH * CHUNK_HEIGHT * CHUNK_DEPTH],
         }
     }

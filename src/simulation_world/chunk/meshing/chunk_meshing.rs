@@ -25,16 +25,16 @@ pub fn chunk_meshing_system(
 
         if !vertices.is_empty() {
             info!(
-                "Generated mesh for chunk ({}, {}, {}) with {} vertices and {} indices",
-                chunk.x,
-                chunk.y,
-                chunk.z,
+                "Generated mesh for chunk with {} vertices and {} indices",
                 vertices.len(),
                 indices.len()
             );
 
+            // using the same name for every chunk will reject duplicate assets
+            // but that is fine for now because the superflat generator currently
+            // creates the same chunk everywhere at the moment.
             let mesh_asset = MeshAsset {
-                name: format!("chunk_{}_{}_{}", chunk.x, chunk.y, chunk.z),
+                name: format!("basic_flat_chunk"),
                 vertices,
                 indices,
             };
@@ -68,7 +68,7 @@ fn build_chunk_mesh(
                 }
                 let block_properties = block_registry.get(block.id);
 
-                // --- Check neighbor +Y (Top Face) ---
+                // Check neighbor +Y (Top Face)
                 let neighbor_top = if y < CHUNK_HEIGHT - 1 {
                     chunk.get_block(x, y + 1, z).unwrap_or(&air_block)
                 } else {
@@ -86,7 +86,7 @@ fn build_chunk_mesh(
                     indices.extend(face_indices);
                 }
 
-                // --- Check neighbor -Y (Bottom Face) ---
+                // Check neighbor -Y (Bottom Face)
                 let neighbor_bottom = if y > 0 {
                     chunk.get_block(x, y - 1, z).unwrap_or(&air_block)
                 } else {
@@ -103,7 +103,7 @@ fn build_chunk_mesh(
                     indices.extend(face_indices);
                 }
 
-                // --- Check neighbor -X (Left / West Face) ---
+                // Check neighbor -X (Left / West Face)
                 let neighbor_left = if x > 0 {
                     chunk.get_block(x - 1, y, z).unwrap_or(&air_block)
                 } else {
@@ -120,7 +120,7 @@ fn build_chunk_mesh(
                     indices.extend(face_indices);
                 }
 
-                // --- Check neighbor +X (Right / East Face) ---
+                // Check neighbor +X (Right / East Face)
                 let neighbor_right = if x < CHUNK_WIDTH - 1 {
                     chunk.get_block(x + 1, y, z).unwrap_or(&air_block)
                 } else {
@@ -138,7 +138,7 @@ fn build_chunk_mesh(
                     indices.extend(face_indices);
                 }
 
-                // --- Check neighbor +Z (Front / South Face) ---
+                // Check neighbor +Z (Front / South Face)
                 let neighbor_front = if z < CHUNK_DEPTH - 1 {
                     chunk.get_block(x, y, z + 1).unwrap_or(&air_block)
                 } else {
@@ -155,7 +155,7 @@ fn build_chunk_mesh(
                     indices.extend(face_indices);
                 }
 
-                // --- Check neighbor -Z (Back / North Face) ---
+                // Check neighbor -Z (Back / North Face)
                 let neighbor_back = if z > 0 {
                     chunk.get_block(x, y, z - 1).unwrap_or(&air_block)
                 } else {

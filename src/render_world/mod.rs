@@ -27,9 +27,8 @@ use crate::simulation_world::chunk::MeshComponent;
 use crate::simulation_world::input::resources::WindowSizeResource;
 use crate::{
     ecs_core::state_machine::{self, in_state, StatePlugin},
-    render_world::{
-        global_extract::{RenderCameraResource, RenderMeshStorageResource, RenderTimeResource},
-        resources::PipelineCacheResource,
+    render_world::global_extract::{
+        RenderCameraResource, RenderMeshStorageResource, RenderTimeResource,
     },
     simulation_world::asset_management::{AssetStorageResource, MeshAsset},
 };
@@ -97,8 +96,7 @@ impl RenderWorldInterface {
         builder
             .init_resource::<RenderTimeResource>()
             .init_resource::<RenderCameraResource>()
-            .init_resource::<RenderMeshStorageResource>()
-            .init_resource::<PipelineCacheResource>();
+            .init_resource::<RenderMeshStorageResource>();
 
         // Specifically implemented plugins
         builder

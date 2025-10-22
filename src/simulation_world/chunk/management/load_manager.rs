@@ -4,7 +4,7 @@ use std::collections::{HashMap, HashSet};
 
 /// Resource that tracks the state of chunks in the world.
 #[derive(Resource, Default, Debug)]
-pub struct ChunkManager {
+pub struct ChunkLoadManager {
     /// Map of coordinates for chunks that are fully loaded and have an entity spawned.
     ///
     /// Key: IVec3 chunk coordinate (e.g., (0, 0, 0), (1, 0, 0))
@@ -16,7 +16,7 @@ pub struct ChunkManager {
     pub loading_chunks: HashSet<IVec3>,
 }
 
-impl ChunkManager {
+impl ChunkLoadManager {
     /// Checks if a chunk is either fully loaded or currently being generated.
     pub fn is_chunk_present_or_loading(&self, coord: IVec3) -> bool {
         self.loaded_chunks.contains_key(&coord) || self.loading_chunks.contains(&coord)

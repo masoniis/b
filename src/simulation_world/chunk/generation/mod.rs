@@ -17,6 +17,15 @@ pub struct GeneratedChunkData {
     pub transform: TransformComponent,
 }
 
+impl GeneratedChunkData {
+    pub fn empty() -> Self {
+        Self {
+            chunk: Chunk::new(),
+            transform: TransformComponent::default(),
+        }
+    }
+}
+
 /// A trait for chunk generators to implement.
 pub trait ChunkGenerator: Send + Sync + Debug {
     /// Returns generated chunk data for the given chunk coordinates.

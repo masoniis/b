@@ -32,13 +32,17 @@ impl ChunkGenerator for SuperflatGenerator {
         let cy = coord.y;
         let cz = coord.z;
 
+        if cy != 0 {
+            return GeneratedChunkData::empty();
+        }
+
         let layer_blocks: Vec<_> = self
             .layers
             .iter()
             .map(|name| blocks.get_block_by_name(name))
             .collect();
 
-        let mut chunk = Chunk::new(cx, cy, cz);
+        let mut chunk = Chunk::new();
 
         for x in 1..CHUNK_WIDTH - 1 {
             for z in 1..CHUNK_DEPTH - 1 {

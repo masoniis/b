@@ -19,8 +19,13 @@ pub use types::*;
 use crate::{
     ecs_core::{EcsBuilder, Plugin},
     simulation_world::{
-        block::load_block_definitions_system, chunk::flat_world::setup_superflat_world,
-        scheduling::StartupSet, SimulationSchedule,
+        block::load_block_definitions_system,
+        chunk::{
+            chunk_spawner::manage_chunk_loading_system, flat_world::setup_superflat_world,
+            load_manager::ChunkLoadManager,
+        },
+        scheduling::StartupSet,
+        SimulationSchedule,
     },
 };
 use bevy_ecs::schedule::IntoScheduleConfigs;
@@ -29,16 +34,18 @@ pub struct ChunkGenerationPlugin;
 
 impl Plugin for ChunkGenerationPlugin {
     fn build(&self, builder: &mut EcsBuilder) {
-        builder
-            .schedule_entry(SimulationSchedule::Startup)
-            .add_systems(
-                setup_superflat_world
-                    .after(load_block_definitions_system)
-                    .in_set(StartupSet::Tasks),
-            );
+        // builder
+        //     .schedule_entry(SimulationSchedule::Startup)
+        //     .add_systems(
+        //         setup_superflat_world
+        //             .after(load_block_definitions_system)
+        //             .in_set(StartupSet::Tasks),
+        //     );
+
+        builder.add_resource(ChunkLoadManager::default());
 
         builder
             .schedule_entry(SimulationSchedule::Main)
-            .add_systems(chunk_meshing_system);
+            .add_systems((chunk_meshing_system, manage_chunk_loading_system));
     }
 }
