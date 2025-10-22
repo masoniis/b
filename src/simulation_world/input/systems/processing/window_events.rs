@@ -1,12 +1,9 @@
-use crate::simulation_world::{
-    camera::camera::CameraResource,
-    input::{
-        messages::{
-            internal::MouseResizeMessage, KeyboardInputMessage, MouseButtonInputMessage,
-            RawWindowMessage,
-        },
-        resources::{Buttons, WindowSizeResource},
+use crate::simulation_world::input::{
+    messages::{
+        internal::MouseResizeMessage, KeyboardInputMessage, MouseButtonInputMessage,
+        RawWindowMessage,
     },
+    resources::{Buttons, WindowSizeResource},
 };
 use bevy_ecs::{
     message::{MessageReader, MessageWriter},
@@ -81,11 +78,9 @@ pub fn window_events_system(
 pub fn handle_resize_system(
     mut resize_events: MessageReader<MouseResizeMessage>,
     mut window_resource: ResMut<WindowSizeResource>,
-    mut camera: ResMut<CameraResource>,
 ) {
     for event in resize_events.read() {
         window_resource.width = event.width;
         window_resource.height = event.height;
-        camera.projection_dirty = true;
     }
 }

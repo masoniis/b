@@ -15,7 +15,8 @@ use crate::ecs_core::state_machine::{AppState, GameState};
 use crate::ecs_core::worlds::RenderWorldMarker;
 use crate::prelude::*;
 use crate::render_world::global_extract::{
-    simulation_world_resource_changed, ExtractComponentPlugin, RenderWindowSizeResource,
+    extract_active_camera_system, simulation_world_resource_changed, ExtractComponentPlugin,
+    RenderWindowSizeResource,
 };
 use crate::render_world::graphics_context::{GraphicsContext, GraphicsContextPlugin};
 use crate::render_world::passes::core::setup_render_graph;
@@ -125,8 +126,7 @@ impl RenderWorldInterface {
                     global_extract::extract_state_system::<GameState>,
                     global_extract::extract_state_system::<AppState>,
                 ),
-                (global_extract::extract_resource_system::<RenderCameraResource>)
-                    .run_if(in_state(AppState::Running)),
+                extract_active_camera_system,
             ));
 
         builder.schedule_entry(RenderSchedule::Main).add_systems(

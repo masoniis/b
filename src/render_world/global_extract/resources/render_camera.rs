@@ -1,12 +1,9 @@
 use crate::prelude::*;
-use crate::render_world::global_extract::generic_systems::extract_resource::ExtractResource;
-use crate::simulation_world::camera::camera::CameraResource;
-use bevy_ecs::prelude::Resource;
-use bevy_ecs::system::{Commands, ResMut};
+use crate::render_world::global_extract::run_extract_schedule::SimulationWorld;
+use crate::simulation_world::camera::{ActiveCamera, CameraComponent};
+use bevy_ecs::prelude::{Res, ResMut, Resource};
 
 /// A resource in the render world holding the extracted camera matrices.
-/// Pre-calculating all matrices here is efficient, as render systems
-/// can access exactly what they need without re-computing.
 #[derive(Resource, Debug, Default)]
 pub struct RenderCameraResource {
     pub view_matrix: Mat4,
@@ -14,30 +11,41 @@ pub struct RenderCameraResource {
     pub world_position: Vec3,
 }
 
-impl ExtractResource for RenderCameraResource {
-    type Source = CameraResource;
-    type Output = Self;
+/// A standalone system to extract the active camera's data from sim world.
+#[instrument(skip_all)]
+pub fn extract_active_camera_system(
+    // Input
+    simulation_world: Res<SimulationWorld>,
 
-    fn extract_and_update(
-        commands: &mut Commands,
-        source: &Self::Source,
-        target: Option<ResMut<Self::Output>>,
-    ) {
-        let view_matrix = source.view_matrix;
-        let projection_matrix = source.projection_matrix;
-        let world_position = source.view_matrix.inverse().w_axis.truncate();
+    // Output
+    mut render_camera: ResMut<RenderCameraResource>,
+) {
+    let sim_world = &simulation_world.val;
 
-        // Handle the insert vs. update logic
-        if let Some(mut target_res) = target {
-            target_res.view_matrix = view_matrix;
-            target_res.projection_matrix = projection_matrix;
-            target_res.world_position = world_position;
-        } else {
-            commands.insert_resource(RenderCameraResource {
-                view_matrix,
-                projection_matrix,
-                world_position,
-            });
+    // get the ActiveCamera resource from the simulation world
+    let active_camera_res = match sim_world.get_resource::<ActiveCamera>() {
+        Some(res) => res,
+        None => {
+            warn!("extract_active_camera_system: SimulationWorld has no ActiveCamera resource.");
+            return;
         }
-    }
+    };
+    let active_entity = active_camera_res.0;
+
+    // get the CameraComponent for that entity
+    let source_component = match sim_world.get::<CameraComponent>(active_entity) {
+        Some(comp) => comp,
+        None => {
+            warn!(
+                "extract_active_camera_system: ActiveCamera entity {:?} has no CameraComponent.",
+                active_entity
+            );
+            return; // entity exists but component is missing
+        }
+    };
+
+    // update the render world camera resource
+    render_camera.view_matrix = source_component.view_matrix;
+    render_camera.projection_matrix = source_component.projection_matrix;
+    render_camera.world_position = source_component.position;
 }

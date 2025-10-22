@@ -5,7 +5,6 @@ pub mod camera;
 pub mod chunk;
 
 pub mod input;
-pub mod player;
 pub mod scheduling;
 pub mod time;
 pub mod user_interface;
@@ -21,9 +20,9 @@ use crate::render_world::{
 use crate::simulation_world::asset_management::texture_map_registry::TextureMapResource;
 use crate::simulation_world::asset_management::{AssetManagementPlugin, MeshAsset};
 use crate::simulation_world::block::BlockPlugin;
+use crate::simulation_world::camera::CameraPlugin;
 use crate::simulation_world::chunk::ChunkGenerationPlugin;
 use crate::simulation_world::input::InputModulePlugin;
-use crate::simulation_world::player::PlayerModulePlugin;
 use crate::simulation_world::scheduling::{FixedUpdateSet, StartupSet};
 use crate::simulation_world::time::TimeControlPlugin;
 use crate::{
@@ -137,8 +136,7 @@ impl PluginGroup for SharedPlugins {
             .add_plugin(AssetManagementPlugin)
             .add_plugin(BlockPlugin)
             .add_plugin(ChunkGenerationPlugin)
-            .add_plugin(TimeControlPlugin)
-            .add_plugin(PlayerModulePlugin);
+            .add_plugin(TimeControlPlugin);
     }
 }
 
@@ -147,7 +145,7 @@ struct ClientOnlyPlugins;
 impl PluginGroup for ClientOnlyPlugins {
     fn build(self, builder: &mut EcsBuilder) {
         builder
-            .add_resource(camera::camera::CameraResource::default())
+            .add_plugin(CameraPlugin)
             .add_plugin(UiPlugin)
             .add_plugin(InputModulePlugin);
     }
