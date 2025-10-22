@@ -1,5 +1,5 @@
 use crate::simulation_world::{
-    global_resources::CameraResource,
+    camera::camera::CameraResource,
     input::{
         messages::{
             internal::MouseResizeMessage, KeyboardInputMessage, MouseButtonInputMessage,

@@ -1,5 +1,27 @@
-use bevy_ecs::prelude::Resource;
+use bevy_ecs::{component::Component, entity::Entity, prelude::Resource};
 use glam::{Mat4, Vec3};
+
+/// A resource that holds the currently active camera entity (regarding rendering)
+#[derive(Resource)]
+pub struct ActiveCamera(pub Entity);
+
+/// A component that holds camera data for an entity
+#[derive(Component)]
+pub struct CameraComponent {
+    pub position: Vec3,
+    pub front: Vec3,
+    pub up: Vec3,
+    pub right: Vec3,
+    pub world_up: Vec3,
+
+    pub yaw: f32,
+    pub pitch: f32,
+
+    pub view_matrix: Mat4,
+    pub projection_matrix: Mat4,
+
+    pub zoom: f32,
+}
 
 #[derive(Resource)]
 pub struct CameraResource {

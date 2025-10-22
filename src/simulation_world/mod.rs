@@ -1,8 +1,9 @@
 pub mod app_lifecycle;
 pub mod asset_management;
 pub mod block;
+pub mod camera;
 pub mod chunk;
-pub mod global_resources;
+
 pub mod input;
 pub mod player;
 pub mod scheduling;
@@ -17,6 +18,7 @@ pub use self::scheduling::{OnExit, SimulationSchedule, SimulationSet};
 use crate::render_world::{
     global_extract::utils::initialize_simulation_world_for_extract, textures::TextureRegistry,
 };
+use crate::simulation_world::asset_management::texture_map_registry::TextureMapResource;
 use crate::simulation_world::asset_management::{AssetManagementPlugin, MeshAsset};
 use crate::simulation_world::block::BlockPlugin;
 use crate::simulation_world::chunk::ChunkGenerationPlugin;
@@ -29,7 +31,6 @@ use crate::{
     simulation_world::app_lifecycle::AppLifecyclePlugin,
 };
 use bevy_ecs::prelude::*;
-use global_resources::TextureMapResource;
 use input::resources::WindowSizeResource;
 use std::ops::{Deref, DerefMut};
 use user_interface::UiPlugin;
@@ -146,7 +147,7 @@ struct ClientOnlyPlugins;
 impl PluginGroup for ClientOnlyPlugins {
     fn build(self, builder: &mut EcsBuilder) {
         builder
-            .add_resource(global_resources::camera::CameraResource::default())
+            .add_resource(camera::camera::CameraResource::default())
             .add_plugin(UiPlugin)
             .add_plugin(InputModulePlugin);
     }

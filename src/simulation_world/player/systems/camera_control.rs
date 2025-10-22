@@ -1,6 +1,6 @@
 use crate::simulation_world::time::FrameClock;
 use crate::{
-    simulation_world::global_resources::camera::CameraResource,
+    simulation_world::camera::camera::CameraResource,
     simulation_world::input::resources::WindowSizeResource,
     simulation_world::input::{
         resources::CursorMovement, types::simulation_action::SimulationAction, ActionStateResource,

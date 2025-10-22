@@ -1,5 +1,6 @@
 pub mod asset_storage;
 pub mod mesh_asset;
+pub mod texture_map_registry;
 
 pub use asset_storage::{Asset, AssetStorageResource, Handle};
 use bevy_ecs::{message::Messages, schedule::IntoScheduleConfigs};

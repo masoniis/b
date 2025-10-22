@@ -1,6 +1,6 @@
 use crate::prelude::*;
 use crate::render_world::global_extract::generic_systems::extract_resource::ExtractResource;
-use crate::simulation_world::global_resources::camera::CameraResource;
+use crate::simulation_world::camera::camera::CameraResource;
 use bevy_ecs::prelude::Resource;
 use bevy_ecs::system::{Commands, ResMut};
 
