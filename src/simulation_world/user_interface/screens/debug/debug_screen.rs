@@ -6,7 +6,17 @@ use crate::simulation_world::user_interface::screens::spawn_root::UiRootNodeReso
 use bevy_ecs::prelude::*;
 use bevy_ecs::relationship::RelatedSpawnerCommands;
 
-// --- Marker Components ---
+// INFO: -------------------------
+//         Marker elements
+// -------------------------------
+
+/// An enum representing all possible statistic text markers.
+pub enum StatMarker {
+    Fps(FpsCounterTextElementMarker),
+    MeshCount(MeshCountTextMarker),
+    VertexCount(VertexCountTextMarker),
+    IndexCount(IndexCountTextMarker),
+}
 
 /// A marker component for all entities that are part of the diag UI.
 #[derive(Component)]
@@ -28,6 +38,10 @@ pub struct VertexCountTextMarker;
 #[derive(Component)]
 pub struct IndexCountTextMarker;
 
+// INFO: -------------------------------------
+//         Toggling and creation logic
+// -------------------------------------------
+
 /// A run condition that returns true if the diagnostic UI is currently spawned and visible.
 pub fn diagnostic_ui_is_visible(query: Query<(), With<DiagnosticsUiElementMarker>>) -> bool {
     !query.is_empty()
@@ -39,6 +53,7 @@ pub fn toggle_debug_diagnostics_system(
     // Input
     root_node: Res<UiRootNodeResource>,
     query: Query<Entity, With<DiagnosticsUiElementMarker>>,
+
     // Output (toggling UI)
     mut commands: Commands,
 ) {
@@ -63,23 +78,47 @@ fn spawn_diagnostic_ui(commands: &mut Commands, root_node: &Res<UiRootNodeResour
                 position: taffy::style::Position::Absolute,
                 width: Size::Percent(100.0),
                 height: Size::Percent(100.0),
-                flex_direction: taffy::style::FlexDirection::Column,
-                justify_content: Some(taffy::JustifyContent::Start),
+                flex_direction: taffy::style::FlexDirection::Row,
+                justify_content: Some(taffy::JustifyContent::SpaceBetween),
                 align_items: Some(taffy::AlignItems::Start),
                 ..Default::default()
             },
         ))
         .with_children(|parent| {
-            // Spawn the FPS counter on its own line
-            spawn_single_text_line(
-                parent,
-                FpsCounterTextElementMarker,
-                "FPS: 0".to_string(),
-                [1.0, 1.0, 1.0, 1.0],
-            );
+            let font_size = 32.0;
+            let align = TextAlign::Center;
 
-            // Spawn the mesh stats all on one line
-            spawn_mesh_stats_line(parent);
+            // fps line
+            let fps_line_elements = vec![StatLineElement {
+                prefix: "FPS: ".to_string(),
+                content: "0.00".to_string(),
+                color: [1.0, 1.0, 1.0, 1.0],
+                marker: StatMarker::Fps(FpsCounterTextElementMarker),
+            }];
+            spawn_stats_line(parent, fps_line_elements, font_size, align);
+
+            // mesh line
+            let mesh_line_elements = vec![
+                StatLineElement {
+                    prefix: "Meshes: ".to_string(),
+                    content: "0".to_string(),
+                    color: [0.9, 0.6, 0.6, 1.0],
+                    marker: StatMarker::MeshCount(MeshCountTextMarker),
+                },
+                StatLineElement {
+                    prefix: " Verts: ".to_string(),
+                    content: "0".to_string(),
+                    color: [0.6, 0.8, 0.6, 1.0],
+                    marker: StatMarker::VertexCount(VertexCountTextMarker),
+                },
+                StatLineElement {
+                    prefix: " Idxs: ".to_string(),
+                    content: "0".to_string(),
+                    color: [0.6, 0.6, 0.9, 1.0],
+                    marker: StatMarker::IndexCount(IndexCountTextMarker),
+                },
+            ];
+            spawn_stats_line(parent, mesh_line_elements, font_size, align);
         })
         .id();
 
@@ -88,52 +127,32 @@ fn spawn_diagnostic_ui(commands: &mut Commands, root_node: &Res<UiRootNodeResour
         .add_child(diagnostic_ui_container);
 }
 
-/// A generic helper function to spawn one line of the diagnostic UI with a single text element.
-fn spawn_single_text_line<M: Component>(
+/// A data struct to define one part of a multi-part stat line.
+pub struct StatLineElement {
+    /// A label prefix for the dynamic text (e.g., "FPS: ")
+    pub prefix: String,
+    /// The initial value for the dynamic text (e.g., "0")
+    pub content: String,
+    /// The color of the dynamic text
+    pub color: [f32; 4],
+    /// The marker component, wrapped in our enum.
+    pub marker: StatMarker,
+}
+
+/// A generic helper to spawn a multi-part statistics line from a Vec of elements.
+fn spawn_stats_line(
     parent: &mut RelatedSpawnerCommands<ChildOf>,
-    marker: M,
-    text_content: String,
-    color: [f32; 4],
+    elements: Vec<StatLineElement>,
+    font_size: f32,
+    text_align: TextAlign,
 ) {
     parent
         .spawn((
             Node,
             Style {
                 padding: 8.0,
-                // These styles are for the background box of the line
+                flex_direction: taffy::style::FlexDirection::Row,
                 align_items: Some(taffy::style::AlignItems::Center),
-                justify_content: Some(taffy::style::JustifyContent::Center),
-                ..Default::default()
-            },
-            UiBackground::SolidColor {
-                color: [0.0, 0.0, 0.0, 0.33],
-            },
-        ))
-        .with_children(|parent_box| {
-            parent_box.spawn((
-                marker,
-                Node,
-                Style::default(),
-                UiText {
-                    content: text_content,
-                    font_size: 32.0,
-                    color,
-                    align: TextAlign::Center,
-                },
-            ));
-        });
-}
-
-/// A specialized helper to spawn the multi-part mesh statistics line.
-fn spawn_mesh_stats_line(parent: &mut RelatedSpawnerCommands<ChildOf>) {
-    // This parent container uses FlexDirection::Row to align children horizontally.
-    parent
-        .spawn((
-            Node,
-            Style {
-                padding: 8.0,
-                flex_direction: taffy::style::FlexDirection::Row, // Arrange children horizontally
-                align_items: Some(taffy::style::AlignItems::Center), // Center items vertically
                 ..Default::default()
             },
             UiBackground::SolidColor {
@@ -141,79 +160,40 @@ fn spawn_mesh_stats_line(parent: &mut RelatedSpawnerCommands<ChildOf>) {
             },
         ))
         .with_children(|line| {
-            let font_size = 32.0;
-            let align = TextAlign::Center;
+            let static_color = [0.7, 0.7, 0.7, 1.0];
 
-            // Static label for Meshes
-            line.spawn((
-                Node,
-                Style::default(),
-                UiText {
-                    content: "Meshes: ".to_string(),
-                    font_size,
-                    color: [0.7, 0.7, 0.7, 1.0],
-                    align,
-                },
-            ));
-            // Dynamic text for Mesh Count
-            line.spawn((
-                MeshCountTextMarker,
-                Node,
-                Style::default(),
-                UiText {
-                    content: "0".to_string(),
-                    font_size,
-                    color: [0.9, 0.6, 0.6, 1.0],
-                    align,
-                },
-            ));
+            for element in elements {
+                // static prefix
+                if !element.prefix.is_empty() {
+                    line.spawn((
+                        Node,
+                        Style::default(),
+                        UiText {
+                            content: element.prefix,
+                            font_size,
+                            color: static_color,
+                            align: text_align,
+                        },
+                    ));
+                }
 
-            // Static label for Vertices
-            line.spawn((
-                Node,
-                Style::default(),
-                UiText {
-                    content: " Verts: ".to_string(),
-                    font_size,
-                    color: [0.7, 0.7, 0.7, 1.0],
-                    align,
-                },
-            ));
-            // Dynamic text for Vertex Count
-            line.spawn((
-                VertexCountTextMarker,
-                Node,
-                Style::default(),
-                UiText {
-                    content: "0".to_string(),
-                    font_size,
-                    color: [0.6, 0.8, 0.6, 1.0],
-                    align,
-                },
-            ));
-
-            // Static label for Triangles
-            line.spawn((
-                Node,
-                Style::default(),
-                UiText {
-                    content: " Idxs: ".to_string(),
-                    font_size,
-                    color: [0.7, 0.7, 0.7, 1.0],
-                    align,
-                },
-            ));
-            // Dynamic text for Triangle Count
-            line.spawn((
-                IndexCountTextMarker,
-                Node,
-                Style::default(),
-                UiText {
-                    content: "0".to_string(),
-                    font_size,
-                    color: [0.6, 0.6, 0.9, 1.0],
-                    align,
-                },
-            ));
+                // dynamic text with marker
+                let mut text_entity = line.spawn((
+                    Node,
+                    Style::default(),
+                    UiText {
+                        content: element.content,
+                        font_size,
+                        color: element.color,
+                        align: text_align,
+                    },
+                ));
+                match element.marker {
+                    StatMarker::Fps(marker) => text_entity.insert(marker),
+                    StatMarker::MeshCount(marker) => text_entity.insert(marker),
+                    StatMarker::VertexCount(marker) => text_entity.insert(marker),
+                    StatMarker::IndexCount(marker) => text_entity.insert(marker),
+                };
+            }
         });
 }

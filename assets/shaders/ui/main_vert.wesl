@@ -11,7 +11,7 @@ fn vs_main(
 ) -> VertexOutput {
     var out: VertexOutput;
 
-    // Scale the object model matrix by the orthographic projection
+    // scale model matrix (screen space) by the orthographic projection to get clip space
     let model = objects[instance_index].model;
     out.clip_position = ortho_projection * model * vec4<f32>(position, 0.0, 1.0);
 
