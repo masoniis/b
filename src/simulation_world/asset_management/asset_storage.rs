@@ -111,7 +111,8 @@ impl<T: Asset + Send + Sync + 'static> AssetStorageResource<T> {
             }
             Entry::Occupied(entry) => {
                 let existing_id = *entry.get();
-                warn!(
+                debug!(
+                    target : "duplicate_assets",
                     "Attempted to add a duplicate asset with name: '{}'. \
                     The new asset was rejected. Returning a handle to the existing asset (ID: {}).",
                     entry.key(),

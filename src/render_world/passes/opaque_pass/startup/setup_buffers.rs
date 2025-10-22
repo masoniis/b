@@ -1,6 +1,6 @@
 use crate::render_world::graphics_context::resources::RenderDevice;
 use crate::render_world::passes::opaque_pass::startup::OpaquePipeline;
-use crate::{prelude::*, render_world::resources::TextureArrayResource};
+use crate::{prelude::*, render_world::textures::TextureArrayResource};
 use bevy_ecs::prelude::*;
 use bytemuck::{Pod, Zeroable};
 

@@ -34,7 +34,7 @@ pub fn prepare_meshes_system(
                     create_gpu_mesh_from_data(&device, &mesh_asset.vertices, &mesh_asset.indices);
 
                 debug!(
-                    target = "gpu_mesh_prepared",
+                    target : "gpu_mesh_prepared",
                     "Prepared GPU mesh for handle ID {}",
                     handle.id()
                 );

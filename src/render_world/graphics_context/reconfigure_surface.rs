@@ -19,7 +19,7 @@ pub fn reconfigure_wgpu_surface_system(
     // size of 0 is undefined in wgpu
     if window_size.width > 0.0 && window_size.height > 0.0 {
         debug!(
-            target = "wgpu_resize",
+            target : "wgpu_resize",
             "Detected window resize. Reconfiguring wgpu surface to {}x{}",
             window_size.width,
             window_size.height

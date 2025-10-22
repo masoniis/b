@@ -12,36 +12,31 @@ use std::collections::HashSet;
 use tracing::info;
 
 /// The distance, in chunks, to load around the camera.
-const RENDER_DISTANCE: i32 = 2;
-/// The vertical distance, in chunks, to load.
+const RENDER_DISTANCE: i32 = 1;
 const VERTICAL_RENDER_DISTANCE: i32 = 1;
 
-/// This system is the "brain" of chunk management.
+/// Determines chunks to unload/load based on the camera position.
 ///
-/// It runs when the camera's `ChunkVicinity` changes, calculating
-/// which chunks to load and which to unload.
+/// Only needs to run when the camera has entered a new chunk.
 #[instrument(skip_all)]
 pub fn manage_chunk_loading_system(
-    mut commands: Commands,
-    mut chunk_manager: ResMut<ChunkLoadManager>,
+    // Input
     active_camera: Res<ActiveCamera>,
     blocks: Res<BlockRegistryResource>,
-    // This query is the key:
-    // It now gets ALL entities that have a changed ChunkChord.
     camera_query: Query<&ChunkChord, Changed<ChunkChord>>,
-) {
-    let camera_entity = active_camera.0;
 
-    // 2. Try to get the ChunkChord *for that specific entity*.
-    // This will only return Ok(..) if the camera_entity exists
-    // AND has a ChunkChord component AND that component has Changed.
-    let Ok(camera_vicinity) = camera_query.get(camera_entity) else {
-        return; // No change on our active camera, no work to do.
+    // Output
+    mut chunk_manager: ResMut<ChunkLoadManager>, // for marking loaded/unloaded
+    mut commands: Commands,                      // for spawning chunk entities
+) {
+    let Ok(camera_chunk) = camera_query.get(active_camera.0) else {
+        return;
     };
-    let camera_chunk_pos = camera_vicinity.pos;
+
+    let camera_chunk_pos = camera_chunk.pos;
     info!("Camera moved to new chunk: {:?}", camera_chunk_pos);
 
-    // 3. Calculate the new set of desired chunks (Unchanged)
+    // calculate desired chunks based on render distance
     let mut desired_chunks = HashSet::new();
     for y in -VERTICAL_RENDER_DISTANCE..=VERTICAL_RENDER_DISTANCE {
         for z in -RENDER_DISTANCE..=RENDER_DISTANCE {
@@ -52,27 +47,22 @@ pub fn manage_chunk_loading_system(
         }
     }
 
-    // Unload Pass
+    // unload pass
     chunk_manager.loaded_chunks.retain(|coord, entity| {
         if desired_chunks.contains(coord) {
-            // This chunk is still in range, keep it.
-            true
+            true // chunk in range, keep it
         } else {
-            // This chunk is out of range. Despawn it.
             info!("Unloading chunk at {:?} (Entity: {:?})", coord, entity);
 
-            // --- THIS IS THE FIX ---
             commands.entity(*entity).despawn();
-            // -----------------------
 
-            // Also remove it from the loading set, just in case.
+            // TODO: consider removing from loading set as well
             // chunk_manager.loading_chunks.remove(coord);
-            // Return false to remove it from the loaded_chunks map.
             false
         }
     });
 
-    // 5. Load Pass (Unchanged)
+    // load in chunks
     let gen = SuperflatGenerator::new();
     for coord in desired_chunks {
         if !chunk_manager.is_chunk_present_or_loading(coord) {

@@ -27,7 +27,6 @@ impl SuperflatGenerator {
 
 impl ChunkGenerator for SuperflatGenerator {
     fn generate_chunk(&self, coord: IVec3, blocks: &BlockRegistryResource) -> GeneratedChunkData {
-        info!("Generating SUPERFLAT chunk data for {:?}", coord);
         let cx = coord.x;
         let cy = coord.y;
         let cz = coord.z;

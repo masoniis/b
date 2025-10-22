@@ -19,16 +19,10 @@ pub use types::*;
 use crate::{
     ecs_core::{EcsBuilder, Plugin},
     simulation_world::{
-        block::load_block_definitions_system,
-        chunk::{
-            chunk_spawner::manage_chunk_loading_system, flat_world::setup_superflat_world,
-            load_manager::ChunkLoadManager,
-        },
-        scheduling::StartupSet,
+        chunk::{chunk_spawner::manage_chunk_loading_system, load_manager::ChunkLoadManager},
         SimulationSchedule,
     },
 };
-use bevy_ecs::schedule::IntoScheduleConfigs;
 
 pub struct ChunkGenerationPlugin;
 

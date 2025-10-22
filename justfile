@@ -18,8 +18,8 @@ fix *args:
 #         Advanced commands
 # ---------------------------------
 
-bevy_trace *args:
-	cargo run --features bevy_ecs/trace
+bevy_debug *args:
+	cargo run --features bevy_ecs/trace --features bevy_ecs/track_location
 
 trace *args:
 	#!/usr/bin/env bash

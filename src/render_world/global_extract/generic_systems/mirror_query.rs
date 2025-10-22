@@ -74,43 +74,39 @@ fn extract_mirrorable_components_system<T: MirrorableComponent>(
     mut commands: Commands,
     mut entity_map: ResMut<EntityMap<T>>,
     mut simulation_world: ResMut<SimulationWorld>,
-    mut removed_components: RemovedComponents<T>,
 ) {
-    // Despawn entities when the MirrorableComponent is removed
+    // INFO: -------------------------
+    //         Handle removals
+    // -------------------------------
 
-    // FIXME? Entities won't be despawned when a dependency is removed,
-    // only when the main part is removed. This could lead to bugs down the line
-    // but I don't have any good solutions that don't require iterating over all the
-    // mirrored components and that is pretty expensive when it comes to meshes.
-    for main_entity in removed_components.read() {
+    for main_entity in simulation_world.removed::<T>() {
         if let Some(render_entity) = entity_map.0.remove(&main_entity) {
-            // Use `get_entity` and `despawn` for safe despawning
+            debug!(
+                target : "render_mirror_components",
+                "Despawning render entity {:?} for main entity {:?} (component removed)",
+                render_entity, main_entity
+            );
             if let Ok(mut entity_commands) = commands.get_entity(render_entity) {
                 entity_commands.despawn();
-            } else {
-                warn!(
-                    "Render entity {:?} not found for despawning (main entity {:?})",
-                    render_entity, main_entity
-                );
             }
         }
     }
 
-    let mut query = simulation_world
-        .val
-        .query_filtered::<(Entity, &T, T::Dependencies), T::Filter>();
+    // INFO: ----------------------------------
+    //         Handle additions/updates
+    // ----------------------------------------
+
+    let mut query = simulation_world.query_filtered::<(Entity, &T, T::Dependencies), T::Filter>();
 
     for (main_entity, main_component, dependencies) in query.iter(&simulation_world.val) {
         let render_bundle = main_component.to_render_bundle(dependencies);
 
-        // Decide whether to spawn a new entity or update an existing one.
+        // either spawn a new entity or update an existing one
         if let Some(&render_entity) = entity_map.0.get(&main_entity) {
-            // UPDATE: The entity already exists, so just update its bundle of components.
             if let Ok(mut entity_commands) = commands.get_entity(render_entity) {
                 entity_commands.insert(render_bundle);
             }
         } else {
-            // SPAWN: This is a new entity. Spawn it in the render world and map it.
             let render_entity = commands.spawn(render_bundle).id();
             entity_map.0.insert(main_entity, render_entity);
         }

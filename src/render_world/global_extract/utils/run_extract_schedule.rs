@@ -5,7 +5,7 @@ use bevy_ecs::schedule::ScheduleLabel;
 use super::SimulationWorldPlaceholder;
 
 /// A wrapper for the game world so it can be inserted as a resource in the render world.
-#[derive(Resource)]
+#[derive(Resource, Deref, DerefMut)]
 pub struct SimulationWorld {
     pub val: World,
 }

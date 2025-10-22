@@ -1,7 +1,6 @@
 pub mod global_extract;
 pub mod graphics_context;
 pub mod passes;
-pub mod resources;
 pub mod scheduling;
 pub mod textures;
 pub mod types;
@@ -14,26 +13,19 @@ use crate::ecs_core::async_loading::poll_render_loading_tasks;
 use crate::ecs_core::state_machine::{AppState, GameState};
 use crate::ecs_core::worlds::RenderWorldMarker;
 use crate::prelude::*;
-use crate::render_world::global_extract::{
-    extract_active_camera_system, simulation_world_resource_changed, ExtractComponentPlugin,
-    RenderWindowSizeResource,
-};
+use crate::render_world::global_extract::SimulationExtractionPlugin;
 use crate::render_world::graphics_context::{GraphicsContext, GraphicsContextPlugin};
 use crate::render_world::passes::core::setup_render_graph;
 use crate::render_world::passes::RenderPassManagerPlugin;
 use crate::render_world::scheduling::{RenderSchedule, RenderSet};
-use crate::render_world::textures::GpuTextureArray;
-use crate::simulation_world::chunk::MeshComponent;
-use crate::simulation_world::input::resources::WindowSizeResource;
+use crate::render_world::textures::{GpuTextureArray, TextureArrayResource};
 use crate::{
     ecs_core::state_machine::{self, in_state, StatePlugin},
     render_world::global_extract::{
         RenderCameraResource, RenderMeshStorageResource, RenderTimeResource,
     },
-    simulation_world::asset_management::{AssetStorageResource, MeshAsset},
 };
 use bevy_ecs::schedule::IntoScheduleConfigs;
-use resources::TextureArrayResource;
 use std::ops::{Deref, DerefMut};
 
 pub struct RenderWorldInterface {
@@ -101,35 +93,20 @@ impl RenderWorldInterface {
         // Specifically implemented plugins
         builder
             .add_plugin(GraphicsContextPlugin::new(graphics_context))
-            .add_plugin(RenderPassManagerPlugin);
+            .add_plugin(RenderPassManagerPlugin)
+            .add_plugin(SimulationExtractionPlugin);
         // Generic auto-constructed plugins
         builder
             .add_plugin(StatePlugin::<AppState>::default())
-            .add_plugin(StatePlugin::<GameState>::default())
-            .add_plugin(ExtractComponentPlugin::<MeshComponent>::default());
+            .add_plugin(StatePlugin::<GameState>::default());
 
         builder
             .schedule_entry(RenderSchedule::Main)
             .add_systems(poll_render_loading_tasks.run_if(in_state(AppState::StartingUp)));
 
-        // System builders
-        builder
-            .schedule_entry(RenderSchedule::Extract)
-            .add_systems((
-                (
-                    global_extract::clone_resource_system::<AssetStorageResource<MeshAsset>>,
-                    global_extract::extract_resource_system::<RenderTimeResource>,
-                    (global_extract::extract_resource_system::<RenderWindowSizeResource>)
-                        .run_if(simulation_world_resource_changed::<WindowSizeResource>),
-                    global_extract::extract_state_system::<GameState>,
-                    global_extract::extract_state_system::<AppState>,
-                ),
-                extract_active_camera_system,
-            ));
-
         builder.schedule_entry(RenderSchedule::Main).add_systems(
-            // apply any state transitions detected during Extract phase
             (
+                // these are applied by state changes detected in extraction
                 state_machine::apply_state_transition_system::<AppState>,
                 state_machine::apply_state_transition_system::<GameState>,
             )

@@ -2,7 +2,7 @@ use crate::{
     prelude::*,
     simulation_world::{
         camera::{ActiveCamera, CameraComponent},
-        chunk::{chunk_chord::world_to_chunk_pos, ChunkChord},
+        chunk::{chunk_chord::world_to_chunk_pos, ChunkChord, CHUNK_DEPTH, CHUNK_WIDTH},
     },
 };
 use bevy_ecs::prelude::*;
@@ -11,7 +11,7 @@ use bevy_ecs::prelude::*;
 pub fn setup_camera_system(mut commands: Commands) {
     info!("Spawning default graphics camera.");
 
-    let start_position = Vec3::new(0.0, 5.0, 0.0);
+    let start_position = Vec3::new((CHUNK_WIDTH / 2) as f32, 16.0, (CHUNK_DEPTH / 2) as f32);
     let start_chunk = world_to_chunk_pos(start_position);
 
     let camera_entity = commands
