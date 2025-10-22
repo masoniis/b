@@ -3,20 +3,18 @@
 ## Details
 
 - 🅱️
-- 🅱️
-- 🅱️
 
 ## How to run the project
 
-Option 1: requires the **rust toolchain**
+Compiling the project requires the **rust toolchain**. If you don't already have rust, installation is platform dependent but very straightforward. See [rust's guide](https://rust-lang.org/tools/install/) for steps. Once the toolchain is ready to go, you should have `cargo` as a command, and running the project is very simple from there:
 
-- Run `cargo run` (compiles and runs)
+- Run `cargo run --release` to compile and run in **release mode** (higher fps, optimized)
+- Run `cargo run` to compile and run in **debug mode** (lower FPS, logs)
 
----
+I would recommend release mode unless you are curious to see logging statements as the system runs.
 
-Option 2: requires **GCC** and **make**
+### Usage guide
 
-> NOTE: This project is written entirely in Rust, but it's configured to compile into a C-compatible static library, and those static libraries have been placed into the `cridge` folder. This method of running the project is mostly a workaround for convenience, and the preferred way to run the code is with `cargo run`, but this should (probably) work too.
+One you have the program running, there are a few binds to be aware of...
 
-- Run `make` (compiles and runs)
-- This outputs the binary at `cbridge/main`, so you can manually re-run it with `./cbridge/main`
+TODO
