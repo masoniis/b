@@ -12,6 +12,9 @@ use bevy_ecs::relationship::RelatedSpawnerCommands;
 
 /// An enum representing all possible statistic text markers.
 pub enum StatMarker {
+    // information
+    CameraXYZ(CameraChunkChordTextMarker),
+    // performance
     Fps(FpsCounterTextElementMarker),
     MeshCount(MeshCountTextMarker),
     VertexCount(VertexCountTextMarker),
@@ -20,7 +23,11 @@ pub enum StatMarker {
 
 /// A marker component for all entities that are part of the diag UI.
 #[derive(Component)]
-pub struct DiagnosticsUiElementMarker;
+pub struct RootDiagnosticScreenMarker;
+
+/// A marker component for the camera XYZ text element.
+#[derive(Component)]
+pub struct CameraChunkChordTextMarker;
 
 /// A marker component for the FPS Counter text element.
 #[derive(Component)]
@@ -43,7 +50,7 @@ pub struct IndexCountTextMarker;
 // -------------------------------------------
 
 /// A run condition that returns true if the diagnostic UI is currently spawned and visible.
-pub fn diagnostic_ui_is_visible(query: Query<(), With<DiagnosticsUiElementMarker>>) -> bool {
+pub fn diagnostic_ui_is_visible(query: Query<(), With<RootDiagnosticScreenMarker>>) -> bool {
     !query.is_empty()
 }
 
@@ -52,7 +59,7 @@ pub fn diagnostic_ui_is_visible(query: Query<(), With<DiagnosticsUiElementMarker
 pub fn toggle_debug_diagnostics_system(
     // Input
     root_node: Res<UiRootNodeResource>,
-    query: Query<Entity, With<DiagnosticsUiElementMarker>>,
+    query: Query<Entity, With<RootDiagnosticScreenMarker>>,
 
     // Output (toggling UI)
     mut commands: Commands,
@@ -72,7 +79,7 @@ fn spawn_diagnostic_ui(commands: &mut Commands, root_node: &Res<UiRootNodeResour
 
     let diagnostic_ui_container = commands
         .spawn((
-            DiagnosticsUiElementMarker,
+            RootDiagnosticScreenMarker,
             Node,
             Style {
                 position: taffy::style::Position::Absolute,
@@ -88,37 +95,76 @@ fn spawn_diagnostic_ui(commands: &mut Commands, root_node: &Res<UiRootNodeResour
             let font_size = 32.0;
             let align = TextAlign::Center;
 
-            // fps line
-            let fps_line_elements = vec![StatLineElement {
-                prefix: "FPS: ".to_string(),
-                content: "0.00".to_string(),
-                color: [1.0, 1.0, 1.0, 1.0],
-                marker: StatMarker::Fps(FpsCounterTextElementMarker),
-            }];
-            spawn_stats_line(parent, fps_line_elements, font_size, align);
+            // INFO: wrapper for elements on left side of screen
+            parent
+                .spawn((
+                    Node,
+                    Style {
+                        width: Size::Percent(100.0),
+                        height: Size::Percent(100.0),
+                        flex_direction: taffy::style::FlexDirection::Column,
+                        justify_content: Some(taffy::JustifyContent::Start),
+                        align_items: Some(taffy::AlignItems::Start),
+                        ..Default::default()
+                    },
+                ))
+                // chunk chord line
+                .with_children(|parent| {
+                    let chord_line_elements = vec![StatLineElement {
+                        prefix: "Camera chunk: ".to_string(),
+                        content: "0x 0z".to_string(),
+                        color: [0.8, 0.8, 0.2, 1.0],
+                        marker: StatMarker::CameraXYZ(CameraChunkChordTextMarker),
+                    }];
+                    spawn_stats_line(parent, chord_line_elements, font_size, align);
+                });
 
-            // mesh line
-            let mesh_line_elements = vec![
-                StatLineElement {
-                    prefix: "Meshes: ".to_string(),
-                    content: "0".to_string(),
-                    color: [0.9, 0.6, 0.6, 1.0],
-                    marker: StatMarker::MeshCount(MeshCountTextMarker),
-                },
-                StatLineElement {
-                    prefix: " Verts: ".to_string(),
-                    content: "0".to_string(),
-                    color: [0.6, 0.8, 0.6, 1.0],
-                    marker: StatMarker::VertexCount(VertexCountTextMarker),
-                },
-                StatLineElement {
-                    prefix: " Idxs: ".to_string(),
-                    content: "0".to_string(),
-                    color: [0.6, 0.6, 0.9, 1.0],
-                    marker: StatMarker::IndexCount(IndexCountTextMarker),
-                },
-            ];
-            spawn_stats_line(parent, mesh_line_elements, font_size, align);
+            // INFO: wrapper for elements on right side of screen
+            parent
+                .spawn((
+                    Node,
+                    Style {
+                        width: Size::Percent(100.0),
+                        height: Size::Percent(100.0),
+                        flex_direction: taffy::style::FlexDirection::Column,
+                        justify_content: Some(taffy::JustifyContent::Start),
+                        align_items: Some(taffy::AlignItems::End),
+                        ..Default::default()
+                    },
+                ))
+                .with_children(|parent| {
+                    // fps line
+                    let fps_line_elements = vec![StatLineElement {
+                        prefix: "FPS: ".to_string(),
+                        content: "0.00".to_string(),
+                        color: [1.0, 1.0, 1.0, 1.0],
+                        marker: StatMarker::Fps(FpsCounterTextElementMarker),
+                    }];
+                    spawn_stats_line(parent, fps_line_elements, font_size, align);
+
+                    // mesh line
+                    let mesh_line_elements = vec![
+                        StatLineElement {
+                            prefix: "Meshes: ".to_string(),
+                            content: "0".to_string(),
+                            color: [0.9, 0.6, 0.6, 1.0],
+                            marker: StatMarker::MeshCount(MeshCountTextMarker),
+                        },
+                        StatLineElement {
+                            prefix: " Verts: ".to_string(),
+                            content: "0".to_string(),
+                            color: [0.6, 0.8, 0.6, 1.0],
+                            marker: StatMarker::VertexCount(VertexCountTextMarker),
+                        },
+                        StatLineElement {
+                            prefix: " Idxs: ".to_string(),
+                            content: "0".to_string(),
+                            color: [0.6, 0.6, 0.9, 1.0],
+                            marker: StatMarker::IndexCount(IndexCountTextMarker),
+                        },
+                    ];
+                    spawn_stats_line(parent, mesh_line_elements, font_size, align);
+                });
         })
         .id();
 
@@ -189,6 +235,7 @@ fn spawn_stats_line(
                     },
                 ));
                 match element.marker {
+                    StatMarker::CameraXYZ(marker) => text_entity.insert(marker),
                     StatMarker::Fps(marker) => text_entity.insert(marker),
                     StatMarker::MeshCount(marker) => text_entity.insert(marker),
                     StatMarker::VertexCount(marker) => text_entity.insert(marker),

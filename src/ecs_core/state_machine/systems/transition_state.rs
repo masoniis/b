@@ -30,7 +30,7 @@ pub fn apply_state_transition_system<T: State>(world: &mut World) {
         }
     };
 
-    // Apply transitions
+    // apply transitions
     if let Some((old_state, new_state)) = transition {
         let is_simulation_world = world.get_resource::<SimulationWorldMarker>().is_some();
         if is_simulation_world {
@@ -49,7 +49,7 @@ pub fn apply_state_transition_system<T: State>(world: &mut World) {
 
         // run the OnExit schedule for the old state.
         if let Err(e) = world.try_run_schedule(OnExit(old_state)) {
-            warn!("({} world) {}", curr_world, e);
+            debug!(target: "missing_transitions", "({} world) {}", curr_world, e);
         }
 
         // update the CurrentState resource with the new state.
@@ -58,7 +58,7 @@ pub fn apply_state_transition_system<T: State>(world: &mut World) {
 
         // run the OnEnter schedule for the new state.
         if let Err(e) = world.try_run_schedule(OnEnter(new_state)) {
-            warn!("({} world) {}", curr_world, e);
+            debug!(target: "missing_transitions", "({} world) {}", curr_world, e);
         }
     }
 }

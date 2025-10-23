@@ -1,0 +1,28 @@
+use crate::prelude::*;
+use crate::simulation_world::camera::{ActiveCamera, CameraComponent};
+use crate::simulation_world::chunk::ChunkChord;
+use crate::simulation_world::user_interface::components::UiText;
+use crate::simulation_world::user_interface::screens::debug_screen::CameraChunkChordTextMarker;
+use bevy_ecs::prelude::*;
+
+/// Updates the content of the FPS counter text element.
+#[instrument(skip_all)]
+pub fn update_camera_chunk_chord_screen_text(
+    // Input
+    active_camera: Res<ActiveCamera>,
+    // TODO: due to the Changed<> optimization, when diagnostic screen is toggled,
+    // this system doesn't run as expected until we enter a new chunk. Minor bug
+    camera_query: Query<(&CameraComponent, &ChunkChord), Changed<ChunkChord>>,
+
+    // Output (updated component)
+    mut query: Query<&mut UiText, With<CameraChunkChordTextMarker>>,
+) {
+    if let Ok((_, chunk_chord)) = camera_query.get(active_camera.0) {
+        if let Ok(mut ui_text) = query.single_mut() {
+            ui_text.content = format!("{}x {}z", chunk_chord.pos.x, chunk_chord.pos.z);
+            return;
+        } else {
+            warn!("Failed to get single UiText with CameraXyzTextMarker");
+        }
+    }
+}
