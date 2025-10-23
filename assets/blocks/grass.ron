@@ -2,6 +2,10 @@
 	display_name: "Grass",
 	textures: (
 		fallback: grass,
+		north: Some(dirt),
+		east: Some(dirt),
+		south: Some(dirt),
+		west: Some(dirt),
 	),
 	is_transparent: false,
 )

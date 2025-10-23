@@ -16,7 +16,7 @@ pub struct MeshCounterResource {
     pub total_indices: usize,
 }
 
-/// Updates the content of the Mesh counter text element.
+/// Updates the content of the `MeshCounterResource`
 #[instrument(skip_all)]
 pub fn update_mesh_stats_system(
     // Inputs
@@ -61,7 +61,7 @@ pub fn update_mesh_stats_system(
 
 /// Updates the content of the Mesh counter text element when the resource changes.
 #[instrument(skip_all)]
-pub fn update_mesh_counter_system(
+pub fn update_mesh_counter_screen_text_system(
     // Input
     mesh_counter: Res<MeshCounterResource>,
 
@@ -73,7 +73,6 @@ pub fn update_mesh_counter_system(
         Option<&IndexCountTextMarker>,
     )>,
 ) {
-    // TODO: prevent this from running every frame
     for (mut text, mesh_marker, vertex_marker, index_marker) in text_query.iter_mut() {
         if mesh_marker.is_some() {
             text.content = format!("{}", mesh_counter.total_meshes);

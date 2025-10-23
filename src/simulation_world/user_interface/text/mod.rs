@@ -1,3 +1,3 @@
-pub mod systems;
+pub mod setup_font;
 
-pub use systems::setup_font_system;
+pub use setup_font::setup_font_system;

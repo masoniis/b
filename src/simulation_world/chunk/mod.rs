@@ -28,14 +28,6 @@ pub struct ChunkGenerationPlugin;
 
 impl Plugin for ChunkGenerationPlugin {
     fn build(&self, builder: &mut EcsBuilder) {
-        // builder
-        //     .schedule_entry(SimulationSchedule::Startup)
-        //     .add_systems(
-        //         setup_superflat_world
-        //             .after(load_block_definitions_system)
-        //             .in_set(StartupSet::Tasks),
-        //     );
-
         builder.add_resource(ChunkLoadManager::default());
 
         builder

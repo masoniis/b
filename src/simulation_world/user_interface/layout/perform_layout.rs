@@ -6,7 +6,7 @@ use crate::{
             components::{self as simulation, CalculatedLayout, UiRoot, UiText},
             layout::IsLayoutDirty,
             screens::spawn_root::UiRootNodeResource,
-            text::systems::FontSystemResource,
+            text::setup_font::FontSystemResource,
         },
     },
 };

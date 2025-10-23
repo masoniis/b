@@ -24,12 +24,6 @@ pub fn chunk_meshing_system(
         let (vertices, indices) = build_chunk_mesh(chunk, &texture_map, &block_registry);
 
         if !vertices.is_empty() {
-            info!(
-                "Generated mesh for chunk with {} vertices and {} indices",
-                vertices.len(),
-                indices.len()
-            );
-
             // using the same name for every chunk will reject duplicate assets
             // but that is fine for now because the superflat generator currently
             // creates the same chunk everywhere at the moment.

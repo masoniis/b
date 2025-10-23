@@ -76,7 +76,9 @@ pub struct MeshComponentRemovedMessage {
 }
 
 /// Updates mesh reference counts based on added components and removal events.
-/// Removes mesh assets from storage when their reference count reaches zero.
+///
+/// Reads mesh remove events and queues the mesh for deletion from asset storage
+/// if the mesh has a reference count of zero.
 #[instrument(skip_all)]
 pub fn update_mesh_ref_counts_system(
     // Resources

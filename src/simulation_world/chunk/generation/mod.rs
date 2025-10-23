@@ -1,4 +1,3 @@
-pub mod flat_world;
 pub mod superflat_generator;
 
 use crate::simulation_world::chunk::{chunk::Chunk, TransformComponent};

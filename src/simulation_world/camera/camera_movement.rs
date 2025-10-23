@@ -130,7 +130,8 @@ pub fn update_camera_chunk_chord_system(
     // update chunk chord if it is different
     let new_chunk_pos = world_to_chunk_pos(camera.position);
     if new_chunk_pos != vicinity.pos {
-        info!(
+        debug!(
+            target: "camera_chunk",
             "Camera crossed chunk boundary. Old: {:?}, New: {:?}",
             vicinity.pos, new_chunk_pos
         );
