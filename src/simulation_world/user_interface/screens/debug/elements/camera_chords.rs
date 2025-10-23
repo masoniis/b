@@ -10,8 +10,6 @@ use bevy_ecs::prelude::*;
 pub fn update_camera_chunk_chord_screen_text(
     // Input
     active_camera: Res<ActiveCamera>,
-    // TODO: due to the Changed<> optimization, when diagnostic screen is toggled,
-    // this system doesn't run as expected until we enter a new chunk. Minor bug
     camera_query: Query<(&CameraComponent, &ChunkChord), Changed<ChunkChord>>,
 
     // Output (updated component)
@@ -19,7 +17,7 @@ pub fn update_camera_chunk_chord_screen_text(
 ) {
     if let Ok((_, chunk_chord)) = camera_query.get(active_camera.0) {
         if let Ok(mut ui_text) = query.single_mut() {
-            ui_text.content = format!("{}x {}z", chunk_chord.pos.x, chunk_chord.pos.z);
+            ui_text.content = chunk_chord.to_string();
             return;
         } else {
             warn!("Failed to get single UiText with CameraXyzTextMarker");

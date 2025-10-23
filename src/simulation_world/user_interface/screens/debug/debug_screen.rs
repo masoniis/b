@@ -1,8 +1,12 @@
 use crate::prelude::*;
+use crate::simulation_world::camera::CameraComponent;
+use crate::simulation_world::chunk::ChunkChord;
+use crate::simulation_world::time::FrameClock;
 use crate::simulation_world::user_interface::components::{
     Node, Size, Style, TextAlign, UiBackground, UiText,
 };
 use crate::simulation_world::user_interface::screens::spawn_root::UiRootNodeResource;
+use crate::simulation_world::user_interface::screens::MeshCounterResource;
 use bevy_ecs::prelude::*;
 use bevy_ecs::relationship::RelatedSpawnerCommands;
 
@@ -61,6 +65,11 @@ pub fn toggle_debug_diagnostics_system(
     root_node: Res<UiRootNodeResource>,
     query: Query<Entity, With<RootDiagnosticScreenMarker>>,
 
+    // Needed for init values on spawn
+    mesh_stats: Res<MeshCounterResource>,
+    camera_query: Query<(&CameraComponent, &ChunkChord)>,
+    time_stats: Res<FrameClock>,
+
     // Output (toggling UI)
     mut commands: Commands,
 ) {
@@ -68,12 +77,24 @@ pub fn toggle_debug_diagnostics_system(
         info!("Despawning Diagnostic UI...");
         commands.entity(ui_entity).despawn();
     } else {
-        spawn_diagnostic_ui(&mut commands, &root_node);
+        if let Ok((_, chord)) = camera_query.single() {
+            spawn_diagnostic_ui(&mut commands, &root_node, &mesh_stats, &chord, &time_stats);
+        } else {
+            error!("Cannot spawn Diagnostic UI: No camera with ChunkChord found!");
+        }
     }
 }
 
 /// Spawns the entire Diagnostic UI and attaches it to the persistent root node.
-fn spawn_diagnostic_ui(commands: &mut Commands, root_node: &Res<UiRootNodeResource>) {
+fn spawn_diagnostic_ui(
+    commands: &mut Commands,
+    root_node: &Res<UiRootNodeResource>,
+
+    // init stats
+    mesh_stats: &Res<MeshCounterResource>,
+    camera_chord: &ChunkChord,
+    time_stats: &Res<FrameClock>,
+) {
     info!("Spawning Diagnostic UI...");
     let root_entity = root_node.0;
 
@@ -112,7 +133,7 @@ fn spawn_diagnostic_ui(commands: &mut Commands, root_node: &Res<UiRootNodeResour
                 .with_children(|parent| {
                     let chord_line_elements = vec![StatLineElement {
                         prefix: "Camera chunk: ".to_string(),
-                        content: "0x 0z".to_string(),
+                        content: camera_chord.to_string(),
                         color: [0.8, 0.8, 0.2, 1.0],
                         marker: StatMarker::CameraXYZ(CameraChunkChordTextMarker),
                     }];
@@ -136,7 +157,7 @@ fn spawn_diagnostic_ui(commands: &mut Commands, root_node: &Res<UiRootNodeResour
                     // fps line
                     let fps_line_elements = vec![StatLineElement {
                         prefix: "FPS: ".to_string(),
-                        content: "0.00".to_string(),
+                        content: format!("{:.2}", time_stats.smoothed_fps),
                         color: [1.0, 1.0, 1.0, 1.0],
                         marker: StatMarker::Fps(FpsCounterTextElementMarker),
                     }];
@@ -146,19 +167,19 @@ fn spawn_diagnostic_ui(commands: &mut Commands, root_node: &Res<UiRootNodeResour
                     let mesh_line_elements = vec![
                         StatLineElement {
                             prefix: "Meshes: ".to_string(),
-                            content: "0".to_string(),
+                            content: mesh_stats.total_meshes.to_string(),
                             color: [0.9, 0.6, 0.6, 1.0],
                             marker: StatMarker::MeshCount(MeshCountTextMarker),
                         },
                         StatLineElement {
                             prefix: " Verts: ".to_string(),
-                            content: "0".to_string(),
+                            content: mesh_stats.total_vertices.to_string(),
                             color: [0.6, 0.8, 0.6, 1.0],
                             marker: StatMarker::VertexCount(VertexCountTextMarker),
                         },
                         StatLineElement {
                             prefix: " Idxs: ".to_string(),
-                            content: "0".to_string(),
+                            content: mesh_stats.total_indices.to_string(),
                             color: [0.6, 0.6, 0.9, 1.0],
                             marker: StatMarker::IndexCount(IndexCountTextMarker),
                         },

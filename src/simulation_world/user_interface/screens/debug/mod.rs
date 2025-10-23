@@ -38,24 +38,14 @@ impl Plugin for DebugScreenPlugin {
             .schedule_entry(SimulationSchedule::Main)
             .add_systems(
                 (
-                    (
-                        update_camera_chunk_chord_screen_text,
-                        toggle_debug_diagnostics_system,
-                    )
-                        .chain()
-                        .run_if(
-                            (|action_state: Res<ActionStateResource>| {
-                                action_state.just_happened(SimulationAction::ToggleDiagnostics)
-                            })
-                            .and(in_state(AppState::Running)),
-                        ),
-                    update_mesh_counter_screen_text_system.run_if(
-                        resource_changed::<MeshCounterResource>.or(
-                            |action_state: Res<ActionStateResource>| {
-                                action_state.just_happened(SimulationAction::ToggleDiagnostics)
-                            },
-                        ),
+                    (toggle_debug_diagnostics_system,).chain().run_if(
+                        (|action_state: Res<ActionStateResource>| {
+                            action_state.just_happened(SimulationAction::ToggleDiagnostics)
+                        })
+                        .and(in_state(AppState::Running)),
                     ),
+                    update_mesh_counter_screen_text_system
+                        .run_if(resource_changed::<MeshCounterResource>),
                 )
                     .in_set(SimulationSet::PostUpdate),
             );

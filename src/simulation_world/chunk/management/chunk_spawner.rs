@@ -1,11 +1,9 @@
 use crate::prelude::*;
 use crate::simulation_world::block::property_registry::BlockRegistryResource;
+use crate::simulation_world::camera::ActiveCamera;
 use crate::simulation_world::chunk::superflat_generator::SuperflatGenerator;
 use crate::simulation_world::chunk::ChunkGenerator;
-use crate::simulation_world::{
-    camera::camera::ActiveCamera,
-    chunk::{load_manager::ChunkLoadManager, ChunkChord},
-};
+use crate::simulation_world::chunk::{load_manager::ChunkLoadManager, ChunkChord};
 use bevy_ecs::prelude::*;
 use glam::IVec3;
 use std::collections::HashSet;

@@ -1,10 +1,12 @@
-pub mod camera;
-pub mod camera_movement;
+pub mod component;
 pub mod default_camera;
+pub mod movement;
+pub mod resource;
 
-pub use camera::*;
-pub use camera_movement::*;
+pub use component::*;
 pub use default_camera::*;
+pub use movement::*;
+pub use resource::*;
 
 // INFO: -----------------------
 //         Camera plugin

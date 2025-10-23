@@ -30,11 +30,6 @@ pub fn mesh_remove_observer(
 
     if let Ok(mesh_component) = mesh_query.get(entity) {
         if let Some(mesh) = asset_storage.get(mesh_component.mesh_handle) {
-            info!(
-                "MeshComponentRemovedMessage received for handle: {:?}",
-                mesh_component.mesh_handle.id()
-            );
-
             // use saturating_sub to prevent panicking
             mesh_count.total_meshes = mesh_count.total_meshes.saturating_sub(1);
             mesh_count.total_vertices = mesh_count
@@ -66,10 +61,6 @@ pub fn mesh_add_observer(
 
     if let Ok(mesh_component) = mesh_query.get(entity) {
         if let Some(mesh) = asset_storage.get(mesh_component.mesh_handle) {
-            info!(
-                "MeshComponent added with handle: {:?}",
-                mesh_component.mesh_handle.id()
-            );
             mesh_count.total_meshes += 1;
             mesh_count.total_vertices += mesh.vertices.len();
             mesh_count.total_indices += mesh.indices.len();
@@ -96,8 +87,6 @@ pub fn update_mesh_counter_screen_text_system(
         Option<&IndexCountTextMarker>,
     )>,
 ) {
-    info!("Updating mesh counter screen text...");
-
     for (mut text, mesh_marker, vertex_marker, index_marker) in text_query.iter_mut() {
         if mesh_marker.is_some() {
             text.content = format!("{}", mesh_counter.total_meshes);

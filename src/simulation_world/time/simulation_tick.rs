@@ -15,7 +15,7 @@ pub struct SimulationTick {
 
 impl SimulationTick {
     pub fn default() -> Self {
-        let tick_rate = 20.0;
+        let tick_rate = 16.0;
         let tick_duration = Duration::from_secs_f32(1.0 / tick_rate);
         SimulationTick {
             tick: 0,
