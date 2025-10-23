@@ -1,7 +1,5 @@
 use crate::prelude::*;
-use crate::simulation_world::asset_management::{
-    AssetStorageResource, MeshAsset, MeshComponentRemovedMessage,
-};
+use crate::simulation_world::asset_management::{AssetStorageResource, MeshAsset};
 use crate::simulation_world::chunk::MeshComponent;
 use crate::simulation_world::user_interface::components::UiText;
 use crate::simulation_world::user_interface::screens::debug_screen::{
@@ -16,35 +14,28 @@ pub struct MeshCounterResource {
     pub total_indices: usize,
 }
 
-/// Updates the content of the `MeshCounterResource`
+/// Observes the removal of MeshComponent and updates the MeshCounterResource accordingly.
 #[instrument(skip_all)]
-pub fn update_mesh_stats_system(
-    // Inputs
-    added_meshes: Query<&MeshComponent, Added<MeshComponent>>,
-    mut removed_events: MessageReader<MeshComponentRemovedMessage>,
+pub fn mesh_remove_observer(
+    trigger: On<Remove, MeshComponent>,
 
-    // Outputs
-    mut mesh_count: ResMut<MeshCounterResource>,
+    // Input
     asset_storage: Res<AssetStorageResource<MeshAsset>>,
+    mesh_query: Query<&MeshComponent>,
+
+    // Output (updated counts)
+    mut mesh_count: ResMut<MeshCounterResource>,
 ) {
-    // handle additions
-    for mesh_component in added_meshes.iter() {
+    let entity = trigger.entity;
+
+    if let Ok(mesh_component) = mesh_query.get(entity) {
         if let Some(mesh) = asset_storage.get(mesh_component.mesh_handle) {
-            mesh_count.total_meshes += 1;
-            mesh_count.total_vertices += mesh.vertices.len();
-            mesh_count.total_indices += mesh.indices.len();
-        } else {
-            warn!(
-                "MeshComponent added with an invalid handle: {:?}",
+            info!(
+                "MeshComponentRemovedMessage received for handle: {:?}",
                 mesh_component.mesh_handle.id()
             );
-        }
-    }
 
-    // handle removals
-    for event in removed_events.read() {
-        if let Some(mesh) = asset_storage.get(event.mesh_handle) {
-            // use saturating_sub to prevent panicking if counts somehow mismatch
+            // use saturating_sub to prevent panicking
             mesh_count.total_meshes = mesh_count.total_meshes.saturating_sub(1);
             mesh_count.total_vertices = mesh_count
                 .total_vertices
@@ -53,7 +44,39 @@ pub fn update_mesh_stats_system(
         } else {
             warn!(
                 "MeshComponentRemovedMessage received for an invalid handle: {:?}",
-                event.mesh_handle.id()
+                mesh_component.mesh_handle.id()
+            );
+        }
+    }
+}
+
+/// Observes the addition of MeshComponent and updates the MeshCounterResource accordingly.
+#[instrument(skip_all)]
+pub fn mesh_add_observer(
+    trigger: On<Add, MeshComponent>,
+
+    // Input
+    asset_storage: Res<AssetStorageResource<MeshAsset>>,
+    mesh_query: Query<&MeshComponent>,
+
+    // Output
+    mut mesh_count: ResMut<MeshCounterResource>,
+) {
+    let entity = trigger.entity;
+
+    if let Ok(mesh_component) = mesh_query.get(entity) {
+        if let Some(mesh) = asset_storage.get(mesh_component.mesh_handle) {
+            info!(
+                "MeshComponent added with handle: {:?}",
+                mesh_component.mesh_handle.id()
+            );
+            mesh_count.total_meshes += 1;
+            mesh_count.total_vertices += mesh.vertices.len();
+            mesh_count.total_indices += mesh.indices.len();
+        } else {
+            warn!(
+                "MeshComponent added with an invalid handle: {:?}",
+                mesh_component.mesh_handle.id()
             );
         }
     }
@@ -73,6 +96,8 @@ pub fn update_mesh_counter_screen_text_system(
         Option<&IndexCountTextMarker>,
     )>,
 ) {
+    info!("Updating mesh counter screen text...");
+
     for (mut text, mesh_marker, vertex_marker, index_marker) in text_query.iter_mut() {
         if mesh_marker.is_some() {
             text.content = format!("{}", mesh_counter.total_meshes);

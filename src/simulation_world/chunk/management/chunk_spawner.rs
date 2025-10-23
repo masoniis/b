@@ -1,8 +1,7 @@
 use crate::prelude::*;
-use crate::simulation_world::asset_management::MeshComponentRemovedMessage;
 use crate::simulation_world::block::property_registry::BlockRegistryResource;
 use crate::simulation_world::chunk::superflat_generator::SuperflatGenerator;
-use crate::simulation_world::chunk::{ChunkGenerator, MeshComponent};
+use crate::simulation_world::chunk::ChunkGenerator;
 use crate::simulation_world::{
     camera::camera::ActiveCamera,
     chunk::{load_manager::ChunkLoadManager, ChunkChord},
@@ -24,12 +23,10 @@ pub fn manage_chunk_loading_system(
     active_camera: Res<ActiveCamera>,
     blocks: Res<BlockRegistryResource>,
     camera_query: Query<&ChunkChord, Changed<ChunkChord>>,
-    mesh_query: Query<&MeshComponent>, // to get handles on despawn
 
     // Output
     mut chunk_manager: ResMut<ChunkLoadManager>, // for marking loaded/unloaded
     mut commands: Commands,                      // for spawning chunk entities
-    mut mesh_removed_writer: MessageWriter<MeshComponentRemovedMessage>,
 ) {
     let Ok(camera_chunk) = camera_query.get(active_camera.0) else {
         return;
@@ -53,15 +50,6 @@ pub fn manage_chunk_loading_system(
             true // chunk in range, keep it
         } else {
             debug!(target:"chunk_loading","Unloading chunk at {:?} (Entity: {:?})", coord, entity);
-
-            // if the chunk entity had a mesh component, send a removal message
-            //
-            // (it is common that an air chunk exists with no mesh)
-            if let Ok(mesh_component) = mesh_query.get(*entity) {
-                mesh_removed_writer.write(MeshComponentRemovedMessage {
-                    mesh_handle: mesh_component.mesh_handle,
-                });
-            }
 
             commands.entity(*entity).despawn();
 

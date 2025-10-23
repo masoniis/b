@@ -96,15 +96,15 @@ impl<T: Asset + Send + Sync + 'static> AssetStorageResource<T> {
     pub fn add(&self, asset: T) -> Handle<T> {
         let asset_name = asset.name().to_string();
 
-        // Acquire a write lock on the name map. This is a short lock.
+        // will acquire a short write lock on the name map
         let mut name_to_id = self.name_to_id.write().unwrap();
         match name_to_id.entry(asset_name) {
             Entry::Vacant(entry) => {
-                // Get a new, unique ID atomically.
+                // get id atomically
                 let id = self.next_id.fetch_add(1, Ordering::Relaxed);
                 entry.insert(id);
 
-                // Now, acquire a write lock on the main storage to insert the asset.
+                // acquire a write lock on the main storage to insert the asset.
                 let mut storage = self.storage.write().unwrap();
                 storage.insert(id, asset);
                 Handle::new(id)

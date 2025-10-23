@@ -34,6 +34,8 @@ pub struct MeshRefCounts {
 
 impl MeshRefCounts {
     /// Increments the count for the given handle and returns the new count
+    ///
+    /// If the handle is not already tracked, it is added with an initial count of 1.
     pub fn increment(&mut self, handle: Handle<MeshAsset>) -> u32 {
         let count = self.counts.entry(handle).or_insert(0);
         *count += 1;
@@ -67,37 +69,44 @@ impl MeshRefCounts {
 //         Update system
 // -----------------------------
 
-/// A message indicating that a mesh component has been removed and no longer exists.
-///
-/// As such, it no longer holds a handle to a mesh asset.
+/// A message requesting deletion of a mesh asset from the asset storage.
 #[derive(Message)]
-pub struct MeshComponentRemovedMessage {
+pub struct MeshDeletionRequest {
     pub mesh_handle: Handle<MeshAsset>,
 }
 
-/// Updates mesh reference counts based on added components and removal events.
-///
-/// Reads mesh remove events and queues the mesh for deletion from asset storage
-/// if the mesh has a reference count of zero.
+/// Observer that increments mesh ref-counts when a component is added.
 #[instrument(skip_all)]
-pub fn update_mesh_ref_counts_system(
-    // Resources
-    mut mesh_ref_counts: ResMut<MeshRefCounts>,
+pub fn mesh_ref_count_add_observer(
+    trigger: On<Add, MeshComponent>,
 
-    // Queries & Events
-    added_meshes: Query<&MeshComponent, Added<MeshComponent>>,
-    mut removed_events: MessageReader<MeshComponentRemovedMessage>,
-    mut stale_mesh_writer: MessageWriter<MeshDeletionRequest>,
+    // Input
+    mesh_query: Query<&MeshComponent>,
+
+    // Output (update ref counts)
+    mut mesh_ref_counts: ResMut<MeshRefCounts>,
 ) {
-    // increment for added components
-    for mesh_component in added_meshes.iter() {
+    if let Ok(mesh_component) = mesh_query.get(trigger.entity) {
         let handle = mesh_component.mesh_handle;
         mesh_ref_counts.increment(handle);
     }
+}
 
-    // decrement for removed components
-    for event in removed_events.read() {
-        let handle = event.mesh_handle;
+/// Observer that decrements mesh ref-counts when a component is removed.
+#[instrument(skip_all)]
+pub fn mesh_ref_count_remove_observer(
+    trigger: On<Remove, MeshComponent>,
+
+    // Input
+    mesh_query: Query<&MeshComponent>,
+
+    // Output (update ref counts and request deletions)
+    mut mesh_ref_counts: ResMut<MeshRefCounts>,
+    mut stale_mesh_writer: MessageWriter<MeshDeletionRequest>,
+) {
+    if let Ok(mesh_component) = mesh_query.get(trigger.entity) {
+        let handle = mesh_component.mesh_handle;
+
         if let Some(new_count) = mesh_ref_counts.decrement(handle) {
             // send deletion request if count is zero
             if new_count == 0 {
@@ -111,12 +120,6 @@ pub fn update_mesh_ref_counts_system(
             }
         }
     }
-}
-
-/// A message requesting deletion of a mesh asset from the asset storage.
-#[derive(Message)]
-pub struct MeshDeletionRequest {
-    pub mesh_handle: Handle<MeshAsset>,
 }
 
 /// A system that reads RemovedMesh events and deletes any mesh assets.

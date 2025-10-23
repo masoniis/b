@@ -2,6 +2,7 @@ use crate::prelude::*;
 use bevy_ecs::{
     prelude::*,
     schedule::{Schedule, ScheduleLabel},
+    system::IntoObserverSystem,
 };
 use std::collections::HashMap;
 
@@ -89,6 +90,15 @@ impl EcsBuilder {
     /// Initializes a resource of type R using its FromWorld implementation
     pub fn init_resource<R: Resource + FromWorld>(&mut self) -> &mut Self {
         self.world.init_resource::<R>();
+        self
+    }
+
+    /// Registers an observer system for a specific event type E
+    pub fn add_observer<E: Event, B: Bundle, M>(
+        &mut self,
+        system: impl IntoObserverSystem<E, B, M>,
+    ) -> &mut Self {
+        self.world.add_observer(system);
         self
     }
 

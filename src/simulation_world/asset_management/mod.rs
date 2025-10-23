@@ -4,10 +4,7 @@ pub mod texture_map_registry;
 
 pub use asset_storage::{Asset, AssetStorageResource, Handle};
 use bevy_ecs::{message::Messages, schedule::IntoScheduleConfigs};
-pub use mesh_asset::{
-    delete_stale_mesh_assets, update_mesh_ref_counts_system, MeshAsset,
-    MeshComponentRemovedMessage, MeshDeletionRequest,
-};
+pub use mesh_asset::{delete_stale_mesh_assets, MeshAsset, MeshDeletionRequest};
 
 // INFO: ---------------------------------
 //         Asset Management Plugin
@@ -15,7 +12,12 @@ pub use mesh_asset::{
 
 use crate::{
     ecs_core::{EcsBuilder, Plugin},
-    simulation_world::{asset_management::mesh_asset::MeshRefCounts, SimulationSchedule},
+    simulation_world::{
+        asset_management::mesh_asset::{
+            mesh_ref_count_add_observer, mesh_ref_count_remove_observer, MeshRefCounts,
+        },
+        SimulationSchedule,
+    },
     SimulationSet,
 };
 
@@ -23,17 +25,19 @@ pub struct AssetManagementPlugin;
 
 impl Plugin for AssetManagementPlugin {
     fn build(&self, builder: &mut EcsBuilder) {
-        builder
-            .add_resource(AssetStorageResource::<MeshAsset>::default())
-            .add_resource(MeshRefCounts::default())
-            .init_resource::<Messages<MeshComponentRemovedMessage>>()
-            .init_resource::<Messages<MeshDeletionRequest>>();
+        // the mesh asset storage
+        builder.add_resource(AssetStorageResource::<MeshAsset>::default());
 
+        // mesh ref count tracking
         builder
+            .add_resource(MeshRefCounts::default())
+            .add_observer(mesh_ref_count_add_observer)
+            .add_observer(mesh_ref_count_remove_observer);
+
+        // mesh deletion handling
+        builder
+            .init_resource::<Messages<MeshDeletionRequest>>()
             .schedule_entry(SimulationSchedule::Main)
-            .add_systems((
-                update_mesh_ref_counts_system.in_set(SimulationSet::Update),
-                delete_stale_mesh_assets.in_set(SimulationSet::RenderPrep),
-            ));
+            .add_systems(delete_stale_mesh_assets.in_set(SimulationSet::RenderPrep));
     }
 }

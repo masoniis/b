@@ -23,6 +23,7 @@ use crate::{
         SimulationSchedule,
     },
 };
+use bevy_ecs::schedule::IntoScheduleConfigs;
 
 pub struct ChunkGenerationPlugin;
 
@@ -32,6 +33,6 @@ impl Plugin for ChunkGenerationPlugin {
 
         builder
             .schedule_entry(SimulationSchedule::Main)
-            .add_systems((chunk_meshing_system, manage_chunk_loading_system));
+            .add_systems((manage_chunk_loading_system, chunk_meshing_system).chain());
     }
 }
