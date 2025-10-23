@@ -6,14 +6,15 @@ use bevy_ecs::prelude::Resource;
 use bevy_ecs::prelude::*;
 use std::collections::HashMap;
 use std::fs;
+use std::sync::Arc;
 
-#[derive(Resource, Default)]
+#[derive(Resource, Default, Clone)]
 pub struct BlockRegistryResource {
     /// Stores properties indexed by the runtime `u16` ID.
-    pub block_properties: Vec<BlockProperties>,
+    pub block_properties: Arc<Vec<BlockProperties>>,
 
     /// Maps a string name (e.g., "grass") to the runtime `u16` ID.
-    name_to_id: HashMap<String, u16>,
+    name_to_id: Arc<HashMap<String, u16>>,
 }
 
 impl BlockRegistryResource {
@@ -24,14 +25,6 @@ impl BlockRegistryResource {
         self.block_properties
             .get(id as usize)
             .unwrap_or(&self.block_properties[0]) // air is 0
-    }
-
-    /// (Internal) Registers a block, assigning it a new ID.
-    fn register(&mut self, name: String, properties: BlockProperties) -> u16 {
-        let id = self.block_properties.len() as u16;
-        self.block_properties.push(properties);
-        self.name_to_id.insert(name.to_lowercase(), id);
-        id
     }
 
     /// Gets the numeric ID for a given block name.
@@ -62,7 +55,16 @@ impl BlockRegistryResource {
 pub fn load_block_definitions_system(mut commands: Commands) {
     info!("Loading block definitions...");
 
-    let mut registry = BlockRegistryResource::default();
+    let mut block_properties: Vec<BlockProperties> = Vec::new();
+    let mut name_to_id: HashMap<String, u16> = HashMap::new();
+
+    // helper closure for local registration
+    let mut register = |name: String, properties: BlockProperties| -> u16 {
+        let id = block_properties.len() as u16;
+        block_properties.push(properties);
+        name_to_id.insert(name.to_lowercase(), id);
+        id
+    };
 
     let air_properties = BlockProperties {
         display_name: "Air".to_string(),
@@ -76,7 +78,7 @@ pub fn load_block_definitions_system(mut commands: Commands) {
             bottom: TextureId::Missing,
         },
     };
-    registry.register("air".to_string(), air_properties);
+    register("air".to_string(), air_properties);
 
     for entry in fs::read_dir("assets/blocks").unwrap() {
         let entry = entry.unwrap();
@@ -102,11 +104,16 @@ pub fn load_block_definitions_system(mut commands: Commands) {
             let ron_string = fs::read_to_string(&path).unwrap();
             let properties = load_block_from_str(&ron_string).unwrap();
 
-            let id = registry.register(name.clone(), properties);
+            let id = register(name.clone(), properties);
 
             info!("Loaded block '{}' (runtime id={})", name, id);
         }
     }
+
+    let registry = BlockRegistryResource {
+        block_properties: Arc::new(block_properties),
+        name_to_id: Arc::new(name_to_id),
+    };
 
     commands.insert_resource(registry);
 }

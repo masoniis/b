@@ -1,10 +1,8 @@
 use crate::prelude::*;
+use crate::simulation_world::block::property_registry::BlockRegistryResource;
 use crate::simulation_world::chunk::chunk::Chunk;
 use crate::simulation_world::chunk::{
-    GeneratedChunkData, TransformComponent, CHUNK_DEPTH, CHUNK_HEIGHT, CHUNK_WIDTH,
-};
-use crate::simulation_world::{
-    block::property_registry::BlockRegistryResource, chunk::ChunkGenerator,
+    ChunkGenerator, GeneratedChunkData, TransformComponent, CHUNK_DEPTH, CHUNK_HEIGHT, CHUNK_WIDTH,
 };
 use glam::{IVec3, Quat};
 

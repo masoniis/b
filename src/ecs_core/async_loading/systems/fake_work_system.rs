@@ -1,6 +1,6 @@
 use crate::{
     ecs_core::async_loading::loading_task::{
-        SimulationWorldLoadingTaskComponent, TaskResultCallback,
+        SimulationWorldLoadingTaskComponent, TaskResultCallback, TokioTask,
     },
     prelude::*,
 };
@@ -30,6 +30,8 @@ pub fn start_fake_work_system(mut commands: Commands) {
     });
 
     commands.spawn(SimulationWorldLoadingTaskComponent {
-        handle: task_handle,
+        task: TokioTask {
+            handle: task_handle,
+        },
     });
 }

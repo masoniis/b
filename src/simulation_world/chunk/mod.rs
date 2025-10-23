@@ -19,7 +19,10 @@ pub use types::*;
 use crate::{
     ecs_core::{EcsBuilder, Plugin},
     simulation_world::{
-        chunk::{chunk_spawner::manage_chunk_loading_system, load_manager::ChunkLoadManager},
+        chunk::{
+            async_chunking::poll_chunk_generation_tasks, chunk_loader::manage_chunk_loading_system,
+            load_manager::ChunkLoadManager,
+        },
         SimulationSchedule,
     },
 };
@@ -33,6 +36,13 @@ impl Plugin for ChunkGenerationPlugin {
 
         builder
             .schedule_entry(SimulationSchedule::Main)
-            .add_systems((manage_chunk_loading_system, chunk_meshing_system).chain());
+            .add_systems(
+                (
+                    manage_chunk_loading_system,
+                    poll_chunk_generation_tasks,
+                    chunk_meshing_system,
+                )
+                    .chain(),
+            );
     }
 }

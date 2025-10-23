@@ -26,7 +26,7 @@ impl Asset for MeshAsset {
 }
 
 /// A resource that tracks reference counts for mesh assets. Used to determine
-/// when to remove meshes that are no longer in use.
+/// when to remove meshes from asset storage that are no longer in use.
 #[derive(Resource, Default, Debug)]
 pub struct MeshRefCounts {
     counts: HashMap<Handle<MeshAsset>, u32>,

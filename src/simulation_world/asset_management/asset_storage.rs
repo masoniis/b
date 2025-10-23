@@ -45,6 +45,7 @@ impl<T> Copy for Handle<T> {}
 // -------------------------------
 
 /// A thread-safe, reference-counted asset storage resource.
+///
 /// Cloning this resource is cheap and allows it to be shared across threads.
 #[derive(Resource, Clone)]
 pub struct AssetStorageResource<T> {

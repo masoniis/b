@@ -1,6 +1,8 @@
+use crate::ecs_core::async_loading::loading_task::TokioTask;
 use crate::prelude::*;
 use crate::simulation_world::block::property_registry::BlockRegistryResource;
 use crate::simulation_world::camera::ActiveCamera;
+use crate::simulation_world::chunk::async_chunking::ChunkGenerationTaskComponent;
 use crate::simulation_world::chunk::superflat_generator::SuperflatGenerator;
 use crate::simulation_world::chunk::ChunkGenerator;
 use crate::simulation_world::chunk::{load_manager::ChunkLoadManager, ChunkChord};
@@ -19,7 +21,7 @@ const VERTICAL_RENDER_DISTANCE: i32 = 1;
 pub fn manage_chunk_loading_system(
     // Input
     active_camera: Res<ActiveCamera>,
-    blocks: Res<BlockRegistryResource>,
+    block_registry: Res<BlockRegistryResource>,
     camera_query: Query<&ChunkChord, Changed<ChunkChord>>,
 
     // Output
@@ -51,24 +53,28 @@ pub fn manage_chunk_loading_system(
 
             commands.entity(*entity).despawn();
 
-            // TODO: consider removing from loading set as well
-            // chunk_manager.loading_chunks.remove(coord);
-
             false
         }
     });
 
     // load in chunks
-    let gen = SuperflatGenerator::new();
     for coord in desired_chunks {
         if !chunk_manager.is_chunk_present_or_loading(coord) {
             debug!(target:"chunk_loading","Requesting chunk load at {:?}", coord);
             chunk_manager.mark_as_loading(coord);
 
-            let chunk = gen.generate_chunk(coord, &blocks);
-            let ent = commands.spawn((chunk.chunk, chunk.transform)).id();
+            let blocks = block_registry.clone();
+            let task_handle = tokio::spawn(async move {
+                let gen = SuperflatGenerator::new();
+                return gen.generate_chunk(coord.clone(), &blocks);
+            });
 
-            chunk_manager.mark_as_loaded(coord, ent);
+            commands.spawn(ChunkGenerationTaskComponent {
+                task: TokioTask {
+                    handle: task_handle,
+                },
+                coord: coord,
+            });
         }
     }
 }
