@@ -1,6 +1,6 @@
-use std::sync::{Arc, Mutex};
-
+use crate::prelude::*;
 use bevy_ecs::resource::Resource;
+use std::sync::{Arc, Mutex};
 
 /// Loading tracker is a NonSend Resource that the outer app loop orchestrates
 /// to enable both worlds to perform loading tasks in parallel before a state
@@ -47,5 +47,45 @@ impl LoadingTracker {
 
     pub fn set_renderer_ready(&self, is_ready: bool) {
         self.inner.lock().unwrap().is_renderer_ready = is_ready;
+    }
+}
+
+#[derive(Resource, Default, Debug)]
+pub struct LoadingTaskTracker {
+    /// Number of tasks that have been spawned
+    pub spawned: usize,
+    /// Number of tasks that have completed
+    pub completed: usize,
+}
+
+impl LoadingTaskTracker {
+    /// Register that a task was spawned
+    pub fn register_spawn(&mut self) {
+        self.spawned += 1;
+        debug!(
+            target: "async_tasks",
+            "[TRACKER] Task spawned: {}/{} completed",
+            self.completed, self.spawned
+        );
+    }
+
+    /// Register that a task completed
+    pub fn register_completion(&mut self) {
+        self.completed += 1;
+        debug!(
+            target: "async_tasks",
+            "[TRACKER] Task completed: {}/{} done",
+            self.completed, self.spawned
+        );
+    }
+
+    /// Check if all spawned tasks have completed
+    pub fn all_complete(&self) -> bool {
+        self.spawned > 0 && self.completed >= self.spawned
+    }
+
+    /// Check if any tasks have been spawned yet
+    pub fn has_spawned_tasks(&self) -> bool {
+        self.spawned > 0
     }
 }

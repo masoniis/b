@@ -1,4 +1,3 @@
-use crate::ecs_core::async_loading::loading_task::TokioTask;
 use crate::prelude::*;
 use crate::simulation_world::block::property_registry::BlockRegistryResource;
 use crate::simulation_world::camera::ActiveCamera;
@@ -7,8 +6,11 @@ use crate::simulation_world::chunk::superflat_generator::SuperflatGenerator;
 use crate::simulation_world::chunk::ChunkGenerator;
 use crate::simulation_world::chunk::{load_manager::ChunkLoadManager, ChunkChord};
 use bevy_ecs::prelude::*;
+use bevy_tasks::AsyncComputeTaskPool;
+use futures_timer::Delay;
 use glam::IVec3;
 use std::collections::HashSet;
+use std::time::Duration;
 
 /// The distance, in chunks, to load around the camera.
 const RENDER_DISTANCE: i32 = 1;
@@ -49,7 +51,20 @@ pub fn manage_chunk_loading_system(
         if desired_chunks.contains(coord) {
             true // chunk in range, keep it
         } else {
-            debug!(target:"chunk_loading","Unloading chunk at {:?} (Entity: {:?})", coord, entity);
+            debug!(target:"chunk_loading","Unloading loaded chunk at {:?} (Entity: {:?})", coord, entity);
+
+            commands.entity(*entity).despawn();
+
+            false
+        }
+    });
+
+    // cancel generation pass
+    chunk_manager.generating_chunks.retain(|coord, entity| {
+        if desired_chunks.contains(coord) {
+            true // chunk in range, keep it
+        } else {
+            debug!(target:"chunk_loading","Unloading currently-generating chunk at {:?} (Entity: {:?})", coord, entity);
 
             commands.entity(*entity).despawn();
 
@@ -58,23 +73,27 @@ pub fn manage_chunk_loading_system(
     });
 
     // load in chunks
+    let task_pool = AsyncComputeTaskPool::get();
     for coord in desired_chunks {
         if !chunk_manager.is_chunk_present_or_loading(coord) {
             debug!(target:"chunk_loading","Requesting chunk load at {:?}", coord);
-            chunk_manager.mark_as_loading(coord);
 
             let blocks = block_registry.clone();
-            let task_handle = tokio::spawn(async move {
+
+            let task = task_pool.spawn(async move {
                 let gen = SuperflatGenerator::new();
+                Delay::new(Duration::from_millis(300)).await; // simulate some delay
                 return gen.generate_chunk(coord.clone(), &blocks);
             });
 
-            commands.spawn(ChunkGenerationTaskComponent {
-                task: TokioTask {
-                    handle: task_handle,
-                },
-                coord: coord,
-            });
+            let ent = commands
+                .spawn(ChunkGenerationTaskComponent {
+                    task: task,
+                    coord: coord,
+                })
+                .id();
+
+            chunk_manager.mark_as_generating(coord, ent);
         }
     }
 }

@@ -14,6 +14,7 @@ pub mod user_interface;
 // -----------------------------------
 
 pub use self::scheduling::{OnExit, SimulationSchedule, SimulationSet};
+use crate::ecs_core::async_loading::task_pool::setup_global_task_pools_system;
 use crate::render_world::{
     global_extract::utils::initialize_simulation_world_for_extract, textures::TextureRegistry,
 };
@@ -113,6 +114,7 @@ impl SimulationWorldInterface {
         };
 
         initialize_simulation_world_for_extract(&mut interface.common.world);
+        setup_global_task_pools_system();
 
         interface
             .common

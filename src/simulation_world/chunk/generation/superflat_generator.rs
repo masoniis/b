@@ -1,6 +1,6 @@
 use crate::prelude::*;
 use crate::simulation_world::block::property_registry::BlockRegistryResource;
-use crate::simulation_world::chunk::chunk::Chunk;
+use crate::simulation_world::chunk::chunk::ChunkComponent;
 use crate::simulation_world::chunk::{
     ChunkGenerator, GeneratedChunkData, TransformComponent, CHUNK_DEPTH, CHUNK_HEIGHT, CHUNK_WIDTH,
 };
@@ -39,7 +39,7 @@ impl ChunkGenerator for SuperflatGenerator {
             .map(|name| blocks.get_block_by_name(name))
             .collect();
 
-        let mut chunk = Chunk::new();
+        let mut chunk = ChunkComponent::new();
 
         for x in 1..CHUNK_WIDTH - 1 {
             for z in 1..CHUNK_DEPTH - 1 {
@@ -61,6 +61,9 @@ impl ChunkGenerator for SuperflatGenerator {
             scale: Vec3::ONE,
         };
 
-        GeneratedChunkData { chunk, transform }
+        GeneratedChunkData {
+            chunk_component: chunk,
+            transform_component: transform,
+        }
     }
 }

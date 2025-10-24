@@ -4,7 +4,7 @@ use crate::simulation_world::asset_management::texture_map_registry::TextureMapR
 use crate::simulation_world::asset_management::{AssetStorageResource, MeshAsset};
 use crate::simulation_world::block::property_registry::BlockRegistryResource;
 use crate::simulation_world::chunk::block::Block;
-use crate::simulation_world::chunk::chunk::Chunk;
+use crate::simulation_world::chunk::chunk::ChunkComponent;
 use crate::simulation_world::chunk::{MeshComponent, CHUNK_DEPTH, CHUNK_HEIGHT, CHUNK_WIDTH};
 use bevy_ecs::prelude::*;
 
@@ -12,7 +12,10 @@ use bevy_ecs::prelude::*;
 #[instrument(skip_all)]
 pub fn chunk_meshing_system(
     // Input
-    new_chunk_query: Query<(Entity, &Chunk), (Added<Chunk>, Without<MeshComponent>)>,
+    new_chunk_query: Query<
+        (Entity, &ChunkComponent),
+        (Added<ChunkComponent>, Without<MeshComponent>),
+    >,
     texture_map: Res<TextureMapResource>,
     block_registry: Res<BlockRegistryResource>,
 
@@ -44,7 +47,7 @@ pub fn chunk_meshing_system(
 
 /// Helper function to build a mesh for a single chunk
 fn build_chunk_mesh(
-    chunk: &Chunk,
+    chunk: &ChunkComponent,
     texture_map: &TextureMapResource,
     block_registry: &BlockRegistryResource,
 ) -> (Vec<Vertex>, Vec<u32>) {

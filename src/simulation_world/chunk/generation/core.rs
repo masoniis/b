@@ -1,5 +1,5 @@
 use crate::simulation_world::block::property_registry::BlockRegistryResource;
-use crate::simulation_world::chunk::{chunk::Chunk, TransformComponent};
+use crate::simulation_world::chunk::{chunk::ChunkComponent, TransformComponent};
 use bevy_ecs::prelude::Resource;
 use glam::IVec3;
 use std::fmt::Debug;
@@ -17,15 +17,15 @@ pub trait ChunkGenerator: Send + Sync + Debug {
 
 /// A struct representing generated chunk data.
 pub struct GeneratedChunkData {
-    pub chunk: Chunk,
-    pub transform: TransformComponent,
+    pub chunk_component: ChunkComponent,
+    pub transform_component: TransformComponent,
 }
 
 impl GeneratedChunkData {
     pub fn empty() -> Self {
         Self {
-            chunk: Chunk::new(),
-            transform: TransformComponent::default(),
+            chunk_component: ChunkComponent::new(),
+            transform_component: TransformComponent::default(),
         }
     }
 }

@@ -1,38 +1,45 @@
 use crate::{
     ecs_core::async_loading::{
-        loading_task::{
-            AsyncTask, RenderWorldLoadingTaskComponent, SimulationWorldLoadingTaskComponent,
-        },
-        LoadingTracker,
+        load_tracking::LoadingTaskTracker, loading_task::SimulationWorldLoadingTaskComponent,
+        LoadingTracker, RenderWorldLoadingTaskComponent,
     },
     prelude::*,
 };
 use bevy_ecs::prelude::*;
+use bevy_tasks::futures::now_or_never;
+use futures_lite::future;
 
 /// Polls simulation-specific tasks and updates the shared `LoadingTracker`.
 #[instrument(skip_all)]
 pub fn poll_simulation_loading_tasks(
+    // Input
+    mut tasks: Query<(Entity, &mut SimulationWorldLoadingTaskComponent)>,
+
+    // Output (updated states)
+    mut task_tracker: ResMut<LoadingTaskTracker>,
     mut commands: Commands,
-    mut tasks_query: Query<(Entity, &mut SimulationWorldLoadingTaskComponent)>,
     loading_tracker: Res<LoadingTracker>,
 ) {
-    let mut remaining_tasks = 0;
+    if !task_tracker.has_spawned_tasks() {
+        return; // no tasks spawned yet
+    }
 
-    for (entity, mut task) in tasks_query.iter_mut() {
-        if let Some(callback) = task.poll_result() {
-            // Task completed - execute the callback immediately
+    for (entity, mut task_component) in tasks.iter_mut() {
+        if let Some(callback) = now_or_never(&mut task_component.task) {
+            info!("[POLL] Task completed! Executing callback...");
             callback(&mut commands);
-
-            // Despawn the task entity
             commands.entity(entity).despawn();
-        } else {
-            // Task still running
-            remaining_tasks += 1;
+
+            task_tracker.register_completion();
         }
     }
 
-    if remaining_tasks == 0 && !loading_tracker.is_simulation_ready() {
-        info!("Simulation world is ready.");
+    if task_tracker.all_complete() && !loading_tracker.is_simulation_ready() {
+        debug!(
+            target: "async_tasks",
+            "[POLL] All {} spawned tasks are complete. Marking simulation ready.",
+            task_tracker.spawned
+        );
         loading_tracker.set_simulation_ready(true);
     }
 }
@@ -40,21 +47,21 @@ pub fn poll_simulation_loading_tasks(
 /// Polls render-specific tasks and updates the shared `LoadingTracker`.
 #[instrument(skip_all)]
 pub fn poll_render_loading_tasks(
+    // Input
     mut commands: Commands,
-    mut tasks_query: Query<(Entity, &mut RenderWorldLoadingTaskComponent)>,
+    mut tasks: Query<(Entity, &mut RenderWorldLoadingTaskComponent)>,
+
+    // Output (update the shared tracker)
     loading_tracker: Res<LoadingTracker>,
 ) {
     let mut remaining_tasks = 0;
 
-    for (entity, mut task) in tasks_query.iter_mut() {
-        if let Some(callback) = task.poll_result() {
-            // Task completed - execute the callback immediately
+    for (entity, mut task_component) in tasks.iter_mut() {
+        if let Some(callback) = future::block_on(future::poll_once(&mut task_component.task)) {
+            debug!(target: "async_tasks", "Render task completed, executing callback...");
             callback(&mut commands);
-
-            // Despawn the task entity
             commands.entity(entity).despawn();
         } else {
-            // Task still running
             remaining_tasks += 1;
         }
     }

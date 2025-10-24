@@ -34,25 +34,26 @@ winit = { version = "0.30.12", features = ["rwh_06"] } # OS window manage
 taffy = "0.9.1"                                                                                                 # ui layout
 glyphon = { git = "https://github.com/grovesNL/glyphon.git", rev = "724ab57edbd6c59ba219cd99cf89925d056392db" } # text vectorization/prep
 
+## shaders
+naga = { version = "27.0.0", features = ["wgsl-in"] } # for shader reflection
+wesl = "0.2.0"                                        # preprocessor
+
 ## utils 
 bytemuck = { version = "1.13", features = ["derive"] } # gpu friendly data
 glam = "0.30.5"                                        # linear algebra
-image = "0.25.6"                                       # load textures
-naga = { version = "27.0.0", features = ["wgsl-in"] }  # for shader reflection
-wesl = "0.2.0"
-
+image = "0.25.6"                                       # texture loading
 
 # INFO: --------------------------
 #         simulation logic
 # --------------------------------
 
+## core ecs library
 bevy_ecs = "0.17.2"
-pollster = "0.3"
 
-# necessary for background tasks
-tokio = { version = "1.47.1", features = ["full"] }
+## necessary for multi-threaded tasks
+futures-timer = "3.0.3"
 futures-lite = "2.6.1"
-futures = "0.3.31"
+bevy_tasks = "0.17.2"
 
 # INFO: ---------------
 #         utils
@@ -60,8 +61,9 @@ futures = "0.3.31"
 
 derive_more = { version = "2.0.1", features = ["deref", "deref_mut"] }
 serde = { version = "1.0.228", features = ["derive"] }                 # serializing
+thiserror = "2.0.17"                                                   # ez errors
+rand = "0.9.2"                                                         # rng
 ron = "0.11.0"                                                         # parsing RON files
-thiserror = "2.0.17"
 
 [build-dependencies]
 glob = "0.3.3"

@@ -4,11 +4,11 @@ use crate::simulation_world::chunk::{CHUNK_DEPTH, CHUNK_HEIGHT, CHUNK_WIDTH, Y_S
 use bevy_ecs::prelude::Component;
 
 #[derive(Clone, Component)]
-pub struct Chunk {
+pub struct ChunkComponent {
     blocks: Vec<Block>,
 }
 
-impl Chunk {
+impl ChunkComponent {
     pub fn new() -> Self {
         Self {
             blocks: vec![Block { id: 0 }; CHUNK_WIDTH * CHUNK_HEIGHT * CHUNK_DEPTH],
