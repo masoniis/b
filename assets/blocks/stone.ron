@@ -2,6 +2,7 @@
 	display_name: "Stone",
 	textures: (
 		fallback: stone,
+		bottom: Some(water),
 	),
 	is_transparent: false,
 )

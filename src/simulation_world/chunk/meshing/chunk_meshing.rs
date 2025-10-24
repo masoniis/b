@@ -1,52 +1,12 @@
-use crate::prelude::*;
 use crate::render_world::types::Vertex;
 use crate::simulation_world::asset_management::texture_map_registry::TextureMapResource;
-use crate::simulation_world::asset_management::{AssetStorageResource, MeshAsset};
 use crate::simulation_world::block::property_registry::BlockRegistryResource;
 use crate::simulation_world::chunk::block::Block;
 use crate::simulation_world::chunk::chunk::ChunkComponent;
-use crate::simulation_world::chunk::{MeshComponent, CHUNK_DEPTH, CHUNK_HEIGHT, CHUNK_WIDTH};
-use bevy_ecs::prelude::*;
-
-/// Finds all new chunks and generates a mesh for them.
-#[instrument(skip_all)]
-pub fn chunk_meshing_system(
-    // Input
-    new_chunk_query: Query<
-        (Entity, &ChunkComponent),
-        (Added<ChunkComponent>, Without<MeshComponent>),
-    >,
-    texture_map: Res<TextureMapResource>,
-    block_registry: Res<BlockRegistryResource>,
-
-    // Output (inserted chunk meshes)
-    mesh_assets: Res<AssetStorageResource<MeshAsset>>,
-    mut commands: Commands,
-) {
-    for (entity, chunk) in new_chunk_query.iter() {
-        let (vertices, indices) = build_chunk_mesh(chunk, &texture_map, &block_registry);
-
-        if !vertices.is_empty() {
-            // using the same name for every chunk will reject duplicate assets
-            // but that is fine for now because the superflat generator currently
-            // creates the same chunk everywhere at the moment.
-            let mesh_asset = MeshAsset {
-                name: format!("basic_flat_chunk"),
-                vertices,
-                indices,
-            };
-
-            let mesh_handle = mesh_assets.add(mesh_asset);
-
-            commands
-                .entity(entity)
-                .insert(MeshComponent::new(mesh_handle));
-        }
-    }
-}
+use crate::simulation_world::chunk::{CHUNK_DEPTH, CHUNK_HEIGHT, CHUNK_WIDTH};
 
 /// Helper function to build a mesh for a single chunk
-fn build_chunk_mesh(
+pub fn build_chunk_mesh(
     chunk: &ChunkComponent,
     texture_map: &TextureMapResource,
     block_registry: &BlockRegistryResource,

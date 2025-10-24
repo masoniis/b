@@ -1,12 +1,12 @@
-use crate::render_world::textures::TextureLoadError;
-
 use super::super::types::TextureId;
-use std::collections::HashMap;
+use crate::render_world::textures::TextureLoadError;
+use std::{collections::HashMap, sync::Arc};
 
 /// A registry for looking up texture indices from a compile-time safe TextureId.
+#[derive(Clone)]
 pub struct TextureRegistry {
     /// Maps the type-safe TextureId to its u32 index in the GPU texture array.
-    map: HashMap<TextureId, u32>,
+    map: Arc<HashMap<TextureId, u32>>,
 
     /// The index of the fallback "missing texture" pattern.
     missing_texture_index: u32,
@@ -20,7 +20,7 @@ impl TextureRegistry {
             .ok_or(TextureLoadError::MissingTextureNotInManifest)?;
 
         Ok(Self {
-            map,
+            map: Arc::new(map),
             missing_texture_index,
         })
     }

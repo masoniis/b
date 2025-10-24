@@ -2,7 +2,8 @@ use crate::prelude::*;
 use crate::simulation_world::block::property_registry::BlockRegistryResource;
 use crate::simulation_world::chunk::chunk::ChunkComponent;
 use crate::simulation_world::chunk::{
-    ChunkGenerator, GeneratedChunkData, TransformComponent, CHUNK_DEPTH, CHUNK_HEIGHT, CHUNK_WIDTH,
+    ChunkGenerator, GeneratedChunkComponents, TransformComponent, CHUNK_DEPTH, CHUNK_HEIGHT,
+    CHUNK_WIDTH,
 };
 use glam::{IVec3, Quat};
 
@@ -24,13 +25,17 @@ impl SuperflatGenerator {
 }
 
 impl ChunkGenerator for SuperflatGenerator {
-    fn generate_chunk(&self, coord: IVec3, blocks: &BlockRegistryResource) -> GeneratedChunkData {
+    fn generate_chunk(
+        &self,
+        coord: IVec3,
+        blocks: &BlockRegistryResource,
+    ) -> GeneratedChunkComponents {
         let cx = coord.x;
         let cy = coord.y;
         let cz = coord.z;
 
         if cy != 0 {
-            return GeneratedChunkData::empty();
+            return GeneratedChunkComponents::empty();
         }
 
         let layer_blocks: Vec<_> = self
@@ -61,7 +66,7 @@ impl ChunkGenerator for SuperflatGenerator {
             scale: Vec3::ONE,
         };
 
-        GeneratedChunkData {
+        GeneratedChunkComponents {
             chunk_component: chunk,
             transform_component: transform,
         }

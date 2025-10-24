@@ -20,7 +20,8 @@ use crate::{
     ecs_core::{EcsBuilder, Plugin},
     simulation_world::{
         chunk::{
-            async_chunking::poll_chunk_generation_tasks, chunk_loader::manage_chunk_loading_system,
+            async_chunking::{poll_chunk_generation_tasks, poll_chunk_meshing_tasks},
+            chunk_loader::manage_chunk_loading_system,
             load_manager::ChunkLoadManager,
         },
         SimulationSchedule,
@@ -40,7 +41,8 @@ impl Plugin for ChunkGenerationPlugin {
                 (
                     manage_chunk_loading_system,
                     poll_chunk_generation_tasks,
-                    chunk_meshing_system,
+                    poll_chunk_meshing_tasks,
+                    // chunk_meshing_system,
                 )
                     .chain(),
             );

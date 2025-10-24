@@ -13,7 +13,7 @@ use bevy_ecs::prelude::*;
 use glam::{Mat4, Vec3};
 use tracing::{instrument, warn};
 
-const MOVEMENT_SPEED: f32 = 16.0;
+const MOVEMENT_SPEED: f32 = 32.0;
 const MOUSE_SENSITIVITY: f32 = 0.1;
 
 /// A system that updates the active camera's position and orientation based on user input.

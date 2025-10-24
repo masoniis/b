@@ -151,7 +151,7 @@ impl<T: Asset + Send + Sync + 'static> AssetStorageResource<T> {
             if removed_asset.is_some() {
                 let mut name_write = self.name_to_id.write().unwrap();
                 name_write.remove(&asset_name);
-                info!("Removed asset '{}' (ID: {})", asset_name, handle.id());
+                debug!(target: "asset_management", "Removed asset '{}' (ID: {})", asset_name, handle.id());
             }
         } else if removed_asset.is_some() {
             warn!(

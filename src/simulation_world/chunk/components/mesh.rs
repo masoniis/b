@@ -1,7 +1,7 @@
 use crate::simulation_world::{asset_management::asset_storage::Handle, MeshAsset};
 use bevy_ecs::prelude::Component;
 
-#[derive(Component)]
+#[derive(Component, Debug)]
 pub struct MeshComponent {
     pub mesh_handle: Handle<MeshAsset>,
 }

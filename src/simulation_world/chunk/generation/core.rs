@@ -12,16 +12,20 @@ pub struct ActiveChunkGenerator(pub Arc<dyn ChunkGenerator>);
 /// A trait for chunk generators to implement.
 pub trait ChunkGenerator: Send + Sync + Debug {
     /// Returns generated chunk data for the given chunk coordinates.
-    fn generate_chunk(&self, coord: IVec3, blocks: &BlockRegistryResource) -> GeneratedChunkData;
+    fn generate_chunk(
+        &self,
+        coord: IVec3,
+        blocks: &BlockRegistryResource,
+    ) -> GeneratedChunkComponents;
 }
 
 /// A struct representing generated chunk data.
-pub struct GeneratedChunkData {
+pub struct GeneratedChunkComponents {
     pub chunk_component: ChunkComponent,
     pub transform_component: TransformComponent,
 }
 
-impl GeneratedChunkData {
+impl GeneratedChunkComponents {
     pub fn empty() -> Self {
         Self {
             chunk_component: ChunkComponent::new(),

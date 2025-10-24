@@ -2,6 +2,7 @@
 	display_name: "Grass",
 	textures: (
 		fallback: grass,
+		bottom: Some(water),
 		north: Some(dirt),
 		east: Some(dirt),
 		south: Some(dirt),

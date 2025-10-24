@@ -9,11 +9,12 @@ use bevy_ecs::prelude::*;
 use bevy_tasks::AsyncComputeTaskPool;
 use futures_timer::Delay;
 use glam::IVec3;
+use rand::Rng;
 use std::collections::HashSet;
 use std::time::Duration;
 
 /// The distance, in chunks, to load around the camera.
-const RENDER_DISTANCE: i32 = 1;
+const RENDER_DISTANCE: i32 = 11;
 const VERTICAL_RENDER_DISTANCE: i32 = 1;
 
 /// Determines chunks to unload/load based on the camera position.
@@ -72,6 +73,18 @@ pub fn manage_chunk_loading_system(
         }
     });
 
+    chunk_manager.meshing_chunks.retain(|coord, entity| {
+        if desired_chunks.contains(coord) {
+            true // chunk in range, keep it
+        } else {
+            debug!(target:"chunk_loading","Unloading currently-meshing chunk at {:?} (Entity: {:?})", coord, entity);
+
+            commands.entity(*entity).despawn();
+
+            false
+        }
+    });
+
     // load in chunks
     let task_pool = AsyncComputeTaskPool::get();
     for coord in desired_chunks {
@@ -82,7 +95,12 @@ pub fn manage_chunk_loading_system(
 
             let task = task_pool.spawn(async move {
                 let gen = SuperflatGenerator::new();
-                Delay::new(Duration::from_millis(300)).await; // simulate some delay
+                // TODO: not having a random delay causes frame skips, I am not 100%
+                // sure on why but I assume it throttles the OS by adding so many
+                // chunks at once. Need to create some system that ensures we only
+                // begin meshing on a few chunks per frame to stop this from occurring.
+                let duration = Duration::from_secs_f32(rand::rng().random_range(0.05..1.0));
+                Delay::new(duration).await;
                 return gen.generate_chunk(coord.clone(), &blocks);
             });
 

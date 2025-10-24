@@ -110,7 +110,8 @@ pub fn mesh_ref_count_remove_observer(
         if let Some(new_count) = mesh_ref_counts.decrement(handle) {
             // send deletion request if count is zero
             if new_count == 0 {
-                info!(
+                debug!(
+                    target: "asset_management",
                     "Ref count for mesh {:?} is zero. Sending deletion request.",
                     handle.id()
                 );
