@@ -2,55 +2,81 @@ use bevy_ecs::prelude::*;
 use glam::IVec3;
 use std::collections::HashMap;
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ChunkState {
+    NeedsGenerating(Entity), // Entity that can be acquired for generation
+    Generating(Entity),      // Entity holds the generation Task component
+    NeedsMeshing(Entity),    // Data is generated, waiting for meshing slot
+    Meshing(Entity),         // Entity holds the meshing Task component
+    Loaded(Entity),          // Entity is the final, rendered chunk
+}
+
 #[derive(Resource, Default, Debug)]
 pub struct ChunkLoadManager {
-    /// Map of coordinates for chunks that are fully loaded and have an entity spawned.
-    pub loaded_chunks: HashMap<IVec3, Entity>,
-
-    /// Map of coordinates for chunks currently being generated.
-    /// Key: IVec3 chunk coordinate
-    /// Value: Entity ID holding the generation Task component.
-    pub generating_chunks: HashMap<IVec3, Entity>,
-
-    /// Map of coordinates for chunks currently being meshed.
-    /// Key: IVec3 chunk coordinate
-    /// Value: Entity ID holding the meshing Task component.
-    pub meshing_chunks: HashMap<IVec3, Entity>,
+    /// Map tracking the state of all non-unloaded chunks.
+    pub chunk_states: HashMap<IVec3, ChunkState>,
 }
 
 impl ChunkLoadManager {
-    /// Checks if a chunk is loaded, being generated, or being meshed.
+    /// Gets the current state of a chunk, if tracked.
+    pub fn get_state(&self, coord: IVec3) -> Option<ChunkState> {
+        self.chunk_states.get(&coord).copied()
+    }
+
+    /// Checks if a chunk exists in any loading or loaded state.
     pub fn is_chunk_present_or_loading(&self, coord: IVec3) -> bool {
-        self.loaded_chunks.contains_key(&coord)
-            || self.generating_chunks.contains_key(&coord)
-            || self.meshing_chunks.contains_key(&coord)
+        self.chunk_states.contains_key(&coord)
     }
 
-    // Mark a chunk that has an async generation task running.
+    pub fn mark_as_needs_generating(&mut self, coord: IVec3, needs_generation_task_entity: Entity) {
+        self.chunk_states.insert(
+            coord,
+            ChunkState::NeedsGenerating(needs_generation_task_entity),
+        );
+    }
+
     pub fn mark_as_generating(&mut self, coord: IVec3, generation_task_entity: Entity) {
-        self.generating_chunks.insert(coord, generation_task_entity);
+        self.chunk_states
+            .insert(coord, ChunkState::Generating(generation_task_entity));
     }
 
-    // Mark a chunk that has an async meshing task running.
+    /// Called once a chunk's data is generated but needs to be meshed.
+    pub fn mark_as_needs_meshing(&mut self, coord: IVec3, needs_meshing_entity: Entity) {
+        // Could assert previous state was Generating
+        self.chunk_states
+            .insert(coord, ChunkState::NeedsMeshing(needs_meshing_entity));
+    }
+
+    /// Called once a chunk starts meshing.
     pub fn mark_as_meshing(&mut self, coord: IVec3, meshing_task_entity: Entity) {
-        self.generating_chunks.remove(&coord); // no longer generating
-        self.meshing_chunks.insert(coord, meshing_task_entity); // now meshing
+        // Could assert previous state was NeedsMeshing
+        self.chunk_states
+            .insert(coord, ChunkState::Meshing(meshing_task_entity));
     }
 
-    // Mark a chunk as fully loaded with a mesh and transform.
+    /// Called once a chunk has finished meshing and is fully loaded.
     pub fn mark_as_loaded(&mut self, coord: IVec3, final_chunk_entity: Entity) {
-        self.meshing_chunks.remove(&coord); // no longer meshing
-        self.loaded_chunks.insert(coord, final_chunk_entity); // now loaded
+        // Could assert previous state was Meshing
+        self.chunk_states
+            .insert(coord, ChunkState::Loaded(final_chunk_entity));
     }
 
-    /// Mark a loaded chunk entity as despawned.
+    /// Called when a chunk is unloaded, removing it from tracking.
     pub fn mark_as_unloaded(&mut self, coord: IVec3) {
-        self.loaded_chunks.remove(&coord);
+        self.chunk_states.remove(&coord);
     }
 
-    /// Mark a chunk loading task for cancellation (either generation or meshing).
-    pub fn mark_as_cancelled(&mut self, coord: IVec3) {
-        self.generating_chunks.remove(&coord);
-        self.meshing_chunks.remove(&coord);
+    /// A help to iterate over all chunks needing meshing.
+    ///
+    /// Necessary to prevent throttling by only meshing a few
+    /// chunks per frame/tick.
+    pub fn iter_needs_meshing(&self) -> impl Iterator<Item = &IVec3> {
+        self.chunk_states.iter().filter_map(|(coord, state)| {
+            if matches!(state, ChunkState::NeedsMeshing(_)) {
+                Some(coord)
+            } else {
+                None
+            }
+        })
     }
 }

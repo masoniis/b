@@ -35,7 +35,7 @@ impl ChunkGenerator for SuperflatGenerator {
         let cz = coord.z;
 
         if cy != 0 {
-            return GeneratedChunkComponents::empty();
+            return GeneratedChunkComponents::empty(coord);
         }
 
         let layer_blocks: Vec<_> = self
@@ -44,7 +44,7 @@ impl ChunkGenerator for SuperflatGenerator {
             .map(|name| blocks.get_block_by_name(name))
             .collect();
 
-        let mut chunk = ChunkComponent::new();
+        let mut chunk = ChunkComponent::new(coord);
 
         for x in 1..CHUNK_WIDTH - 1 {
             for z in 1..CHUNK_DEPTH - 1 {

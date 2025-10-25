@@ -1,17 +1,11 @@
 use crate::prelude::*;
-use crate::simulation_world::block::property_registry::BlockRegistryResource;
 use crate::simulation_world::camera::ActiveCamera;
-use crate::simulation_world::chunk::async_chunking::ChunkGenerationTaskComponent;
-use crate::simulation_world::chunk::superflat_generator::SuperflatGenerator;
-use crate::simulation_world::chunk::ChunkGenerator;
+use crate::simulation_world::chunk::async_chunking::NeedsGenerating;
+use crate::simulation_world::chunk::load_manager::ChunkState;
 use crate::simulation_world::chunk::{load_manager::ChunkLoadManager, ChunkChord};
 use bevy_ecs::prelude::*;
-use bevy_tasks::AsyncComputeTaskPool;
-use futures_timer::Delay;
 use glam::IVec3;
-use rand::Rng;
 use std::collections::HashSet;
-use std::time::Duration;
 
 /// The distance, in chunks, to load around the camera.
 const RENDER_DISTANCE: i32 = 11;
@@ -24,7 +18,6 @@ const VERTICAL_RENDER_DISTANCE: i32 = 1;
 pub fn manage_chunk_loading_system(
     // Input
     active_camera: Res<ActiveCamera>,
-    block_registry: Res<BlockRegistryResource>,
     camera_query: Query<&ChunkChord, Changed<ChunkChord>>,
 
     // Output
@@ -47,71 +40,48 @@ pub fn manage_chunk_loading_system(
         }
     }
 
-    // unload pass
-    chunk_manager.loaded_chunks.retain(|coord, entity| {
-        if desired_chunks.contains(coord) {
-            true // chunk in range, keep it
-        } else {
-            debug!(target:"chunk_loading","Unloading loaded chunk at {:?} (Entity: {:?})", coord, entity);
+    // INFO: --------------------------------
+    //         unload/cancel chunking
+    // --------------------------------------
 
-            commands.entity(*entity).despawn();
+    let mut coords_to_remove = Vec::new();
 
-            false
+    // iterate through all currently tracked chunks
+    for (coord, state) in chunk_manager.chunk_states.iter() {
+        // if chunk is out of range...
+        if !desired_chunks.contains(coord) {
+            match state {
+                ChunkState::NeedsGenerating(entity)
+                | ChunkState::Generating(entity)
+                | ChunkState::NeedsMeshing(entity)
+                | ChunkState::Meshing(entity) => {
+                    debug!(target:"chunk_loading", "Cancelling task for chunk at {:?} (Entity: {:?})", coord, entity);
+                    commands.entity(*entity).despawn();
+                }
+                ChunkState::Loaded(entity) => {
+                    debug!(target:"chunk_loading", "Unloading loaded chunk at {:?} (Entity: {:?})", coord, entity);
+                    commands.entity(*entity).despawn();
+                }
+            }
+            coords_to_remove.push(*coord);
         }
-    });
+    }
 
-    // cancel generation pass
-    chunk_manager.generating_chunks.retain(|coord, entity| {
-        if desired_chunks.contains(coord) {
-            true // chunk in range, keep it
-        } else {
-            debug!(target:"chunk_loading","Unloading currently-generating chunk at {:?} (Entity: {:?})", coord, entity);
+    // remove the unloaded/cancelled chunks from the manager
+    for coord in coords_to_remove {
+        chunk_manager.mark_as_unloaded(coord);
+    }
 
-            commands.entity(*entity).despawn();
+    // INFO: --------------------------------------------
+    //         load new chunks (start generation)
+    // --------------------------------------------------
 
-            false
-        }
-    });
-
-    chunk_manager.meshing_chunks.retain(|coord, entity| {
-        if desired_chunks.contains(coord) {
-            true // chunk in range, keep it
-        } else {
-            debug!(target:"chunk_loading","Unloading currently-meshing chunk at {:?} (Entity: {:?})", coord, entity);
-
-            commands.entity(*entity).despawn();
-
-            false
-        }
-    });
-
-    // load in chunks
-    let task_pool = AsyncComputeTaskPool::get();
     for coord in desired_chunks {
+        // mark as needing generation if it is not already being loaded
         if !chunk_manager.is_chunk_present_or_loading(coord) {
-            debug!(target:"chunk_loading","Requesting chunk load at {:?}", coord);
-
-            let blocks = block_registry.clone();
-
-            let task = task_pool.spawn(async move {
-                let gen = SuperflatGenerator::new();
-                // TODO: not having a random delay causes frame skips, I am not 100%
-                // sure on why but I assume it throttles the OS by adding so many
-                // chunks at once. Need to create some system that ensures we only
-                // begin meshing on a few chunks per frame to stop this from occurring.
-                let duration = Duration::from_secs_f32(rand::rng().random_range(0.05..1.0));
-                Delay::new(duration).await;
-                return gen.generate_chunk(coord.clone(), &blocks);
-            });
-
-            let ent = commands
-                .spawn(ChunkGenerationTaskComponent {
-                    task: task,
-                    coord: coord,
-                })
-                .id();
-
-            chunk_manager.mark_as_generating(coord, ent);
+            debug!(target:"chunk_loading","Marking chunk needs-generation at {:?}", coord);
+            let ent = commands.spawn(NeedsGenerating { coord }).id();
+            chunk_manager.mark_as_needs_generating(coord, ent);
         }
     }
 }
