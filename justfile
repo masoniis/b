@@ -24,9 +24,10 @@ bevy_debug *args:
 trace *args:
 	#!/usr/bin/env bash
 	trap 'echo -e "\n\033[1;36mStopping Tracy profiler (PID: $tracy_pid)...\033[0m"; kill $tracy_pid' EXIT
+	TRACY_ENABLE_MEMORY=1
 	tracy &
 	tracy_pid=$!
-	cargo run
+	cargo run --features tracy
 
 debug *args:
 	#!/usr/bin/env bash

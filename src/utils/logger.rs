@@ -16,9 +16,10 @@ pub fn attach_logger() {
         .with_timer(timer)
         .compact();
 
-    Registry::default()
-        .with(env_filter)
-        .with(tracing_tracy::TracyLayer::default())
-        .with(fmt_layer)
-        .init();
+    let subscriber = Registry::default().with(env_filter).with(fmt_layer);
+
+    #[cfg(feature = "tracy")]
+    let subscriber = subscriber.with(tracing_tracy::TracyLayer::default());
+
+    subscriber.init();
 }
