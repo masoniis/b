@@ -20,6 +20,7 @@ pub enum StatMarker {
     CameraXYZ(CameraChunkChordTextMarker),
     // performance
     Fps(FpsCounterTextElementMarker),
+    Memory(MemoryCounterTextElementMarker),
     MeshCount(MeshCountTextMarker),
     VertexCount(VertexCountTextMarker),
     IndexCount(IndexCountTextMarker),
@@ -33,9 +34,13 @@ pub struct RootDiagnosticScreenMarker;
 #[derive(Component)]
 pub struct CameraChunkChordTextMarker;
 
-/// A marker component for the FPS Counter text element.
+/// A marker component for the FPS counter text element.
 #[derive(Component)]
 pub struct FpsCounterTextElementMarker;
+
+/// A marker component for the memory counter text element.
+#[derive(Component)]
+pub struct MemoryCounterTextElementMarker;
 
 /// A marker component for the total mesh count text element.
 #[derive(Component)]
@@ -163,6 +168,14 @@ fn spawn_diagnostic_ui(
                     }];
                     spawn_stats_line(parent, fps_line_elements, font_size, align);
 
+                    let memory_line_elements = vec![StatLineElement {
+                        prefix: "MEM: ".to_string(),
+                        content: "0 MB".to_string(),
+                        color: [1.0, 1.0, 1.0, 1.0],
+                        marker: StatMarker::Memory(MemoryCounterTextElementMarker),
+                    }];
+                    spawn_stats_line(parent, memory_line_elements, font_size, align);
+
                     // mesh line
                     let mesh_line_elements = vec![
                         StatLineElement {
@@ -258,6 +271,7 @@ fn spawn_stats_line(
                 match element.marker {
                     StatMarker::CameraXYZ(marker) => text_entity.insert(marker),
                     StatMarker::Fps(marker) => text_entity.insert(marker),
+                    StatMarker::Memory(marker) => text_entity.insert(marker),
                     StatMarker::MeshCount(marker) => text_entity.insert(marker),
                     StatMarker::VertexCount(marker) => text_entity.insert(marker),
                     StatMarker::IndexCount(marker) => text_entity.insert(marker),
