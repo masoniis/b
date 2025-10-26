@@ -7,9 +7,14 @@ use super::{
 use crate::{
     ecs_core::{state_machine::AppState, EcsBuilder, Plugin},
     simulation_world::{
-        input::messages::{
-            KeyboardInputMessage, MouseButtonInputMessage, MouseMoveMessage, MouseScrollMessage,
-            RawDeviceMessage, RawWindowMessage,
+        input::{
+            messages::{
+                KeyboardInputMessage, MouseButtonInputMessage, MouseMoveMessage,
+                MouseScrollMessage, RawDeviceMessage, RawWindowMessage,
+            },
+            resources::DesiredCursorState,
+            systems::utils::toggle_cursor_state,
+            SimulationAction,
         },
         scheduling::OnExit,
         SimulationSchedule, SimulationSet,
@@ -18,6 +23,7 @@ use crate::{
 use bevy_ecs::{
     message::Messages,
     schedule::{IntoScheduleConfigs, SystemSet},
+    system::Res,
 };
 use winit::{event::MouseButton, keyboard::PhysicalKey};
 
@@ -39,7 +45,8 @@ impl Plugin for InputModulePlugin {
         builder
             .add_resource(Buttons::<PhysicalKey>::default())
             .add_resource(Buttons::<MouseButton>::default())
-            .add_resource(CursorMovement::default());
+            .add_resource(CursorMovement::default())
+            .add_resource(DesiredCursorState::default());
 
         // External events (comes from the app wrapper)
         builder
@@ -77,6 +84,15 @@ impl Plugin for InputModulePlugin {
                     .after(InputSystemSet::WindowEvents)
                     .after(InputSystemSet::DeviceEvents)
                     .in_set(SimulationSet::Input),
+            );
+
+        // Set desired cursor state on pause action
+        builder
+            .schedule_entry(SimulationSchedule::Main)
+            .add_systems(
+                toggle_cursor_state.run_if(|action_state: Res<ActionStateResource>| {
+                    action_state.just_happened(SimulationAction::TogglePause)
+                }),
             );
 
         builder

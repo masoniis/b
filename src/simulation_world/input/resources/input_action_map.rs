@@ -11,7 +11,7 @@ pub enum Input {
 }
 
 /// A map from input keys to an action. Set as a resource
-/// so that it can be configured by systems at runtime.
+/// which means it can be configured by systems at runtime.
 #[derive(Debug, Resource)]
 pub struct InputActionMapResource {
     bindings: HashMap<Input, SimulationAction>,
@@ -55,6 +55,10 @@ impl Default for InputActionMapResource {
                     SimulationAction::MoveFaster,
                 ),
                 // Misc
+                (
+                    Input::Key(PhysicalKey::Code(KeyCode::Escape)),
+                    SimulationAction::TogglePause,
+                ),
                 (
                     Input::Key(PhysicalKey::Code(KeyCode::F3)),
                     SimulationAction::ToggleDiagnostics,

@@ -10,4 +10,5 @@ pub enum SimulationAction {
 
     // Misc
     ToggleDiagnostics,
+    TogglePause,
 }

@@ -35,6 +35,11 @@ impl CommonEcsInterface {
         self.world.insert_resource(resource);
     }
 
+    /// Retrieves a resource from the world, if it exists.
+    pub fn get_resource<R: Resource>(&self) -> Option<&R> {
+        self.world.get_resource::<R>()
+    }
+
     /// Clears the world's internal change trackers.
     ///
     /// This MUST be called at the end of a world's update cycle to ensure

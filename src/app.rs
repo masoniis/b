@@ -6,7 +6,10 @@ use crate::{
         scheduling::RenderSchedule, textures::load_texture_array, RenderWorldInterface,
     },
     simulation_world::{
-        input::messages::{RawDeviceMessage, RawWindowMessage},
+        input::{
+            messages::{RawDeviceMessage, RawWindowMessage},
+            resources::DesiredCursorState,
+        },
         SimulationSchedule, SimulationWorldInterface,
     },
 };
@@ -199,6 +202,20 @@ impl ApplicationHandler for App {
                                 .lock()
                                 .unwrap()
                                 .run_schedule(SimulationSchedule::Main);
+
+                            // updated cursor if there is a change
+                            if let (Some(window), Some(cursor_state)) = (
+                                &self.window,
+                                simulation_world
+                                    .lock()
+                                    .unwrap()
+                                    .get_resource::<DesiredCursorState>(),
+                            ) {
+                                window.set_cursor_visible(cursor_state.visible);
+                                if let Err(e) = window.set_cursor_grab(cursor_state.grab_mode) {
+                                    error!("Failed to set cursor grab mode: {:?}", e);
+                                }
+                            }
                         }
                         self.frame_sync.finish_simulation();
 
