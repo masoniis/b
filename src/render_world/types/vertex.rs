@@ -6,22 +6,25 @@ use std::hash::{Hash, Hasher};
 pub struct Vertex {
     pub position: [f32; 3],
     pub color: [f32; 3],
+    pub normal: [f32; 3],
     pub tex_coords: [f32; 2],
     pub texture_index: u32,
 }
 
 impl Vertex {
-    const ATTRIBUTES: [wgpu::VertexAttribute; 4] = wgpu::vertex_attr_array![
+    const ATTRIBUTES: [wgpu::VertexAttribute; 5] = wgpu::vertex_attr_array![
         0 => Float32x3, // position
-        1 => Float32x3, // color
-        2 => Float32x2, // tex_coords
-        3 => Uint32,    // texture_index
+        1 => Float32x3, // normal
+        2 => Float32x3, // color
+        3 => Float32x2, // tex_coords
+        4 => Uint32,    // texture_index
     ];
 
     pub fn new(pos: [f32; 3], tex_coords: [f32; 2], texture_index: u32) -> Self {
         Self {
             position: pos,
             color: [1.0, 1.0, 1.0],
+            normal: [0.0, 0.0, 0.0],
             tex_coords,
             texture_index,
         }
@@ -42,6 +45,11 @@ impl PartialEq for Vertex {
             .iter()
             .zip(other.position.iter())
             .all(|(a, b)| a.to_bits() == b.to_bits())
+            && self
+                .normal
+                .iter()
+                .zip(other.normal.iter())
+                .all(|(a, b)| a.to_bits() == b.to_bits())
             && self
                 .color
                 .iter()

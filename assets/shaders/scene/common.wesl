@@ -21,14 +21,16 @@ var<storage, read> objects: array<ObjectData>;
 // Vertex input and output
 struct VertexInput {
     @location(0) position: vec3<f32>,
-    @location(1) color: vec3<f32>,
-    @location(2) tex_coords: vec2<f32>,
-    @location(3) texture_index: u32,
+    @location(1) normal: vec3<f32>,
+    @location(2) color: vec3<f32>,
+    @location(3) tex_coords: vec2<f32>,
+    @location(4) texture_index: u32,
 };
 
 struct VertexOutput {
     @builtin(position) clip_position: vec4<f32>,
-    @location(0) color: vec3<f32>,
-    @location(1) tex_coords: vec2<f32>,
-    @location(2) @interpolate(flat) texture_index: u32,
+    @location(0) normal: vec3<f32>,
+    @location(1) color: vec3<f32>,
+    @location(2) tex_coords: vec2<f32>,
+    @location(3) @interpolate(flat) texture_index: u32,
 };
