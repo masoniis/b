@@ -1,4 +1,5 @@
 use crate::render_world::types::Vertex;
+use crate::simulation_world::chunk::async_chunking::ChunkNeighborData;
 use crate::simulation_world::{
     asset_management::texture_map_registry::TextureMapResource,
     block::{property_registry::BlockRegistryResource, Block},
@@ -8,6 +9,7 @@ use crate::simulation_world::{
 /// Helper function to build a mesh for a single chunk
 pub fn build_chunk_mesh(
     chunk: &ChunkBlocksComponent,
+    _neighbor_chunks: &ChunkNeighborData,
     texture_map: &TextureMapResource,
     block_registry: &BlockRegistryResource,
 ) -> (Vec<Vertex>, Vec<u32>) {

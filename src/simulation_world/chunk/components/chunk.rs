@@ -4,17 +4,21 @@ use crate::simulation_world::{
     chunk::{CHUNK_DEPTH, CHUNK_HEIGHT, CHUNK_WIDTH, Y_SHIFT, Z_SHIFT},
 };
 use bevy_ecs::prelude::Component;
+use std::sync::Arc;
 
 #[derive(Clone, Component)]
 pub struct ChunkBlocksComponent {
-    blocks: Vec<Block>,
+    blocks: Arc<Vec<Block>>,
 }
 
 impl ChunkBlocksComponent {
     /// Creates a new empty chunk component filled with air blocks.
     pub fn empty() -> Self {
         Self {
-            blocks: vec![Block { id: 0 }; CHUNK_WIDTH * CHUNK_HEIGHT * CHUNK_DEPTH],
+            blocks: Arc::new(vec![
+                Block { id: 0 };
+                CHUNK_WIDTH * CHUNK_HEIGHT * CHUNK_DEPTH
+            ]),
         }
     }
 
@@ -47,6 +51,8 @@ impl ChunkBlocksComponent {
 
         let index = (y << Y_SHIFT) | (z << Z_SHIFT) | x;
 
-        self.blocks[index] = block;
+        // get mutable reference to the blocks vector
+        let blocks_mut = Arc::make_mut(&mut self.blocks);
+        blocks_mut[index] = block;
     }
 }

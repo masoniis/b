@@ -11,6 +11,19 @@ pub enum ChunkState {
     Loaded(Entity),          // Entity is the final, rendered chunk
 }
 
+impl ChunkState {
+    /// Returns the Entity associated with this chunk state.
+    pub fn entity(&self) -> Entity {
+        match *self {
+            ChunkState::NeedsGenerating(e) => e,
+            ChunkState::Generating(e) => e,
+            ChunkState::NeedsMeshing(e) => e,
+            ChunkState::Meshing(e) => e,
+            ChunkState::Loaded(e) => e,
+        }
+    }
+}
+
 #[derive(Resource, Default, Debug)]
 pub struct ChunkLoadManager {
     /// Map tracking the state of all non-unloaded chunks.
@@ -23,11 +36,17 @@ impl ChunkLoadManager {
         self.chunk_states.get(&coord).copied()
     }
 
+    /// Gets the Entity for a chunk, if that chunk is tracked.
+    pub fn get_entity(&self, coord: IVec3) -> Option<Entity> {
+        self.chunk_states.get(&coord).map(|state| state.entity())
+    }
+
     /// Checks if a chunk exists in any loading or loaded state.
     pub fn is_chunk_present_or_loading(&self, coord: IVec3) -> bool {
         self.chunk_states.contains_key(&coord)
     }
 
+    /// Marks that a chunk is requested to be loaded.
     pub fn mark_as_needs_generating(&mut self, coord: IVec3, needs_generation_task_entity: Entity) {
         self.chunk_states.insert(
             coord,
@@ -35,6 +54,7 @@ impl ChunkLoadManager {
         );
     }
 
+    /// Marks that a chunk is currently undergoing generation.
     pub fn mark_as_generating(&mut self, coord: IVec3, generation_task_entity: Entity) {
         self.chunk_states
             .insert(coord, ChunkState::Generating(generation_task_entity));

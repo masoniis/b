@@ -146,20 +146,7 @@ pub fn poll_chunk_generation_tasks(
 
             commands
                 .entity(entity)
-                .insert((
-                    gen_bundle.chunk_blocks,
-                    gen_bundle.biome_map,
-                    TransformComponent {
-                        position: Vec3::new(
-                            (coord.x * CHUNK_WIDTH as i32) as f32,
-                            (coord.y * CHUNK_HEIGHT as i32) as f32,
-                            (coord.z * CHUNK_DEPTH as i32) as f32,
-                        ),
-                        rotation: Quat::IDENTITY,
-                        scale: Vec3::ONE,
-                    },
-                    NeedsMeshing,
-                ))
+                .insert((gen_bundle.chunk_blocks, gen_bundle.biome_map, NeedsMeshing))
                 .remove::<ChunkGenerationTaskComponent>();
 
             chunk_manager.mark_as_needs_meshing(coord.pos, entity);
@@ -167,19 +154,25 @@ pub fn poll_chunk_generation_tasks(
     }
 }
 
+/// Neighboring chunk data needed for meshing.
+pub struct ChunkNeighborData {
+    pub right: Option<ChunkBlocksComponent>,  // +X
+    pub left: Option<ChunkBlocksComponent>,   // -X
+    pub top: Option<ChunkBlocksComponent>,    // +Y
+    pub bottom: Option<ChunkBlocksComponent>, // -Y
+    pub front: Option<ChunkBlocksComponent>,  // +Z
+    pub back: Option<ChunkBlocksComponent>,   // -Z
+}
+
 /// Queries for chunks needing meshing and starts a limited number of tasks per frame.
 #[instrument(skip_all)]
 pub fn start_pending_meshing_tasks_system(
     // Input
     mut pending_chunks_query: Query<
-        (
-            Entity,
-            &ChunkBlocksComponent,
-            &ChunkCoord,
-            &TransformComponent,
-        ),
+        (Entity, &ChunkBlocksComponent, &ChunkCoord),
         (With<NeedsMeshing>, Without<ChunkMeshingTaskComponent>),
     >,
+    all_generated_chunks: Query<&ChunkBlocksComponent>, // for finding neighbors
 
     // Resources needed to start meshing
     mut commands: Commands,
@@ -193,7 +186,7 @@ pub fn start_pending_meshing_tasks_system(
 ) {
     *meshing_tasks_started_this_frame = 0;
 
-    for (entity, chunk_comp, chunk_coord, _transform_comp) in pending_chunks_query.iter_mut() {
+    'chunk_loop: for (entity, chunk_comp, chunk_coord) in pending_chunks_query.iter_mut() {
         if *meshing_tasks_started_this_frame >= MAX_MESHING_STARTS_PER_FRAME {
             break;
         }
@@ -213,11 +206,61 @@ pub fn start_pending_meshing_tasks_system(
             }
         }
 
-        *meshing_tasks_started_this_frame += 1;
+        // INFO: ----------------------------------------------
+        //         Ensure neighbors have been generated
+        // ----------------------------------------------------
+
+        let get_neighbor = |offset: IVec3| -> Option<Option<ChunkBlocksComponent>> {
+            let neighbor_coord = chunk_coord.pos + offset;
+            match chunk_manager.get_entity(neighbor_coord) {
+                Some(entity) => match all_generated_chunks.get(entity) {
+                    Ok(blocks) => Some(Some(blocks.clone())), // found data
+                    Err(_) => None,                           // must wait for generation
+                },
+                None => Some(None), // is out of bounds
+            }
+        };
+
+        let right = match get_neighbor(IVec3::new(1, 0, 0)) {
+            Some(data) => data,
+            None => continue 'chunk_loop,
+        };
+        let left = match get_neighbor(IVec3::new(-1, 0, 0)) {
+            Some(data) => data,
+            None => continue 'chunk_loop,
+        };
+        let top = match get_neighbor(IVec3::new(0, 1, 0)) {
+            Some(data) => data,
+            None => continue 'chunk_loop,
+        };
+        let bottom = match get_neighbor(IVec3::new(0, -1, 0)) {
+            Some(data) => data,
+            None => continue 'chunk_loop,
+        };
+        let front = match get_neighbor(IVec3::new(0, 0, 1)) {
+            Some(data) => data,
+            None => continue 'chunk_loop,
+        };
+        let back = match get_neighbor(IVec3::new(0, 0, -1)) {
+            Some(data) => data,
+            None => continue 'chunk_loop,
+        };
+
+        let neighbor_data_for_task = ChunkNeighborData {
+            right,
+            left,
+            top,
+            bottom,
+            front,
+            back,
+        };
 
         debug!(target: "chunk_loading", "Starting meshing task for {} ({} this frame).", chunk_coord.pos, *meshing_tasks_started_this_frame);
+        // INFO: -----------------------------
+        //         Spawn the mesh task
+        // -----------------------------------
 
-        // spawn the mesh task with resources
+        *meshing_tasks_started_this_frame += 1;
         let texture_map_clone = texture_map.clone();
         let block_registry_clone = block_registry.clone();
         let mesh_assets_clone = mesh_assets.clone();
@@ -228,6 +271,7 @@ pub fn start_pending_meshing_tasks_system(
         let meshing_task_handle: Task<Option<MeshComponent>> = task_pool.spawn(async move {
             let (vertices, indices) = build_chunk_mesh(
                 &chunk_component_for_task,
+                &neighbor_data_for_task,
                 &texture_map_clone,
                 &block_registry_clone,
             );
@@ -288,7 +332,18 @@ pub fn poll_chunk_meshing_tasks(
 
             // add MeshComponent if it exists
             if let Some(mesh_component) = mesh_component_option {
-                commands.entity(entity).insert(mesh_component);
+                commands.entity(entity).insert((
+                    mesh_component,
+                    TransformComponent {
+                        position: Vec3::new(
+                            (coord.x * CHUNK_WIDTH as i32) as f32,
+                            (coord.y * CHUNK_HEIGHT as i32) as f32,
+                            (coord.z * CHUNK_DEPTH as i32) as f32,
+                        ),
+                        rotation: Quat::IDENTITY,
+                        scale: Vec3::ONE,
+                    },
+                ));
                 debug!(target: "chunk_loading","Chunk at {:?} is now fully loaded.", coord);
             } else {
                 debug!(target: "chunk_loading", "Chunk at {:?} is empty, no mesh component added.", coord);
