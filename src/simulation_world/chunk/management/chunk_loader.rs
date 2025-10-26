@@ -3,13 +3,10 @@ use crate::simulation_world::camera::ActiveCamera;
 use crate::simulation_world::chunk::async_chunking::NeedsGenerating;
 use crate::simulation_world::chunk::load_manager::ChunkState;
 use crate::simulation_world::chunk::{load_manager::ChunkLoadManager, ChunkChord};
+use crate::simulation_world::chunk::{RENDER_DISTANCE, WORLD_MAX_Y_CHUNK, WORLD_MIN_Y_CHUNK};
 use bevy_ecs::prelude::*;
 use glam::IVec3;
 use std::collections::HashSet;
-
-/// The distance, in chunks, to load around the camera.
-const RENDER_DISTANCE: i32 = 11;
-const VERTICAL_RENDER_DISTANCE: i32 = 1;
 
 /// Determines chunks to unload/load based on the camera position.
 ///
@@ -31,10 +28,10 @@ pub fn manage_chunk_loading_system(
     // calculate desired chunks based on render distance
     let camera_chunk_pos = camera_chunk.pos;
     let mut desired_chunks = HashSet::new();
-    for y in -VERTICAL_RENDER_DISTANCE..=VERTICAL_RENDER_DISTANCE {
+    for y in WORLD_MIN_Y_CHUNK..=WORLD_MAX_Y_CHUNK {
         for z in -RENDER_DISTANCE..=RENDER_DISTANCE {
             for x in -RENDER_DISTANCE..=RENDER_DISTANCE {
-                let coord = camera_chunk_pos + IVec3::new(x, y, z);
+                let coord = IVec3::new(camera_chunk_pos.x + x, y, camera_chunk_pos.z + z);
                 desired_chunks.insert(coord);
             }
         }

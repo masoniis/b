@@ -1,12 +1,29 @@
-// WARNING: these constants rely on bitwise operations.
-// DO NOT set them to anything that isn't a power of 2.
-pub const CHUNK_WIDTH: usize = 32;
-pub const CHUNK_HEIGHT: usize = 32;
-pub const CHUNK_DEPTH: usize = 32;
+// INFO: ----------------------
+//         chunk sizing
+// ----------------------------
 
-// INFO: ------------------------
-//         derived consts
-// ------------------------------
+// the number of bitshifts to apply to the chunk_width and height
+//
+// 2^CHUNK_DIM_SHIFT will be the size of each side of the chunks
+const CHUNK_DIM_SHIFT: usize = 4;
+
+pub const CHUNK_WIDTH: usize = 2 << CHUNK_DIM_SHIFT;
+pub const CHUNK_HEIGHT: usize = 2 << CHUNK_DIM_SHIFT;
+pub const CHUNK_DEPTH: usize = 2 << CHUNK_DIM_SHIFT;
+
+// INFO: -------------------------
+//         render distance
+// -------------------------------
+
+/// The distance in the xz plane, in chunks, to load around the camera.
+pub const RENDER_DISTANCE: i32 = 11;
+/// The size of the vertical column that we render (chunks above/below will never be generated)
+pub const WORLD_MIN_Y_CHUNK: i32 = 0;
+pub const WORLD_MAX_Y_CHUNK: i32 = 256 >> (CHUNK_DIM_SHIFT + 1);
+
+// INFO: ------------------------------
+//         other derived consts
+// ------------------------------------
 
 // Z_SHIFT is log2(CHUNK_WIDTH)
 pub const Z_SHIFT: usize = CHUNK_WIDTH.trailing_zeros() as usize;
