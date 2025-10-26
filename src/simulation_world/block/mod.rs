@@ -1,8 +1,10 @@
 pub mod property_loading;
 pub mod property_registry;
+pub mod types;
 
 pub use property_loading::{load_block_from_str, BlockFaceTextures, BlockProperties};
 pub use property_registry::load_block_definitions_system;
+pub use types::{Block, BlockId};
 
 // INFO: ----------------------
 //         Block plugin

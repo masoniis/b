@@ -1,5 +1,5 @@
-use super::block::Block;
 use crate::prelude::*;
+use crate::simulation_world::block::Block;
 use crate::simulation_world::chunk::{CHUNK_DEPTH, CHUNK_HEIGHT, CHUNK_WIDTH, Y_SHIFT, Z_SHIFT};
 use bevy_ecs::prelude::Component;
 use glam::IVec3;

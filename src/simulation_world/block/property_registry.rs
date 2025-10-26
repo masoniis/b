@@ -1,6 +1,6 @@
 use crate::render_world::types::TextureId;
 use crate::simulation_world::block::property_loading::{BlockFaceTextures, BlockProperties};
-use crate::simulation_world::chunk::block::Block;
+use crate::simulation_world::block::{Block, BlockId};
 use crate::{prelude::*, simulation_world::block::load_block_from_str};
 use bevy_ecs::prelude::Resource;
 use bevy_ecs::prelude::*;
@@ -14,14 +14,14 @@ pub struct BlockRegistryResource {
     pub block_properties: Arc<Vec<BlockProperties>>,
 
     /// Maps a string name (e.g., "grass") to the runtime `u16` ID.
-    name_to_id: Arc<HashMap<String, u16>>,
+    name_to_id: Arc<HashMap<String, BlockId>>,
 }
 
 impl BlockRegistryResource {
     /// Gets the properties for a given block ID.
     ///
     /// Always returns a valid property (defaults to Air).
-    pub fn get(&self, id: u16) -> &BlockProperties {
+    pub fn get(&self, id: BlockId) -> &BlockProperties {
         self.block_properties
             .get(id as usize)
             .unwrap_or(&self.block_properties[0]) // air is 0
@@ -29,7 +29,7 @@ impl BlockRegistryResource {
 
     /// Gets the numeric ID for a given block name.
     /// Used during world-gen or setup.
-    pub fn get_id_by_name(&self, name: &str) -> Option<u16> {
+    pub fn get_id_by_name(&self, name: &str) -> Option<BlockId> {
         self.name_to_id.get(&name.to_lowercase()).copied()
     }
 
@@ -38,14 +38,16 @@ impl BlockRegistryResource {
     /// Defaults to ID 0 (Air) if not found.
     pub fn get_block_by_name(&self, name: &str) -> Block {
         // Assume ID 0 is "air"
-        let id = self.get_id_by_name(&name.to_lowercase()).unwrap_or(0);
+        let id = self
+            .get_id_by_name(&name.to_lowercase())
+            .unwrap_or(0 as BlockId);
         Block { id: id.into() }
     }
 
     /// Helper to get `BlockProperties` directly from a name.
     /// Defaults to Air's properties if not found.
     pub fn get_properties_by_name(&self, name: &str) -> &BlockProperties {
-        let id = self.get_id_by_name(name).unwrap_or(0);
+        let id = self.get_id_by_name(name).unwrap_or(0 as BlockId);
         self.get(id)
     }
 }
@@ -56,11 +58,11 @@ pub fn load_block_definitions_system(mut commands: Commands) {
     info!("Loading block definitions...");
 
     let mut block_properties: Vec<BlockProperties> = Vec::new();
-    let mut name_to_id: HashMap<String, u16> = HashMap::new();
+    let mut name_to_id: HashMap<String, BlockId> = HashMap::new();
 
     // helper closure for local registration
-    let mut register = |name: String, properties: BlockProperties| -> u16 {
-        let id = block_properties.len() as u16;
+    let mut register = |name: String, properties: BlockProperties| -> BlockId {
+        let id = block_properties.len() as BlockId;
         block_properties.push(properties);
         name_to_id.insert(name.to_lowercase(), id);
         id

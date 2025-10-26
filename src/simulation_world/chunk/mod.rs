@@ -3,14 +3,12 @@ pub mod consts;
 pub mod generation;
 pub mod management;
 pub mod meshing;
-pub mod types;
 
 pub use components::*;
 pub use consts::*;
 pub use generation::*;
 pub use management::*;
 pub use meshing::*;
-pub use types::*;
 
 // INFO: --------------------------
 //         Chunk gen plugin
