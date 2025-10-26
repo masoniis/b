@@ -1,7 +1,6 @@
 use crate::prelude::*;
 use crate::simulation_world::camera::{ActiveCamera, CameraComponent};
-use crate::simulation_world::chunk::chunk_chord::world_to_chunk_pos;
-use crate::simulation_world::chunk::ChunkChord;
+use crate::simulation_world::chunk::{world_to_chunk_pos, ChunkChord};
 use crate::simulation_world::time::FrameClock;
 use crate::{
     simulation_world::input::resources::WindowSizeResource,

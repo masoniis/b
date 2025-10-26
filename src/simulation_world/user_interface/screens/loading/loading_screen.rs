@@ -1,8 +1,8 @@
 use crate::prelude::*;
-use crate::simulation_world::user_interface::components::{
-    Node, Size, Style, TextAlign, UiBackground, UiText,
+use crate::simulation_world::user_interface::{
+    components::{Node, Size, Style, TextAlign, UiBackground, UiText},
+    screens::spawn_root::UiRootNodeResource,
 };
-use crate::simulation_world::user_interface::screens::spawn_root::UiRootNodeResource;
 use bevy_ecs::prelude::*;
 
 /// A marker component for all entities that are part of the Loading UI screen.

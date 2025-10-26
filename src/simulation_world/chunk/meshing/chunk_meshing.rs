@@ -1,9 +1,9 @@
 use crate::render_world::types::Vertex;
-use crate::simulation_world::asset_management::texture_map_registry::TextureMapResource;
-use crate::simulation_world::block::property_registry::BlockRegistryResource;
-use crate::simulation_world::block::Block;
-use crate::simulation_world::chunk::chunk::ChunkComponent;
-use crate::simulation_world::chunk::{CHUNK_DEPTH, CHUNK_HEIGHT, CHUNK_WIDTH};
+use crate::simulation_world::{
+    asset_management::texture_map_registry::TextureMapResource,
+    block::{property_registry::BlockRegistryResource, Block},
+    chunk::{ChunkComponent, CHUNK_DEPTH, CHUNK_HEIGHT, CHUNK_WIDTH},
+};
 
 /// Helper function to build a mesh for a single chunk
 pub fn build_chunk_mesh(

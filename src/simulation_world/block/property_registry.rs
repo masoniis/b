@@ -1,12 +1,11 @@
+use crate::prelude::*;
 use crate::render_world::types::TextureId;
-use crate::simulation_world::block::property_loading::{BlockFaceTextures, BlockProperties};
-use crate::simulation_world::block::{Block, BlockId};
-use crate::{prelude::*, simulation_world::block::load_block_from_str};
-use bevy_ecs::prelude::Resource;
+use crate::simulation_world::block::{
+    load_block_from_str, Block, BlockFaceTextures, BlockId, BlockProperties,
+};
 use bevy_ecs::prelude::*;
 use std::collections::HashMap;
-use std::fs;
-use std::sync::Arc;
+use std::{fs, sync::Arc};
 
 #[derive(Resource, Default, Clone)]
 pub struct BlockRegistryResource {

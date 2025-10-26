@@ -1,11 +1,13 @@
 use crate::prelude::*;
 use bevy_ecs::prelude::Resource;
-use std::collections::hash_map::{Entry, HashMap};
-use std::hash::Hash;
-use std::marker::PhantomData;
-use std::sync::{
-    atomic::{AtomicU32, Ordering},
-    Arc, RwLock,
+use std::{
+    collections::hash_map::{Entry, HashMap},
+    hash::Hash,
+    marker::PhantomData,
+    sync::{
+        atomic::{AtomicU32, Ordering},
+        Arc, RwLock,
+    },
 };
 
 pub type AssetId = u32;

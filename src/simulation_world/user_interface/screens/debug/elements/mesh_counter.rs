@@ -1,9 +1,11 @@
 use crate::prelude::*;
-use crate::simulation_world::asset_management::{AssetStorageResource, MeshAsset};
-use crate::simulation_world::chunk::MeshComponent;
-use crate::simulation_world::user_interface::components::UiText;
-use crate::simulation_world::user_interface::screens::debug_screen::{
-    IndexCountTextMarker, MeshCountTextMarker, VertexCountTextMarker,
+use crate::simulation_world::{
+    asset_management::{AssetStorageResource, MeshAsset},
+    chunk::MeshComponent,
+    user_interface::components::UiText,
+    user_interface::screens::debug_screen::{
+        IndexCountTextMarker, MeshCountTextMarker, VertexCountTextMarker,
+    },
 };
 use bevy_ecs::prelude::*;
 

@@ -1,10 +1,8 @@
 use crate::simulation_world::block::property_registry::BlockRegistryResource;
-use crate::simulation_world::chunk::SuperflatGenerator;
-use crate::simulation_world::chunk::{chunk::ChunkComponent, TransformComponent};
+use crate::simulation_world::chunk::{ChunkComponent, SuperflatGenerator, TransformComponent};
 use bevy_ecs::prelude::Resource;
 use glam::IVec3;
-use std::fmt::Debug;
-use std::sync::Arc;
+use std::{fmt::Debug, sync::Arc};
 
 /// A resource holding the active chunk generator.
 #[derive(Resource, Clone)]

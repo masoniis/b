@@ -1,6 +1,5 @@
-use serde::Deserialize;
-
 use crate::render_world::types::TextureId;
+use serde::Deserialize;
 
 /// Loads a `BlockProperties` struct from a RON string.
 ///

@@ -5,27 +5,27 @@ pub mod scheduling;
 pub mod textures;
 pub mod types;
 
+pub use scheduling::{RenderSchedule, RenderSet};
+
 // INFO: --------------------------------
 //         Render world interface
 // --------------------------------------
 
-use crate::ecs_core::async_loading::poll_render_loading_tasks;
-use crate::ecs_core::state_machine::{AppState, GameState};
-use crate::ecs_core::worlds::RenderWorldMarker;
-use crate::prelude::*;
-use crate::render_world::global_extract::SimulationExtractionPlugin;
-use crate::render_world::graphics_context::{GraphicsContext, GraphicsContextPlugin};
-use crate::render_world::passes::core::setup_render_graph;
-use crate::render_world::passes::RenderPassManagerPlugin;
-use crate::render_world::scheduling::{RenderSchedule, RenderSet};
-use crate::render_world::textures::{GpuTextureArray, TextureArrayResource};
-use crate::{
-    ecs_core::state_machine::{self, in_state, StatePlugin},
-    render_world::global_extract::{
-        RenderCameraResource, RenderMeshStorageResource, RenderTimeResource,
-    },
+use crate::ecs_core::{
+    async_loading::poll_render_loading_tasks,
+    state_machine::{self, in_state, AppState, GameState, StatePlugin},
+    worlds::RenderWorldMarker,
 };
-use bevy_ecs::schedule::IntoScheduleConfigs;
+use crate::prelude::*;
+use crate::render_world::{
+    global_extract::{
+        RenderCameraResource, RenderMeshStorageResource, RenderTimeResource,
+        SimulationExtractionPlugin,
+    },
+    graphics_context::{GraphicsContext, GraphicsContextPlugin},
+    passes::{core::setup_render_graph, RenderPassManagerPlugin},
+    textures::{GpuTextureArray, TextureArrayResource},
+};
 use std::ops::{Deref, DerefMut};
 
 pub struct RenderWorldInterface {

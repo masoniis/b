@@ -1,7 +1,9 @@
 use crate::prelude::*;
-use crate::simulation_world::time::FrameClock;
-use crate::simulation_world::user_interface::{
-    components::UiText, screens::debug::debug_screen::FpsCounterTextElementMarker,
+use crate::simulation_world::{
+    time::FrameClock,
+    user_interface::{
+        components::UiText, screens::debug::debug_screen::FpsCounterTextElementMarker,
+    },
 };
 use bevy_ecs::prelude::*;
 

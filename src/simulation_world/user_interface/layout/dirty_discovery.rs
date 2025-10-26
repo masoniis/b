@@ -11,7 +11,6 @@ use crate::{
 use bevy_ecs::prelude::*;
 use derive_more::{Deref, DerefMut};
 use taffy::{self};
-use tracing::info_span;
 
 // INFO: -------------------
 //         Resources

@@ -1,9 +1,9 @@
 /// Prelude is to be reserved for imports that get used across many
 /// files. For this project, that mostly includes things that are used
 /// at a system ecs module level (eg plugin) as there will be many modules.
-pub use crate::simulation_world::SimulationSet;
 pub use crate::{
     ecs_core::{CommonEcsInterface, EcsBuilder, Plugin, PluginGroup, ScheduleBuilder},
+    simulation_world::SimulationSet,
     utils::*,
 };
 

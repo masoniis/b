@@ -1,14 +1,15 @@
 use crate::prelude::*;
-use crate::simulation_world::camera::CameraComponent;
-use crate::simulation_world::chunk::ChunkChord;
-use crate::simulation_world::time::FrameClock;
-use crate::simulation_world::user_interface::components::{
-    Node, Size, Style, TextAlign, UiBackground, UiText,
+use crate::simulation_world::{
+    camera::CameraComponent,
+    chunk::ChunkChord,
+    time::FrameClock,
+    user_interface::{
+        components::{Node, Size, Style, TextAlign, UiBackground, UiText},
+        screens::spawn_root::UiRootNodeResource,
+        screens::MeshCounterResource,
+    },
 };
-use crate::simulation_world::user_interface::screens::spawn_root::UiRootNodeResource;
-use crate::simulation_world::user_interface::screens::MeshCounterResource;
-use bevy_ecs::prelude::*;
-use bevy_ecs::relationship::RelatedSpawnerCommands;
+use bevy_ecs::{prelude::*, relationship::RelatedSpawnerCommands};
 
 // INFO: -------------------------
 //         Marker elements

@@ -1,9 +1,8 @@
 use crate::prelude::*;
 use crate::simulation_world::block::property_registry::BlockRegistryResource;
-use crate::simulation_world::chunk::chunk::ChunkComponent;
 use crate::simulation_world::chunk::{
-    ChunkGenerator, GeneratedChunkComponents, TransformComponent, CHUNK_DEPTH, CHUNK_HEIGHT,
-    CHUNK_WIDTH,
+    ChunkComponent, ChunkGenerator, GeneratedChunkComponents, TransformComponent, CHUNK_DEPTH,
+    CHUNK_HEIGHT, CHUNK_WIDTH,
 };
 use glam::{IVec3, Quat};
 
@@ -17,6 +16,7 @@ impl SuperflatGenerator {
         Self {
             layers: vec![
                 "stone".to_string(),
+                "lava".to_string(),
                 "stone".to_string(),
                 "grass".to_string(),
             ],

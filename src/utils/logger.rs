@@ -1,7 +1,6 @@
 use time::macros::format_description;
-use tracing_subscriber::prelude::*;
 use tracing_subscriber::{
-    filter::EnvFilter, fmt, fmt::time::LocalTime, layer::SubscriberExt, Registry,
+    filter::EnvFilter, fmt, fmt::time::LocalTime, layer::SubscriberExt, prelude::*, Registry,
 };
 
 pub fn attach_logger() {

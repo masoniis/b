@@ -1,9 +1,9 @@
-use std::process;
-
 use crate::prelude::*;
-use crate::simulation_world::user_interface::components::UiText;
-use crate::simulation_world::user_interface::screens::debug_screen::MemoryCounterTextElementMarker;
+use crate::simulation_world::user_interface::{
+    components::UiText, screens::debug_screen::MemoryCounterTextElementMarker,
+};
 use bevy_ecs::prelude::*;
+use std::process;
 use sysinfo::{Pid, ProcessRefreshKind, System};
 
 #[derive(Resource)]

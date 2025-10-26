@@ -1,9 +1,13 @@
 use crate::prelude::*;
-use crate::simulation_world::camera::ActiveCamera;
-use crate::simulation_world::chunk::async_chunking::NeedsGenerating;
-use crate::simulation_world::chunk::load_manager::ChunkState;
-use crate::simulation_world::chunk::{load_manager::ChunkLoadManager, ChunkChord};
-use crate::simulation_world::chunk::{RENDER_DISTANCE, WORLD_MAX_Y_CHUNK, WORLD_MIN_Y_CHUNK};
+use crate::simulation_world::{
+    camera::ActiveCamera,
+    chunk::{
+        async_chunking::NeedsGenerating,
+        load_manager::ChunkState,
+        {load_manager::ChunkLoadManager, ChunkChord},
+        {RENDER_DISTANCE, WORLD_MAX_Y_CHUNK, WORLD_MIN_Y_CHUNK},
+    },
+};
 use bevy_ecs::prelude::*;
 use glam::IVec3;
 use std::collections::HashSet;

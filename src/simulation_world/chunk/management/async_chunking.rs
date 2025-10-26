@@ -1,21 +1,15 @@
 use crate::prelude::*;
-use crate::simulation_world::asset_management::texture_map_registry::TextureMapResource;
-use crate::simulation_world::asset_management::AssetStorageResource;
-use crate::simulation_world::asset_management::MeshAsset;
-use crate::simulation_world::block::property_registry::BlockRegistryResource;
-use crate::simulation_world::chunk::chunk::ChunkComponent;
-use crate::simulation_world::chunk::chunk_meshing::build_chunk_mesh;
-use crate::simulation_world::chunk::load_manager::ChunkLoadManager;
-use crate::simulation_world::chunk::load_manager::ChunkState;
-use crate::simulation_world::chunk::ActiveChunkGenerator;
-use crate::simulation_world::chunk::GeneratedChunkComponents;
-use crate::simulation_world::chunk::MeshComponent;
-use crate::simulation_world::chunk::TransformComponent;
-use bevy_ecs::prelude::Component;
+use crate::simulation_world::{
+    asset_management::{texture_map_registry::TextureMapResource, AssetStorageResource, MeshAsset},
+    block::property_registry::BlockRegistryResource,
+    chunk::{
+        chunk_meshing::build_chunk_mesh, load_manager::ChunkLoadManager, load_manager::ChunkState,
+        ActiveChunkGenerator, ChunkComponent, GeneratedChunkComponents, MeshComponent,
+        TransformComponent,
+    },
+};
 use bevy_ecs::prelude::*;
-use bevy_tasks::futures::now_or_never;
-use bevy_tasks::AsyncComputeTaskPool;
-use bevy_tasks::Task;
+use bevy_tasks::{futures::now_or_never, AsyncComputeTaskPool, Task};
 use glam::IVec3;
 
 /// Marks a chunk loading task in the simulation world that returns nothing.

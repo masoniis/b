@@ -1,8 +1,7 @@
 use crate::prelude::*;
+use crate::simulation_world::time::simulation_tick::SimulationTick;
 use bevy_ecs::prelude::*;
 use std::time::Duration;
-
-use crate::simulation_world::time::simulation_tick::SimulationTick;
 
 pub const SECONDS_IN_A_DAY: f32 = 1200.0;
 

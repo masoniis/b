@@ -1,8 +1,10 @@
 use crate::simulation_world::input::types::simulation_action::SimulationAction;
 use bevy_ecs::prelude::Resource;
 use std::collections::hash_map::{HashMap, Iter};
-use winit::event::MouseButton;
-use winit::keyboard::{KeyCode, PhysicalKey};
+use winit::{
+    event::MouseButton,
+    keyboard::{KeyCode, PhysicalKey},
+};
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Copy)]
 pub enum Input {

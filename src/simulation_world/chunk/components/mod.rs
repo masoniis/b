@@ -5,7 +5,7 @@ pub mod transform;
 pub mod visibility;
 
 pub use chunk::ChunkComponent;
-pub use chunk_chord::ChunkChord;
+pub use chunk_chord::{world_to_chunk_pos, ChunkChord};
 pub use mesh::MeshComponent;
 pub use transform::TransformComponent;
 pub use visibility::VisibilityComponent;

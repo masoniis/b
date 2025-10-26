@@ -1,8 +1,10 @@
 use crate::prelude::*;
-use crate::simulation_world::camera::{ActiveCamera, CameraComponent};
-use crate::simulation_world::chunk::ChunkChord;
-use crate::simulation_world::user_interface::components::UiText;
-use crate::simulation_world::user_interface::screens::debug_screen::CameraChunkChordTextMarker;
+use crate::simulation_world::{
+    camera::{ActiveCamera, CameraComponent},
+    chunk::ChunkChord,
+    user_interface::components::UiText,
+    user_interface::screens::debug_screen::CameraChunkChordTextMarker,
+};
 use bevy_ecs::prelude::*;
 
 /// Updates the content of the FPS counter text element.

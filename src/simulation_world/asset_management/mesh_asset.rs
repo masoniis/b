@@ -1,9 +1,11 @@
 use crate::prelude::*;
-use crate::simulation_world::asset_management::AssetStorageResource;
-use crate::simulation_world::chunk::MeshComponent;
 use crate::{
     render_world::types::Vertex,
-    simulation_world::asset_management::{Asset, Handle},
+    simulation_world::{
+        asset_management::AssetStorageResource,
+        asset_management::{Asset, Handle},
+        chunk::MeshComponent,
+    },
 };
 use bevy_ecs::prelude::*;
 use std::collections::{hash_map::Entry, HashMap};
