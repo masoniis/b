@@ -2,12 +2,12 @@ use crate::render_world::types::Vertex;
 use crate::simulation_world::{
     asset_management::texture_map_registry::TextureMapResource,
     block::{property_registry::BlockRegistryResource, Block},
-    chunk::{ChunkComponent, CHUNK_DEPTH, CHUNK_HEIGHT, CHUNK_WIDTH},
+    chunk::{ChunkBlocksComponent, CHUNK_DEPTH, CHUNK_HEIGHT, CHUNK_WIDTH},
 };
 
 /// Helper function to build a mesh for a single chunk
 pub fn build_chunk_mesh(
-    chunk: &ChunkComponent,
+    chunk: &ChunkBlocksComponent,
     texture_map: &TextureMapResource,
     block_registry: &BlockRegistryResource,
 ) -> (Vec<Vertex>, Vec<u32>) {

@@ -1,7 +1,8 @@
 use crate::simulation_world::block::property_registry::BlockRegistryResource;
+use crate::simulation_world::chunk::height_maps::{SurfaceHeightmap, WorldSurfaceHeightmap};
 use crate::simulation_world::chunk::{
-    BiomeMap, ChunkComponent, ChunkGenerator, GeneratedChunkData, CHUNK_DEPTH, CHUNK_HEIGHT,
-    CHUNK_WIDTH,
+    BiomeMap, ChunkBlocksComponent, GeneratedTerrainData, TerrainGenerator, CHUNK_DEPTH,
+    CHUNK_HEIGHT, CHUNK_WIDTH,
 };
 use glam::IVec3;
 
@@ -23,10 +24,15 @@ impl SuperflatGenerator {
     }
 }
 
-impl ChunkGenerator for SuperflatGenerator {
-    fn generate_chunk(&self, coord: IVec3, blocks: &BlockRegistryResource) -> GeneratedChunkData {
+impl TerrainGenerator for SuperflatGenerator {
+    fn generate_terrain_chunk(
+        &self,
+        coord: IVec3,
+        _biome_map: &BiomeMap,
+        blocks: &BlockRegistryResource,
+    ) -> GeneratedTerrainData {
         if coord.y != 0 {
-            return GeneratedChunkData::empty();
+            return GeneratedTerrainData::empty();
         }
 
         let layer_blocks: Vec<_> = self
@@ -35,7 +41,7 @@ impl ChunkGenerator for SuperflatGenerator {
             .map(|name| blocks.get_block_by_name(name))
             .collect();
 
-        let mut chunk = ChunkComponent::empty();
+        let mut chunk = ChunkBlocksComponent::empty();
 
         for x in 1..CHUNK_WIDTH - 1 {
             for z in 1..CHUNK_DEPTH - 1 {
@@ -47,9 +53,10 @@ impl ChunkGenerator for SuperflatGenerator {
             }
         }
 
-        GeneratedChunkData {
-            chunk_component: chunk,
-            biome_map: BiomeMap::empty(),
+        GeneratedTerrainData {
+            chunk_blocks: chunk,
+            surface_heightmap: SurfaceHeightmap::empty(),
+            world_surface_heightmap: WorldSurfaceHeightmap::empty(),
         }
     }
 }

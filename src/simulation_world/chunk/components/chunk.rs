@@ -6,11 +6,11 @@ use crate::simulation_world::{
 use bevy_ecs::prelude::Component;
 
 #[derive(Clone, Component)]
-pub struct ChunkComponent {
+pub struct ChunkBlocksComponent {
     blocks: Vec<Block>,
 }
 
-impl ChunkComponent {
+impl ChunkBlocksComponent {
     /// Creates a new empty chunk component filled with air blocks.
     pub fn empty() -> Self {
         Self {

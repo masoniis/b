@@ -23,6 +23,7 @@ use crate::{
                 start_pending_generation_tasks_system, start_pending_meshing_tasks_system,
             },
             chunk_loader::manage_chunk_loading_system,
+            core::ActiveBiomeGenerator,
             load_manager::ChunkLoadManager,
         },
         SimulationSchedule,
@@ -37,6 +38,7 @@ impl Plugin for ChunkGenerationPlugin {
     fn build(&self, builder: &mut EcsBuilder) {
         builder
             .add_resource(ChunkLoadManager::default())
+            .add_resource(ActiveBiomeGenerator::default())
             .add_resource(ActiveChunkGenerator::default());
 
         builder

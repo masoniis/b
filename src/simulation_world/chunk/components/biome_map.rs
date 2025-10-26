@@ -1,4 +1,4 @@
-use crate::simulation_world::chunk::{CHUNK_SIZE, CHUNK_SURFACE_SIZE};
+use crate::simulation_world::chunk::CHUNK_AREA;
 use bevy_ecs::component::Component;
 
 #[repr(u8)]
@@ -13,10 +13,10 @@ pub enum BiomeId {
 }
 
 #[derive(Component)]
-pub struct BiomeMap(pub [BiomeId; CHUNK_SURFACE_SIZE]);
+pub struct BiomeMap(pub [BiomeId; CHUNK_AREA]);
 
 impl BiomeMap {
     pub fn empty() -> Self {
-        Self([BiomeId::default(); CHUNK_SURFACE_SIZE])
+        Self([BiomeId::default(); CHUNK_AREA])
     }
 }

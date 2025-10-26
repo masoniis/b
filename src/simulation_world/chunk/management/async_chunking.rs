@@ -1,12 +1,12 @@
 use crate::prelude::*;
+use crate::simulation_world::chunk::core::{ActiveBiomeGenerator, GeneratedChunkComponentBundle};
 use crate::simulation_world::chunk::{ChunkCoord, CHUNK_DEPTH, CHUNK_HEIGHT, CHUNK_WIDTH};
 use crate::simulation_world::{
     asset_management::{texture_map_registry::TextureMapResource, AssetStorageResource, MeshAsset},
     block::property_registry::BlockRegistryResource,
     chunk::{
         chunk_meshing::build_chunk_mesh, load_manager::ChunkLoadManager, load_manager::ChunkState,
-        ActiveChunkGenerator, ChunkComponent, GeneratedChunkData, MeshComponent,
-        TransformComponent,
+        ActiveChunkGenerator, ChunkBlocksComponent, MeshComponent, TransformComponent,
     },
 };
 use bevy_ecs::prelude::*;
@@ -15,7 +15,7 @@ use bevy_tasks::{futures::now_or_never, AsyncComputeTaskPool, Task};
 /// Marks a chunk loading task in the simulation world that returns nothing.
 #[derive(Component)]
 pub struct ChunkGenerationTaskComponent {
-    pub task: Task<GeneratedChunkData>,
+    pub task: Task<GeneratedChunkComponentBundle>,
 }
 
 /// Marks a chunk meshing task in the simulation world that returns a MeshComponent.
@@ -46,7 +46,8 @@ pub fn start_pending_generation_tasks_system(
     mut commands: Commands,
     mut chunk_manager: ResMut<ChunkLoadManager>,
     block_registry: Res<BlockRegistryResource>,
-    generator: Res<ActiveChunkGenerator>,
+    b_generator: Res<ActiveBiomeGenerator>,
+    c_generator: Res<ActiveChunkGenerator>,
 
     // Local counter for throttling
     mut generation_tasks_started_this_frame: Local<usize>,
@@ -85,10 +86,21 @@ pub fn start_pending_generation_tasks_system(
 
         // spawn in the task with resources needed
         let blocks_clone = block_registry.clone();
-        let gen_clone = generator.0.clone();
+        let gen_clone = c_generator.0.clone();
+        let bgen_clone = b_generator.0.clone();
         let coord_clone = coord.clone();
-        let task = task_pool
-            .spawn(async move { gen_clone.generate_chunk(coord_clone.pos, &blocks_clone) });
+        let task = task_pool.spawn(async move {
+            let biome_map = bgen_clone.generate_biome_map(coord_clone.pos);
+
+            let tgen = gen_clone.generate_terrain_chunk(coord_clone.pos, &biome_map, &blocks_clone);
+
+            GeneratedChunkComponentBundle {
+                biome_map: biome_map,
+                chunk_blocks: tgen.chunk_blocks,
+                surface_heightmap: tgen.surface_heightmap,
+                world_surface_heightmap: tgen.world_surface_heightmap,
+            }
+        });
 
         commands
             .entity(entity)
@@ -125,7 +137,7 @@ pub fn poll_chunk_generation_tasks(
         }
 
         // poll the generation task
-        if let Some(generated_data) = now_or_never(&mut generation_task_component.task) {
+        if let Some(gen_bundle) = now_or_never(&mut generation_task_component.task) {
             debug!(
                 target: "chunk_loading",
                 "Chunk generation finished for {}. Marking as NeedsMeshing.",
@@ -135,7 +147,8 @@ pub fn poll_chunk_generation_tasks(
             commands
                 .entity(entity)
                 .insert((
-                    generated_data.chunk_component,
+                    gen_bundle.chunk_blocks,
+                    gen_bundle.biome_map,
                     TransformComponent {
                         position: Vec3::new(
                             (coord.x * CHUNK_WIDTH as i32) as f32,
@@ -159,7 +172,12 @@ pub fn poll_chunk_generation_tasks(
 pub fn start_pending_meshing_tasks_system(
     // Input
     mut pending_chunks_query: Query<
-        (Entity, &ChunkComponent, &ChunkCoord, &TransformComponent),
+        (
+            Entity,
+            &ChunkBlocksComponent,
+            &ChunkCoord,
+            &TransformComponent,
+        ),
         (With<NeedsMeshing>, Without<ChunkMeshingTaskComponent>),
     >,
 

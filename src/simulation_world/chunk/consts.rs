@@ -32,5 +32,5 @@ pub const Y_SHIFT: usize = (CHUNK_WIDTH * CHUNK_DEPTH).trailing_zeros() as usize
 
 // Helper consts for indexing
 pub const CHUNK_SIZE: usize = CHUNK_WIDTH * CHUNK_HEIGHT * CHUNK_DEPTH;
-pub const CHUNK_SURFACE_SIZE: usize = CHUNK_WIDTH * CHUNK_DEPTH;
+pub const CHUNK_AREA: usize = CHUNK_WIDTH * CHUNK_DEPTH;
 pub const INDEX_MASK: usize = CHUNK_SIZE - 1;
