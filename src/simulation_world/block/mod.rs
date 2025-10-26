@@ -1,10 +1,8 @@
-pub mod property_loading;
-pub mod property_registry;
-pub mod types;
+pub mod block_definition;
+pub mod block_registry;
 
-pub use property_loading::{load_block_from_str, BlockFaceTextures, BlockProperties};
-pub use property_registry::load_block_definitions_system;
-pub use types::{Block, BlockId};
+pub use block_definition::{load_block_from_str, BlockFaceTextures, BlockProperties};
+pub use block_registry::{load_block_definitions_system, BlockRegistryResource};
 
 // INFO: ----------------------
 //         Block plugin
@@ -12,9 +10,7 @@ pub use types::{Block, BlockId};
 
 use crate::{
     ecs_core::{EcsBuilder, Plugin},
-    simulation_world::{
-        block::property_registry::BlockRegistryResource, scheduling::StartupSet, SimulationSchedule,
-    },
+    simulation_world::{scheduling::StartupSet, SimulationSchedule},
 };
 use bevy_ecs::schedule::IntoScheduleConfigs;
 

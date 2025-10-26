@@ -1,5 +1,4 @@
-use crate::simulation_world::block::property_registry::BlockRegistryResource;
-use crate::simulation_world::chunk::biome_map::BiomeId;
+use crate::simulation_world::block::BlockRegistryResource;
 use crate::simulation_world::chunk::height_maps::{SurfaceHeightmap, WorldSurfaceHeightmap};
 use crate::simulation_world::chunk::{
     BiomeMap, ChunkBlocksComponent, SuperflatGenerator, CHUNK_AREA,
@@ -43,7 +42,7 @@ pub struct DefaultBiomeGenerator;
 
 impl BiomeGenerator for DefaultBiomeGenerator {
     fn generate_biome_map(&self, _coord: IVec3) -> BiomeMap {
-        BiomeMap([BiomeId::Plains; CHUNK_AREA])
+        BiomeMap([0; CHUNK_AREA])
     }
 }
 

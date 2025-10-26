@@ -1,5 +1,6 @@
 pub mod app_lifecycle;
 pub mod asset_management;
+pub mod biome;
 pub mod block;
 pub mod camera;
 pub mod chunk;
@@ -20,6 +21,7 @@ use crate::render_world::{
 };
 use crate::simulation_world::asset_management::texture_map_registry::TextureMapResource;
 use crate::simulation_world::asset_management::{AssetManagementPlugin, MeshAsset};
+use crate::simulation_world::biome::BiomePlugin;
 use crate::simulation_world::block::BlockPlugin;
 use crate::simulation_world::camera::CameraPlugin;
 use crate::simulation_world::chunk::ChunkGenerationPlugin;
@@ -137,6 +139,7 @@ impl PluginGroup for SharedPlugins {
             .add_plugin(AppLifecyclePlugin)
             .add_plugin(AssetManagementPlugin)
             .add_plugin(BlockPlugin)
+            .add_plugin(BiomePlugin)
             .add_plugin(ChunkGenerationPlugin)
             .add_plugin(TimeControlPlugin);
     }

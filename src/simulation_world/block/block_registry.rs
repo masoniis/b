@@ -1,18 +1,18 @@
 use crate::prelude::*;
 use crate::render_world::types::TextureId;
-use crate::simulation_world::block::{
-    load_block_from_str, Block, BlockFaceTextures, BlockId, BlockProperties,
-};
+use crate::simulation_world::block::{load_block_from_str, BlockFaceTextures, BlockProperties};
 use bevy_ecs::prelude::*;
 use std::collections::HashMap;
 use std::{fs, sync::Arc};
 
+pub type BlockId = u8;
+
 #[derive(Resource, Default, Clone)]
 pub struct BlockRegistryResource {
-    /// Stores properties indexed by the runtime `u16` ID.
+    /// Stores properties indexed by the runtime ID.
     pub block_properties: Arc<Vec<BlockProperties>>,
 
-    /// Maps a string name (e.g., "grass") to the runtime `u16` ID.
+    /// Maps a string name to the runtime ID.
     name_to_id: Arc<HashMap<String, BlockId>>,
 }
 
@@ -27,7 +27,9 @@ impl BlockRegistryResource {
     }
 
     /// Gets the numeric ID for a given block name.
-    /// Used during world-gen or setup.
+    ///
+    /// The string name of a block is based on its file name
+    /// without the extension. Eg: "grass.ron" -> "grass".
     pub fn get_id_by_name(&self, name: &str) -> Option<BlockId> {
         self.name_to_id.get(&name.to_lowercase()).copied()
     }
@@ -35,12 +37,10 @@ impl BlockRegistryResource {
     /// Helper to get a `Block` struct directly from a name (which should be the ronfile name).
     ///
     /// Defaults to ID 0 (Air) if not found.
-    pub fn get_block_by_name(&self, name: &str) -> Block {
+    pub fn get_block_by_name(&self, name: &str) -> BlockId {
         // Assume ID 0 is "air"
-        let id = self
-            .get_id_by_name(&name.to_lowercase())
-            .unwrap_or(0 as BlockId);
-        Block { id: id.into() }
+        self.get_id_by_name(&name.to_lowercase())
+            .unwrap_or(0 as BlockId)
     }
 
     /// Helper to get `BlockProperties` directly from a name.
@@ -50,6 +50,10 @@ impl BlockRegistryResource {
         self.get(id)
     }
 }
+
+// INFO: ------------------------------
+//         System to load files
+// ------------------------------------
 
 /// Runs at startup, loads all block definitions from `assets/blocks/`.
 #[instrument(skip_all)]
@@ -99,6 +103,8 @@ pub fn load_block_definitions_system(mut commands: Commands) {
 
             if name == "air" {
                 error!("Skipping 'air.ron' block definition since it's reserved.");
+                continue;
+            } else if name.starts_with("_") {
                 continue;
             }
 

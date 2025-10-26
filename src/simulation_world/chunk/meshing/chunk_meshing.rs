@@ -1,18 +1,19 @@
 use crate::prelude::*;
 use crate::render_world::types::Vertex;
+use crate::simulation_world::block::block_registry::BlockId;
 use crate::simulation_world::chunk::async_chunking::ChunkNeighborData;
 use crate::simulation_world::{
     asset_management::texture_map_registry::TextureMapResource,
-    block::{property_registry::BlockRegistryResource, Block},
+    block::BlockRegistryResource,
     chunk::{ChunkBlocksComponent, CHUNK_DEPTH, CHUNK_HEIGHT, CHUNK_WIDTH},
 };
 
-const AIR_BLOCK: Block = Block { id: 0 };
+const AIR_BLOCK: BlockId = 0;
 
 /// doesn't really matter what block this is, but it ensures that the chunks on
 /// the edge of render distance don't mesh their edge since a different block
 /// is detected
-const SOLID_VOID_BLOCK: Block = Block { id: 1 };
+const SOLID_VOID_BLOCK: BlockId = 1;
 
 /// Helper function to get a block, checking neighbors if coordinates are out of bounds.
 #[inline(always)]
@@ -22,7 +23,7 @@ fn get_block_with_neighbors<'a>(
     z: isize,
     current_chunk: &'a ChunkBlocksComponent,
     neighbors: &'a ChunkNeighborData,
-) -> &'a Block {
+) -> &'a BlockId {
     // check if we are in bounds
     if x >= 0
         && x < CHUNK_WIDTH as isize
@@ -82,16 +83,16 @@ pub fn build_chunk_mesh(
                 let (ix, iy, iz) = (x as isize, y as isize, z as isize);
 
                 // skip air blocks
-                let block = chunk.get_block(x, y, z).unwrap_or(&AIR_BLOCK);
-                if block.id == AIR_BLOCK.id {
+                let blockid = chunk.get_block(x, y, z).unwrap_or(&AIR_BLOCK);
+                if *blockid == AIR_BLOCK {
                     continue;
                 }
 
-                let block_properties = block_registry.get(block.id);
+                let block_properties = block_registry.get(*blockid);
 
                 // +Y (Top)
                 let neighbor_top = get_block_with_neighbors(ix, iy + 1, iz, chunk, neighbors);
-                if block_registry.get(neighbor_top.id).is_transparent {
+                if block_registry.get(*neighbor_top).is_transparent {
                     let base_vertex_count = vertices.len() as u32;
                     let tex_id = &block_properties.textures.top;
                     let tex_index = texture_map.registry.get(*tex_id);
@@ -103,7 +104,7 @@ pub fn build_chunk_mesh(
 
                 // -Y (Bottom)
                 let neighbor_bottom = get_block_with_neighbors(ix, iy - 1, iz, chunk, neighbors);
-                if block_registry.get(neighbor_bottom.id).is_transparent {
+                if block_registry.get(*neighbor_bottom).is_transparent {
                     let base_vertex_count = vertices.len() as u32;
                     let tex_id = &block_properties.textures.bottom;
                     let tex_index = texture_map.registry.get(*tex_id);
@@ -115,7 +116,7 @@ pub fn build_chunk_mesh(
 
                 // -X (Left / West)
                 let neighbor_left = get_block_with_neighbors(ix - 1, iy, iz, chunk, neighbors);
-                if block_registry.get(neighbor_left.id).is_transparent {
+                if block_registry.get(*neighbor_left).is_transparent {
                     let base_vertex_count = vertices.len() as u32;
                     let tex_id = &block_properties.textures.west;
                     let tex_index = texture_map.registry.get(*tex_id);
@@ -127,7 +128,7 @@ pub fn build_chunk_mesh(
 
                 // +X (Right / East)
                 let neighbor_right = get_block_with_neighbors(ix + 1, iy, iz, chunk, neighbors);
-                if block_registry.get(neighbor_right.id).is_transparent {
+                if block_registry.get(*neighbor_right).is_transparent {
                     let base_vertex_count = vertices.len() as u32;
                     let tex_id = &block_properties.textures.east;
                     let tex_index = texture_map.registry.get(*tex_id);
@@ -139,7 +140,7 @@ pub fn build_chunk_mesh(
 
                 // +Z (Front / South)
                 let neighbor_front = get_block_with_neighbors(ix, iy, iz + 1, chunk, neighbors);
-                if block_registry.get(neighbor_front.id).is_transparent {
+                if block_registry.get(*neighbor_front).is_transparent {
                     let base_vertex_count = vertices.len() as u32;
                     let tex_id = &block_properties.textures.south;
                     let tex_index = texture_map.registry.get(*tex_id);
@@ -151,7 +152,7 @@ pub fn build_chunk_mesh(
 
                 // -Z (Back / North)
                 let neighbor_back = get_block_with_neighbors(ix, iy, iz - 1, chunk, neighbors);
-                if block_registry.get(neighbor_back.id).is_transparent {
+                if block_registry.get(*neighbor_back).is_transparent {
                     let base_vertex_count = vertices.len() as u32;
                     let tex_id = &block_properties.textures.north;
                     let tex_index = texture_map.registry.get(*tex_id);

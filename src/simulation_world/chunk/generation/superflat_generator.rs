@@ -1,4 +1,4 @@
-use crate::simulation_world::block::property_registry::BlockRegistryResource;
+use crate::simulation_world::block::BlockRegistryResource;
 use crate::simulation_world::chunk::height_maps::{SurfaceHeightmap, WorldSurfaceHeightmap};
 use crate::simulation_world::chunk::{
     BiomeMap, ChunkBlocksComponent, GeneratedTerrainData, TerrainGenerator, CHUNK_DEPTH,

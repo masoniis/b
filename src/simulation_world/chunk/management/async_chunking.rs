@@ -3,7 +3,7 @@ use crate::simulation_world::chunk::core::{ActiveBiomeGenerator, GeneratedChunkC
 use crate::simulation_world::chunk::{ChunkCoord, CHUNK_DEPTH, CHUNK_HEIGHT, CHUNK_WIDTH};
 use crate::simulation_world::{
     asset_management::{texture_map_registry::TextureMapResource, AssetStorageResource, MeshAsset},
-    block::property_registry::BlockRegistryResource,
+    block::BlockRegistryResource,
     chunk::{
         chunk_meshing::build_chunk_mesh, load_manager::ChunkLoadManager, load_manager::ChunkState,
         ActiveChunkGenerator, ChunkBlocksComponent, MeshComponent, TransformComponent,
