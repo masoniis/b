@@ -26,6 +26,7 @@ use crate::render_world::{
     passes::{core::setup_render_graph, RenderPassManagerPlugin},
     textures::{GpuTextureArray, TextureArrayResource},
 };
+use bevy_ecs::prelude::*;
 use std::ops::{Deref, DerefMut};
 
 pub struct RenderWorldInterface {

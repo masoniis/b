@@ -4,19 +4,17 @@ use crate::simulation_world::{
     chunk::{CHUNK_DEPTH, CHUNK_HEIGHT, CHUNK_WIDTH, Y_SHIFT, Z_SHIFT},
 };
 use bevy_ecs::prelude::Component;
-use glam::IVec3;
 
 #[derive(Clone, Component)]
 pub struct ChunkComponent {
     blocks: Vec<Block>,
-    pub coord: IVec3,
 }
 
 impl ChunkComponent {
-    pub fn new(coord: IVec3) -> Self {
+    /// Creates a new empty chunk component filled with air blocks.
+    pub fn empty() -> Self {
         Self {
             blocks: vec![Block { id: 0 }; CHUNK_WIDTH * CHUNK_HEIGHT * CHUNK_DEPTH],
-            coord: coord,
         }
     }
 

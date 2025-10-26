@@ -2,7 +2,7 @@ use crate::{
     prelude::*,
     simulation_world::{
         camera::{ActiveCamera, CameraComponent},
-        chunk::{chunk_chord::world_to_chunk_pos, ChunkChord, CHUNK_DEPTH, CHUNK_WIDTH},
+        chunk::{chunk_chord::world_to_chunk_pos, ChunkCoord, CHUNK_DEPTH, CHUNK_WIDTH},
     },
 };
 use bevy_ecs::prelude::*;
@@ -20,7 +20,7 @@ pub fn setup_camera_system(mut commands: Commands) {
                 position: start_position,
                 ..Default::default()
             },
-            ChunkChord { pos: start_chunk },
+            ChunkCoord { pos: start_chunk },
         ))
         .id();
 

@@ -9,7 +9,7 @@ pub use crate::{
 
 pub use derive_more::{Deref, DerefMut};
 
-pub use glam::{Mat3, Mat4, Vec2, Vec3, Vec4};
+pub use glam::{IVec3, Mat3, Mat4, Quat, Vec2, Vec3, Vec4};
 
 pub use tracing::{debug, error, info, info_span, instrument, warn};
 

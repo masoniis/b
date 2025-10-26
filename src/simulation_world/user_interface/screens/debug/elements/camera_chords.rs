@@ -1,7 +1,7 @@
 use crate::prelude::*;
 use crate::simulation_world::{
     camera::{ActiveCamera, CameraComponent},
-    chunk::ChunkChord,
+    chunk::ChunkCoord,
     user_interface::components::UiText,
     user_interface::screens::debug_screen::CameraChunkChordTextMarker,
 };
@@ -12,7 +12,7 @@ use bevy_ecs::prelude::*;
 pub fn update_camera_chunk_chord_screen_text(
     // Input
     active_camera: Res<ActiveCamera>,
-    camera_query: Query<(&CameraComponent, &ChunkChord), Changed<ChunkChord>>,
+    camera_query: Query<(&CameraComponent, &ChunkCoord), Changed<ChunkCoord>>,
 
     // Output (updated component)
     mut query: Query<&mut UiText, With<CameraChunkChordTextMarker>>,

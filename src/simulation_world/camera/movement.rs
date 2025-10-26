@@ -1,6 +1,6 @@
 use crate::prelude::*;
 use crate::simulation_world::camera::{ActiveCamera, CameraComponent};
-use crate::simulation_world::chunk::{world_to_chunk_pos, ChunkChord};
+use crate::simulation_world::chunk::{world_to_chunk_pos, ChunkCoord};
 use crate::simulation_world::time::FrameClock;
 use crate::{
     simulation_world::input::resources::WindowSizeResource,
@@ -119,7 +119,7 @@ pub fn camera_movement_system(
 #[instrument(skip_all)]
 pub fn update_camera_chunk_chord_system(
     active_camera: Res<ActiveCamera>,
-    mut camera_query: Query<(&CameraComponent, &mut ChunkChord)>,
+    mut camera_query: Query<(&CameraComponent, &mut ChunkCoord)>,
 ) {
     let Ok((camera, mut vicinity)) = camera_query.get_mut(active_camera.0) else {
         warn!("update_camera_chunk_vicinity_system: ActiveCamera entity {:?} has no CameraComponent or ChunkVicinity.", active_camera.0);

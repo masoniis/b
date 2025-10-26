@@ -1,7 +1,7 @@
 use crate::prelude::*;
 use crate::simulation_world::{
     camera::CameraComponent,
-    chunk::ChunkChord,
+    chunk::ChunkCoord,
     time::FrameClock,
     user_interface::{
         components::{Node, Size, Style, TextAlign, UiBackground, UiText},
@@ -73,7 +73,7 @@ pub fn toggle_debug_diagnostics_system(
 
     // Needed for init values on spawn
     mesh_stats: Res<MeshCounterResource>,
-    camera_query: Query<(&CameraComponent, &ChunkChord)>,
+    camera_query: Query<(&CameraComponent, &ChunkCoord)>,
     time_stats: Res<FrameClock>,
 
     // Output (toggling UI)
@@ -98,7 +98,7 @@ fn spawn_diagnostic_ui(
 
     // init stats
     mesh_stats: &Res<MeshCounterResource>,
-    camera_chord: &ChunkChord,
+    camera_chord: &ChunkCoord,
     time_stats: &Res<FrameClock>,
 ) {
     info!("Spawning Diagnostic UI...");

@@ -4,7 +4,7 @@ use crate::simulation_world::{
     chunk::{
         async_chunking::NeedsGenerating,
         load_manager::ChunkState,
-        {load_manager::ChunkLoadManager, ChunkChord},
+        {load_manager::ChunkLoadManager, ChunkCoord},
         {RENDER_DISTANCE, WORLD_MAX_Y_CHUNK, WORLD_MIN_Y_CHUNK},
     },
 };
@@ -19,7 +19,7 @@ use std::collections::HashSet;
 pub fn manage_chunk_loading_system(
     // Input
     active_camera: Res<ActiveCamera>,
-    camera_query: Query<&ChunkChord, Changed<ChunkChord>>,
+    camera_query: Query<&ChunkCoord, Changed<ChunkCoord>>,
 
     // Output
     mut chunk_manager: ResMut<ChunkLoadManager>, // for marking loaded/unloaded
@@ -81,7 +81,9 @@ pub fn manage_chunk_loading_system(
         // mark as needing generation if it is not already being loaded
         if !chunk_manager.is_chunk_present_or_loading(coord) {
             debug!(target:"chunk_loading","Marking chunk needs-generation at {:?}", coord);
-            let ent = commands.spawn(NeedsGenerating { coord }).id();
+            let ent = commands
+                .spawn((NeedsGenerating, ChunkCoord { pos: coord }))
+                .id();
             chunk_manager.mark_as_needs_generating(coord, ent);
         }
     }

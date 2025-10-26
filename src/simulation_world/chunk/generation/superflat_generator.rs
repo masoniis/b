@@ -1,10 +1,9 @@
-use crate::prelude::*;
 use crate::simulation_world::block::property_registry::BlockRegistryResource;
 use crate::simulation_world::chunk::{
-    ChunkComponent, ChunkGenerator, GeneratedChunkComponents, TransformComponent, CHUNK_DEPTH,
-    CHUNK_HEIGHT, CHUNK_WIDTH,
+    BiomeMap, ChunkComponent, ChunkGenerator, GeneratedChunkData, CHUNK_DEPTH, CHUNK_HEIGHT,
+    CHUNK_WIDTH,
 };
-use glam::{IVec3, Quat};
+use glam::IVec3;
 
 #[derive(Debug, Clone)]
 pub struct SuperflatGenerator {
@@ -25,17 +24,9 @@ impl SuperflatGenerator {
 }
 
 impl ChunkGenerator for SuperflatGenerator {
-    fn generate_chunk(
-        &self,
-        coord: IVec3,
-        blocks: &BlockRegistryResource,
-    ) -> GeneratedChunkComponents {
-        let cx = coord.x;
-        let cy = coord.y;
-        let cz = coord.z;
-
-        if cy != 0 {
-            return GeneratedChunkComponents::empty(coord);
+    fn generate_chunk(&self, coord: IVec3, blocks: &BlockRegistryResource) -> GeneratedChunkData {
+        if coord.y != 0 {
+            return GeneratedChunkData::empty();
         }
 
         let layer_blocks: Vec<_> = self
@@ -44,7 +35,7 @@ impl ChunkGenerator for SuperflatGenerator {
             .map(|name| blocks.get_block_by_name(name))
             .collect();
 
-        let mut chunk = ChunkComponent::new(coord);
+        let mut chunk = ChunkComponent::empty();
 
         for x in 1..CHUNK_WIDTH - 1 {
             for z in 1..CHUNK_DEPTH - 1 {
@@ -56,19 +47,9 @@ impl ChunkGenerator for SuperflatGenerator {
             }
         }
 
-        let transform = TransformComponent {
-            position: Vec3::new(
-                (cx * CHUNK_WIDTH as i32) as f32,
-                (cy * CHUNK_HEIGHT as i32) as f32,
-                (cz * CHUNK_DEPTH as i32) as f32,
-            ),
-            rotation: Quat::IDENTITY,
-            scale: Vec3::ONE,
-        };
-
-        GeneratedChunkComponents {
+        GeneratedChunkData {
             chunk_component: chunk,
-            transform_component: transform,
+            biome_map: BiomeMap::empty(),
         }
     }
 }

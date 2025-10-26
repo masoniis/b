@@ -1,5 +1,5 @@
 use crate::simulation_world::block::property_registry::BlockRegistryResource;
-use crate::simulation_world::chunk::{ChunkComponent, SuperflatGenerator, TransformComponent};
+use crate::simulation_world::chunk::{BiomeMap, ChunkComponent, SuperflatGenerator};
 use bevy_ecs::prelude::Resource;
 use glam::IVec3;
 use std::{fmt::Debug, sync::Arc};
@@ -17,24 +17,20 @@ impl Default for ActiveChunkGenerator {
 /// A trait for chunk generators to implement.
 pub trait ChunkGenerator: Send + Sync + Debug {
     /// Returns generated chunk data for the given chunk coordinates.
-    fn generate_chunk(
-        &self,
-        coord: IVec3,
-        blocks: &BlockRegistryResource,
-    ) -> GeneratedChunkComponents;
+    fn generate_chunk(&self, coord: IVec3, blocks: &BlockRegistryResource) -> GeneratedChunkData;
 }
 
 /// A struct representing generated chunk data.
-pub struct GeneratedChunkComponents {
+pub struct GeneratedChunkData {
     pub chunk_component: ChunkComponent,
-    pub transform_component: TransformComponent,
+    pub biome_map: BiomeMap,
 }
 
-impl GeneratedChunkComponents {
-    pub fn empty(coord: IVec3) -> Self {
+impl GeneratedChunkData {
+    pub fn empty() -> Self {
         Self {
-            chunk_component: ChunkComponent::new(coord),
-            transform_component: TransformComponent::default(),
+            chunk_component: ChunkComponent::empty(),
+            biome_map: BiomeMap::empty(),
         }
     }
 }

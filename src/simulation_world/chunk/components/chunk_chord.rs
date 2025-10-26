@@ -4,17 +4,17 @@ use derive_more::{Deref, DerefMut};
 use glam::IVec3;
 use std::fmt;
 
-pub const X_SHIFT: i32 = CHUNK_WIDTH.trailing_zeros() as i32;
-pub const Y_SHIFT: i32 = CHUNK_HEIGHT.trailing_zeros() as i32;
-pub const Z_SHIFT: i32 = CHUNK_DEPTH.trailing_zeros() as i32;
+const X_SHIFT: i32 = CHUNK_WIDTH.trailing_zeros() as i32;
+const Y_SHIFT: i32 = CHUNK_HEIGHT.trailing_zeros() as i32;
+const Z_SHIFT: i32 = CHUNK_DEPTH.trailing_zeros() as i32;
 
 /// Stores the coordinate of the chunk an entity is currently in.
-#[derive(Component, Deref, DerefMut, Debug)]
-pub struct ChunkChord {
+#[derive(Component, Clone, Deref, DerefMut, Debug)]
+pub struct ChunkCoord {
     pub pos: IVec3,
 }
 
-impl fmt::Display for ChunkChord {
+impl fmt::Display for ChunkCoord {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}x {}y {}z", self.pos.x, self.pos.y, self.pos.z)
     }
