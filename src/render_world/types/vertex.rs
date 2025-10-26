@@ -20,11 +20,16 @@ impl Vertex {
         4 => Uint32,    // texture_index
     ];
 
-    pub fn new(pos: [f32; 3], tex_coords: [f32; 2], texture_index: u32) -> Self {
+    pub fn new(
+        position: [f32; 3],
+        normal: [f32; 3],
+        tex_coords: [f32; 2],
+        texture_index: u32,
+    ) -> Self {
         Self {
-            position: pos,
+            position,
             color: [1.0, 1.0, 1.0],
-            normal: [0.0, 0.0, 0.0],
+            normal,
             tex_coords,
             texture_index,
         }

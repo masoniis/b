@@ -1,3 +1,4 @@
+use crate::prelude::*;
 use crate::render_world::types::Vertex;
 use crate::simulation_world::chunk::async_chunking::ChunkNeighborData;
 use crate::simulation_world::{
@@ -6,53 +7,103 @@ use crate::simulation_world::{
     chunk::{ChunkBlocksComponent, CHUNK_DEPTH, CHUNK_HEIGHT, CHUNK_WIDTH},
 };
 
-/// Helper function to build a mesh for a single chunk
+const AIR_BLOCK: Block = Block { id: 0 };
+
+/// doesn't really matter what block this is, but it ensures that the chunks on
+/// the edge of render distance don't mesh their edge since a different block
+/// is detected
+const SOLID_VOID_BLOCK: Block = Block { id: 1 };
+
+/// Helper function to get a block, checking neighbors if coordinates are out of bounds.
+#[inline(always)]
+fn get_block_with_neighbors<'a>(
+    x: isize,
+    y: isize,
+    z: isize,
+    current_chunk: &'a ChunkBlocksComponent,
+    neighbors: &'a ChunkNeighborData,
+) -> &'a Block {
+    // check if we are in bounds
+    if x >= 0
+        && x < CHUNK_WIDTH as isize
+        && y >= 0
+        && y < CHUNK_HEIGHT as isize
+        && z >= 0
+        && z < CHUNK_DEPTH as isize
+    {
+        return current_chunk
+            .get_block(x as usize, y as usize, z as usize)
+            .unwrap_or(&AIR_BLOCK);
+    }
+
+    // if out, determine the neighbor to check
+    let (neighbor_chunk, nx, ny, nz) = if x < 0 {
+        (&neighbors.left, x + CHUNK_WIDTH as isize, y, z)
+    } else if x >= CHUNK_WIDTH as isize {
+        (&neighbors.right, x - CHUNK_WIDTH as isize, y, z)
+    } else if y < 0 {
+        (&neighbors.bottom, x, y + CHUNK_HEIGHT as isize, z)
+    } else if y >= CHUNK_HEIGHT as isize {
+        (&neighbors.top, x, y - CHUNK_HEIGHT as isize, z)
+    } else if z < 0 {
+        (&neighbors.back, x, y, z + CHUNK_DEPTH as isize)
+    } else if z >= CHUNK_DEPTH as isize {
+        (&neighbors.front, x, y, z - CHUNK_DEPTH as isize)
+    } else {
+        error!("Logic error in get_block_with_neighbors");
+        return &AIR_BLOCK;
+    };
+
+    // and then check the neighbor
+    match neighbor_chunk {
+        Some(neighbor_data) => neighbor_data
+            .get_block(nx as usize, ny as usize, nz as usize)
+            .unwrap_or(&AIR_BLOCK),
+        None => {
+            &SOLID_VOID_BLOCK // neighbor is out of bounds, assume air
+        }
+    }
+}
+
+/// Helper function to build a mesh for a single chunk, considering neighbors.
 pub fn build_chunk_mesh(
     chunk: &ChunkBlocksComponent,
-    _neighbor_chunks: &ChunkNeighborData,
+    neighbors: &ChunkNeighborData,
     texture_map: &TextureMapResource,
     block_registry: &BlockRegistryResource,
 ) -> (Vec<Vertex>, Vec<u32>) {
     let mut vertices: Vec<Vertex> = Vec::new();
     let mut indices: Vec<u32> = Vec::new();
 
-    let air_block = Block { id: 0 };
-
     for y in 0..CHUNK_HEIGHT {
         for z in 0..CHUNK_DEPTH {
             for x in 0..CHUNK_WIDTH {
-                let block = chunk.get_block(x, y, z).unwrap_or(&air_block);
-                if block.id == 0 {
-                    continue; // no need to mesh air
+                // cast to isize for neighbor checking
+                let (ix, iy, iz) = (x as isize, y as isize, z as isize);
+
+                // skip air blocks
+                let block = chunk.get_block(x, y, z).unwrap_or(&AIR_BLOCK);
+                if block.id == AIR_BLOCK.id {
+                    continue;
                 }
+
                 let block_properties = block_registry.get(block.id);
 
-                // Check neighbor +Y (Top Face)
-                let neighbor_top = if y < CHUNK_HEIGHT - 1 {
-                    chunk.get_block(x, y + 1, z).unwrap_or(&air_block)
-                } else {
-                    &air_block
-                };
-                let neighbor_top_props = block_registry.get(neighbor_top.id);
-                if neighbor_top_props.is_transparent {
+                // +Y (Top)
+                let neighbor_top = get_block_with_neighbors(ix, iy + 1, iz, chunk, neighbors);
+                if block_registry.get(neighbor_top.id).is_transparent {
                     let base_vertex_count = vertices.len() as u32;
                     let tex_id = &block_properties.textures.top;
                     let tex_index = texture_map.registry.get(*tex_id);
-
                     let (face_verts, face_indices) =
                         get_face(Face::Top, x, y, z, tex_index, base_vertex_count);
                     vertices.extend(face_verts);
                     indices.extend(face_indices);
                 }
 
-                // Check neighbor -Y (Bottom Face)
-                let neighbor_bottom = if y > 0 {
-                    chunk.get_block(x, y - 1, z).unwrap_or(&air_block)
-                } else {
-                    &air_block
-                };
-                let neighbor_bottom_props = block_registry.get(neighbor_bottom.id);
-                if neighbor_bottom_props.is_transparent {
+                // -Y (Bottom)
+                let neighbor_bottom = get_block_with_neighbors(ix, iy - 1, iz, chunk, neighbors);
+                if block_registry.get(neighbor_bottom.id).is_transparent {
                     let base_vertex_count = vertices.len() as u32;
                     let tex_id = &block_properties.textures.bottom;
                     let tex_index = texture_map.registry.get(*tex_id);
@@ -62,16 +113,11 @@ pub fn build_chunk_mesh(
                     indices.extend(face_indices);
                 }
 
-                // Check neighbor -X (Left / West Face)
-                let neighbor_left = if x > 0 {
-                    chunk.get_block(x - 1, y, z).unwrap_or(&air_block)
-                } else {
-                    &air_block
-                };
-                let neighbor_left_props = block_registry.get(neighbor_left.id);
-                if neighbor_left_props.is_transparent {
+                // -X (Left / West)
+                let neighbor_left = get_block_with_neighbors(ix - 1, iy, iz, chunk, neighbors);
+                if block_registry.get(neighbor_left.id).is_transparent {
                     let base_vertex_count = vertices.len() as u32;
-                    let tex_id = &block_properties.textures.west; //
+                    let tex_id = &block_properties.textures.west;
                     let tex_index = texture_map.registry.get(*tex_id);
                     let (face_verts, face_indices) =
                         get_face(Face::Left, x, y, z, tex_index, base_vertex_count);
@@ -79,17 +125,11 @@ pub fn build_chunk_mesh(
                     indices.extend(face_indices);
                 }
 
-                // Check neighbor +X (Right / East Face)
-                let neighbor_right = if x < CHUNK_WIDTH - 1 {
-                    chunk.get_block(x + 1, y, z).unwrap_or(&air_block)
-                } else {
-                    &air_block
-                };
-                let neighbor_right_props = block_registry.get(neighbor_right.id);
-
-                if neighbor_right_props.is_transparent {
+                // +X (Right / East)
+                let neighbor_right = get_block_with_neighbors(ix + 1, iy, iz, chunk, neighbors);
+                if block_registry.get(neighbor_right.id).is_transparent {
                     let base_vertex_count = vertices.len() as u32;
-                    let tex_id = &block_properties.textures.east; //
+                    let tex_id = &block_properties.textures.east;
                     let tex_index = texture_map.registry.get(*tex_id);
                     let (face_verts, face_indices) =
                         get_face(Face::Right, x, y, z, tex_index, base_vertex_count);
@@ -97,14 +137,9 @@ pub fn build_chunk_mesh(
                     indices.extend(face_indices);
                 }
 
-                // Check neighbor +Z (Front / South Face)
-                let neighbor_front = if z < CHUNK_DEPTH - 1 {
-                    chunk.get_block(x, y, z + 1).unwrap_or(&air_block)
-                } else {
-                    &air_block
-                };
-                let neighbor_front_props = block_registry.get(neighbor_front.id);
-                if neighbor_front_props.is_transparent {
+                // +Z (Front / South)
+                let neighbor_front = get_block_with_neighbors(ix, iy, iz + 1, chunk, neighbors);
+                if block_registry.get(neighbor_front.id).is_transparent {
                     let base_vertex_count = vertices.len() as u32;
                     let tex_id = &block_properties.textures.south;
                     let tex_index = texture_map.registry.get(*tex_id);
@@ -114,15 +149,9 @@ pub fn build_chunk_mesh(
                     indices.extend(face_indices);
                 }
 
-                // Check neighbor -Z (Back / North Face)
-                let neighbor_back = if z > 0 {
-                    chunk.get_block(x, y, z - 1).unwrap_or(&air_block)
-                } else {
-                    &air_block
-                };
-                let neighbor_back_props = block_registry.get(neighbor_back.id);
-
-                if neighbor_back_props.is_transparent {
+                // -Z (Back / North)
+                let neighbor_back = get_block_with_neighbors(ix, iy, iz - 1, chunk, neighbors);
+                if block_registry.get(neighbor_back.id).is_transparent {
                     let base_vertex_count = vertices.len() as u32;
                     let tex_id = &block_properties.textures.north;
                     let tex_index = texture_map.registry.get(*tex_id);
@@ -146,8 +175,6 @@ enum Face {
     Back,
 }
 
-/// Returns the 4 vertices and 6 indices for a single cube face.
-/// Note: The x, y, z are the *local block coordinates*.
 fn get_face(
     face: Face,
     x: usize,
@@ -156,49 +183,78 @@ fn get_face(
     tex_index: u32,
     base_vertex_count: u32,
 ) -> (Vec<Vertex>, [u32; 6]) {
-    // The (x,y,z) are block coords, so add them to the vertex offsets
     let (fx, fy, fz) = (x as f32, y as f32, z as f32);
 
-    let verts = match face {
-        Face::Top => vec![
-            Vertex::new([-0.5 + fx, 0.5 + fy, 0.5 + fz], [0.0, 0.0], tex_index),
-            Vertex::new([0.5 + fx, 0.5 + fy, 0.5 + fz], [1.0, 0.0], tex_index),
-            Vertex::new([0.5 + fx, 0.5 + fy, -0.5 + fz], [1.0, 1.0], tex_index),
-            Vertex::new([-0.5 + fx, 0.5 + fy, -0.5 + fz], [0.0, 1.0], tex_index),
-        ],
-        Face::Bottom => vec![
-            Vertex::new([-0.5 + fx, -0.5 + fy, -0.5 + fz], [0.0, 0.0], tex_index),
-            Vertex::new([0.5 + fx, -0.5 + fy, -0.5 + fz], [1.0, 0.0], tex_index),
-            Vertex::new([0.5 + fx, -0.5 + fy, 0.5 + fz], [1.0, 1.0], tex_index),
-            Vertex::new([-0.5 + fx, -0.5 + fy, 0.5 + fz], [0.0, 1.0], tex_index),
-        ],
-        Face::Left => vec![
-            Vertex::new([-0.5 + fx, -0.5 + fy, -0.5 + fz], [0.0, 0.0], tex_index),
-            Vertex::new([-0.5 + fx, -0.5 + fy, 0.5 + fz], [1.0, 0.0], tex_index),
-            Vertex::new([-0.5 + fx, 0.5 + fy, 0.5 + fz], [1.0, 1.0], tex_index),
-            Vertex::new([-0.5 + fx, 0.5 + fy, -0.5 + fz], [0.0, 1.0], tex_index),
-        ],
-        Face::Right => vec![
-            Vertex::new([0.5 + fx, -0.5 + fy, 0.5 + fz], [0.0, 0.0], tex_index),
-            Vertex::new([0.5 + fx, -0.5 + fy, -0.5 + fz], [1.0, 0.0], tex_index),
-            Vertex::new([0.5 + fx, 0.5 + fy, -0.5 + fz], [1.0, 1.0], tex_index),
-            Vertex::new([0.5 + fx, 0.5 + fy, 0.5 + fz], [0.0, 1.0], tex_index),
-        ],
-        Face::Front => vec![
-            Vertex::new([-0.5 + fx, -0.5 + fy, 0.5 + fz], [0.0, 0.0], tex_index),
-            Vertex::new([0.5 + fx, -0.5 + fy, 0.5 + fz], [1.0, 0.0], tex_index),
-            Vertex::new([0.5 + fx, 0.5 + fy, 0.5 + fz], [1.0, 1.0], tex_index),
-            Vertex::new([-0.5 + fx, 0.5 + fy, 0.5 + fz], [0.0, 1.0], tex_index),
-        ],
-        Face::Back => vec![
-            Vertex::new([0.5 + fx, -0.5 + fy, -0.5 + fz], [0.0, 0.0], tex_index),
-            Vertex::new([-0.5 + fx, -0.5 + fy, -0.5 + fz], [1.0, 0.0], tex_index),
-            Vertex::new([-0.5 + fx, 0.5 + fy, -0.5 + fz], [1.0, 1.0], tex_index),
-            Vertex::new([0.5 + fx, 0.5 + fy, -0.5 + fz], [0.0, 1.0], tex_index),
-        ],
+    let (verts, normal): (Vec<[f32; 3]>, [f32; 3]) = match face {
+        Face::Top => (
+            vec![
+                [-0.5 + fx, 0.5 + fy, 0.5 + fz],
+                [0.5 + fx, 0.5 + fy, 0.5 + fz],
+                [0.5 + fx, 0.5 + fy, -0.5 + fz],
+                [-0.5 + fx, 0.5 + fy, -0.5 + fz],
+            ],
+            [0.0, 1.0, 0.0],
+        ), // +Y Normal
+        Face::Bottom => (
+            vec![
+                [-0.5 + fx, -0.5 + fy, -0.5 + fz],
+                [0.5 + fx, -0.5 + fy, -0.5 + fz],
+                [0.5 + fx, -0.5 + fy, 0.5 + fz],
+                [-0.5 + fx, -0.5 + fy, 0.5 + fz],
+            ],
+            [0.0, -1.0, 0.0],
+        ), // -Y Normal
+        Face::Left => (
+            vec![
+                // -X Face
+                [-0.5 + fx, -0.5 + fy, -0.5 + fz],
+                [-0.5 + fx, -0.5 + fy, 0.5 + fz],
+                [-0.5 + fx, 0.5 + fy, 0.5 + fz],
+                [-0.5 + fx, 0.5 + fy, -0.5 + fz],
+            ],
+            [-1.0, 0.0, 0.0],
+        ), // -X Normal
+        Face::Right => (
+            vec![
+                // +X Face
+                [0.5 + fx, -0.5 + fy, 0.5 + fz],
+                [0.5 + fx, -0.5 + fy, -0.5 + fz],
+                [0.5 + fx, 0.5 + fy, -0.5 + fz],
+                [0.5 + fx, 0.5 + fy, 0.5 + fz],
+            ],
+            [1.0, 0.0, 0.0],
+        ), // +X Normal
+        Face::Front => (
+            vec![
+                // +Z Face
+                [-0.5 + fx, -0.5 + fy, 0.5 + fz],
+                [0.5 + fx, -0.5 + fy, 0.5 + fz],
+                [0.5 + fx, 0.5 + fy, 0.5 + fz],
+                [-0.5 + fx, 0.5 + fy, 0.5 + fz],
+            ],
+            [0.0, 0.0, 1.0],
+        ), // +Z Normal
+        Face::Back => (
+            vec![
+                // -Z Face
+                [0.5 + fx, -0.5 + fy, -0.5 + fz],
+                [-0.5 + fx, -0.5 + fy, -0.5 + fz],
+                [-0.5 + fx, 0.5 + fy, -0.5 + fz],
+                [0.5 + fx, 0.5 + fy, -0.5 + fz],
+            ],
+            [0.0, 0.0, -1.0],
+        ), // -Z Normal
     };
 
-    // The indices are always the same pattern, offset by the base count
+    // Define standard UVs
+    let uvs = [[0.0, 1.0], [1.0, 1.0], [1.0, 0.0], [0.0, 0.0]];
+    let final_vertices = vec![
+        Vertex::new(verts[0], normal, uvs[0], tex_index),
+        Vertex::new(verts[1], normal, uvs[1], tex_index),
+        Vertex::new(verts[2], normal, uvs[2], tex_index),
+        Vertex::new(verts[3], normal, uvs[3], tex_index),
+    ];
+
     let indices = [
         base_vertex_count + 0,
         base_vertex_count + 1,
@@ -208,5 +264,5 @@ fn get_face(
         base_vertex_count + 0,
     ];
 
-    (verts, indices)
+    (final_vertices, indices)
 }
