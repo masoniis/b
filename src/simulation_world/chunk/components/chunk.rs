@@ -17,8 +17,8 @@ impl ChunkBlocksComponent {
         }
     }
 
-    #[inline(always)]
     /// Gets a reference to the block at the given local coordinates within the chunk.
+    #[inline(always)]
     pub fn get_block(&self, x: usize, y: usize, z: usize) -> Option<&BlockId> {
         if cfg!(debug_assertions) && (x >= CHUNK_WIDTH || y >= CHUNK_HEIGHT || z >= CHUNK_DEPTH) {
             error!(
@@ -33,8 +33,8 @@ impl ChunkBlocksComponent {
         self.blocks.get(index)
     }
 
-    #[inline(always)]
     /// Sets the block at the given local coordinates within the chunk.
+    #[inline(always)]
     pub fn set_block(&mut self, x: usize, y: usize, z: usize, block: BlockId) {
         if cfg!(debug_assertions) && (x >= CHUNK_WIDTH || y >= CHUNK_HEIGHT || z >= CHUNK_DEPTH) {
             error!(

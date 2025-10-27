@@ -90,9 +90,15 @@ pub fn start_pending_generation_tasks_system(
         let bgen_clone = b_generator.0.clone();
         let coord_clone = coord.clone();
         let task = task_pool.spawn(async move {
-            let biome_map = bgen_clone.generate_biome_map(coord_clone.pos);
+            let (biome_map, climate_map) =
+                bgen_clone.generate_biome_data(coord_clone.pos).as_tuple();
 
-            let tgen = gen_clone.generate_terrain_chunk(coord_clone.pos, &biome_map, &blocks_clone);
+            let tgen = gen_clone.generate_terrain_chunk(
+                coord_clone.pos,
+                &biome_map,
+                &climate_map,
+                &blocks_clone,
+            );
 
             GeneratedChunkComponentBundle {
                 biome_map: biome_map,

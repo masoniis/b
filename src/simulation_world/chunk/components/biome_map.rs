@@ -1,11 +1,21 @@
-use crate::simulation_world::{biome::biome_registry::BiomeId, chunk::CHUNK_AREA};
+use crate::simulation_world::{
+    biome::biome_registry::BiomeId,
+    chunk::{CHUNK_SIZE, Y_SHIFT, Z_SHIFT},
+};
 use bevy_ecs::component::Component;
 
+/// The biome map which stores the biome ID for every block in a chunk.
 #[derive(Component)]
-pub struct BiomeMap(pub [BiomeId; CHUNK_AREA]);
+pub struct BiomeMap(pub [BiomeId; CHUNK_SIZE]);
 
 impl BiomeMap {
     pub fn empty() -> Self {
-        Self([BiomeId::default(); CHUNK_AREA])
+        Self([BiomeId::default(); CHUNK_SIZE])
+    }
+
+    #[inline(always)]
+    pub fn get_biome(&self, x: usize, y: usize, z: usize) -> BiomeId {
+        let index = (y << Y_SHIFT) | (z << Z_SHIFT) | x;
+        self.0[index]
     }
 }

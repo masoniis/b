@@ -1,5 +1,7 @@
+pub mod biome;
 pub mod core;
-pub mod superflat_generator;
+pub mod terrain;
 
+pub use biome::*;
 pub use core::{ActiveChunkGenerator, GeneratedTerrainData, TerrainGenerator};
-pub use superflat_generator::SuperflatGenerator;
+pub use terrain::*;

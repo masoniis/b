@@ -10,9 +10,9 @@ use crate::simulation_world::{
 
 const AIR_BLOCK: BlockId = 0;
 
-/// doesn't really matter what block this is, but it ensures that the chunks on
+/// Doesn't really matter what block this is, but it ensures that the chunks on
 /// the edge of render distance don't mesh their edge since a different block
-/// is detected
+/// is detected so it wouldn't be visible
 const SOLID_VOID_BLOCK: BlockId = 1;
 
 /// Helper function to get a block, checking neighbors if coordinates are out of bounds.

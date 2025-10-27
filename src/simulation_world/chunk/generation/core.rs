@@ -1,7 +1,7 @@
 use crate::simulation_world::block::BlockRegistryResource;
 use crate::simulation_world::chunk::height_maps::{SurfaceHeightmap, WorldSurfaceHeightmap};
 use crate::simulation_world::chunk::{
-    BiomeMap, ChunkBlocksComponent, SuperflatGenerator, CHUNK_AREA,
+    BiomeMap, ChunkBlocksComponent, ClimateMap, DefaultBiomeGenerator, SuperflatGenerator,
 };
 use bevy_ecs::prelude::Resource;
 use glam::IVec3;
@@ -31,18 +31,27 @@ impl Default for ActiveBiomeGenerator {
 //         Biome generator
 // -------------------------------
 
-// A trait for just generating the biome map
+/// A trait for just generating the biome map
 pub trait BiomeGenerator: Send + Sync + Debug {
-    fn generate_biome_map(&self, coord: IVec3) -> BiomeMap;
+    fn generate_biome_data(&self, coord: IVec3) -> GeneratedBiomeData;
 }
 
-// A default implementation
-#[derive(Debug, Default)]
-pub struct DefaultBiomeGenerator;
+/// A struct representing generated biome data for every block in a chunk.
+pub struct GeneratedBiomeData {
+    pub biome_map: BiomeMap,
+    pub climate_map: ClimateMap,
+}
 
-impl BiomeGenerator for DefaultBiomeGenerator {
-    fn generate_biome_map(&self, _coord: IVec3) -> BiomeMap {
-        BiomeMap([0; CHUNK_AREA])
+impl GeneratedBiomeData {
+    pub fn empty() -> Self {
+        Self {
+            biome_map: BiomeMap::empty(),
+            climate_map: ClimateMap::empty(),
+        }
+    }
+
+    pub fn as_tuple(self) -> (BiomeMap, ClimateMap) {
+        (self.biome_map, self.climate_map)
     }
 }
 
@@ -57,7 +66,8 @@ pub trait TerrainGenerator: Send + Sync + Debug {
         &self,
         coord: IVec3,
         biome_map: &BiomeMap,
-        blocks: &BlockRegistryResource,
+        climate_map: &ClimateMap,
+        block_registry: &BlockRegistryResource,
     ) -> GeneratedTerrainData;
 }
 
