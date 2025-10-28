@@ -4,6 +4,7 @@ pub mod biome;
 pub mod block;
 pub mod camera;
 pub mod chunk;
+pub mod generation;
 
 pub mod input;
 pub mod scheduling;
@@ -24,7 +25,8 @@ use crate::simulation_world::asset_management::{AssetManagementPlugin, MeshAsset
 use crate::simulation_world::biome::BiomePlugin;
 use crate::simulation_world::block::BlockPlugin;
 use crate::simulation_world::camera::CameraPlugin;
-use crate::simulation_world::chunk::ChunkGenerationPlugin;
+use crate::simulation_world::chunk::ChunkLoadingPlugin;
+use crate::simulation_world::generation::TerrainGenerationPlugin;
 use crate::simulation_world::input::InputModulePlugin;
 use crate::simulation_world::scheduling::{FixedUpdateSet, StartupSet};
 use crate::simulation_world::time::TimeControlPlugin;
@@ -140,7 +142,8 @@ impl PluginGroup for SharedPlugins {
             .add_plugin(AssetManagementPlugin)
             .add_plugin(BlockPlugin)
             .add_plugin(BiomePlugin)
-            .add_plugin(ChunkGenerationPlugin)
+            .add_plugin(ChunkLoadingPlugin)
+            .add_plugin(TerrainGenerationPlugin)
             .add_plugin(TimeControlPlugin);
     }
 }

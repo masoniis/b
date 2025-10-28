@@ -1,23 +1,24 @@
-use crate::simulation_world::block::BlockRegistryResource;
-use crate::simulation_world::chunk::height_maps::{SurfaceHeightmap, WorldSurfaceHeightmap};
-use crate::simulation_world::chunk::{
-    BiomeMap, ChunkBlocksComponent, ClimateMap, DefaultBiomeGenerator, SuperflatGenerator,
+use crate::simulation_world::chunk::ChunkBlocksComponent;
+use crate::simulation_world::generation::{
+    BiomeMapComponent, ClimateMapComponent, DefaultBiomeGenerator, OceanFloorHeightMapComponent,
+    WorldSurfaceHeightMapComponent,
 };
+use crate::simulation_world::{block::BlockRegistryResource, generation::SuperflatGenerator};
 use bevy_ecs::prelude::Resource;
 use glam::IVec3;
 use std::{fmt::Debug, sync::Arc};
 
-/// A resource holding the active chunk generator.
+/// A resource holding the active terrain chunk generator.
 #[derive(Resource, Clone)]
-pub struct ActiveChunkGenerator(pub Arc<dyn TerrainGenerator>);
+pub struct ActiveTerrainGenerator(pub Arc<dyn TerrainGenerator>);
 
-impl Default for ActiveChunkGenerator {
+impl Default for ActiveTerrainGenerator {
     fn default() -> Self {
-        ActiveChunkGenerator(Arc::new(SuperflatGenerator::new()))
+        ActiveTerrainGenerator(Arc::new(SuperflatGenerator::new()))
     }
 }
 
-/// A resource holding the active biome generator.
+/// A resource holding the active biome chunk generator.
 #[derive(Resource, Clone)]
 pub struct ActiveBiomeGenerator(pub Arc<dyn BiomeGenerator>);
 
@@ -38,19 +39,19 @@ pub trait BiomeGenerator: Send + Sync + Debug {
 
 /// A struct representing generated biome data for every block in a chunk.
 pub struct GeneratedBiomeData {
-    pub biome_map: BiomeMap,
-    pub climate_map: ClimateMap,
+    pub biome_map: BiomeMapComponent,
+    pub climate_map: ClimateMapComponent,
 }
 
 impl GeneratedBiomeData {
     pub fn empty() -> Self {
         Self {
-            biome_map: BiomeMap::empty(),
-            climate_map: ClimateMap::empty(),
+            biome_map: BiomeMapComponent::empty(),
+            climate_map: ClimateMapComponent::empty(),
         }
     }
 
-    pub fn as_tuple(self) -> (BiomeMap, ClimateMap) {
+    pub fn as_tuple(self) -> (BiomeMapComponent, ClimateMapComponent) {
         (self.biome_map, self.climate_map)
     }
 }
@@ -65,8 +66,8 @@ pub trait TerrainGenerator: Send + Sync + Debug {
     fn generate_terrain_chunk(
         &self,
         coord: IVec3,
-        biome_map: &BiomeMap,
-        climate_map: &ClimateMap,
+        biome_map: &BiomeMapComponent,
+        climate_map: &ClimateMapComponent,
         block_registry: &BlockRegistryResource,
     ) -> GeneratedTerrainData;
 }
@@ -74,16 +75,16 @@ pub trait TerrainGenerator: Send + Sync + Debug {
 /// A struct representing generated chunk data.
 pub struct GeneratedTerrainData {
     pub chunk_blocks: ChunkBlocksComponent,
-    pub surface_heightmap: SurfaceHeightmap,
-    pub world_surface_heightmap: WorldSurfaceHeightmap,
+    pub surface_heightmap: OceanFloorHeightMapComponent,
+    pub world_surface_heightmap: WorldSurfaceHeightMapComponent,
 }
 
 impl GeneratedTerrainData {
     pub fn empty() -> Self {
         Self {
             chunk_blocks: ChunkBlocksComponent::empty(),
-            surface_heightmap: SurfaceHeightmap::empty(),
-            world_surface_heightmap: WorldSurfaceHeightmap::empty(),
+            surface_heightmap: OceanFloorHeightMapComponent::empty(),
+            world_surface_heightmap: WorldSurfaceHeightMapComponent::empty(),
         }
     }
 }
@@ -94,7 +95,7 @@ impl GeneratedTerrainData {
 
 pub struct GeneratedChunkComponentBundle {
     pub chunk_blocks: ChunkBlocksComponent,
-    pub biome_map: BiomeMap,
-    pub surface_heightmap: SurfaceHeightmap,
-    pub world_surface_heightmap: WorldSurfaceHeightmap,
+    pub biome_map: BiomeMapComponent,
+    pub ocean_floor_hmap: OceanFloorHeightMapComponent,
+    pub world_surface_hmap: WorldSurfaceHeightMapComponent,
 }

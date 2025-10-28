@@ -6,9 +6,9 @@ use crate::simulation_world::chunk::CHUNK_AREA;
 ///
 /// Necessary for optimized lighting calculations.
 #[derive(Component, Clone)]
-pub struct SurfaceHeightmap(pub [u16; CHUNK_AREA]);
+pub struct OceanFloorHeightMapComponent(pub [u16; CHUNK_AREA]);
 
-impl SurfaceHeightmap {
+impl OceanFloorHeightMapComponent {
     /// Creates a new empty surface heightmap.
     pub fn empty() -> Self {
         Self([0; CHUNK_AREA])
@@ -19,9 +19,9 @@ impl SurfaceHeightmap {
 ///
 /// Necessary for spawning the player or decorations.
 #[derive(Component, Clone)]
-pub struct WorldSurfaceHeightmap(pub [u16; CHUNK_AREA]);
+pub struct WorldSurfaceHeightMapComponent(pub [u16; CHUNK_AREA]);
 
-impl WorldSurfaceHeightmap {
+impl WorldSurfaceHeightMapComponent {
     /// Creates a new empty surface heightmap.
     pub fn empty() -> Self {
         Self([0; CHUNK_AREA])

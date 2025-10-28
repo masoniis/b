@@ -6,9 +6,9 @@ use bevy_ecs::component::Component;
 
 /// The biome map which stores the biome ID for every block in a chunk.
 #[derive(Component)]
-pub struct BiomeMap(pub [BiomeId; CHUNK_SIZE]);
+pub struct BiomeMapComponent(pub [BiomeId; CHUNK_SIZE]);
 
-impl BiomeMap {
+impl BiomeMapComponent {
     pub fn empty() -> Self {
         Self([BiomeId::default(); CHUNK_SIZE])
     }

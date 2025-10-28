@@ -16,9 +16,9 @@ pub struct TerrainClimateData {
 
 /// Stores the climate data (temperature, precipitation) for every block in a chunk.
 #[derive(Component, Clone)]
-pub struct ClimateMap(pub [TerrainClimateData; CHUNK_SIZE]);
+pub struct ClimateMapComponent(pub [TerrainClimateData; CHUNK_SIZE]);
 
-impl ClimateMap {
+impl ClimateMapComponent {
     /// Creates a new climate map filled with default values (0.0 for temp/precip).
     pub fn empty() -> Self {
         Self([TerrainClimateData::default(); CHUNK_SIZE])

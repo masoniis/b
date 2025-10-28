@@ -1,8 +1,10 @@
 use crate::simulation_world::block::BlockRegistryResource;
-use crate::simulation_world::chunk::height_maps::{SurfaceHeightmap, WorldSurfaceHeightmap};
 use crate::simulation_world::chunk::{
-    BiomeMap, ChunkBlocksComponent, ClimateMap, GeneratedTerrainData, TerrainGenerator,
-    CHUNK_DEPTH, CHUNK_HEIGHT, CHUNK_WIDTH,
+    ChunkBlocksComponent, CHUNK_DEPTH, CHUNK_HEIGHT, CHUNK_WIDTH,
+};
+use crate::simulation_world::generation::{
+    BiomeMapComponent, ClimateMapComponent, GeneratedTerrainData, OceanFloorHeightMapComponent,
+    TerrainGenerator, WorldSurfaceHeightMapComponent,
 };
 use glam::IVec3;
 
@@ -28,8 +30,8 @@ impl TerrainGenerator for SuperflatGenerator {
     fn generate_terrain_chunk(
         &self,
         coord: IVec3,
-        _biome_map: &BiomeMap,
-        _climate_map: &ClimateMap,
+        _biome_map: &BiomeMapComponent,
+        _climate_map: &ClimateMapComponent,
         blocks: &BlockRegistryResource,
     ) -> GeneratedTerrainData {
         if coord.y != 0 {
@@ -56,8 +58,8 @@ impl TerrainGenerator for SuperflatGenerator {
 
         GeneratedTerrainData {
             chunk_blocks: chunk,
-            surface_heightmap: SurfaceHeightmap::empty(),
-            world_surface_heightmap: WorldSurfaceHeightmap::empty(),
+            surface_heightmap: OceanFloorHeightMapComponent::empty(),
+            world_surface_heightmap: WorldSurfaceHeightMapComponent::empty(),
         }
     }
 }

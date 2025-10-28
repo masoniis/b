@@ -1,12 +1,15 @@
 use crate::prelude::*;
-use crate::simulation_world::chunk::core::{ActiveBiomeGenerator, GeneratedChunkComponentBundle};
 use crate::simulation_world::chunk::{ChunkCoord, CHUNK_DEPTH, CHUNK_HEIGHT, CHUNK_WIDTH};
+use crate::simulation_world::generation::core::{
+    ActiveBiomeGenerator, GeneratedChunkComponentBundle,
+};
+use crate::simulation_world::generation::ActiveTerrainGenerator;
 use crate::simulation_world::{
     asset_management::{texture_map_registry::TextureMapResource, AssetStorageResource, MeshAsset},
     block::BlockRegistryResource,
     chunk::{
         chunk_meshing::build_chunk_mesh, load_manager::ChunkLoadManager, load_manager::ChunkState,
-        ActiveChunkGenerator, ChunkBlocksComponent, MeshComponent, TransformComponent,
+        ChunkBlocksComponent, MeshComponent, TransformComponent,
     },
 };
 use bevy_ecs::prelude::*;
@@ -47,7 +50,7 @@ pub fn start_pending_generation_tasks_system(
     mut chunk_manager: ResMut<ChunkLoadManager>,
     block_registry: Res<BlockRegistryResource>,
     b_generator: Res<ActiveBiomeGenerator>,
-    c_generator: Res<ActiveChunkGenerator>,
+    c_generator: Res<ActiveTerrainGenerator>,
 
     // Local counter for throttling
     mut generation_tasks_started_this_frame: Local<usize>,
@@ -103,8 +106,8 @@ pub fn start_pending_generation_tasks_system(
             GeneratedChunkComponentBundle {
                 biome_map: biome_map,
                 chunk_blocks: tgen.chunk_blocks,
-                surface_heightmap: tgen.surface_heightmap,
-                world_surface_heightmap: tgen.world_surface_heightmap,
+                ocean_floor_hmap: tgen.surface_heightmap,
+                world_surface_hmap: tgen.world_surface_heightmap,
             }
         });
 
