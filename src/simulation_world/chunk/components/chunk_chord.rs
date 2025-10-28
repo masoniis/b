@@ -20,6 +20,24 @@ impl fmt::Display for ChunkCoord {
     }
 }
 
+impl ChunkCoord {
+    pub fn get_block_world_pos(&self, local_pos: IVec3) -> IVec3 {
+        IVec3::new(
+            (self.pos.x << X_SHIFT) + local_pos.x,
+            (self.pos.y << Y_SHIFT) + local_pos.y,
+            (self.pos.z << Z_SHIFT) + local_pos.z,
+        )
+    }
+
+    pub fn as_world_pos(&self) -> IVec3 {
+        IVec3::new(
+            self.pos.x << X_SHIFT,
+            self.pos.y << Y_SHIFT,
+            self.pos.z << Z_SHIFT,
+        )
+    }
+}
+
 /// Convert a world position to chunk coordinate
 pub fn world_to_chunk_pos(world_pos: glam::Vec3) -> IVec3 {
     let int_pos = world_pos.floor().as_ivec3();

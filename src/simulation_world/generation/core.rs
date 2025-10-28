@@ -1,7 +1,8 @@
-use crate::simulation_world::chunk::ChunkBlocksComponent;
+use crate::simulation_world::biome::BiomeRegistryResource;
+use crate::simulation_world::chunk::{ChunkBlocksComponent, ChunkCoord};
 use crate::simulation_world::generation::{
-    BiomeMapComponent, ClimateMapComponent, DefaultBiomeGenerator, OceanFloorHeightMapComponent,
-    WorldSurfaceHeightMapComponent,
+    BiomeMapComponent, DefaultBiomeGenerator, OceanFloorHeightMapComponent,
+    TerrainClimateMapComponent, WorldSurfaceHeightMapComponent,
 };
 use crate::simulation_world::{block::BlockRegistryResource, generation::SuperflatGenerator};
 use bevy_ecs::prelude::Resource;
@@ -34,25 +35,29 @@ impl Default for ActiveBiomeGenerator {
 
 /// A trait for just generating the biome map
 pub trait BiomeGenerator: Send + Sync + Debug {
-    fn generate_biome_data(&self, coord: IVec3) -> GeneratedBiomeData;
+    fn generate_biome_chunk(
+        &self,
+        coord: &ChunkCoord,
+        biome_registry: &BiomeRegistryResource,
+    ) -> GeneratedBiomeData;
 }
 
 /// A struct representing generated biome data for every block in a chunk.
 pub struct GeneratedBiomeData {
     pub biome_map: BiomeMapComponent,
-    pub climate_map: ClimateMapComponent,
+    pub terrain_climate_map: TerrainClimateMapComponent,
 }
 
 impl GeneratedBiomeData {
     pub fn empty() -> Self {
         Self {
             biome_map: BiomeMapComponent::empty(),
-            climate_map: ClimateMapComponent::empty(),
+            terrain_climate_map: TerrainClimateMapComponent::empty(),
         }
     }
 
-    pub fn as_tuple(self) -> (BiomeMapComponent, ClimateMapComponent) {
-        (self.biome_map, self.climate_map)
+    pub fn as_tuple(self) -> (BiomeMapComponent, TerrainClimateMapComponent) {
+        (self.biome_map, self.terrain_climate_map)
     }
 }
 
@@ -67,7 +72,7 @@ pub trait TerrainGenerator: Send + Sync + Debug {
         &self,
         coord: IVec3,
         biome_map: &BiomeMapComponent,
-        climate_map: &ClimateMapComponent,
+        climate_map: &TerrainClimateMapComponent,
         block_registry: &BlockRegistryResource,
     ) -> GeneratedTerrainData;
 }

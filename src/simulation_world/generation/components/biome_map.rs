@@ -18,4 +18,10 @@ impl BiomeMapComponent {
         let index = (y << Y_SHIFT) | (z << Z_SHIFT) | x;
         self.0[index]
     }
+
+    #[inline(always)]
+    pub fn set_biome(&mut self, x: usize, y: usize, z: usize, biome: BiomeId) {
+        let index = (y << Y_SHIFT) | (z << Z_SHIFT) | x;
+        self.0[index] = biome;
+    }
 }

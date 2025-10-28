@@ -1,4 +1,5 @@
 use crate::prelude::*;
+use crate::simulation_world::biome::BiomeRegistryResource;
 use crate::simulation_world::chunk::{ChunkCoord, CHUNK_DEPTH, CHUNK_HEIGHT, CHUNK_WIDTH};
 use crate::simulation_world::generation::core::{
     ActiveBiomeGenerator, GeneratedChunkComponentBundle,
@@ -49,6 +50,7 @@ pub fn start_pending_generation_tasks_system(
     mut commands: Commands,
     mut chunk_manager: ResMut<ChunkLoadManager>,
     block_registry: Res<BlockRegistryResource>,
+    biome_registry: Res<BiomeRegistryResource>,
     b_generator: Res<ActiveBiomeGenerator>,
     c_generator: Res<ActiveTerrainGenerator>,
 
@@ -89,12 +91,14 @@ pub fn start_pending_generation_tasks_system(
 
         // spawn in the task with resources needed
         let blocks_clone = block_registry.clone();
+        let biomes_clone = biome_registry.clone();
         let gen_clone = c_generator.0.clone();
         let bgen_clone = b_generator.0.clone();
         let coord_clone = coord.clone();
         let task = task_pool.spawn(async move {
-            let (biome_map, climate_map) =
-                bgen_clone.generate_biome_data(coord_clone.pos).as_tuple();
+            let (biome_map, climate_map) = bgen_clone
+                .generate_biome_chunk(&coord_clone, &biomes_clone)
+                .as_tuple();
 
             let tgen = gen_clone.generate_terrain_chunk(
                 coord_clone.pos,
