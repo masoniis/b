@@ -4,7 +4,7 @@ use crate::simulation_world::chunk::{ChunkCoord, CHUNK_DEPTH, CHUNK_HEIGHT, CHUN
 use crate::simulation_world::generation::core::{
     ActiveBiomeGenerator, GeneratedChunkComponentBundle,
 };
-use crate::simulation_world::generation::ActiveTerrainGenerator;
+use crate::simulation_world::generation::{ActiveTerrainGenerator, ClimateNoiseGenerator};
 use crate::simulation_world::{
     asset_management::{texture_map_registry::TextureMapResource, AssetStorageResource, MeshAsset},
     block::BlockRegistryResource,
@@ -14,18 +14,18 @@ use crate::simulation_world::{
     },
 };
 use bevy_ecs::prelude::*;
-use bevy_tasks::{futures::now_or_never, AsyncComputeTaskPool, Task};
+use crossbeam::channel::{unbounded, Receiver, TryRecvError};
 
 /// Marks a chunk loading task in the simulation world that returns nothing.
 #[derive(Component)]
 pub struct ChunkGenerationTaskComponent {
-    pub task: Task<GeneratedChunkComponentBundle>,
+    pub receiver: Receiver<GeneratedChunkComponentBundle>,
 }
 
 /// Marks a chunk meshing task in the simulation world that returns a MeshComponent.
 #[derive(Component)]
 pub struct ChunkMeshingTaskComponent {
-    pub task: Task<Option<MeshComponent>>,
+    pub receiver: Receiver<Option<MeshComponent>>,
 }
 
 #[derive(Component)]
@@ -53,13 +53,12 @@ pub fn start_pending_generation_tasks_system(
     biome_registry: Res<BiomeRegistryResource>,
     b_generator: Res<ActiveBiomeGenerator>,
     c_generator: Res<ActiveTerrainGenerator>,
+    climate_noise: Res<ClimateNoiseGenerator>,
 
     // Local counter for throttling
     mut generation_tasks_started_this_frame: Local<usize>,
 ) {
     *generation_tasks_started_this_frame = 0;
-
-    let task_pool = AsyncComputeTaskPool::get();
 
     for (entity, _, coord) in pending_chunks_query.iter_mut() {
         if *generation_tasks_started_this_frame >= MAX_GENERATION_STARTS_PER_FRAME {
@@ -95,9 +94,12 @@ pub fn start_pending_generation_tasks_system(
         let gen_clone = c_generator.0.clone();
         let bgen_clone = b_generator.0.clone();
         let coord_clone = coord.clone();
-        let task = task_pool.spawn(async move {
+        let climate_noise_clone = climate_noise.clone();
+
+        let (sender, receiver) = unbounded();
+        rayon::spawn(move || {
             let (biome_map, climate_map) = bgen_clone
-                .generate_biome_chunk(&coord_clone, &biomes_clone)
+                .generate_biome_chunk(&coord_clone, &climate_noise_clone, &biomes_clone)
                 .as_tuple();
 
             let tgen = gen_clone.generate_terrain_chunk(
@@ -105,19 +107,33 @@ pub fn start_pending_generation_tasks_system(
                 &biome_map,
                 &climate_map,
                 &blocks_clone,
+                &biomes_clone,
             );
 
-            GeneratedChunkComponentBundle {
+            trace!(
+                target: "chunk_loading",
+                "Finished generation for chunk {}.",
+                coord_clone
+            );
+
+            let bundle = GeneratedChunkComponentBundle {
                 biome_map: biome_map,
                 chunk_blocks: tgen.chunk_blocks,
                 ocean_floor_hmap: tgen.surface_heightmap,
                 world_surface_hmap: tgen.world_surface_heightmap,
-            }
+            };
+            let _ = sender.send(bundle);
         });
+
+        trace!(
+            target: "chunk_loading",
+            "Spawned generation task for chunk {}.",
+            coord
+        );
 
         commands
             .entity(entity)
-            .insert(ChunkGenerationTaskComponent { task })
+            .insert(ChunkGenerationTaskComponent { receiver })
             .remove::<NeedsGenerating>();
 
         chunk_manager.mark_as_generating(coord.pos, entity);
@@ -125,6 +141,7 @@ pub fn start_pending_generation_tasks_system(
 }
 
 /// Polls chunk generation tasks, adds generated components, and marks chunks as NeedsMeshing.
+#[instrument(skip_all)]
 pub fn poll_chunk_generation_tasks(
     // Input
     mut tasks_query: Query<(Entity, &mut ChunkGenerationTaskComponent, &ChunkCoord)>,
@@ -133,7 +150,7 @@ pub fn poll_chunk_generation_tasks(
     mut commands: Commands,
     mut chunk_manager: ResMut<ChunkLoadManager>,
 ) {
-    for (entity, mut generation_task_component, coord) in tasks_query.iter_mut() {
+    for (entity, generation_task_component, coord) in tasks_query.iter_mut() {
         // check for cancellation using the manager state
         match chunk_manager.get_state(coord.pos) {
             Some(ChunkState::Generating(gen_entity)) if gen_entity == entity => {
@@ -150,19 +167,32 @@ pub fn poll_chunk_generation_tasks(
         }
 
         // poll the generation task
-        if let Some(gen_bundle) = now_or_never(&mut generation_task_component.task) {
-            debug!(
-                target: "chunk_loading",
-                "Chunk generation finished for {}. Marking as NeedsMeshing.",
-                coord
-            );
+        match generation_task_component.receiver.try_recv() {
+            Ok(gen_bundle) => {
+                trace!(
+                    target: "chunk_loading",
+                    "Chunk generation finished for {}. Marking as NeedsMeshing.",
+                    coord
+                );
 
-            commands
-                .entity(entity)
-                .insert((gen_bundle.chunk_blocks, gen_bundle.biome_map, NeedsMeshing))
-                .remove::<ChunkGenerationTaskComponent>();
+                commands
+                    .entity(entity)
+                    .insert((gen_bundle.chunk_blocks, gen_bundle.biome_map, NeedsMeshing))
+                    .remove::<ChunkGenerationTaskComponent>();
 
-            chunk_manager.mark_as_needs_meshing(coord.pos, entity);
+                chunk_manager.mark_as_needs_meshing(coord.pos, entity);
+            }
+            Err(TryRecvError::Empty) => {
+                // Task still running
+            }
+            Err(TryRecvError::Disconnected) => {
+                warn!(
+                    target: "chunk_loading",
+                    "Chunk generation task for {} failed (channel disconnected). Despawning entity.",
+                    coord
+                );
+                commands.entity(entity).despawn();
+            }
         }
     }
 }
@@ -268,7 +298,8 @@ pub fn start_pending_meshing_tasks_system(
             back,
         };
 
-        debug!(target: "chunk_loading", "Starting meshing task for {} ({} this frame).", chunk_coord.pos, *meshing_tasks_started_this_frame);
+        trace!(target: "chunk_loading", "Starting meshing task for {} ({} this frame).", chunk_coord.pos, *meshing_tasks_started_this_frame);
+
         // INFO: -----------------------------
         //         Spawn the mesh task
         // -----------------------------------
@@ -280,8 +311,8 @@ pub fn start_pending_meshing_tasks_system(
         let chunk_component_for_task = chunk_comp.clone();
         let c = chunk_coord.clone();
 
-        let task_pool = AsyncComputeTaskPool::get();
-        let meshing_task_handle: Task<Option<MeshComponent>> = task_pool.spawn(async move {
+        let (sender, receiver) = unbounded();
+        rayon::spawn(move || {
             let (vertices, indices) = build_chunk_mesh(
                 &chunk_component_for_task,
                 &neighbor_data_for_task,
@@ -289,7 +320,7 @@ pub fn start_pending_meshing_tasks_system(
                 &block_registry_clone,
             );
 
-            if !vertices.is_empty() {
+            let result = if !vertices.is_empty() {
                 let mesh_asset = MeshAsset {
                     name: format!("chunk_{}_{}_{}", c.pos.x, c.pos.y, c.pos.z),
                     vertices,
@@ -299,15 +330,14 @@ pub fn start_pending_meshing_tasks_system(
                 Some(MeshComponent::new(mesh_handle))
             } else {
                 None
-            }
+            };
+            let _ = sender.send(result);
         });
 
         // update entity and manager
         commands
             .entity(entity)
-            .insert(ChunkMeshingTaskComponent {
-                task: meshing_task_handle,
-            })
+            .insert(ChunkMeshingTaskComponent { receiver })
             .remove::<NeedsMeshing>();
 
         chunk_manager.mark_as_meshing(chunk_coord.pos, entity);
@@ -315,6 +345,7 @@ pub fn start_pending_meshing_tasks_system(
 }
 
 /// Polls chunk meshing tasks and adds the MeshComponent when ready.
+#[instrument(skip_all)]
 pub fn poll_chunk_meshing_tasks(
     // Input
     mut tasks_query: Query<(Entity, &mut ChunkMeshingTaskComponent, &ChunkCoord)>,
@@ -323,7 +354,7 @@ pub fn poll_chunk_meshing_tasks(
     mut commands: Commands,
     mut chunk_manager: ResMut<ChunkLoadManager>,
 ) {
-    for (entity, mut meshing_task_component, coord) in tasks_query.iter_mut() {
+    for (entity, meshing_task_component, coord) in tasks_query.iter_mut() {
         // check for cancellation
         match chunk_manager.get_state(coord.pos) {
             Some(ChunkState::Meshing(state_entity)) if state_entity == entity => {
@@ -340,34 +371,47 @@ pub fn poll_chunk_meshing_tasks(
         }
 
         // poll mesh task
-        if let Some(mesh_component_option) = now_or_never(&mut meshing_task_component.task) {
-            debug!(target : "chunk_loading","Chunk meshing finished for {:?}", coord);
+        match meshing_task_component.receiver.try_recv() {
+            Ok(mesh_component_option) => {
+                trace!(target : "chunk_loading","Chunk meshing finished for {:?}", coord);
 
-            // add MeshComponent if it exists
-            if let Some(mesh_component) = mesh_component_option {
-                commands.entity(entity).insert((
-                    mesh_component,
-                    TransformComponent {
-                        position: Vec3::new(
-                            (coord.x * CHUNK_WIDTH as i32) as f32,
-                            (coord.y * CHUNK_HEIGHT as i32) as f32,
-                            (coord.z * CHUNK_DEPTH as i32) as f32,
-                        ),
-                        rotation: Quat::IDENTITY,
-                        scale: Vec3::ONE,
-                    },
-                ));
-                debug!(target: "chunk_loading","Chunk at {:?} is now fully loaded.", coord);
-            } else {
-                debug!(target: "chunk_loading", "Chunk at {:?} is empty, no mesh component added.", coord);
-                // the chunk was empty so no mesh was added
+                // add MeshComponent if it exists
+                if let Some(mesh_component) = mesh_component_option {
+                    commands.entity(entity).insert((
+                        mesh_component,
+                        TransformComponent {
+                            position: Vec3::new(
+                                (coord.x * CHUNK_WIDTH as i32) as f32,
+                                (coord.y * CHUNK_HEIGHT as i32) as f32,
+                                (coord.z * CHUNK_DEPTH as i32) as f32,
+                            ),
+                            rotation: Quat::IDENTITY,
+                            scale: Vec3::ONE,
+                        },
+                    ));
+                    trace!(target: "chunk_loading","Chunk at {:?} is now fully loaded.", coord);
+                } else {
+                    trace!(target: "chunk_loading", "Chunk at {:?} is empty, no mesh component added.", coord);
+                    // the chunk was empty so no mesh was added
+                }
+                chunk_manager.mark_as_loaded(coord.pos, entity);
+
+                // remove the completed task component
+                commands
+                    .entity(entity)
+                    .remove::<ChunkMeshingTaskComponent>();
             }
-            chunk_manager.mark_as_loaded(coord.pos, entity);
-
-            // remove the completed task component
-            commands
-                .entity(entity)
-                .remove::<ChunkMeshingTaskComponent>();
+            Err(TryRecvError::Empty) => {
+                // Task still running
+            }
+            Err(TryRecvError::Disconnected) => {
+                warn!(
+                    target: "chunk_loading",
+                    "Chunk meshing task for {} failed (channel disconnected). Despawning entity.",
+                    coord
+                );
+                commands.entity(entity).despawn();
+            }
         }
     }
 }

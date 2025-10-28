@@ -23,10 +23,16 @@ bevy_debug *args:
 
 trace *args:
 	#!/usr/bin/env bash
-	trap 'echo -e "\n\033[1;36mStopping Tracy profiler (PID: $tracy_pid)...\033[0m"; kill $tracy_pid' EXIT
-	TRACY_ENABLE_MEMORY=1
-	tracy &
-	tracy_pid=$!
+
+	# launch tracy if it isn't already running
+	if pgrep -x "tracy" > /dev/null; then
+			echo -e "\033[1;32mTracy profiler is already running.\033[0m"
+	else
+			echo -e "\033[1;36mStarting Tracy profiler...\033[0m"
+			TRACY_ENABLE_MEMORY=1
+			tracy &
+	fi
+
 	cargo run --features tracy
 
 debug *args:

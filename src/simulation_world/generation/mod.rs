@@ -22,6 +22,7 @@ pub struct TerrainGenerationPlugin;
 impl Plugin for TerrainGenerationPlugin {
     fn build(&self, builder: &mut EcsBuilder) {
         builder
+            .add_resource(ClimateNoiseGenerator::new(0)) // hardcode seed 0 for now
             .add_resource(ActiveBiomeGenerator::default())
             .add_resource(ActiveTerrainGenerator::default());
     }

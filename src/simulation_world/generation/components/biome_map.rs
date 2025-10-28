@@ -5,7 +5,7 @@ use crate::simulation_world::{
 use bevy_ecs::component::Component;
 
 /// The biome map which stores the biome ID for every block in a chunk.
-#[derive(Component)]
+#[derive(Component, Debug)]
 pub struct BiomeMapComponent(pub [BiomeId; CHUNK_SIZE]);
 
 impl BiomeMapComponent {

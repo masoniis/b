@@ -1,9 +1,8 @@
 use crate::{
     ecs_core::{
         async_loading::{
-            load_tracking::LoadingTaskTracker, master_finalize_loading_system,
-            poll_simulation_loading_tasks, reset_loading_tracker_system, start_fake_work_system,
-            tick_global_task_pools_system, OnLoadComplete,
+            master_finalize_loading_system, poll_simulation_loading_tasks,
+            reset_loading_tracker_system, start_fake_work_system, OnLoadComplete,
         },
         state_machine::{
             in_state, systems::apply_state_transition_system, AppState, GameState, StatePlugin,
@@ -26,14 +25,10 @@ impl Plugin for AppLifecyclePlugin {
 
         // polling systems and tracking load state
         builder
-            .add_resource(LoadingTaskTracker::default())
             .schedule_entry(SimulationSchedule::Main)
-            .add_systems((
-                poll_simulation_loading_tasks
-                    .in_set(SimulationSet::Update)
-                    .run_if(in_state(AppState::StartingUp)),
-                tick_global_task_pools_system.in_set(SimulationSet::PostUpdate),
-            ));
+            .add_systems((poll_simulation_loading_tasks
+                .in_set(SimulationSet::Update)
+                .run_if(in_state(AppState::StartingUp)),));
 
         // load cleanup to run after transitions
         builder

@@ -67,6 +67,7 @@ fn get_block_with_neighbors<'a>(
 }
 
 /// Helper function to build a mesh for a single chunk, considering neighbors.
+#[instrument(skip_all)]
 pub fn build_chunk_mesh(
     chunk: &ChunkBlocksComponent,
     neighbors: &ChunkNeighborData,

@@ -1,13 +1,12 @@
 use crate::{
     ecs_core::async_loading::{
-        load_tracking::LoadingTaskTracker, loading_task::SimulationWorldLoadingTaskComponent,
-        LoadingTracker, RenderWorldLoadingTaskComponent,
+        loading_task::SimulationWorldLoadingTaskComponent, LoadingTracker,
+        RenderWorldLoadingTaskComponent,
     },
     prelude::*,
 };
 use bevy_ecs::prelude::*;
-use bevy_tasks::futures::now_or_never;
-use futures_lite::future;
+use crossbeam::channel::TryRecvError;
 
 /// Polls simulation-specific tasks and updates the shared `LoadingTracker`.
 #[instrument(skip_all)]
@@ -16,29 +15,35 @@ pub fn poll_simulation_loading_tasks(
     mut tasks: Query<(Entity, &mut SimulationWorldLoadingTaskComponent)>,
 
     // Output (updated states)
-    mut task_tracker: ResMut<LoadingTaskTracker>,
     mut commands: Commands,
     loading_tracker: Res<LoadingTracker>,
 ) {
-    if !task_tracker.has_spawned_tasks() {
-        return; // no tasks spawned yet
-    }
+    // Local counter to track tasks that are still running this frame.
+    // This correctly handles the case where 0 tasks were spawned.
+    let mut remaining_tasks = 0;
 
-    for (entity, mut task_component) in tasks.iter_mut() {
-        if let Some(callback) = now_or_never(&mut task_component.task) {
-            info!("[POLL] Task completed! Executing callback...");
-            callback(&mut commands);
-            commands.entity(entity).despawn();
-
-            task_tracker.register_completion();
+    for (entity, task) in &mut tasks {
+        match task.receiver.try_recv() {
+            Ok(callback) => {
+                callback(&mut commands);
+                commands.entity(entity).despawn();
+            }
+            Err(TryRecvError::Empty) => {
+                // Task is still working, count it.
+                remaining_tasks += 1;
+            }
+            Err(TryRecvError::Disconnected) => {
+                eprintln!("Task failed: Channel disconnected!");
+                commands.entity(entity).despawn();
+            }
         }
     }
 
-    if task_tracker.all_complete() && !loading_tracker.is_simulation_ready() {
+    // Use the local counter to determine if all tasks are done.
+    if remaining_tasks == 0 && !loading_tracker.is_simulation_ready() {
         debug!(
             target: "async_tasks",
-            "[POLL] All {} spawned tasks are complete. Marking simulation ready.",
-            task_tracker.spawned
+            "[POLL] All tasks are complete. Marking simulation ready.",
         );
         loading_tracker.set_simulation_ready(true);
     }
@@ -56,13 +61,21 @@ pub fn poll_render_loading_tasks(
 ) {
     let mut remaining_tasks = 0;
 
-    for (entity, mut task_component) in tasks.iter_mut() {
-        if let Some(callback) = future::block_on(future::poll_once(&mut task_component.task)) {
-            debug!(target: "async_tasks", "Render task completed, executing callback...");
-            callback(&mut commands);
-            commands.entity(entity).despawn();
-        } else {
-            remaining_tasks += 1;
+    for (entity, task_component) in tasks.iter_mut() {
+        // Updated to use the receiver pattern
+        match task_component.receiver.try_recv() {
+            Ok(callback) => {
+                debug!(target: "async_tasks", "Render task completed, executing callback...");
+                callback(&mut commands);
+                commands.entity(entity).despawn();
+            }
+            Err(TryRecvError::Empty) => {
+                remaining_tasks += 1; // task is still working
+            }
+            Err(TryRecvError::Disconnected) => {
+                eprintln!("Task failed: Channel disconnected!");
+                commands.entity(entity).despawn();
+            }
         }
     }
 

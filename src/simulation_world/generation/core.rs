@@ -1,7 +1,7 @@
 use crate::simulation_world::biome::BiomeRegistryResource;
 use crate::simulation_world::chunk::{ChunkBlocksComponent, ChunkCoord};
 use crate::simulation_world::generation::{
-    BiomeMapComponent, DefaultBiomeGenerator, OceanFloorHeightMapComponent,
+    BiomeMapComponent, ClimateNoiseGenerator, DefaultBiomeGenerator, OceanFloorHeightMapComponent,
     TerrainClimateMapComponent, WorldSurfaceHeightMapComponent,
 };
 use crate::simulation_world::{block::BlockRegistryResource, generation::SuperflatGenerator};
@@ -38,6 +38,7 @@ pub trait BiomeGenerator: Send + Sync + Debug {
     fn generate_biome_chunk(
         &self,
         coord: &ChunkCoord,
+        climate_noise: &ClimateNoiseGenerator,
         biome_registry: &BiomeRegistryResource,
     ) -> GeneratedBiomeData;
 }
@@ -73,7 +74,9 @@ pub trait TerrainGenerator: Send + Sync + Debug {
         coord: IVec3,
         biome_map: &BiomeMapComponent,
         climate_map: &TerrainClimateMapComponent,
+
         block_registry: &BlockRegistryResource,
+        biome_registry: &BiomeRegistryResource,
     ) -> GeneratedTerrainData;
 }
 

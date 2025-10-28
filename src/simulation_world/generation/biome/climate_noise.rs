@@ -1,8 +1,9 @@
+use crate::prelude::*;
 use crate::simulation_world::generation::climate_map::{BiomeClimateData, TerrainClimateData};
 use bevy_ecs::resource::Resource;
 use noise::{Fbm, MultiFractal, NoiseFn, OpenSimplex};
 
-#[derive(Resource)]
+#[derive(Resource, Clone)]
 pub struct ClimateNoiseGenerator {
     // biome-specific noise
     temperature_noise: Fbm<OpenSimplex>,
@@ -29,11 +30,9 @@ impl ClimateNoiseGenerator {
     }
 
     /// Calculates all 5 climate values for a single world-space block coordinate.
-    pub fn get_climate_at(&self, world_pos: glam::IVec3) -> BiomeClimateData {
-        let sample_2d = [
-            world_pos.x as f64 * NOISE_SCALE,
-            world_pos.z as f64 * NOISE_SCALE,
-        ];
+    #[instrument(skip_all)]
+    pub fn get_climate_at(&self, world_x: i32, world_z: i32) -> BiomeClimateData {
+        let sample_2d = [world_x as f64 * NOISE_SCALE, world_z as f64 * NOISE_SCALE];
 
         // BIOME-ONLY parameters
         let temperature = ((self.temperature_noise.get(sample_2d) + 1.0) * 0.5) as f32;

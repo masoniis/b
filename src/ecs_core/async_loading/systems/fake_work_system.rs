@@ -1,25 +1,22 @@
 use crate::{
-    ecs_core::async_loading::{
-        load_tracking::LoadingTaskTracker,
-        loading_task::{SimulationWorldLoadingTaskComponent, TaskResultCallback},
+    ecs_core::async_loading::loading_task::{
+        SimulationWorldLoadingTaskComponent, TaskResultCallback,
     },
     prelude::*,
 };
 use bevy_ecs::prelude::*;
 use bevy_ecs::system::Commands;
-use bevy_tasks::AsyncComputeTaskPool;
-use futures_timer::Delay;
-use rand::Rng;
-use std::time::Duration;
+use crossbeam::channel::{unbounded, Receiver, Sender};
+use rand::random_range;
+use std::{thread, time::Duration};
 
 #[instrument(skip_all)]
-pub fn start_fake_work_system(mut commands: Commands, mut tracker: ResMut<LoadingTaskTracker>) {
-    let task_pool = AsyncComputeTaskPool::get();
-
-    tracker.register_spawn();
+pub fn start_fake_work_system(mut commands: Commands) {
+    let (sender, receiver): (Sender<TaskResultCallback>, Receiver<TaskResultCallback>) =
+        unbounded();
 
     let entity = commands.spawn_empty().id();
-    let task = task_pool.spawn(async move {
+    rayon::spawn(move || {
         const WORK_DURATION: u64 = 3;
         for i in 1..=WORK_DURATION {
             info!(
@@ -27,20 +24,22 @@ pub fn start_fake_work_system(mut commands: Commands, mut tracker: ResMut<Loadin
                 entity, i, WORK_DURATION
             );
 
-            // do a lot of math for a long time
-            let duration = Duration::from_secs_f32(rand::rng().random_range(0.05..1.0));
-            Delay::new(duration).await;
+            let sleep_time = random_range(1.05..2.4);
+            thread::sleep(Duration::from_secs_f32(sleep_time));
         }
         info!("[BACKGROUND {}] Fake work finished!", entity);
 
-        let callback: TaskResultCallback = Box::new(|_: &mut Commands| {
-            info!("[CALLBACK] Task callback executed on main thread!");
+        let callback: TaskResultCallback = Box::new(move |_: &mut Commands| {
+            info!(
+                "[MAIN THREAD {}] Applying fake work result to the world.",
+                entity
+            );
         });
 
-        callback
+        sender.send(callback).expect("Failed to send task result");
     });
 
     commands
         .entity(entity)
-        .insert(SimulationWorldLoadingTaskComponent { task });
+        .insert(SimulationWorldLoadingTaskComponent { receiver });
 }

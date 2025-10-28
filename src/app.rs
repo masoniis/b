@@ -121,37 +121,44 @@ impl ApplicationHandler for App {
             let render_world_for_render = render_world.clone();
             let sim_world_for_render = simulation_world.clone();
 
-            let render_thread = thread::spawn(move || {
-                let _span = info_span!("Render thread").entered();
-                loop {
-                    // wait until we are signaled to extract form the sim world
-                    render_sync.wait_for_extraction();
-                    {
-                        let mut sim_guard = sim_world_for_render.lock().unwrap();
-                        let mut render_guard = render_world_for_render.lock().unwrap();
+            let render_thread = thread::Builder::new()
+                .name("Render thread".to_string())
+                .spawn(move || {
+                    #[cfg(feature = "tracy")]
+                    tracy_client::set_thread_name!("Render thread");
 
-                        let _extract_phase_span = tracing::info_span!("extract_schedule").entered();
-                        // the special extract schedule needs mutable access to the simulation world
-                        run_extract_schedule(
-                            &mut sim_guard.borrow(),
-                            &mut render_guard.borrow(),
-                            RenderSchedule::Extract,
-                        );
+                    loop {
+                        // wait until we are signaled to extract form the sim world
+                        render_sync.wait_for_extraction();
+                        {
+                            let mut sim_guard = sim_world_for_render.lock().unwrap();
+                            let mut render_guard = render_world_for_render.lock().unwrap();
 
-                        sim_guard.clear_trackers();
+                            let _extract_phase_span =
+                                tracing::info_span!("extract_schedule").entered();
+
+                            // extract schedule needs mutable access to the simulation world
+                            run_extract_schedule(
+                                &mut sim_guard.borrow(),
+                                &mut render_guard.borrow(),
+                                RenderSchedule::Extract,
+                            );
+
+                            sim_guard.clear_trackers();
+                        }
+                        render_sync.finish_extraction();
+
+                        // perform rendering now that sim is active again
+                        let mut render_world = render_world_for_render.lock().unwrap();
+                        {
+                            let _render_phase_span =
+                                tracing::info_span!("main_render_schedule").entered();
+                            render_world.run_schedule(RenderSchedule::Main);
+                            render_world.clear_trackers();
+                        }
                     }
-                    render_sync.finish_extraction();
-
-                    // perform rendering now that sim is active again
-                    let mut render_world = render_world_for_render.lock().unwrap();
-                    {
-                        let _render_phase_span =
-                            tracing::info_span!("main_render_schedule").entered();
-                        render_world.run_schedule(RenderSchedule::Main);
-                        render_world.clear_trackers();
-                    }
-                }
-            });
+                })
+                .expect("Failed to spawn RenderThread");
 
             // INFO: ------------------------------
             //         Update the App state
