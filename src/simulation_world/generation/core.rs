@@ -1,12 +1,14 @@
-use crate::simulation_world::biome::BiomeRegistryResource;
-use crate::simulation_world::chunk::{ChunkBlocksComponent, ChunkCoord};
-use crate::simulation_world::generation::{
-    BiomeMapComponent, ClimateNoiseGenerator, DefaultBiomeGenerator, OceanFloorHeightMapComponent,
-    TerrainClimateMapComponent, WorldSurfaceHeightMapComponent,
+use crate::prelude::*;
+use crate::simulation_world::block::BlockRegistryResource;
+use crate::simulation_world::{
+    biome::BiomeRegistryResource,
+    chunk::{ChunkBlocksComponent, ChunkCoord},
+    generation::{
+        BiomeMapComponent, ClimateNoiseGenerator, DefaultBiomeGenerator, SuperflatGenerator,
+        TerrainClimateMapComponent,
+    },
 };
-use crate::simulation_world::{block::BlockRegistryResource, generation::SuperflatGenerator};
 use bevy_ecs::prelude::Resource;
-use glam::IVec3;
 use std::{fmt::Debug, sync::Arc};
 
 /// A resource holding the active terrain chunk generator.
@@ -82,17 +84,19 @@ pub trait TerrainGenerator: Send + Sync + Debug {
 
 /// A struct representing generated chunk data.
 pub struct GeneratedTerrainData {
-    pub chunk_blocks: ChunkBlocksComponent,
-    pub surface_heightmap: OceanFloorHeightMapComponent,
-    pub world_surface_heightmap: WorldSurfaceHeightMapComponent,
+    pub chunk_blocks: Option<ChunkBlocksComponent>,
 }
 
 impl GeneratedTerrainData {
+    /// Generates an empty chunk data instance.
     pub fn empty() -> Self {
+        Self { chunk_blocks: None }
+    }
+
+    /// Generates an all-air chunk data instance.
+    pub fn all_air() -> Self {
         Self {
-            chunk_blocks: ChunkBlocksComponent::empty(),
-            surface_heightmap: OceanFloorHeightMapComponent::empty(),
-            world_surface_heightmap: WorldSurfaceHeightMapComponent::empty(),
+            chunk_blocks: Some(ChunkBlocksComponent::empty()),
         }
     }
 }
@@ -102,8 +106,6 @@ impl GeneratedTerrainData {
 // -----------------------------
 
 pub struct GeneratedChunkComponentBundle {
-    pub chunk_blocks: ChunkBlocksComponent,
+    pub chunk_blocks: Option<ChunkBlocksComponent>,
     pub biome_map: BiomeMapComponent,
-    pub ocean_floor_hmap: OceanFloorHeightMapComponent,
-    pub world_surface_hmap: WorldSurfaceHeightMapComponent,
 }

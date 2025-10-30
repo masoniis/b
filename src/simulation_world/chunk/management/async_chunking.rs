@@ -117,10 +117,8 @@ pub fn start_pending_generation_tasks_system(
             );
 
             let bundle = GeneratedChunkComponentBundle {
-                biome_map: biome_map,
                 chunk_blocks: tgen.chunk_blocks,
-                ocean_floor_hmap: tgen.surface_heightmap,
-                world_surface_hmap: tgen.world_surface_heightmap,
+                biome_map: biome_map,
             };
             let _ = sender.send(bundle);
         });
@@ -169,18 +167,26 @@ pub fn poll_chunk_generation_tasks(
         // poll the generation task
         match generation_task_component.receiver.try_recv() {
             Ok(gen_bundle) => {
-                trace!(
-                    target: "chunk_loading",
-                    "Chunk generation finished for {}. Marking as NeedsMeshing.",
-                    coord
-                );
-
-                commands
-                    .entity(entity)
-                    .insert((gen_bundle.chunk_blocks, gen_bundle.biome_map, NeedsMeshing))
-                    .remove::<ChunkGenerationTaskComponent>();
-
-                chunk_manager.mark_as_needs_meshing(coord.pos, entity);
+                if let Some(chunk_blocks) = gen_bundle.chunk_blocks {
+                    trace!(
+                        target: "chunk_loading",
+                        "Chunk generation finished for {}. Marking as NeedsMeshing.",
+                        coord
+                    );
+                    commands
+                        .entity(entity)
+                        .insert((chunk_blocks, gen_bundle.biome_map, NeedsMeshing))
+                        .remove::<ChunkGenerationTaskComponent>();
+                    chunk_manager.mark_as_needs_meshing(coord.pos, entity);
+                } else {
+                    trace!(
+                        target: "chunk_loading",
+                        "Chunk generation finished for {} but chunk is empty. Despawning entity.",
+                        coord
+                    );
+                    commands.entity(entity).despawn();
+                    chunk_manager.mark_as_loaded_but_empty(coord.pos);
+                }
             }
             Err(TryRecvError::Empty) => {
                 // Task still running

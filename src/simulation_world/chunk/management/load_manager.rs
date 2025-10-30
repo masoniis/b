@@ -8,17 +8,17 @@ pub enum ChunkState {
     Generating(Entity),      // Entity holds the generation Task component
     NeedsMeshing(Entity),    // Data is generated, waiting for meshing slot
     Meshing(Entity),         // Entity holds the meshing Task component
-    Loaded(Entity),          // Entity is the final, rendered chunk
+    Loaded(Option<Entity>),  // Entity is the final, rendered chunk
 }
 
 impl ChunkState {
     /// Returns the Entity associated with this chunk state.
-    pub fn entity(&self) -> Entity {
+    pub fn entity(&self) -> Option<Entity> {
         match *self {
-            ChunkState::NeedsGenerating(e) => e,
-            ChunkState::Generating(e) => e,
-            ChunkState::NeedsMeshing(e) => e,
-            ChunkState::Meshing(e) => e,
+            ChunkState::NeedsGenerating(e) => Some(e),
+            ChunkState::Generating(e) => Some(e),
+            ChunkState::NeedsMeshing(e) => Some(e),
+            ChunkState::Meshing(e) => Some(e),
             ChunkState::Loaded(e) => e,
         }
     }
@@ -38,7 +38,7 @@ impl ChunkLoadManager {
 
     /// Gets the Entity for a chunk, if that chunk is tracked.
     pub fn get_entity(&self, coord: IVec3) -> Option<Entity> {
-        self.chunk_states.get(&coord).map(|state| state.entity())
+        self.chunk_states.get(&coord).map(|state| state.entity())?
     }
 
     /// Checks if a chunk exists in any loading or loaded state.
@@ -62,23 +62,27 @@ impl ChunkLoadManager {
 
     /// Called once a chunk's data is generated but needs to be meshed.
     pub fn mark_as_needs_meshing(&mut self, coord: IVec3, needs_meshing_entity: Entity) {
-        // Could assert previous state was Generating
         self.chunk_states
             .insert(coord, ChunkState::NeedsMeshing(needs_meshing_entity));
     }
 
     /// Called once a chunk starts meshing.
     pub fn mark_as_meshing(&mut self, coord: IVec3, meshing_task_entity: Entity) {
-        // Could assert previous state was NeedsMeshing
         self.chunk_states
             .insert(coord, ChunkState::Meshing(meshing_task_entity));
     }
 
     /// Called once a chunk has finished meshing and is fully loaded.
     pub fn mark_as_loaded(&mut self, coord: IVec3, final_chunk_entity: Entity) {
-        // Could assert previous state was Meshing
         self.chunk_states
-            .insert(coord, ChunkState::Loaded(final_chunk_entity));
+            .insert(coord, ChunkState::Loaded(Some(final_chunk_entity)));
+    }
+
+    /// Called once a chunk has finished meshing and is fully loaded.
+    ///
+    /// Passing no entity means the chunk is empty and does not need to be rendered.
+    pub fn mark_as_loaded_but_empty(&mut self, coord: IVec3) {
+        self.chunk_states.insert(coord, ChunkState::Loaded(None));
     }
 
     /// Called when a chunk is unloaded, removing it from tracking.

@@ -4,7 +4,6 @@ use crate::{
     },
     prelude::*,
 };
-use bevy_ecs::prelude::*;
 use bevy_ecs::system::Commands;
 use crossbeam::channel::{unbounded, Receiver, Sender};
 use rand::random_range;

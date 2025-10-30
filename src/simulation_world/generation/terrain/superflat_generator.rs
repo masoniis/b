@@ -1,13 +1,12 @@
-use crate::simulation_world::biome::BiomeRegistryResource;
-use crate::simulation_world::block::BlockRegistryResource;
-use crate::simulation_world::chunk::{
-    ChunkBlocksComponent, CHUNK_DEPTH, CHUNK_HEIGHT, CHUNK_WIDTH,
+use crate::prelude::*;
+use crate::simulation_world::{
+    biome::BiomeRegistryResource,
+    block::BlockRegistryResource,
+    chunk::{ChunkBlocksComponent, CHUNK_DEPTH, CHUNK_HEIGHT, CHUNK_WIDTH},
+    generation::{
+        BiomeMapComponent, GeneratedTerrainData, TerrainClimateMapComponent, TerrainGenerator,
+    },
 };
-use crate::simulation_world::generation::{
-    BiomeMapComponent, GeneratedTerrainData, OceanFloorHeightMapComponent,
-    TerrainClimateMapComponent, TerrainGenerator, WorldSurfaceHeightMapComponent,
-};
-use glam::IVec3;
 
 #[derive(Debug, Clone)]
 pub struct SuperflatGenerator {
@@ -23,6 +22,7 @@ impl SuperflatGenerator {
 }
 
 impl TerrainGenerator for SuperflatGenerator {
+    #[instrument(skip_all)]
     fn generate_terrain_chunk(
         &self,
         coord: IVec3,
@@ -42,6 +42,10 @@ impl TerrainGenerator for SuperflatGenerator {
             .map(|name| blocks.get_block_by_name(name))
             .collect();
 
+        let water_block = blocks.get_block_by_name("water");
+        let grass_block = blocks.get_block_by_name("grass");
+        let dirt_block = blocks.get_block_by_name("dirt");
+
         let mut chunk = ChunkBlocksComponent::empty();
 
         for x in 1..CHUNK_WIDTH - 1 {
@@ -54,29 +58,18 @@ impl TerrainGenerator for SuperflatGenerator {
 
                 match biomes.get(biome_map.get_biome(x, 0, z)).name.as_str() {
                     "Ocean" => {
-                        chunk.set_block(
-                            x,
-                            layer_blocks.len(),
-                            z,
-                            blocks.get_block_by_name("water"),
-                        );
+                        chunk.set_block(x, layer_blocks.len(), z, water_block);
                     }
                     _ => {
-                        chunk.set_block(
-                            x,
-                            layer_blocks.len() + 1,
-                            z,
-                            blocks.get_block_by_name("grass"),
-                        );
+                        chunk.set_block(x, layer_blocks.len(), z, dirt_block);
+                        chunk.set_block(x, layer_blocks.len() + 1, z, grass_block);
                     }
                 }
             }
         }
 
         GeneratedTerrainData {
-            chunk_blocks: chunk,
-            surface_heightmap: OceanFloorHeightMapComponent::empty(),
-            world_surface_heightmap: WorldSurfaceHeightMapComponent::empty(),
+            chunk_blocks: Some(chunk),
         }
     }
 }

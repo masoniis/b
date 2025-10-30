@@ -61,7 +61,9 @@ pub fn manage_chunk_loading_system(
                 }
                 ChunkState::Loaded(entity) => {
                     debug!(target:"chunk_loading", "Unloading loaded chunk at {:?} (Entity: {:?})", coord, entity);
-                    commands.entity(*entity).despawn();
+                    if let Some(entity) = entity {
+                        commands.entity(*entity).despawn();
+                    }
                 }
             }
             coords_to_remove.push(*coord);
