@@ -3,8 +3,7 @@ use crate::render_world::graphics_context::resources::{RenderDevice, RenderSurfa
 use crate::render_world::passes::core::create_render_pipeline::{
     CreatedPipeline, PipelineDefinition,
 };
-use crate::render_world::passes::core::create_render_pipeline_from_def;
-use crate::render_world::passes::core::setup_view_layout::ViewBindGroupLayout;
+use crate::render_world::passes::core::{create_render_pipeline_from_def, ViewBindGroupLayout};
 use bevy_ecs::prelude::*;
 use derive_more::{Deref, DerefMut};
 use wesl::include_wesl;

@@ -1,5 +1,6 @@
 use crate::prelude::*;
 use crate::render_world::types::Vertex;
+use crate::simulation_world::asset_management::MeshAsset;
 use crate::simulation_world::block::block_registry::BlockId;
 use crate::simulation_world::chunk::async_chunking::ChunkNeighborData;
 use crate::simulation_world::{
@@ -7,6 +8,9 @@ use crate::simulation_world::{
     block::BlockRegistryResource,
     chunk::{ChunkBlocksComponent, CHUNK_DEPTH, CHUNK_HEIGHT, CHUNK_WIDTH},
 };
+
+type OpaqueMeshData = MeshAsset;
+type TransparentMeshData = MeshAsset;
 
 const AIR_BLOCK: BlockId = 0;
 
@@ -69,13 +73,17 @@ fn get_block_with_neighbors<'a>(
 /// Helper function to build a mesh for a single chunk, considering neighbors.
 #[instrument(skip_all)]
 pub fn build_chunk_mesh(
+    name: &str,
     chunk: &ChunkBlocksComponent,
     neighbors: &ChunkNeighborData,
     texture_map: &TextureMapResource,
     block_registry: &BlockRegistryResource,
-) -> (Vec<Vertex>, Vec<u32>) {
-    let mut vertices: Vec<Vertex> = Vec::new();
-    let mut indices: Vec<u32> = Vec::new();
+) -> (Option<OpaqueMeshData>, Option<TransparentMeshData>) {
+    // --- Create two sets of buffers ---
+    let mut opaque_vertices: Vec<Vertex> = Vec::new();
+    let mut opaque_indices: Vec<u32> = Vec::new();
+    let mut transparent_vertices: Vec<Vertex> = Vec::new();
+    let mut transparent_indices: Vec<u32> = Vec::new();
 
     for y in 0..CHUNK_HEIGHT {
         for z in 0..CHUNK_DEPTH {
@@ -91,81 +99,109 @@ pub fn build_chunk_mesh(
 
                 let block_properties = block_registry.get(*blockid);
 
+                let (target_vertices, target_indices) = if block_properties.is_transparent {
+                    (&mut transparent_vertices, &mut transparent_indices)
+                } else {
+                    (&mut opaque_vertices, &mut opaque_indices)
+                };
+
                 // +Y (Top)
                 let neighbor_top = get_block_with_neighbors(ix, iy + 1, iz, chunk, neighbors);
                 if block_registry.get(*neighbor_top).is_transparent {
-                    let base_vertex_count = vertices.len() as u32;
+                    let base_vertex_count = target_vertices.len() as u32;
                     let tex_id = &block_properties.textures.top;
                     let tex_index = texture_map.registry.get(*tex_id);
                     let (face_verts, face_indices) =
                         get_face(Face::Top, x, y, z, tex_index, base_vertex_count);
-                    vertices.extend(face_verts);
-                    indices.extend(face_indices);
+                    // Add to the *target* buffer
+                    target_vertices.extend(face_verts);
+                    target_indices.extend(face_indices);
                 }
 
                 // -Y (Bottom)
                 let neighbor_bottom = get_block_with_neighbors(ix, iy - 1, iz, chunk, neighbors);
                 if block_registry.get(*neighbor_bottom).is_transparent {
-                    let base_vertex_count = vertices.len() as u32;
+                    let base_vertex_count = target_vertices.len() as u32;
                     let tex_id = &block_properties.textures.bottom;
                     let tex_index = texture_map.registry.get(*tex_id);
                     let (face_verts, face_indices) =
                         get_face(Face::Bottom, x, y, z, tex_index, base_vertex_count);
-                    vertices.extend(face_verts);
-                    indices.extend(face_indices);
+                    target_vertices.extend(face_verts);
+                    target_indices.extend(face_indices);
                 }
 
                 // -X (Left / West)
                 let neighbor_left = get_block_with_neighbors(ix - 1, iy, iz, chunk, neighbors);
                 if block_registry.get(*neighbor_left).is_transparent {
-                    let base_vertex_count = vertices.len() as u32;
+                    let base_vertex_count = target_vertices.len() as u32;
                     let tex_id = &block_properties.textures.west;
                     let tex_index = texture_map.registry.get(*tex_id);
                     let (face_verts, face_indices) =
                         get_face(Face::Left, x, y, z, tex_index, base_vertex_count);
-                    vertices.extend(face_verts);
-                    indices.extend(face_indices);
+                    target_vertices.extend(face_verts);
+                    target_indices.extend(face_indices);
                 }
 
                 // +X (Right / East)
                 let neighbor_right = get_block_with_neighbors(ix + 1, iy, iz, chunk, neighbors);
                 if block_registry.get(*neighbor_right).is_transparent {
-                    let base_vertex_count = vertices.len() as u32;
+                    let base_vertex_count = target_vertices.len() as u32;
                     let tex_id = &block_properties.textures.east;
                     let tex_index = texture_map.registry.get(*tex_id);
                     let (face_verts, face_indices) =
                         get_face(Face::Right, x, y, z, tex_index, base_vertex_count);
-                    vertices.extend(face_verts);
-                    indices.extend(face_indices);
+                    target_vertices.extend(face_verts);
+                    target_indices.extend(face_indices);
                 }
 
                 // +Z (Front / South)
                 let neighbor_front = get_block_with_neighbors(ix, iy, iz + 1, chunk, neighbors);
                 if block_registry.get(*neighbor_front).is_transparent {
-                    let base_vertex_count = vertices.len() as u32;
+                    let base_vertex_count = target_vertices.len() as u32;
                     let tex_id = &block_properties.textures.south;
                     let tex_index = texture_map.registry.get(*tex_id);
                     let (face_verts, face_indices) =
                         get_face(Face::Front, x, y, z, tex_index, base_vertex_count);
-                    vertices.extend(face_verts);
-                    indices.extend(face_indices);
+                    target_vertices.extend(face_verts);
+                    target_indices.extend(face_indices);
                 }
 
                 // -Z (Back / North)
                 let neighbor_back = get_block_with_neighbors(ix, iy, iz - 1, chunk, neighbors);
                 if block_registry.get(*neighbor_back).is_transparent {
-                    let base_vertex_count = vertices.len() as u32;
+                    let base_vertex_count = target_vertices.len() as u32;
                     let tex_id = &block_properties.textures.north;
                     let tex_index = texture_map.registry.get(*tex_id);
                     let (face_verts, face_indices) =
                         get_face(Face::Back, x, y, z, tex_index, base_vertex_count);
-                    vertices.extend(face_verts);
-                    indices.extend(face_indices);
+                    target_vertices.extend(face_verts);
+                    target_indices.extend(face_indices);
                 }
             }
         }
     }
-    (vertices, indices)
+
+    let opaque_mesh = if !opaque_vertices.is_empty() {
+        Some(OpaqueMeshData {
+            name: name.to_string(),
+            vertices: opaque_vertices,
+            indices: opaque_indices,
+        })
+    } else {
+        None
+    };
+
+    let transparent_mesh = if !transparent_vertices.is_empty() {
+        Some(TransparentMeshData {
+            name: format!("{}_transparent", name),
+            vertices: transparent_vertices,
+            indices: transparent_indices,
+        })
+    } else {
+        None
+    };
+
+    (opaque_mesh, transparent_mesh)
 }
 
 enum Face {

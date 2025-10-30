@@ -1,31 +1,30 @@
 use crate::prelude::*;
+use crate::render_world::global_extract::RenderMeshStorageResource;
 use crate::render_world::passes::core::view::SharedCameraViewBuffer;
 use crate::render_world::passes::core::{RenderContext, RenderNode};
-use crate::render_world::passes::opaque_pass::extract::OpaqueRenderMeshComponent;
-use crate::render_world::passes::opaque_pass::queue::Opaque3dRenderPhase;
-use crate::render_world::passes::opaque_pass::startup::{
-    DepthTextureResource, OpaqueMaterialBindGroup, OpaqueObjectBuffer,
-};
-use crate::render_world::{
-    global_extract::RenderMeshStorageResource, passes::opaque_pass::startup::OpaquePipeline,
+use crate::render_world::passes::opaque_pass::startup::DepthTextureResource;
+use crate::render_world::passes::transparent_pass::extract::TransparentRenderMeshComponent;
+use crate::render_world::passes::transparent_pass::queue::Transparent3dRenderPhase;
+use crate::render_world::passes::transparent_pass::startup::{
+    TransparentMaterialBindGroup, TransparentObjectBuffer, TransparentPipeline,
 };
 use bevy_ecs::prelude::*;
 
-pub struct OpaquePassRenderNode {
+pub struct TransparentPassRenderNode {
     // caches the queries
-    mesh_query: QueryState<&'static OpaqueRenderMeshComponent>,
+    mesh_query: QueryState<&'static TransparentRenderMeshComponent>,
 }
 
-impl OpaquePassRenderNode {
+impl TransparentPassRenderNode {
     pub fn new(world: &mut World) -> Self {
         Self {
-            mesh_query: world.query::<&OpaqueRenderMeshComponent>(),
+            mesh_query: world.query::<&TransparentRenderMeshComponent>(),
         }
     }
 }
 
-impl RenderNode for OpaquePassRenderNode {
-    #[instrument(skip_all, name = "opaque_pass_render_node")]
+impl RenderNode for TransparentPassRenderNode {
+    #[instrument(skip_all, name = "transparent_pass_render_node")]
     fn run(&mut self, render_context: &mut RenderContext, world: &World) {
         // INFO: -------------------------------------
         //         collect rendering resources
@@ -39,16 +38,18 @@ impl RenderNode for OpaquePassRenderNode {
             Some(depth_texture),
             Some(pipeline),
         ) = (
-            world.get_resource::<Opaque3dRenderPhase>(),
+            world.get_resource::<Transparent3dRenderPhase>(),
             world.get_resource::<RenderMeshStorageResource>(),
             world.get_resource::<SharedCameraViewBuffer>(),
-            world.get_resource::<OpaqueMaterialBindGroup>(),
-            world.get_resource::<OpaqueObjectBuffer>(),
+            world.get_resource::<TransparentMaterialBindGroup>(),
+            world.get_resource::<TransparentObjectBuffer>(),
             world.get_resource::<DepthTextureResource>(),
-            world.get_resource::<OpaquePipeline>(),
+            world.get_resource::<TransparentPipeline>(),
         )
         else {
-            warn!("Missing one or more required resources for the Opaque Pass. Skipping pass.");
+            warn!(
+                "Missing one or more required resources for the Transparent Pass. Skipping pass."
+            );
             return;
         };
 
@@ -59,17 +60,12 @@ impl RenderNode for OpaquePassRenderNode {
             render_context
                 .encoder
                 .begin_render_pass(&wgpu::RenderPassDescriptor {
-                    label: Some("Main Scene Render Pass"),
+                    label: Some("Transparent Render Pass"),
                     color_attachments: &[Some(wgpu::RenderPassColorAttachment {
                         view: render_context.surface_texture_view,
                         resolve_target: None,
                         ops: wgpu::Operations {
-                            load: wgpu::LoadOp::Clear(wgpu::Color {
-                                r: 0.1,
-                                g: 0.2,
-                                b: 0.3,
-                                a: 1.0,
-                            }),
+                            load: wgpu::LoadOp::Load, // Load the existing frame
                             store: wgpu::StoreOp::Store,
                         },
                         depth_slice: None,
@@ -77,7 +73,7 @@ impl RenderNode for OpaquePassRenderNode {
                     depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
                         view: &depth_texture.view,
                         depth_ops: Some(wgpu::Operations {
-                            load: wgpu::LoadOp::Clear(0.0),
+                            load: wgpu::LoadOp::Load, // Load the depth buffer
                             store: wgpu::StoreOp::Store,
                         }),
                         stencil_ops: None,

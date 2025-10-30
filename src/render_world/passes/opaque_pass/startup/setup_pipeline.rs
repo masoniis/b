@@ -3,8 +3,7 @@ use crate::render_world::graphics_context::resources::{RenderDevice, RenderSurfa
 use crate::render_world::passes::core::create_render_pipeline::{
     CreatedPipeline, PipelineDefinition,
 };
-use crate::render_world::passes::core::create_render_pipeline_from_def;
-use crate::render_world::passes::core::setup_view_layout::ViewBindGroupLayout;
+use crate::render_world::passes::core::{create_render_pipeline_from_def, ViewBindGroupLayout};
 use crate::render_world::passes::opaque_pass::startup::DEPTH_FORMAT;
 use crate::render_world::types::vertex::Vertex;
 use bevy_ecs::prelude::*;
@@ -40,7 +39,7 @@ pub fn setup_opaque_pipeline(
 
     let opaque_pipeline_def = PipelineDefinition {
         label: "Opaque Pipeline",
-        material_path: "assets/shaders/scene/main.material.ron",
+        material_path: "assets/shaders/opaque/main.material.ron",
         vs_shader_source: wgpu::ShaderSource::Wgsl(include_wesl!("opaque_main_vert").into()),
         fs_shader_source: wgpu::ShaderSource::Wgsl(include_wesl!("opaque_main_frag").into()),
         vertex_buffers: &[Vertex::desc()],

@@ -74,7 +74,7 @@ impl RenderGraph {
 
     /// Execute the graph, abiding by all dependencies.
     pub fn run(&mut self, render_context: &mut RenderContext, world: &World) {
-        // Collect keys so we can borrow mutably in the loop
+        // collect keys so we can borrow mutably in the loop
         let node_names: Vec<_> = self.nodes.keys().copied().collect();
 
         let mut visited = HashMap::new();

@@ -4,6 +4,8 @@ pub mod queue;
 pub mod render;
 pub mod startup;
 
+pub use render::UiRenderPassNode;
+
 // INFO: ---------------------------
 //         Plugin definition
 // ---------------------------------

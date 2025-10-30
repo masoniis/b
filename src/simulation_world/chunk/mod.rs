@@ -14,18 +14,7 @@ pub use meshing::*;
 
 use crate::{
     ecs_core::{EcsBuilder, Plugin},
-    simulation_world::{
-        chunk::{
-            async_chunking::{
-                poll_chunk_generation_tasks, poll_chunk_meshing_tasks,
-                start_pending_generation_tasks_system, start_pending_meshing_tasks_system,
-            },
-            chunk_loader::manage_chunk_loading_system,
-            load_manager::ChunkLoadManager,
-        },
-        SimulationSchedule,
-    },
-    SimulationSet,
+    simulation_world::{scheduling::FixedUpdateSet, SimulationSchedule},
 };
 use bevy_ecs::schedule::IntoScheduleConfigs;
 
@@ -36,7 +25,7 @@ impl Plugin for ChunkLoadingPlugin {
         builder.add_resource(ChunkLoadManager::default());
 
         builder
-            .schedule_entry(SimulationSchedule::Main)
+            .schedule_entry(SimulationSchedule::FixedUpdate)
             .add_systems(
                 (
                     manage_chunk_loading_system,
@@ -45,7 +34,7 @@ impl Plugin for ChunkLoadingPlugin {
                     start_pending_meshing_tasks_system,
                     poll_chunk_meshing_tasks,
                 )
-                    .in_set(SimulationSet::Update),
+                    .in_set(FixedUpdateSet::MainLogic),
             );
     }
 }

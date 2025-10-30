@@ -106,6 +106,7 @@ impl<T: Asset + Send + Sync + 'static> AssetStorageResource<T> {
                 // get id atomically
                 let id = self.next_id.fetch_add(1, Ordering::Relaxed);
                 entry.insert(id);
+                drop(name_to_id);
 
                 // acquire a write lock on the main storage to insert the asset.
                 let mut storage = self.storage.write().unwrap();

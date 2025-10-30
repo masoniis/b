@@ -12,7 +12,7 @@ use bevy_ecs::prelude::Resource;
 use std::{fmt::Debug, sync::Arc};
 
 /// A resource holding the active terrain chunk generator.
-#[derive(Resource, Clone)]
+#[derive(Resource, Clone, Deref, DerefMut)]
 pub struct ActiveTerrainGenerator(pub Arc<dyn TerrainGenerator>);
 
 impl Default for ActiveTerrainGenerator {
@@ -22,7 +22,7 @@ impl Default for ActiveTerrainGenerator {
 }
 
 /// A resource holding the active biome chunk generator.
-#[derive(Resource, Clone)]
+#[derive(Resource, Clone, Deref, DerefMut)]
 pub struct ActiveBiomeGenerator(pub Arc<dyn BiomeGenerator>);
 
 impl Default for ActiveBiomeGenerator {

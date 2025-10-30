@@ -4,7 +4,7 @@ use crate::{
     simulation_world::{
         asset_management::AssetStorageResource,
         asset_management::{Asset, Handle},
-        chunk::MeshComponent,
+        chunk::OpaqueMeshComponent,
     },
 };
 use bevy_ecs::prelude::*;
@@ -80,10 +80,10 @@ pub struct MeshDeletionRequest {
 /// Observer that increments mesh ref-counts when a component is added.
 #[instrument(skip_all)]
 pub fn mesh_ref_count_add_observer(
-    trigger: On<Add, MeshComponent>,
+    trigger: On<Add, OpaqueMeshComponent>,
 
     // Input
-    mesh_query: Query<&MeshComponent>,
+    mesh_query: Query<&OpaqueMeshComponent>,
 
     // Output (update ref counts)
     mut mesh_ref_counts: ResMut<MeshRefCounts>,
@@ -97,10 +97,10 @@ pub fn mesh_ref_count_add_observer(
 /// Observer that decrements mesh ref-counts when a component is removed.
 #[instrument(skip_all)]
 pub fn mesh_ref_count_remove_observer(
-    trigger: On<Remove, MeshComponent>,
+    trigger: On<Remove, OpaqueMeshComponent>,
 
     // Input
-    mesh_query: Query<&MeshComponent>,
+    mesh_query: Query<&OpaqueMeshComponent>,
 
     // Output (update ref counts and request deletions)
     mut mesh_ref_counts: ResMut<MeshRefCounts>,

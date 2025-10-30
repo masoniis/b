@@ -134,8 +134,7 @@ impl ApplicationHandler for App {
                             let mut sim_guard = sim_world_for_render.lock().unwrap();
                             let mut render_guard = render_world_for_render.lock().unwrap();
 
-                            let _extract_phase_span =
-                                tracing::info_span!("extract_schedule").entered();
+                            let _extract_phase_span = tracing::info_span!("Extraction").entered();
 
                             // extract schedule needs mutable access to the simulation world
                             run_extract_schedule(
@@ -151,8 +150,7 @@ impl ApplicationHandler for App {
                         // perform rendering now that sim is active again
                         let mut render_world = render_world_for_render.lock().unwrap();
                         {
-                            let _render_phase_span =
-                                tracing::info_span!("main_render_schedule").entered();
+                            let _render_phase_span = tracing::info_span!("Render").entered();
                             render_world.run_schedule(RenderSchedule::Main);
                             render_world.clear_trackers();
                         }
@@ -204,7 +202,7 @@ impl ApplicationHandler for App {
                         // wait for the sim signal and run
                         self.frame_sync.wait_for_simulation();
                         {
-                            let _main_loop_span = tracing::info_span!("Main simulation").entered();
+                            let _main_loop_span = tracing::info_span!("Sim").entered();
                             simulation_world
                                 .lock()
                                 .unwrap()

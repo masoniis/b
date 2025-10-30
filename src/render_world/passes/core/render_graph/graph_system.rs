@@ -3,8 +3,9 @@ use crate::render_world::graphics_context::resources::{
     RenderDevice, RenderQueue, RenderSurface, RenderSurfaceConfig,
 };
 use crate::render_world::passes::core::{RenderContext, RenderGraph};
-use crate::render_world::passes::opaque_pass::render::OpaquePassRenderNode;
-use crate::render_world::passes::ui_pass::render::UiPassNode;
+use crate::render_world::passes::opaque_pass::OpaquePassRenderNode;
+use crate::render_world::passes::transparent_pass::render::TransparentPassRenderNode;
+use crate::render_world::passes::ui_pass::render::UiRenderPassNode;
 use bevy_ecs::prelude::*;
 
 // INFO: --------------------------------------------------------
@@ -16,12 +17,20 @@ use bevy_ecs::prelude::*;
 pub fn setup_render_graph(world: &mut World) {
     let mut render_graph = RenderGraph::default();
 
-    let main_pass_node = OpaquePassRenderNode::new(world);
-    let ui_pass_node = UiPassNode;
+    let transparent_pass_node = TransparentPassRenderNode::new(world);
+    let opaque_pass_node = OpaquePassRenderNode::new(world);
+    let ui_pass_node = UiRenderPassNode;
 
-    render_graph.add_node::<OpaquePassRenderNode, _>("MainPass3d", main_pass_node, true);
-    render_graph.add_node::<UiPassNode, _>("UiPass", ui_pass_node, true);
-    render_graph.add_node_dependency::<UiPassNode, OpaquePassRenderNode>();
+    render_graph.add_node::<OpaquePassRenderNode, _>("OpaquePass", opaque_pass_node, true);
+    render_graph.add_node::<TransparentPassRenderNode, _>(
+        "TransparentPass",
+        transparent_pass_node,
+        true,
+    );
+    render_graph.add_node::<UiRenderPassNode, _>("UiPass", ui_pass_node, true);
+
+    render_graph.add_node_dependency::<TransparentPassRenderNode, OpaquePassRenderNode>();
+    render_graph.add_node_dependency::<UiRenderPassNode, OpaquePassRenderNode>();
 
     world.insert_resource(render_graph);
 
@@ -29,32 +38,24 @@ pub fn setup_render_graph(world: &mut World) {
 }
 
 #[instrument(skip_all)]
-pub fn render_graph_system(world: &mut World) {
-    // Take ownership of the graph
+pub fn execute_render_graph_system(world: &mut World) {
+    // take ownership of the graph
     let Some(mut render_graph) = world.remove_resource::<RenderGraph>() else {
         return;
     };
 
-    // --- Get all required granular resources ---
-    // We use .get_resource() on the world.
-    let Some(device) = world.get_resource::<RenderDevice>() else {
-        world.insert_resource(render_graph); // Put graph back
-        return;
-    };
-    let Some(queue) = world.get_resource::<RenderQueue>() else {
-        world.insert_resource(render_graph); // Put graph back
-        return;
-    };
-    let Some(surface) = world.get_resource::<RenderSurface>() else {
-        world.insert_resource(render_graph); // Put graph back
-        return;
-    };
-    let Some(config) = world.get_resource::<RenderSurfaceConfig>() else {
-        world.insert_resource(render_graph); // Put graph back
+    let (Some(device), Some(queue), Some(surface), Some(config)) = (
+        world.get_resource::<RenderDevice>(),
+        world.get_resource::<RenderQueue>(),
+        world.get_resource::<RenderSurface>(),
+        world.get_resource::<RenderSurfaceConfig>(),
+    ) else {
+        world.insert_resource(render_graph);
+        warn!("Couldn't get one or more required render resources (Device, Queue, Surface, or Config) to execute the render graph!");
         return;
     };
 
-    // Clone the Arcs to satisfy lifetimes
+    // clone the Arcs to satisfy lifetimes
     let device = device.0.clone();
     let queue = queue.0.clone();
     let surface = surface.0.clone();
@@ -67,7 +68,6 @@ pub fn render_graph_system(world: &mut World) {
         Ok(texture) => texture,
         Err(wgpu::SurfaceError::Lost | wgpu::SurfaceError::Outdated) => {
             warn!("Surface lost or outdated. Reconfiguring...");
-            // Pass the inner config data
             surface.configure(&device, &config.0);
             world.insert_resource(render_graph);
             return;
@@ -98,12 +98,12 @@ pub fn render_graph_system(world: &mut World) {
             encoder: &mut encoder,
             surface_texture_view: &output_view,
         },
-        world, // Pass the world here
+        world,
     );
 
     queue.submit(std::iter::once(encoder.finish()));
     output_texture.present();
 
-    // Put the graph back when we're done
+    // reset state to normal
     world.insert_resource(render_graph);
 }

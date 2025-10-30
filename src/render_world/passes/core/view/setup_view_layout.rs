@@ -9,7 +9,8 @@ pub struct ViewBindGroupLayout(pub wgpu::BindGroupLayout);
 ///
 /// This system belongs in core because ALL pipelines share this view bind
 /// group layout, where a single uniform buffer is expected for all the per-
-/// frame (aka view) data.
+/// frame (aka view) data. An example of this is the camera view-projection
+/// matrix which never needs to change during the span of a frame render.
 #[instrument(skip_all)]
 pub fn setup_view_bind_group_layout_system(mut commands: Commands, device: Res<RenderDevice>) {
     let layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {

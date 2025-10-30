@@ -1,7 +1,7 @@
 use crate::prelude::*;
 use crate::simulation_world::{
     asset_management::{AssetStorageResource, MeshAsset},
-    chunk::MeshComponent,
+    chunk::OpaqueMeshComponent,
     user_interface::components::UiText,
     user_interface::screens::debug_screen::{
         IndexCountTextMarker, MeshCountTextMarker, VertexCountTextMarker,
@@ -19,11 +19,11 @@ pub struct MeshCounterResource {
 /// Observes the removal of MeshComponent and updates the MeshCounterResource accordingly.
 #[instrument(skip_all)]
 pub fn mesh_remove_observer(
-    trigger: On<Remove, MeshComponent>,
+    trigger: On<Remove, OpaqueMeshComponent>,
 
     // Input
     asset_storage: Res<AssetStorageResource<MeshAsset>>,
-    mesh_query: Query<&MeshComponent>,
+    mesh_query: Query<&OpaqueMeshComponent>,
 
     // Output (updated counts)
     mut mesh_count: ResMut<MeshCounterResource>,
@@ -50,11 +50,11 @@ pub fn mesh_remove_observer(
 /// Observes the addition of MeshComponent and updates the MeshCounterResource accordingly.
 #[instrument(skip_all)]
 pub fn mesh_add_observer(
-    trigger: On<Add, MeshComponent>,
+    trigger: On<Add, OpaqueMeshComponent>,
 
     // Input
     asset_storage: Res<AssetStorageResource<MeshAsset>>,
-    mesh_query: Query<&MeshComponent>,
+    mesh_query: Query<&OpaqueMeshComponent>,
 
     // Output
     mut mesh_count: ResMut<MeshCounterResource>,

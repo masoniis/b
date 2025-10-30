@@ -1,5 +1,6 @@
 pub mod core;
 pub mod opaque_pass;
+pub mod transparent_pass;
 pub mod ui_pass;
 
 // INFO: ---------------------------
@@ -9,10 +10,21 @@ pub mod ui_pass;
 use bevy_ecs::schedule::IntoScheduleConfigs;
 
 use crate::{
-    ecs_core::{EcsBuilder, Plugin},
+    ecs_core::{
+        state_machine::{in_state, AppState},
+        EcsBuilder, Plugin,
+    },
     render_world::{
         passes::{
-            core::render_graph_system, opaque_pass::OpaqueRenderPassPlugin,
+            core::{
+                execute_render_graph_system, setup_view_bind_group_layout_system,
+                view::{
+                    camera_view_buffer::setup_camera_view_buffer_system,
+                    update_camera_view_buffer_system,
+                },
+            },
+            opaque_pass::OpaqueRenderPassPlugin,
+            transparent_pass::TransparentRenderPassPlugin,
             ui_pass::UiRenderPassPlugin,
         },
         scheduling::{RenderSchedule, RenderSet},
@@ -25,33 +37,42 @@ pub struct RenderPassManagerPlugin;
 
 impl Plugin for RenderPassManagerPlugin {
     fn build(&self, builder: &mut EcsBuilder) {
+        // renderpass plugins
         builder
+            .add_plugin(TransparentRenderPassPlugin)
             .add_plugin(OpaqueRenderPassPlugin)
             .add_plugin(UiRenderPassPlugin);
 
         // INFO: -----------------
         //         Startup
         // -----------------------
-        // these startup schedules are shared
-        // by all the render passes
 
-        builder
-            .schedule_entry(RenderSchedule::Startup)
-            .add_systems(core::setup_view_bind_group_layout_system);
+        // these startup schedules are shared by multiple passes
 
-        // INFO: -----------------
-        //         Extract
-        // -----------------------
+        builder.schedule_entry(RenderSchedule::Startup).add_systems(
+            (
+                setup_view_bind_group_layout_system,
+                setup_camera_view_buffer_system,
+            )
+                .chain(),
+        );
 
         // INFO: -----------------
         //         Prepare
         // -----------------------
 
-        // INFO: ---------------
-        //         Queue
-        // ---------------------
+        builder.schedule_entry(RenderSchedule::Main).add_systems(
+            update_camera_view_buffer_system
+                .run_if(in_state(AppState::Running))
+                .in_set(RenderSet::Prepare),
+        );
+
+        // INFO: ----------------
+        //         Render
+        // ----------------------
+
         builder
             .schedule_entry(RenderSchedule::Main)
-            .add_systems(render_graph_system.in_set(RenderSet::Render));
+            .add_systems(execute_render_graph_system.in_set(RenderSet::Render));
     }
 }

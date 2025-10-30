@@ -1,4 +1,5 @@
 use crate::prelude::*;
+use crate::render_world::passes::core::ViewBindGroupLayout;
 use crate::render_world::{
     graphics_context::resources::RenderDevice, passes::ui_pass::startup::UiPipeline,
 };
@@ -62,11 +63,12 @@ pub fn setup_ui_buffers(
     // Input
     device: Res<RenderDevice>,
     pipeline: Res<UiPipeline>,
+    view_layout: Res<ViewBindGroupLayout>,
 
     // Output (insert buffer resources into world)
     mut commands: Commands,
 ) {
-    // INFO: view buffer creation
+    // NOTE: view buffer creation
     let view_buffer = device.create_buffer(&wgpu::BufferDescriptor {
         label: Some("UI View Buffer"),
         size: std::mem::size_of::<UiViewData>() as u64,
@@ -76,7 +78,7 @@ pub fn setup_ui_buffers(
 
     let view_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
         label: Some("UI View Bind Group"),
-        layout: &pipeline.view_bind_group_layout,
+        layout: &view_layout.0,
         entries: &[wgpu::BindGroupEntry {
             binding: 0,
             resource: wgpu::BindingResource::Buffer(wgpu::BufferBinding {
@@ -92,7 +94,7 @@ pub fn setup_ui_buffers(
         bind_group: view_bind_group,
     });
 
-    // INFO: material buffer creation
+    // NOTE: material buffer creation
     let initial_capacity = 128;
     let stride = {
         let min_alignment = device.limits().min_uniform_buffer_offset_alignment;
@@ -127,7 +129,7 @@ pub fn setup_ui_buffers(
         materials: Vec::with_capacity(initial_capacity),
     });
 
-    // INFO: object buffer creation
+    // NOTE: object buffer creation
     let object_buffer = device.create_buffer(&wgpu::BufferDescriptor {
         label: Some("UI Object Buffer"),
         size: (initial_capacity as u64) * std::mem::size_of::<UiObjectData>() as u64,

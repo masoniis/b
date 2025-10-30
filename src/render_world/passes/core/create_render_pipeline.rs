@@ -15,7 +15,9 @@ pub struct PipelineDefinition<'a> {
 
 pub struct CreatedPipeline {
     pub pipeline: wgpu::RenderPipeline,
-    pub view_bind_group_layout: wgpu::BindGroupLayout,
+    // NOTE: View layout isn't here as it is global across all passes,
+    // and is created in core. That is also why it is an input to the
+    // `create_render_pipeline_from_def` system.
     pub material_bind_group_layout: wgpu::BindGroupLayout,
     pub object_bind_group_layout: wgpu::BindGroupLayout,
 }
@@ -99,7 +101,6 @@ pub fn create_render_pipeline_from_def(
 
     CreatedPipeline {
         pipeline,
-        view_bind_group_layout: view_layout.0.clone(),
         material_bind_group_layout: created_layouts
             .remove(&1)
             .expect("Material missing @group(1)"),

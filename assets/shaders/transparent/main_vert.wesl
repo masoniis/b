@@ -1,4 +1,4 @@
-import package::scene::common::{camera, myTexture, mySampler, objects, VertexInput, VertexOutput};
+import package::transparent::common::{camera, myTexture, mySampler, objects, VertexInput, VertexOutput};
 
 @vertex
 fn vs_main(

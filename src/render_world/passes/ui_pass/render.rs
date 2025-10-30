@@ -15,8 +15,8 @@ use bevy_ecs::world::World;
 
 use super::startup::ScreenQuadResource;
 
-pub struct UiPassNode;
-impl RenderNode for UiPassNode {
+pub struct UiRenderPassNode;
+impl RenderNode for UiRenderPassNode {
     #[instrument(skip_all, name = "ui_pass_render_node")]
     fn run(&mut self, render_context: &mut RenderContext, world: &World) {
         // INFO: ---------------------------

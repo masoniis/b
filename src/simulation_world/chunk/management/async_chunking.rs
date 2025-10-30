@@ -1,16 +1,17 @@
 use crate::prelude::*;
-use crate::simulation_world::biome::BiomeRegistryResource;
-use crate::simulation_world::chunk::{ChunkCoord, CHUNK_DEPTH, CHUNK_HEIGHT, CHUNK_WIDTH};
-use crate::simulation_world::generation::core::{
-    ActiveBiomeGenerator, GeneratedChunkComponentBundle,
-};
-use crate::simulation_world::generation::{ActiveTerrainGenerator, ClimateNoiseGenerator};
+use crate::simulation_world::chunk::mesh::TransparentMeshComponent;
 use crate::simulation_world::{
     asset_management::{texture_map_registry::TextureMapResource, AssetStorageResource, MeshAsset},
+    biome::BiomeRegistryResource,
     block::BlockRegistryResource,
     chunk::{
-        chunk_meshing::build_chunk_mesh, load_manager::ChunkLoadManager, load_manager::ChunkState,
-        ChunkBlocksComponent, MeshComponent, TransformComponent,
+        build_chunk_mesh, load_manager::ChunkState, ChunkBlocksComponent, ChunkCoord,
+        ChunkLoadManager, OpaqueMeshComponent, TransformComponent, CHUNK_DEPTH, CHUNK_HEIGHT,
+        CHUNK_WIDTH,
+    },
+    generation::{
+        core::{ActiveBiomeGenerator, GeneratedChunkComponentBundle},
+        ActiveTerrainGenerator, ClimateNoiseGenerator,
     },
 };
 use bevy_ecs::prelude::*;
@@ -25,7 +26,10 @@ pub struct ChunkGenerationTaskComponent {
 /// Marks a chunk meshing task in the simulation world that returns a MeshComponent.
 #[derive(Component)]
 pub struct ChunkMeshingTaskComponent {
-    pub receiver: Receiver<Option<MeshComponent>>,
+    pub receiver: Receiver<(
+        Option<OpaqueMeshComponent>,
+        Option<TransparentMeshComponent>,
+    )>,
 }
 
 #[derive(Component)]
@@ -34,8 +38,8 @@ pub struct NeedsMeshing;
 #[derive(Component)]
 pub struct NeedsGenerating;
 
-const MAX_GENERATION_STARTS_PER_FRAME: usize = 8;
-const MAX_MESHING_STARTS_PER_FRAME: usize = 8;
+const MAX_GENERATION_STARTS_PER_FRAME: usize = 64;
+const MAX_MESHING_STARTS_PER_FRAME: usize = 64;
 
 /// Queries for entities needing generation and starts a limited number per frame.
 #[instrument(skip_all)]
@@ -51,8 +55,8 @@ pub fn start_pending_generation_tasks_system(
     mut chunk_manager: ResMut<ChunkLoadManager>,
     block_registry: Res<BlockRegistryResource>,
     biome_registry: Res<BiomeRegistryResource>,
-    b_generator: Res<ActiveBiomeGenerator>,
-    c_generator: Res<ActiveTerrainGenerator>,
+    biome_generator: Res<ActiveBiomeGenerator>,
+    terrain_generator: Res<ActiveTerrainGenerator>,
     climate_noise: Res<ClimateNoiseGenerator>,
 
     // Local counter for throttling
@@ -89,20 +93,21 @@ pub fn start_pending_generation_tasks_system(
         );
 
         // spawn in the task with resources needed
+        let (sender, receiver) = unbounded();
+
         let blocks_clone = block_registry.clone();
         let biomes_clone = biome_registry.clone();
-        let gen_clone = c_generator.0.clone();
-        let bgen_clone = b_generator.0.clone();
-        let coord_clone = coord.clone();
+        let terrain_gen = terrain_generator.clone();
+        let biome_gen = biome_generator.clone();
         let climate_noise_clone = climate_noise.clone();
+        let coord_clone = coord.clone();
 
-        let (sender, receiver) = unbounded();
         rayon::spawn(move || {
-            let (biome_map, climate_map) = bgen_clone
+            let (biome_map, climate_map) = biome_gen
                 .generate_biome_chunk(&coord_clone, &climate_noise_clone, &biomes_clone)
                 .as_tuple();
 
-            let tgen = gen_clone.generate_terrain_chunk(
+            let tgen = terrain_gen.generate_terrain_chunk(
                 coord_clone.pos,
                 &biome_map,
                 &climate_map,
@@ -189,7 +194,7 @@ pub fn poll_chunk_generation_tasks(
                 }
             }
             Err(TryRecvError::Empty) => {
-                // Task still running
+                // task still running
             }
             Err(TryRecvError::Disconnected) => {
                 warn!(
@@ -315,29 +320,33 @@ pub fn start_pending_meshing_tasks_system(
         let block_registry_clone = block_registry.clone();
         let mesh_assets_clone = mesh_assets.clone();
         let chunk_component_for_task = chunk_comp.clone();
-        let c = chunk_coord.clone();
+        let coord_clone = chunk_coord.clone();
 
         let (sender, receiver) = unbounded();
         rayon::spawn(move || {
-            let (vertices, indices) = build_chunk_mesh(
+            let (opaque_mesh_option, transparent_mesh_option) = build_chunk_mesh(
+                &coord_clone.to_string(),
                 &chunk_component_for_task,
                 &neighbor_data_for_task,
                 &texture_map_clone,
                 &block_registry_clone,
             );
 
-            let result = if !vertices.is_empty() {
-                let mesh_asset = MeshAsset {
-                    name: format!("chunk_{}_{}_{}", c.pos.x, c.pos.y, c.pos.z),
-                    vertices,
-                    indices,
-                };
-                let mesh_handle = mesh_assets_clone.add(mesh_asset);
-                Some(MeshComponent::new(mesh_handle))
+            let omesh = if let Some(opaque_mesh) = opaque_mesh_option {
+                let mesh_handle = mesh_assets_clone.add(opaque_mesh);
+                Some(OpaqueMeshComponent::new(mesh_handle))
             } else {
                 None
             };
-            let _ = sender.send(result);
+
+            let tmesh = if let Some(transparent_mesh) = transparent_mesh_option {
+                let mesh_handle = mesh_assets_clone.add(transparent_mesh);
+                Some(TransparentMeshComponent::new(mesh_handle))
+            } else {
+                None
+            };
+
+            let _ = sender.send((omesh, tmesh));
         });
 
         // update entity and manager
@@ -378,37 +387,51 @@ pub fn poll_chunk_meshing_tasks(
 
         // poll mesh task
         match meshing_task_component.receiver.try_recv() {
-            Ok(mesh_component_option) => {
+            Ok((opaque_mesh_option, transparent_mesh_option)) => {
                 trace!(target : "chunk_loading","Chunk meshing finished for {:?}", coord);
 
-                // add MeshComponent if it exists
-                if let Some(mesh_component) = mesh_component_option {
-                    commands.entity(entity).insert((
-                        mesh_component,
-                        TransformComponent {
-                            position: Vec3::new(
-                                (coord.x * CHUNK_WIDTH as i32) as f32,
-                                (coord.y * CHUNK_HEIGHT as i32) as f32,
-                                (coord.z * CHUNK_DEPTH as i32) as f32,
-                            ),
-                            rotation: Quat::IDENTITY,
-                            scale: Vec3::ONE,
-                        },
-                    ));
-                    trace!(target: "chunk_loading","Chunk at {:?} is now fully loaded.", coord);
-                } else {
-                    trace!(target: "chunk_loading", "Chunk at {:?} is empty, no mesh component added.", coord);
-                    // the chunk was empty so no mesh was added
+                match (opaque_mesh_option, transparent_mesh_option) {
+                    (Some(opaque_mesh), Some(transparent_mesh)) => {
+                        commands
+                            .entity(entity)
+                            .insert((opaque_mesh, transparent_mesh));
+                    }
+                    (Some(opaque_mesh), None) => {
+                        commands.entity(entity).insert(opaque_mesh);
+                    }
+                    (None, Some(transparent_mesh)) => {
+                        commands.entity(entity).insert(transparent_mesh);
+                    }
+                    (None, None) => {
+                        warn!("Both opaque and transparent meshes are empty for chunk at {:?} after meshing, but typically this should be avoided by despawning the entity after generation to avoid meshing entirely. Despawning entity now.", coord);
+                        commands.entity(entity).despawn();
+                        chunk_manager.mark_as_loaded_but_empty(coord.pos);
+                        return; // return to avoid adding transform component
+                    }
                 }
-                chunk_manager.mark_as_loaded(coord.pos, entity);
 
-                // remove the completed task component
                 commands
                     .entity(entity)
-                    .remove::<ChunkMeshingTaskComponent>();
+                    .insert(TransformComponent {
+                        position: Vec3::new(
+                            (coord.x * CHUNK_WIDTH as i32) as f32,
+                            (coord.y * CHUNK_HEIGHT as i32) as f32,
+                            (coord.z * CHUNK_DEPTH as i32) as f32,
+                        ),
+                        rotation: Quat::IDENTITY,
+                        scale: Vec3::ONE,
+                    })
+                    .remove::<ChunkMeshingTaskComponent>(); // no longer needed
+
+                // WARNING: currently removing chunk blocks under the assumption
+                // they won't ever be needed again once meshing is complete.
+                // .remove::<ChunkBlocksComponent>()
+                // .remove::<ChunkCoord>();
+
+                chunk_manager.mark_as_loaded(coord.pos, entity);
             }
             Err(TryRecvError::Empty) => {
-                // Task still running
+                // task still running
             }
             Err(TryRecvError::Disconnected) => {
                 warn!(

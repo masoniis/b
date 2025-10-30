@@ -1,9 +1,7 @@
-pub mod components;
 pub mod generic_systems;
 pub mod resources;
 pub mod utils;
 
-pub use components::*;
 pub use generic_systems::*;
 pub use resources::*;
 pub use utils::*;
@@ -20,7 +18,6 @@ use crate::{
     render_world::scheduling::RenderSchedule,
     simulation_world::{
         asset_management::{AssetStorageResource, MeshAsset},
-        chunk::MeshComponent,
         input::resources::WindowSizeResource,
     },
 };
@@ -30,12 +27,11 @@ pub struct SimulationExtractionPlugin;
 
 impl Plugin for SimulationExtractionPlugin {
     fn build(&self, builder: &mut EcsBuilder) {
-        // INFO: -----------------
-        //         Extract
-        // -----------------------
-
-        builder.add_plugin(ExtractComponentPlugin::<MeshComponent>::default());
-
+        // Extraction here is for global resources used across
+        // many different render systems.
+        //
+        // Anything specific to a pass or otherwise should be
+        // located in that pass's dedicated plugin.
         builder
             .schedule_entry(RenderSchedule::Extract)
             .add_systems((

@@ -1,7 +1,10 @@
+pub mod extract;
 pub mod prepare;
 pub mod queue;
 pub mod render;
 pub mod startup;
+
+pub use render::OpaquePassRenderNode;
 
 // INFO: ---------------------------
 //         Plugin definition
@@ -13,13 +16,21 @@ use crate::{
         EcsBuilder, Plugin,
     },
     render_world::{
+        global_extract::ExtractComponentPlugin,
         graphics_context::resources::RenderSurfaceConfig,
         passes::{
             core::{self},
-            opaque_pass::queue::Opaque3dRenderPhase,
+            opaque_pass::{
+                queue::Opaque3dRenderPhase,
+                startup::{
+                    setup_opaque_buffers_and_bind_groups, setup_opaque_depth_texture_system,
+                    setup_opaque_pipeline,
+                },
+            },
         },
         scheduling::{RenderSchedule, RenderSet},
     },
+    simulation_world::chunk::OpaqueMeshComponent,
 };
 use bevy_ecs::prelude::*;
 
@@ -30,31 +41,29 @@ impl Plugin for OpaqueRenderPassPlugin {
         // INFO: -----------------
         //         Startup
         // -----------------------
-        builder
-            .schedule_entry(RenderSchedule::Startup)
-            .add_systems(((
-                startup::setup_opaque_pipeline.after(core::setup_view_bind_group_layout_system),
-                startup::setup_opaque_buffers_and_bind_groups,
-                startup::setup_depth_texture_system,
+        builder.schedule_entry(RenderSchedule::Startup).add_systems(
+            (
+                setup_opaque_pipeline.after(core::setup_view_bind_group_layout_system),
+                setup_opaque_buffers_and_bind_groups,
+                setup_opaque_depth_texture_system,
             )
-                .chain(),));
+                .chain(),
+        );
 
         // INFO: -----------------
         //         Extract
         // -----------------------
+
+        builder.add_plugin(ExtractComponentPlugin::<OpaqueMeshComponent>::default());
 
         // INFO: -----------------
         //         Prepare
         // -----------------------
         builder.schedule_entry(RenderSchedule::Main).add_systems(
             (
-                (startup::setup_depth_texture_system)
+                (startup::setup_opaque_depth_texture_system)
                     .run_if(resource_changed_or_removed::<RenderSurfaceConfig>),
-                (
-                    prepare::update_opaque_view_data_system,
-                    prepare::prepare_meshes_system,
-                )
-                    .run_if(in_state(AppState::Running)),
+                prepare::prepare_opaque_meshes_system.run_if(in_state(AppState::Running)),
             )
                 .in_set(RenderSet::Prepare),
         );
@@ -67,6 +76,6 @@ impl Plugin for OpaqueRenderPassPlugin {
             .init_resource::<Opaque3dRenderPhase>()
             // systems
             .schedule_entry(RenderSchedule::Main)
-            .add_systems(queue::queue_mesh_system.in_set(RenderSet::Queue));
+            .add_systems(queue::queue_and_prepare_opaque_system.in_set(RenderSet::Queue));
     }
 }

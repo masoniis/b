@@ -5,5 +5,5 @@ pub mod transform;
 
 pub use chunk::ChunkBlocksComponent;
 pub use chunk_chord::{world_to_chunk_pos, ChunkCoord};
-pub use mesh::MeshComponent;
+pub use mesh::{OpaqueMeshComponent, TransparentMeshComponent};
 pub use transform::TransformComponent;

@@ -3,7 +3,7 @@ use crate::render_world::textures::TextureLoadError;
 use std::{collections::HashMap, sync::Arc};
 
 /// A registry for looking up texture indices from a compile-time safe TextureId.
-#[derive(Clone)]
+#[derive(Clone, bevy_ecs::prelude::Resource)]
 pub struct TextureRegistry {
     /// Maps the type-safe TextureId to its u32 index in the GPU texture array.
     map: Arc<HashMap<TextureId, u32>>,

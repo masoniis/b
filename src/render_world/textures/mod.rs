@@ -1,6 +1,6 @@
 mod array;
 pub mod error;
-mod registry;
+pub mod registry;
 pub mod resource;
 
 pub use array::{load_texture_array, GpuTextureArray};

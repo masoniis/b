@@ -2,7 +2,7 @@ use crate::{
     render_world::global_extract::MirrorableComponent,
     simulation_world::{
         asset_management::{asset_storage::Handle, MeshAsset},
-        chunk::{MeshComponent, TransformComponent},
+        chunk::{OpaqueMeshComponent, TransformComponent},
     },
 };
 use bevy_ecs::prelude::*;
@@ -14,7 +14,7 @@ use glam::Mat4;
 
 /// A component in the render world holding the extracted mesh handle.
 #[derive(Component, Clone)]
-pub struct RenderMeshComponent {
+pub struct OpaqueRenderMeshComponent {
     pub mesh_handle: Handle<MeshAsset>,
 }
 
@@ -29,19 +29,19 @@ pub struct RenderTransformComponent {
 // ------------------------------------------
 
 // We want to mirror properties of `MeshComponent` from the simulation world
-impl MirrorableComponent for MeshComponent {
+impl MirrorableComponent for OpaqueMeshComponent {
     type Dependencies = &'static TransformComponent;
-    type RenderBundle = (RenderMeshComponent, RenderTransformComponent);
+    type RenderBundle = (OpaqueRenderMeshComponent, RenderTransformComponent);
 
     type Filter = Or<(
-        Added<MeshComponent>,
-        Changed<MeshComponent>,
+        Added<OpaqueMeshComponent>,
+        Changed<OpaqueMeshComponent>,
         Changed<TransformComponent>,
     )>;
 
     fn to_render_bundle(&self, transform: &TransformComponent) -> Self::RenderBundle {
         (
-            RenderMeshComponent {
+            OpaqueRenderMeshComponent {
                 mesh_handle: self.mesh_handle,
             },
             RenderTransformComponent {

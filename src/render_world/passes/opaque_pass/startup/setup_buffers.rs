@@ -4,15 +4,9 @@ use crate::{prelude::*, render_world::textures::TextureArrayResource};
 use bevy_ecs::prelude::*;
 use bytemuck::{Pod, Zeroable};
 
-// INFO: -----------------
-//         Buffers
-// -----------------------
-
-#[derive(Resource)]
-pub struct OpaqueViewBuffer {
-    pub buffer: wgpu::Buffer,
-    pub bind_group: wgpu::BindGroup,
-}
+// INFO: ------------------------
+//         Custom Buffers
+// ------------------------------
 
 #[derive(Resource)]
 pub struct OpaqueMaterialBindGroup(pub wgpu::BindGroup);
@@ -24,15 +18,11 @@ pub struct OpaqueObjectBuffer {
     pub objects: Vec<OpaqueObjectData>,
 }
 
+const INITIAL_OPAQUE_OBJECT_BUFFER_CAPACITY: usize = 128;
+
 // INFO: ---------------------------
 //         Buffer data types
 // ---------------------------------
-
-#[repr(C)]
-#[derive(Clone, Copy, Pod, Zeroable)]
-pub struct OpaqueViewData {
-    pub view_proj_matrix: [f32; 16],
-}
 
 #[repr(C)]
 #[derive(Clone, Copy, Pod, Zeroable)]
@@ -54,29 +44,9 @@ pub fn setup_opaque_buffers_and_bind_groups(
     // Output (insert buffer resources into world)
     mut commands: Commands,
 ) {
-    // INFO: view buffer creation (@group(0))
-    let view_buffer = device.create_buffer(&wgpu::BufferDescriptor {
-        label: Some("Opaque View Buffer"),
-        size: std::mem::size_of::<OpaqueViewData>() as u64,
-        usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
-        mapped_at_creation: false,
-    });
+    // NOTE: view buffer creation (@group(0)) is delegated to the system in `core/view`
 
-    let view_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
-        label: Some("Opaque View Bind Group"),
-        layout: &pipeline.view_bind_group_layout,
-        entries: &[wgpu::BindGroupEntry {
-            binding: 0,
-            resource: view_buffer.as_entire_binding(),
-        }],
-    });
-
-    commands.insert_resource(OpaqueViewBuffer {
-        buffer: view_buffer,
-        bind_group: view_bind_group,
-    });
-
-    // INFO: material bind group creation (@group(1))
+    // NOTE: material bind group creation (@group(1))
     let material_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
         label: Some("Opaque Material Bind Group"),
         layout: &pipeline.material_bind_group_layout,
@@ -96,11 +66,9 @@ pub fn setup_opaque_buffers_and_bind_groups(
 
     commands.insert_resource(OpaqueMaterialBindGroup(material_bind_group));
 
-    // INFO: object buffer creation (@group(2))
-    let initial_capacity = 1024;
-
-    let object_buffer_size =
-        (initial_capacity as u64) * std::mem::size_of::<OpaqueObjectData>() as u64;
+    // NOTE: object buffer creation (@group(2))
+    let object_buffer_size = (INITIAL_OPAQUE_OBJECT_BUFFER_CAPACITY as u64)
+        * std::mem::size_of::<OpaqueObjectData>() as u64;
 
     let object_buffer = device.create_buffer(&wgpu::BufferDescriptor {
         label: Some("Opaque Object Buffer"),
@@ -121,6 +89,6 @@ pub fn setup_opaque_buffers_and_bind_groups(
     commands.insert_resource(OpaqueObjectBuffer {
         buffer: object_buffer,
         bind_group: object_bind_group,
-        objects: Vec::with_capacity(initial_capacity),
+        objects: Vec::with_capacity(INITIAL_OPAQUE_OBJECT_BUFFER_CAPACITY),
     });
 }

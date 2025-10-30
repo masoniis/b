@@ -1,4 +1,4 @@
-import package::scene::common::{myTexture, mySampler};
+import package::opaque::common::{myTexture, mySampler};
 
 @fragment
 fn fs_main(
