@@ -7,17 +7,27 @@ use crate::render_world::passes::core::{create_render_pipeline_from_def, ViewBin
 use crate::render_world::passes::opaque_pass::startup::DEPTH_FORMAT;
 use crate::render_world::types::vertex::Vertex;
 use bevy_ecs::prelude::*;
-use derive_more::{Deref, DerefMut};
 use wesl::include_wesl;
 
-#[derive(Resource, Deref, DerefMut)]
-pub struct OpaquePipeline {
-    pub inner: CreatedPipeline,
+/// A resource that holds all the opaque pipelines. Currently, this includes the
+/// default "fill rasterization" and alternative "wireframe rasterization" pipelines.
+#[derive(Resource)]
+pub struct OpaquePipelines {
+    pub fill: CreatedPipeline,
+    pub wireframe: CreatedPipeline,
+}
+
+/// A resource that defines the current opaque render mode
+#[derive(Resource, Default, Debug, PartialEq)]
+pub enum OpaqueRenderMode {
+    #[default]
+    Fill,
+    Wireframe,
 }
 
 /// Setup the Opaque pipeline using the shader and material definition
 #[instrument(skip_all)]
-pub fn setup_opaque_pipeline(
+pub fn setup_opaque_pipelines(
     mut commands: Commands,
     device: Res<RenderDevice>,
     config: Res<RenderSurfaceConfig>,
@@ -37,8 +47,36 @@ pub fn setup_opaque_pipeline(
         bias: wgpu::DepthBiasState::default(),
     });
 
-    let opaque_pipeline_def = PipelineDefinition {
+    // INFO: ---------------------------------
+    //         Regular opaque pipeline
+    // ---------------------------------------
+
+    let fill_pipeline_def = PipelineDefinition {
         label: "Opaque Pipeline",
+        material_path: "assets/shaders/opaque/main.material.ron",
+        vs_shader_source: wgpu::ShaderSource::Wgsl(include_wesl!("opaque_main_vert").into()),
+        fs_shader_source: wgpu::ShaderSource::Wgsl(include_wesl!("opaque_main_frag").into()),
+        vertex_buffers: &[Vertex::desc()],
+        fragment_targets: &opaque_fragment_target,
+        depth_stencil: opaque_depth_stencil.clone(),
+        primitive: wgpu::PrimitiveState {
+            topology: wgpu::PrimitiveTopology::TriangleList,
+            front_face: wgpu::FrontFace::Ccw,
+            polygon_mode: wgpu::PolygonMode::Fill,
+            cull_mode: Some(wgpu::Face::Back),
+            ..Default::default()
+        },
+    };
+
+    let fill_pipeline: CreatedPipeline =
+        create_render_pipeline_from_def(&device, &view_layout, fill_pipeline_def);
+
+    // INFO: -----------------------------------
+    //         Wireframe opaque pipeline
+    // -----------------------------------------
+
+    let wireframe_pipeline_def = PipelineDefinition {
+        label: "Wireframe Opaque Pipeline",
         material_path: "assets/shaders/opaque/main.material.ron",
         vs_shader_source: wgpu::ShaderSource::Wgsl(include_wesl!("opaque_main_vert").into()),
         fs_shader_source: wgpu::ShaderSource::Wgsl(include_wesl!("opaque_main_frag").into()),
@@ -48,15 +86,23 @@ pub fn setup_opaque_pipeline(
         primitive: wgpu::PrimitiveState {
             topology: wgpu::PrimitiveTopology::TriangleList,
             front_face: wgpu::FrontFace::Ccw,
+            polygon_mode: wgpu::PolygonMode::Line,
             cull_mode: Some(wgpu::Face::Back),
             ..Default::default()
         },
     };
 
-    let created_pipeline: CreatedPipeline =
-        create_render_pipeline_from_def(&device, &view_layout, opaque_pipeline_def);
+    let wireframe_pipeline: CreatedPipeline =
+        create_render_pipeline_from_def(&device, &view_layout, wireframe_pipeline_def);
 
-    commands.insert_resource(OpaquePipeline {
-        inner: created_pipeline,
+    // INFO: -------------------------
+    //         setup resources
+    // -------------------------------
+
+    commands.insert_resource(OpaquePipelines {
+        fill: fill_pipeline,
+        wireframe: wireframe_pipeline,
     });
+
+    commands.insert_resource(OpaqueRenderMode::default());
 }

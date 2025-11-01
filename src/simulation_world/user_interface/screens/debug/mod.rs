@@ -10,6 +10,7 @@ pub use elements::mesh_counter::{update_mesh_counter_screen_text_system, MeshCou
 // ----------------------
 
 use crate::ecs_core::state_machine::{in_state, AppState};
+use crate::simulation_world::input::types::SimulationAction;
 use crate::simulation_world::user_interface::screens::elements::memory_counter::SystemInfoResource;
 use crate::simulation_world::user_interface::screens::elements::mesh_counter::{
     mesh_add_observer, mesh_remove_observer,
@@ -19,10 +20,7 @@ use crate::simulation_world::user_interface::screens::elements::{
 };
 use crate::{
     ecs_core::{EcsBuilder, Plugin},
-    simulation_world::{
-        input::{ActionStateResource, SimulationAction},
-        SimulationSchedule,
-    },
+    simulation_world::{input::ActionStateResource, SimulationSchedule},
     SimulationSet,
 };
 use bevy_ecs::prelude::*;

@@ -1,5 +1,5 @@
 use crate::render_world::graphics_context::resources::RenderDevice;
-use crate::render_world::passes::opaque_pass::startup::OpaquePipeline;
+use crate::render_world::passes::opaque_pass::startup::OpaquePipelines;
 use crate::{prelude::*, render_world::textures::TextureArrayResource};
 use bevy_ecs::prelude::*;
 use bytemuck::{Pod, Zeroable};
@@ -38,7 +38,7 @@ pub struct OpaqueObjectData {
 pub fn setup_opaque_buffers_and_bind_groups(
     // Input
     device: Res<RenderDevice>,
-    pipeline: Res<OpaquePipeline>,
+    pipeline: Res<OpaquePipelines>,
     texture_array: Res<TextureArrayResource>,
 
     // Output (insert buffer resources into world)
@@ -49,7 +49,7 @@ pub fn setup_opaque_buffers_and_bind_groups(
     // NOTE: material bind group creation (@group(1))
     let material_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
         label: Some("Opaque Material Bind Group"),
-        layout: &pipeline.material_bind_group_layout,
+        layout: &pipeline.fill.material_bind_group_layout, // layout for fill/wireframe are identical
         entries: &[
             // @binding(0)
             wgpu::BindGroupEntry {
@@ -79,7 +79,7 @@ pub fn setup_opaque_buffers_and_bind_groups(
 
     let object_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
         label: Some("Opaque Object Bind Group"),
-        layout: &pipeline.object_bind_group_layout,
+        layout: &pipeline.fill.object_bind_group_layout,
         entries: &[wgpu::BindGroupEntry {
             binding: 0,
             resource: object_buffer.as_entire_binding(),

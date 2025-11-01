@@ -16,15 +16,16 @@ use crate::{
         EcsBuilder, Plugin,
     },
     render_world::{
-        global_extract::ExtractComponentPlugin,
+        global_extract::{extract_resource_system, ExtractComponentPlugin},
         graphics_context::resources::RenderSurfaceConfig,
         passes::{
             core::{self},
             opaque_pass::{
+                extract::OpaqueRenderModeExtractor,
                 queue::Opaque3dRenderPhase,
                 startup::{
                     setup_opaque_buffers_and_bind_groups, setup_opaque_depth_texture_system,
-                    setup_opaque_pipeline,
+                    setup_opaque_pipelines,
                 },
             },
         },
@@ -43,7 +44,7 @@ impl Plugin for OpaqueRenderPassPlugin {
         // -----------------------
         builder.schedule_entry(RenderSchedule::Startup).add_systems(
             (
-                setup_opaque_pipeline.after(core::setup_view_bind_group_layout_system),
+                setup_opaque_pipelines.after(core::setup_view_bind_group_layout_system),
                 setup_opaque_buffers_and_bind_groups,
                 setup_opaque_depth_texture_system,
             )
@@ -55,6 +56,9 @@ impl Plugin for OpaqueRenderPassPlugin {
         // -----------------------
 
         builder.add_plugin(ExtractComponentPlugin::<OpaqueMeshComponent>::default());
+        builder
+            .schedule_entry(RenderSchedule::Extract)
+            .add_systems(extract_resource_system::<OpaqueRenderModeExtractor>);
 
         // INFO: -----------------
         //         Prepare

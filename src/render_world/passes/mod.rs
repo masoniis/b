@@ -2,6 +2,7 @@ pub mod core;
 pub mod opaque_pass;
 pub mod transparent_pass;
 pub mod ui_pass;
+pub mod wireframe_pass;
 
 // INFO: ---------------------------
 //         Plugin definition

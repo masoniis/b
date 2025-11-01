@@ -10,5 +10,6 @@ pub enum SimulationAction {
 
     // Misc
     ToggleDiagnostics,
+    ToggleOpaqueWireframeMode,
     TogglePause,
 }

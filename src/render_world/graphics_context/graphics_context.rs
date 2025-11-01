@@ -39,7 +39,11 @@ impl GraphicsContext {
         );
 
         let (device, queue) = adapter
-            .request_device(&DeviceDescriptor::default())
+            .request_device(&DeviceDescriptor {
+                label: Some("Main WGPU device"),
+                required_features: wgpu::Features::empty() | wgpu::Features::POLYGON_MODE_LINE,
+                ..Default::default()
+            })
             .await
             .unwrap();
         let device = Arc::new(device);

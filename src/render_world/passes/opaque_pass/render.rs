@@ -1,13 +1,12 @@
 use crate::prelude::*;
+use crate::render_world::global_extract::RenderMeshStorageResource;
 use crate::render_world::passes::core::view::SharedCameraViewBuffer;
 use crate::render_world::passes::core::{RenderContext, RenderNode};
 use crate::render_world::passes::opaque_pass::extract::OpaqueRenderMeshComponent;
 use crate::render_world::passes::opaque_pass::queue::Opaque3dRenderPhase;
 use crate::render_world::passes::opaque_pass::startup::{
-    DepthTextureResource, OpaqueMaterialBindGroup, OpaqueObjectBuffer,
-};
-use crate::render_world::{
-    global_extract::RenderMeshStorageResource, passes::opaque_pass::startup::OpaquePipeline,
+    DepthTextureResource, OpaqueMaterialBindGroup, OpaqueObjectBuffer, OpaquePipelines,
+    OpaqueRenderMode,
 };
 use bevy_ecs::prelude::*;
 
@@ -37,7 +36,8 @@ impl RenderNode for OpaquePassRenderNode {
             Some(material_bind_group),
             Some(object_buffer),
             Some(depth_texture),
-            Some(pipeline),
+            Some(pipelines),
+            Some(render_mode),
         ) = (
             world.get_resource::<Opaque3dRenderPhase>(),
             world.get_resource::<RenderMeshStorageResource>(),
@@ -45,11 +45,17 @@ impl RenderNode for OpaquePassRenderNode {
             world.get_resource::<OpaqueMaterialBindGroup>(),
             world.get_resource::<OpaqueObjectBuffer>(),
             world.get_resource::<DepthTextureResource>(),
-            world.get_resource::<OpaquePipeline>(),
+            world.get_resource::<OpaquePipelines>(),
+            world.get_resource::<OpaqueRenderMode>(),
         )
         else {
             warn!("Missing one or more required resources for the Opaque Pass. Skipping pass.");
             return;
+        };
+
+        let active_pipeline = match *render_mode {
+            OpaqueRenderMode::Fill => &pipelines.fill.pipeline,
+            OpaqueRenderMode::Wireframe => &pipelines.wireframe.pipeline,
         };
 
         // INFO: --------------------------------
@@ -86,7 +92,7 @@ impl RenderNode for OpaquePassRenderNode {
                     occlusion_query_set: None,
                 });
 
-        render_pass.set_pipeline(&pipeline.pipeline);
+        render_pass.set_pipeline(&active_pipeline);
 
         render_pass.set_bind_group(0, &view_buffer.bind_group, &[]);
         render_pass.set_bind_group(1, &material_bind_group.0, &[]);

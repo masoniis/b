@@ -62,12 +62,16 @@ impl Default for InputActionMapResource {
                     SimulationAction::TogglePause,
                 ),
                 (
-                    Input::Key(PhysicalKey::Code(KeyCode::F3)),
+                    Input::Key(PhysicalKey::Code(KeyCode::F1)),
                     SimulationAction::ToggleDiagnostics,
                 ),
                 (
                     Input::MouseButton(MouseButton::Left),
                     SimulationAction::ToggleDiagnostics,
+                ),
+                (
+                    Input::Key(PhysicalKey::Code(KeyCode::F2)),
+                    SimulationAction::ToggleOpaqueWireframeMode,
                 ),
             ]),
         }

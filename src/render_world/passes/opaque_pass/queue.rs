@@ -2,7 +2,7 @@ use crate::render_world::{
     graphics_context::resources::{RenderDevice, RenderQueue},
     passes::opaque_pass::{
         extract::{OpaqueRenderMeshComponent, RenderTransformComponent},
-        startup::{OpaqueObjectBuffer, OpaqueObjectData, OpaquePipeline},
+        startup::{OpaqueObjectBuffer, OpaqueObjectData, OpaquePipelines},
     },
 };
 use crate::{prelude::*, render_world::global_extract::resources::RenderCameraResource};
@@ -35,7 +35,7 @@ pub fn queue_and_prepare_opaque_system(
     // Input
     device: Res<RenderDevice>,
     queue: Res<RenderQueue>,
-    pipeline: Res<OpaquePipeline>,
+    pipeline: Res<OpaquePipelines>,
     camera_info: Res<RenderCameraResource>,
     meshes_query: Query<(
         Entity,
@@ -110,7 +110,7 @@ pub fn queue_and_prepare_opaque_system(
 
         let new_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
             label: Some("Opaque Object Bind Group"),
-            layout: &pipeline.object_bind_group_layout,
+            layout: &pipeline.fill.object_bind_group_layout,
             entries: &[wgpu::BindGroupEntry {
                 binding: 0,
                 resource: new_buffer.as_entire_binding(),
