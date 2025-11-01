@@ -8,6 +8,11 @@ use crate::simulation_world::chunk::consts::*;
 use bevy_ecs::prelude::*;
 use glam::Mat4;
 
+/// A simple system to run when wireframes are disabled to ensure the buffer is cleared.
+pub fn clear_wireframe_buffer_system(mut wireframe_buffer: ResMut<WireframeObjectBuffer>) {
+    wireframe_buffer.objects.clear();
+}
+
 #[instrument(skip_all)]
 pub fn queue_wireframe_system(
     mut wireframe_buffer: ResMut<WireframeObjectBuffer>,

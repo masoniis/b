@@ -134,7 +134,7 @@ impl ApplicationHandler for App {
                             let mut sim_guard = sim_world_for_render.lock().unwrap();
                             let mut render_guard = render_world_for_render.lock().unwrap();
 
-                            let _extract_phase_span = tracing::info_span!("Extraction").entered();
+                            let _extract_phase_span = info_span!("Extract").entered();
 
                             // extract schedule needs mutable access to the simulation world
                             run_extract_schedule(
@@ -150,7 +150,7 @@ impl ApplicationHandler for App {
                         // perform rendering now that sim is active again
                         let mut render_world = render_world_for_render.lock().unwrap();
                         {
-                            let _render_phase_span = tracing::info_span!("Render").entered();
+                            let _render_phase_span = info_span!("Render").entered();
                             render_world.run_schedule(RenderSchedule::Main);
                             render_world.clear_trackers();
                         }

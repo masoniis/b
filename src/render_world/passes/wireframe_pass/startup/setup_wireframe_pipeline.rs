@@ -45,7 +45,7 @@ pub fn setup_wireframe_pipeline_and_buffers(
 ) {
     let wireframe_fragment_target = [Some(wgpu::ColorTargetState {
         format: config.format,
-        blend: Some(wgpu::BlendState::REPLACE),
+        blend: Some(wgpu::BlendState::ALPHA_BLENDING),
         write_mask: wgpu::ColorWrites::ALL,
     })];
 

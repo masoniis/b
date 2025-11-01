@@ -48,8 +48,8 @@ impl TerrainGenerator for SuperflatGenerator {
 
         let mut chunk = ChunkBlocksComponent::empty();
 
-        for x in 1..CHUNK_WIDTH - 1 {
-            for z in 1..CHUNK_DEPTH - 1 {
+        for x in 0..CHUNK_WIDTH {
+            for z in 0..CHUNK_DEPTH {
                 for (y, block) in layer_blocks.iter().enumerate() {
                     if y < CHUNK_HEIGHT {
                         chunk.set_block(x, y, z, *block);

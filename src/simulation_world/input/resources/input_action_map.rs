@@ -61,17 +61,30 @@ impl Default for InputActionMapResource {
                     Input::Key(PhysicalKey::Code(KeyCode::Escape)),
                     SimulationAction::TogglePause,
                 ),
+                // Debug/analysis tools
                 (
                     Input::Key(PhysicalKey::Code(KeyCode::F1)),
                     SimulationAction::ToggleDiagnostics,
                 ),
                 (
-                    Input::MouseButton(MouseButton::Left),
+                    Input::Key(PhysicalKey::Code(KeyCode::Digit1)),
                     SimulationAction::ToggleDiagnostics,
                 ),
                 (
                     Input::Key(PhysicalKey::Code(KeyCode::F2)),
                     SimulationAction::ToggleOpaqueWireframeMode,
+                ),
+                (
+                    Input::Key(PhysicalKey::Code(KeyCode::Digit2)),
+                    SimulationAction::ToggleOpaqueWireframeMode,
+                ),
+                (
+                    Input::Key(PhysicalKey::Code(KeyCode::F3)),
+                    SimulationAction::ToggleChunkBorders,
+                ),
+                (
+                    Input::Key(PhysicalKey::Code(KeyCode::Digit3)),
+                    SimulationAction::ToggleChunkBorders,
                 ),
             ]),
         }

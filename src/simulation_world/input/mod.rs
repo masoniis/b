@@ -20,6 +20,7 @@ use crate::{
             },
             resources::DesiredCursorState,
             systems::{
+                toggle_chunk_borders::ChunkBoundsToggle, toggle_chunk_borders_system,
                 toggle_cursor_system, toggle_opaque_wireframe::OpaqueWireframeMode,
                 toggle_opaque_wireframe_mode_system,
             },
@@ -94,6 +95,14 @@ impl Plugin for InputModulePlugin {
                     .in_set(SimulationSet::Input),
             );
 
+        builder
+            .schedule_entry(OnExit(AppState::StartingUp))
+            .add_systems(processing::clear_stale_input_events_system);
+
+        // INFO: -------------------------------------
+        //         keybind-based actions below
+        // -------------------------------------------
+
         // set desired cursor state on pause action
         builder
             .add_resource(DesiredCursorState::default())
@@ -114,8 +123,14 @@ impl Plugin for InputModulePlugin {
                 },
             ));
 
+        // toggle chunk borders
         builder
-            .schedule_entry(OnExit(AppState::StartingUp))
-            .add_systems(processing::clear_stale_input_events_system);
+            .add_resource(ChunkBoundsToggle::default())
+            .schedule_entry(SimulationSchedule::Main)
+            .add_systems(toggle_chunk_borders_system.run_if(
+                |action_state: Res<ActionStateResource>| {
+                    action_state.just_happened(SimulationAction::ToggleChunkBorders)
+                },
+            ));
     }
 }
