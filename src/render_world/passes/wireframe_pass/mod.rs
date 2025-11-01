@@ -1,29 +1,28 @@
 pub mod queue;
 pub mod render;
+pub mod startup;
+
+pub use render::WireframeRenderNode;
 
 // INFO: ---------------------------
-//         Plugin definition
+//         plugin definition
 // ---------------------------------
-
-use bevy_ecs::schedule::IntoScheduleConfigs;
 
 use crate::{
     ecs_core::{EcsBuilder, Plugin},
     render_world::{
-        global_extract::ExtractComponentPlugin,
-        passes::transparent_pass::{
-            prepare::prepare_transparent_meshes_system,
-            queue::{queue_and_prepare_transparent_system, Transparent3dRenderPhase},
-            startup::startup_transparent_pass_system,
+        passes::wireframe_pass::{
+            queue::queue_wireframe_system,
+            startup::{setup_wireframe_mesh_system, setup_wireframe_pipeline_and_buffers},
         },
         RenderSchedule, RenderSet,
     },
-    simulation_world::chunk::mesh::TransparentMeshComponent,
 };
+use bevy_ecs::schedule::IntoScheduleConfigs;
 
-pub struct TransparentRenderPassPlugin;
+pub struct WireframeRenderPassPlugin;
 
-impl Plugin for TransparentRenderPassPlugin {
+impl Plugin for WireframeRenderPassPlugin {
     fn build(&self, builder: &mut EcsBuilder) {
         // INFO: -----------------
         //         Startup
@@ -31,31 +30,17 @@ impl Plugin for TransparentRenderPassPlugin {
 
         builder
             .schedule_entry(RenderSchedule::Startup)
-            .add_systems(startup_transparent_pass_system);
-
-        // INFO: -----------------
-        //         Extract
-        // -----------------------
-
-        builder.add_plugin(ExtractComponentPlugin::<TransparentMeshComponent>::default());
-
-        // INFO: -----------------
-        //         Prepare
-        // -----------------------
-
-        builder
-            .schedule_entry(RenderSchedule::Main)
-            .add_systems(prepare_transparent_meshes_system.in_set(RenderSet::Prepare));
+            .add_systems((
+                setup_wireframe_mesh_system,
+                setup_wireframe_pipeline_and_buffers,
+            ));
 
         // INFO: ---------------
         //         Queue
         // ---------------------
 
         builder
-            // resources
-            .init_resource::<Transparent3dRenderPhase>()
-            // systems
             .schedule_entry(RenderSchedule::Main)
-            .add_systems(queue_and_prepare_transparent_system.in_set(RenderSet::Queue));
+            .add_systems(queue_wireframe_system.in_set(RenderSet::Queue));
     }
 }

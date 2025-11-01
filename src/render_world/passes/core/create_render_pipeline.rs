@@ -15,11 +15,28 @@ pub struct PipelineDefinition<'a> {
 
 pub struct CreatedPipeline {
     pub pipeline: wgpu::RenderPipeline,
-    // NOTE: View layout isn't here as it is global across all passes,
-    // and is created in core. That is also why it is an input to the
-    // `create_render_pipeline_from_def` system.
-    pub material_bind_group_layout: wgpu::BindGroupLayout,
-    pub object_bind_group_layout: wgpu::BindGroupLayout,
+    bind_group_layouts: BTreeMap<u32, wgpu::BindGroupLayout>,
+}
+
+impl CreatedPipeline {
+    /// Get a reference to a created bind group layout by its group index
+    pub fn get_layout(&self, group_index: u32) -> &wgpu::BindGroupLayout {
+        self.bind_group_layouts
+            .get(&group_index)
+            .expect("Bind group layout not found")
+    }
+
+    /// Convenience helper to get the material layout (@group(1)).
+    /// Panics if the layout is not present.
+    pub fn material_layout(&self) -> &wgpu::BindGroupLayout {
+        self.get_layout(1)
+    }
+
+    /// Convenience helper to get the object layout (@group(2)).
+    /// Panics if the layout is not present.
+    pub fn object_layout(&self) -> &wgpu::BindGroupLayout {
+        self.get_layout(2)
+    }
 }
 
 /// Generic function to create a render pipeline from a material and definition
@@ -36,7 +53,10 @@ pub fn create_render_pipeline_from_def(
 
     // TODO: validate the shader against the material_def here.
 
-    // generate a layout for each bind group in the material definition
+    // INFO: ---------------------------------------------------------------
+    //         generate a layout for each bind group in material def
+    // ---------------------------------------------------------------------
+
     let mut created_layouts: BTreeMap<u32, wgpu::BindGroupLayout> = BTreeMap::new();
     for (&group_index, layout_def) in &material_def.bind_group_layouts {
         let entries: Vec<wgpu::BindGroupLayoutEntry> = layout_def
@@ -54,7 +74,7 @@ pub fn create_render_pipeline_from_def(
         created_layouts.insert(group_index, layout);
     }
 
-    // assemble final pipeline layout
+    // combine all parsed layouts into a single pipeline layout
     let pipeline_bind_group_layouts_ref: Vec<&wgpu::BindGroupLayout> =
         std::iter::once(&view_layout.0) // @group(0)
             .chain(created_layouts.values()) // @group(1), @group(2), etc
@@ -66,7 +86,10 @@ pub fn create_render_pipeline_from_def(
         push_constant_ranges: &[],
     });
 
-    // create the rendering pipeline
+    // INFO: --------------------------------------
+    //         construct rendering pipeline
+    // --------------------------------------------
+
     let vs_shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
         label: Some(&format!("{} Vertex Shader", pipeline_def.label)),
         source: pipeline_def.vs_shader_source,
@@ -101,12 +124,7 @@ pub fn create_render_pipeline_from_def(
 
     CreatedPipeline {
         pipeline,
-        material_bind_group_layout: created_layouts
-            .remove(&1)
-            .expect("Material missing @group(1)"),
-        object_bind_group_layout: created_layouts
-            .remove(&2)
-            .expect("Object missing @group(2)"),
+        bind_group_layouts: created_layouts,
     }
 }
 

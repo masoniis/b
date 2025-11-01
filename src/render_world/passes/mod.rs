@@ -27,6 +27,7 @@ use crate::{
             opaque_pass::OpaqueRenderPassPlugin,
             transparent_pass::TransparentRenderPassPlugin,
             ui_pass::UiRenderPassPlugin,
+            wireframe_pass::WireframeRenderPassPlugin,
         },
         scheduling::{RenderSchedule, RenderSet},
     },
@@ -42,7 +43,8 @@ impl Plugin for RenderPassManagerPlugin {
         builder
             .add_plugin(TransparentRenderPassPlugin)
             .add_plugin(OpaqueRenderPassPlugin)
-            .add_plugin(UiRenderPassPlugin);
+            .add_plugin(UiRenderPassPlugin)
+            .add_plugin(WireframeRenderPassPlugin);
 
         // INFO: -----------------
         //         Startup

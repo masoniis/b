@@ -49,7 +49,7 @@ pub fn setup_opaque_buffers_and_bind_groups(
     // NOTE: material bind group creation (@group(1))
     let material_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
         label: Some("Opaque Material Bind Group"),
-        layout: &pipeline.fill.material_bind_group_layout, // layout for fill/wireframe are identical
+        layout: &pipeline.fill.material_layout(),
         entries: &[
             // @binding(0)
             wgpu::BindGroupEntry {
@@ -79,7 +79,7 @@ pub fn setup_opaque_buffers_and_bind_groups(
 
     let object_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
         label: Some("Opaque Object Bind Group"),
-        layout: &pipeline.fill.object_bind_group_layout,
+        layout: &pipeline.fill.object_layout(),
         entries: &[wgpu::BindGroupEntry {
             binding: 0,
             resource: object_buffer.as_entire_binding(),

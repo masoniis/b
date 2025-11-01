@@ -54,8 +54,8 @@ pub fn setup_opaque_pipelines(
     let fill_pipeline_def = PipelineDefinition {
         label: "Opaque Pipeline",
         material_path: "assets/shaders/opaque/main.material.ron",
-        vs_shader_source: wgpu::ShaderSource::Wgsl(include_wesl!("opaque_main_vert").into()),
-        fs_shader_source: wgpu::ShaderSource::Wgsl(include_wesl!("opaque_main_frag").into()),
+        vs_shader_source: wgpu::ShaderSource::Wgsl(include_wesl!("opaque_vert").into()),
+        fs_shader_source: wgpu::ShaderSource::Wgsl(include_wesl!("opaque_frag").into()),
         vertex_buffers: &[Vertex::desc()],
         fragment_targets: &opaque_fragment_target,
         depth_stencil: opaque_depth_stencil.clone(),
@@ -78,8 +78,8 @@ pub fn setup_opaque_pipelines(
     let wireframe_pipeline_def = PipelineDefinition {
         label: "Wireframe Opaque Pipeline",
         material_path: "assets/shaders/opaque/main.material.ron",
-        vs_shader_source: wgpu::ShaderSource::Wgsl(include_wesl!("opaque_main_vert").into()),
-        fs_shader_source: wgpu::ShaderSource::Wgsl(include_wesl!("opaque_main_frag").into()),
+        vs_shader_source: wgpu::ShaderSource::Wgsl(include_wesl!("opaque_vert").into()),
+        fs_shader_source: wgpu::ShaderSource::Wgsl(include_wesl!("opaque_frag").into()),
         vertex_buffers: &[Vertex::desc()],
         fragment_targets: &opaque_fragment_target,
         depth_stencil: opaque_depth_stencil,

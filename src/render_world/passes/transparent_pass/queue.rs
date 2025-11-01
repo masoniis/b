@@ -117,7 +117,7 @@ pub fn queue_and_prepare_transparent_system(
 
         let new_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
             label: Some("Transparent Object Bind Group"),
-            layout: &pipeline.object_bind_group_layout,
+            layout: &pipeline.pipeline.object_layout(),
             entries: &[wgpu::BindGroupEntry {
                 binding: 0,
                 resource: new_buffer.as_entire_binding(),

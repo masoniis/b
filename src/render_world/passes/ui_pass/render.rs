@@ -20,10 +20,9 @@ impl RenderNode for UiRenderPassNode {
     #[instrument(skip_all, name = "ui_pass_render_node")]
     fn run(&mut self, render_context: &mut RenderContext, world: &World) {
         // INFO: ---------------------------
-        //         Resource fetching
+        //         resource fetching
         // ---------------------------------
 
-        // Custom resources
         let ui_phase = world.get_resource::<PreparedUiBatches>().unwrap();
         let pipeline = world.get_resource::<UiPipeline>().unwrap();
         let quad = world.get_resource::<ScreenQuadResource>().unwrap();
@@ -31,13 +30,12 @@ impl RenderNode for UiRenderPassNode {
         let material_buffer = world.get_resource::<UiMaterialBuffer>().unwrap();
         let object_buffer = world.get_resource::<UiObjectBuffer>().unwrap();
 
-        // Glyphon resources
         let text_atlas = world.get_resource::<GlyphonAtlasResource>().unwrap();
         let glyphon_viewport = world.get_resource::<GlyphonViewportResource>().unwrap();
         let text_renderer = world.get_resource::<GlyphonRendererResource>().unwrap();
 
         // INFO: ----------------------
-        //         Render logic
+        //         render logic
         // ----------------------------
 
         let mut render_pass =

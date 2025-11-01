@@ -49,18 +49,18 @@ This group is managed entirely by the engine and provides data that is constant 
 - **Update Frequency**: Once per view, per frame.
 - **Managed By**: The engine's renderer. **Do not** define this group in a `.material.ron` file.
 
-#### `@group(1)`: Per-Material Data
+#### As general conventions but not strictly enforced...
+
+##### `@group(1)`: Per-Material Data
 
 This group should be used for data that is shared by all objects using this material.
 
 - **Content**: Textures, samplers, material properties (e.g., color tint, roughness).
 - **Update Frequency**: Once per material.
-- **Managed By**: The `.material.ron` file. You should define the layout for this group here.
 
-#### `@group(2)`: Per-Object Data
+##### `@group(2)`: Per-Object Data
 
 This group should be used for data that is unique to each individual object being drawn.
 
 - **Content**: The object's model matrix, object-specific color overrides.
 - **Update Frequency**: For every object drawn.
-- **Managed By**: Can be defined in the `.material.ron` file or handled by a more specialized system (e.g., using dynamic uniform offsets).

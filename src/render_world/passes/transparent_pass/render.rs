@@ -82,7 +82,7 @@ impl RenderNode for TransparentPassRenderNode {
                     occlusion_query_set: None,
                 });
 
-        render_pass.set_pipeline(&pipeline.pipeline);
+        render_pass.set_pipeline(&pipeline.pipeline.pipeline);
 
         render_pass.set_bind_group(0, &view_buffer.bind_group, &[]);
         render_pass.set_bind_group(1, &material_bind_group.0, &[]);

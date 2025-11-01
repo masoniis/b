@@ -6,6 +6,7 @@ use crate::render_world::passes::core::{RenderContext, RenderGraph};
 use crate::render_world::passes::opaque_pass::OpaquePassRenderNode;
 use crate::render_world::passes::transparent_pass::render::TransparentPassRenderNode;
 use crate::render_world::passes::ui_pass::render::UiRenderPassNode;
+use crate::render_world::passes::wireframe_pass::render::WireframeRenderNode;
 use bevy_ecs::prelude::*;
 
 // INFO: --------------------------------------------------------
@@ -20,6 +21,7 @@ pub fn setup_render_graph(world: &mut World) {
     let transparent_pass_node = TransparentPassRenderNode::new(world);
     let opaque_pass_node = OpaquePassRenderNode::new(world);
     let ui_pass_node = UiRenderPassNode;
+    let wireframe_pass_node = WireframeRenderNode;
 
     render_graph.add_node::<OpaquePassRenderNode, _>("OpaquePass", opaque_pass_node, true);
     render_graph.add_node::<TransparentPassRenderNode, _>(
@@ -28,9 +30,11 @@ pub fn setup_render_graph(world: &mut World) {
         true,
     );
     render_graph.add_node::<UiRenderPassNode, _>("UiPass", ui_pass_node, true);
+    render_graph.add_node::<WireframeRenderNode, _>("WireframePass", wireframe_pass_node, true);
 
     render_graph.add_node_dependency::<TransparentPassRenderNode, OpaquePassRenderNode>();
-    render_graph.add_node_dependency::<UiRenderPassNode, OpaquePassRenderNode>();
+    render_graph.add_node_dependency::<WireframeRenderNode, TransparentPassRenderNode>();
+    render_graph.add_node_dependency::<UiRenderPassNode, TransparentPassRenderNode>();
 
     world.insert_resource(render_graph);
 

@@ -111,7 +111,7 @@ pub fn setup_ui_buffers(
 
     let material_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
         label: Some("UI Material Bind Group"),
-        layout: &pipeline.material_bind_group_layout,
+        layout: &pipeline.material_layout(),
         entries: &[wgpu::BindGroupEntry {
             binding: 0,
             resource: wgpu::BindingResource::Buffer(wgpu::BufferBinding {
@@ -139,7 +139,7 @@ pub fn setup_ui_buffers(
 
     let object_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
         label: Some("UI Object Bind Group"),
-        layout: &pipeline.object_bind_group_layout,
+        layout: &pipeline.object_layout(),
         entries: &[wgpu::BindGroupEntry {
             binding: 0,
             resource: object_buffer.as_entire_binding(),

@@ -1,6 +1,7 @@
 use crate::prelude::*;
 use crate::render_world::passes::core::create_render_pipeline::create_render_pipeline_from_def;
 use crate::render_world::passes::core::view::ViewBindGroupLayout;
+use crate::render_world::passes::core::CreatedPipeline;
 use crate::render_world::types::vertex::Vertex;
 use crate::render_world::{
     graphics_context::resources::RenderDevice, textures::resource::TextureArrayResource,
@@ -15,8 +16,7 @@ use wesl::include_wesl;
 
 #[derive(Resource)]
 pub struct TransparentPipeline {
-    pub pipeline: wgpu::RenderPipeline,
-    pub object_bind_group_layout: wgpu::BindGroupLayout,
+    pub pipeline: CreatedPipeline,
 }
 
 #[derive(Resource)]
@@ -52,12 +52,8 @@ pub fn startup_transparent_pass_system(
         crate::render_world::passes::core::create_render_pipeline::PipelineDefinition {
             label: "Transparent Render Pipeline",
             material_path: "assets/shaders/transparent/main.material.ron",
-            vs_shader_source: wgpu::ShaderSource::Wgsl(
-                include_wesl!("transparent_main_vert").into(),
-            ),
-            fs_shader_source: wgpu::ShaderSource::Wgsl(
-                include_wesl!("transparent_main_frag").into(),
-            ),
+            vs_shader_source: wgpu::ShaderSource::Wgsl(include_wesl!("transparent_vert").into()),
+            fs_shader_source: wgpu::ShaderSource::Wgsl(include_wesl!("transparent_frag").into()),
             vertex_buffers: &[Vertex::desc()],
             fragment_targets: &[Some(wgpu::ColorTargetState {
                 format: wgpu::TextureFormat::Bgra8UnormSrgb,
@@ -87,7 +83,7 @@ pub fn startup_transparent_pass_system(
 
     let material_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
         label: Some("Transparent Material Bind Group"),
-        layout: &created_pipeline.material_bind_group_layout,
+        layout: &created_pipeline.material_layout(),
         entries: &[
             wgpu::BindGroupEntry {
                 binding: 0,
@@ -115,7 +111,7 @@ pub fn startup_transparent_pass_system(
 
     let object_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
         label: Some("Transparent Object Bind Group"),
-        layout: &created_pipeline.object_bind_group_layout,
+        layout: &created_pipeline.object_layout(),
         entries: &[wgpu::BindGroupEntry {
             binding: 0,
             resource: object_buffer.as_entire_binding(),
@@ -129,7 +125,6 @@ pub fn startup_transparent_pass_system(
     });
 
     commands.insert_resource(TransparentPipeline {
-        pipeline: created_pipeline.pipeline,
-        object_bind_group_layout: created_pipeline.object_bind_group_layout,
+        pipeline: created_pipeline,
     });
 }

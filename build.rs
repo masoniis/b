@@ -67,26 +67,36 @@ fn main() {
     // NOTE: Opaque shaders
     compiler.build_artifact(
         &"package::opaque::main_vert".parse().unwrap(),
-        "opaque_main_vert",
+        "opaque_vert",
     );
     compiler.build_artifact(
         &"package::opaque::main_frag".parse().unwrap(),
-        "opaque_main_frag",
+        "opaque_frag",
     );
 
     // NOTE: Transparent shaders
     compiler.build_artifact(
         &"package::transparent::main_vert".parse().unwrap(),
-        "transparent_main_vert",
+        "transparent_vert",
     );
     compiler.build_artifact(
         &"package::transparent::main_frag".parse().unwrap(),
-        "transparent_main_frag",
+        "transparent_frag",
+    );
+
+    // NOTE: Wireframe shaders
+    compiler.build_artifact(
+        &"package::wireframe::main_vert".parse().unwrap(),
+        "wireframe_vert",
+    );
+    compiler.build_artifact(
+        &"package::wireframe::main_frag".parse().unwrap(),
+        "wireframe_frag",
     );
 
     // NOTE: UI shaders
-    compiler.build_artifact(&"package::ui::main_vert".parse().unwrap(), "ui_main_vert");
-    compiler.build_artifact(&"package::ui::main_frag".parse().unwrap(), "ui_main_frag");
+    compiler.build_artifact(&"package::ui::main_vert".parse().unwrap(), "ui_vert");
+    compiler.build_artifact(&"package::ui::main_frag".parse().unwrap(), "ui_frag");
 }
 
 /// Converts snake_case to PascalCase
