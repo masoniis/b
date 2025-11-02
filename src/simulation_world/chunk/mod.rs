@@ -12,7 +12,10 @@ pub use loading::*;
 
 use crate::{
     ecs_core::{EcsBuilder, Plugin},
-    simulation_world::{camera::ActiveCamera, scheduling::FixedUpdateSet, SimulationSchedule},
+    simulation_world::{
+        camera::ActiveCamera, chunk::data_gen_tasks::free_unneeded_chunk_data_system,
+        scheduling::FixedUpdateSet, SimulationSchedule,
+    },
     SimulationSet,
 };
 use bevy_ecs::prelude::*;
@@ -44,6 +47,7 @@ impl Plugin for ChunkLoadingPlugin {
                     poll_chunk_generation_tasks,
                     start_pending_meshing_tasks_system,
                     poll_chunk_meshing_tasks,
+                    free_unneeded_chunk_data_system,
                 )
                     .in_set(FixedUpdateSet::MainLogic),
             );

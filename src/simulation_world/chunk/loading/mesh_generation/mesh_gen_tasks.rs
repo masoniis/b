@@ -1,6 +1,7 @@
 use crate::prelude::*;
+use crate::simulation_world::chunk::data_gen_tasks::CheckForBlockDataIsNoLongerNeeded;
 use crate::simulation_world::chunk::mesh::TransparentMeshComponent;
-use crate::simulation_world::chunk::{ChunkState, NeedsMeshing};
+use crate::simulation_world::chunk::ChunkState;
 use crate::simulation_world::{
     asset_management::{texture_map_registry::TextureMapResource, AssetStorageResource, MeshAsset},
     block::BlockRegistryResource,
@@ -20,6 +21,12 @@ pub struct ChunkMeshingTaskComponent {
         Option<TransparentMeshComponent>,
     )>,
 }
+
+/// A signal marking that chunks wants to be meshed. In this phase, the chunk is
+/// waiting to be assigned to the thread pool, and can't be assigned until all
+/// of its relevant neighbors have block data generated.
+#[derive(Component)]
+pub struct WantsMeshing;
 
 /// A signal marking that chunks should be checked for meshing. This check is a necessary
 /// optimization as chunks require all neighbors to be generated before they mesh.
@@ -43,7 +50,7 @@ pub fn start_pending_meshing_tasks_system(
     mut pending_chunks_query: Query<
         (Entity, &ChunkBlocksComponent, &ChunkCoord),
         (
-            With<NeedsMeshing>,
+            With<WantsMeshing>,
             With<CheckForMeshing>,
             Without<ChunkMeshingTaskComponent>,
         ),
@@ -184,7 +191,7 @@ pub fn start_pending_meshing_tasks_system(
             .entity(entity)
             .insert(ChunkMeshingTaskComponent { receiver })
             .remove::<CheckForMeshing>()
-            .remove::<NeedsMeshing>();
+            .remove::<WantsMeshing>();
 
         chunk_manager.mark_as_meshing(chunk_coord.pos, entity);
     }
@@ -252,12 +259,24 @@ pub fn poll_chunk_meshing_tasks(
                         rotation: Quat::IDENTITY,
                         scale: Vec3::ONE,
                     })
-                    .remove::<ChunkCoord>()
                     .remove::<ChunkMeshingTaskComponent>();
+
+                // ping any neighbors that may be able to clear their data now
+                for neighbor in chunk_manager.iter_neighbors(coord.pos) {
+                    match neighbor.state {
+                        ChunkState::Loaded(_) => {
+                            commands
+                                .entity(neighbor.entity)
+                                .insert(CheckForBlockDataIsNoLongerNeeded);
+                        }
+                        _ => {}
+                    }
+                }
 
                 // TODO: remoivng chunk blocks will save memory but if we remove
                 // early then chunks next to it can't mesh so have to have a event
                 // driven system for this probably
+                // .remove::<ChunkCoord>()
                 // .remove::<ChunkBlocksComponent>()
 
                 chunk_manager.mark_as_loaded(coord.pos, entity);
@@ -277,7 +296,7 @@ pub fn poll_chunk_meshing_tasks(
                     .entity(entity)
                     .remove::<ChunkMeshingTaskComponent>()
                     .insert(CheckForMeshing)
-                    .insert(NeedsMeshing);
+                    .insert(WantsMeshing);
             }
         }
     }

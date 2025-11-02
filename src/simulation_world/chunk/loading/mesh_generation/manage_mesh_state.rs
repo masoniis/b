@@ -1,11 +1,9 @@
 use crate::prelude::*;
+use crate::simulation_world::chunk::mesh_gen_tasks::WantsMeshing;
 use crate::simulation_world::chunk::{ChunkCoord, ChunkLoadingManager, ChunkState};
 use crate::simulation_world::{
     camera::ActiveCamera,
-    chunk::{
-        data_gen_tasks::NeedsMeshing,
-        {RENDER_DISTANCE, WORLD_MAX_Y_CHUNK, WORLD_MIN_Y_CHUNK},
-    },
+    chunk::{RENDER_DISTANCE, WORLD_MAX_Y_CHUNK, WORLD_MIN_Y_CHUNK},
 };
 use bevy_ecs::prelude::*;
 use glam::IVec3;
@@ -59,7 +57,7 @@ pub fn manage_chunk_meshing_system(
             ChunkState::DataReady(entity) => {
                 if is_in_mesh_radius {
                     debug!(target:"chunk_meshing", "Promoting chunk {:?} to NeedsMeshing", coord);
-                    commands.entity(*entity).insert(NeedsMeshing);
+                    commands.entity(*entity).insert(WantsMeshing);
                     *state = ChunkState::NeedsMeshing(*entity);
                 }
             }
