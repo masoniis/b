@@ -1,6 +1,7 @@
 use crate::prelude::*;
 use crate::simulation_world::camera::ActiveCamera;
 use crate::simulation_world::chunk::manage_mesh_state::chunk_is_in_mesh_radius;
+use crate::simulation_world::chunk::mesh_gen_tasks::CheckForMeshing;
 use crate::simulation_world::chunk::ChunkState;
 use crate::simulation_world::{
     biome::BiomeRegistryResource,
@@ -26,8 +27,6 @@ pub struct NeedsMeshing;
 #[derive(Component)]
 pub struct NeedsGenerating;
 
-const MAX_GENERATION_STARTS_PER_FRAME: usize = 64;
-
 /// Queries for entities needing generation and starts a limited number per frame.
 #[instrument(skip_all)]
 pub fn start_pending_generation_tasks_system(
@@ -45,17 +44,8 @@ pub fn start_pending_generation_tasks_system(
     biome_generator: Res<ActiveBiomeGenerator>,
     terrain_generator: Res<ActiveTerrainGenerator>,
     climate_noise: Res<ClimateNoiseGenerator>,
-
-    // Local counter for throttling
-    mut generation_tasks_started_this_frame: Local<usize>,
 ) {
-    *generation_tasks_started_this_frame = 0;
-
     for (entity, _, coord) in pending_chunks_query.iter_mut() {
-        if *generation_tasks_started_this_frame >= MAX_GENERATION_STARTS_PER_FRAME {
-            break;
-        }
-
         // check for cancellation
         match chunk_manager.get_state(coord.pos) {
             Some(ChunkState::NeedsGenerating(state_entity)) if state_entity == entity => {
@@ -71,12 +61,10 @@ pub fn start_pending_generation_tasks_system(
             }
         }
 
-        *generation_tasks_started_this_frame += 1;
-
         debug!(
             target: "chunk_loading",
-            "Starting generation task for {} ({} this frame).",
-            coord, *generation_tasks_started_this_frame
+            "Starting generation task for {}.",
+            coord
         );
 
         // spawn in the task with resources needed
@@ -181,7 +169,12 @@ pub fn poll_chunk_generation_tasks(
                         );
                         commands
                             .entity(entity)
-                            .insert((chunk_blocks, gen_bundle.biome_map, NeedsMeshing))
+                            .insert((
+                                chunk_blocks,
+                                gen_bundle.biome_map,
+                                NeedsMeshing,
+                                CheckForMeshing,
+                            ))
                             .remove::<ChunkGenerationTaskComponent>();
                         chunk_manager.mark_as_needs_meshing(coord.pos, entity);
                     } else {
@@ -204,6 +197,16 @@ pub fn poll_chunk_generation_tasks(
                     );
                     commands.entity(entity).despawn();
                     chunk_manager.mark_as_loaded_but_empty(coord.pos);
+                }
+
+                // ping any neighbors that may have been waiting on this chunk
+                for neighbor in chunk_manager.iter_neighbors(coord.pos) {
+                    match neighbor.state {
+                        ChunkState::NeedsMeshing(_) => {
+                            commands.entity(neighbor.entity).insert(CheckForMeshing);
+                        }
+                        _ => {}
+                    }
                 }
             }
             Err(TryRecvError::Empty) => {

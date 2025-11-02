@@ -27,7 +27,7 @@ impl Plugin for ChunkLoadingPlugin {
         builder
             .schedule_entry(SimulationSchedule::Main)
             .add_systems(
-                (manage_chunk_meshing_system, manage_chunk_loading_system)
+                (manage_chunk_loading_system, manage_chunk_meshing_system)
                     .run_if(
                         |camera: Res<ActiveCamera>, q: Query<(), Changed<ChunkCoord>>| {
                             q.get(camera.0).is_ok()

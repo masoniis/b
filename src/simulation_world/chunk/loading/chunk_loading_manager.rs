@@ -2,6 +2,7 @@ use bevy_ecs::prelude::*;
 use glam::IVec3;
 use std::collections::HashMap;
 
+/// Represents the various states a chunk can be in during loading and generation.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ChunkState {
     /// Entity that can be acquired for generation
@@ -34,6 +35,24 @@ impl ChunkState {
             ChunkState::Loaded(e) => e,
         }
     }
+}
+
+/// Offsets to find the 6 direct neighbors of a chunk.
+pub const NEIGHBOR_OFFSETS: [IVec3; 6] = [
+    IVec3::new(1, 0, 0),  // +X
+    IVec3::new(-1, 0, 0), // -X
+    IVec3::new(0, 1, 0),  // +Y
+    IVec3::new(0, -1, 0), // -Y
+    IVec3::new(0, 0, 1),  // +Z
+    IVec3::new(0, 0, -1), // -Z
+];
+
+/// Holds information about a chunk's existing neighbor.
+pub struct NeighborInfo {
+    pub offset: IVec3,
+    pub coord: IVec3,
+    pub state: ChunkState,
+    pub entity: Entity,
 }
 
 #[derive(Resource, Default, Debug)]
@@ -108,6 +127,10 @@ impl ChunkLoadingManager {
         self.chunk_states.remove(&coord);
     }
 
+    // INFO: -----------------------------
+    //         util/helper methods
+    // -----------------------------------
+
     /// A help to iterate over all chunks needing meshing.
     ///
     /// Necessary to prevent throttling by only meshing a few
@@ -119,6 +142,24 @@ impl ChunkLoadingManager {
             } else {
                 None
             }
+        })
+    }
+
+    /// Returns an iterator over all *existing* neighbors of a chunk.
+    ///
+    /// This will only yield neighbors that are tracked by the manager
+    /// and have an associated entity.
+    pub fn iter_neighbors(&self, coord: IVec3) -> impl Iterator<Item = NeighborInfo> + '_ {
+        NEIGHBOR_OFFSETS.into_iter().filter_map(move |offset| {
+            let neighbor_coord = coord + offset;
+            self.get_state(neighbor_coord)
+                .and_then(|state| state.entity().map(|entity| (state, entity)))
+                .map(|(state, entity)| NeighborInfo {
+                    offset,
+                    coord: neighbor_coord,
+                    state,
+                    entity,
+                })
         })
     }
 }

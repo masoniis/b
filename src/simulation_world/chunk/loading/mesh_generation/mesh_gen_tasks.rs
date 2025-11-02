@@ -21,7 +21,10 @@ pub struct ChunkMeshingTaskComponent {
     )>,
 }
 
-const MAX_MESHING_STARTS_PER_FRAME: usize = 64;
+/// A signal marking that chunks should be checked for meshing. This check is a necessary
+/// optimization as chunks require all neighbors to be generated before they mesh.
+#[derive(Component)]
+pub struct CheckForMeshing;
 
 /// Neighboring chunk data needed for meshing.
 pub struct ChunkNeighborData {
@@ -39,7 +42,11 @@ pub fn start_pending_meshing_tasks_system(
     // Input
     mut pending_chunks_query: Query<
         (Entity, &ChunkBlocksComponent, &ChunkCoord),
-        (With<NeedsMeshing>, Without<ChunkMeshingTaskComponent>),
+        (
+            With<NeedsMeshing>,
+            With<CheckForMeshing>,
+            Without<ChunkMeshingTaskComponent>,
+        ),
     >,
     all_generated_chunks: Query<&ChunkBlocksComponent>, // for finding neighbors
 
@@ -49,17 +56,8 @@ pub fn start_pending_meshing_tasks_system(
     texture_map: Res<TextureMapResource>,
     block_registry: Res<BlockRegistryResource>,
     mesh_assets: Res<AssetStorageResource<MeshAsset>>,
-
-    // Local counter for throttling
-    mut meshing_tasks_started_this_frame: Local<usize>,
 ) {
-    *meshing_tasks_started_this_frame = 0;
-
     'chunk_loop: for (entity, chunk_comp, chunk_coord) in pending_chunks_query.iter_mut() {
-        if *meshing_tasks_started_this_frame >= MAX_MESHING_STARTS_PER_FRAME {
-            break;
-        }
-
         // check for cancellation
         match chunk_manager.get_state(chunk_coord.pos) {
             Some(ChunkState::NeedsMeshing(state_entity)) if state_entity == entity => {
@@ -92,27 +90,45 @@ pub fn start_pending_meshing_tasks_system(
 
         let right = match get_neighbor(IVec3::new(1, 0, 0)) {
             Some(data) => data,
-            None => continue 'chunk_loop,
+            None => {
+                commands.entity(entity).remove::<CheckForMeshing>();
+                continue 'chunk_loop;
+            }
         };
         let left = match get_neighbor(IVec3::new(-1, 0, 0)) {
             Some(data) => data,
-            None => continue 'chunk_loop,
+            None => {
+                commands.entity(entity).remove::<CheckForMeshing>();
+                continue 'chunk_loop;
+            }
         };
         let top = match get_neighbor(IVec3::new(0, 1, 0)) {
             Some(data) => data,
-            None => continue 'chunk_loop,
+            None => {
+                commands.entity(entity).remove::<CheckForMeshing>();
+                continue 'chunk_loop;
+            }
         };
         let bottom = match get_neighbor(IVec3::new(0, -1, 0)) {
             Some(data) => data,
-            None => continue 'chunk_loop,
+            None => {
+                commands.entity(entity).remove::<CheckForMeshing>();
+                continue 'chunk_loop;
+            }
         };
         let front = match get_neighbor(IVec3::new(0, 0, 1)) {
             Some(data) => data,
-            None => continue 'chunk_loop,
+            None => {
+                commands.entity(entity).remove::<CheckForMeshing>();
+                continue 'chunk_loop;
+            }
         };
         let back = match get_neighbor(IVec3::new(0, 0, -1)) {
             Some(data) => data,
-            None => continue 'chunk_loop,
+            None => {
+                commands.entity(entity).remove::<CheckForMeshing>();
+                continue 'chunk_loop;
+            }
         };
 
         let neighbor_data_for_task = ChunkNeighborData {
@@ -124,13 +140,12 @@ pub fn start_pending_meshing_tasks_system(
             back,
         };
 
-        trace!(target: "chunk_loading", "Starting meshing task for {} ({} this frame).", chunk_coord.pos, *meshing_tasks_started_this_frame);
+        trace!(target: "chunk_loading", "Starting meshing task for {}.", chunk_coord.pos);
 
         // INFO: -----------------------------
         //         Spawn the mesh task
         // -----------------------------------
 
-        *meshing_tasks_started_this_frame += 1;
         let texture_map_clone = texture_map.clone();
         let block_registry_clone = block_registry.clone();
         let mesh_assets_clone = mesh_assets.clone();
@@ -168,6 +183,7 @@ pub fn start_pending_meshing_tasks_system(
         commands
             .entity(entity)
             .insert(ChunkMeshingTaskComponent { receiver })
+            .remove::<CheckForMeshing>()
             .remove::<NeedsMeshing>();
 
         chunk_manager.mark_as_meshing(chunk_coord.pos, entity);
@@ -236,14 +252,13 @@ pub fn poll_chunk_meshing_tasks(
                         rotation: Quat::IDENTITY,
                         scale: Vec3::ONE,
                     })
-                    .remove::<ChunkMeshingTaskComponent>(); // no longer needed
+                    .remove::<ChunkCoord>()
+                    .remove::<ChunkMeshingTaskComponent>();
 
-                // TODO: removing shouldn't break anything but it did
-
-                // WARNING: currently removing chunk blocks under the assumption
-                // they won't ever be needed again once meshing is complete.
+                // TODO: remoivng chunk blocks will save memory but if we remove
+                // early then chunks next to it can't mesh so have to have a event
+                // driven system for this probably
                 // .remove::<ChunkBlocksComponent>()
-                // .remove::<ChunkCoord>();
 
                 chunk_manager.mark_as_loaded(coord.pos, entity);
             }
@@ -261,6 +276,7 @@ pub fn poll_chunk_meshing_tasks(
                 commands
                     .entity(entity)
                     .remove::<ChunkMeshingTaskComponent>()
+                    .insert(CheckForMeshing)
                     .insert(NeedsMeshing);
             }
         }
