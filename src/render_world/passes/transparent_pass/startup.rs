@@ -4,7 +4,8 @@ use crate::render_world::passes::core::view::ViewBindGroupLayout;
 use crate::render_world::passes::core::CreatedPipeline;
 use crate::render_world::types::vertex::Vertex;
 use crate::render_world::{
-    graphics_context::resources::RenderDevice, textures::resource::TextureArrayResource,
+    graphics_context::resources::{RenderDevice, RenderSurfaceConfig},
+    textures::resource::TextureArrayResource,
 };
 use bevy_ecs::prelude::*;
 use bytemuck::{Pod, Zeroable};
@@ -40,9 +41,10 @@ pub struct TransparentObjectData {
 // -------------------------------------------------------
 
 #[instrument(skip_all)]
-pub fn startup_transparent_pass_system(
+pub fn setup_transparent_pass_system(
     mut commands: Commands,
     device: Res<RenderDevice>,
+    config: Res<RenderSurfaceConfig>,
     texture_array_resource: Res<TextureArrayResource>,
     view_bind_group_layout: Res<ViewBindGroupLayout>,
 ) {
@@ -56,7 +58,7 @@ pub fn startup_transparent_pass_system(
             fs_shader_source: wgpu::ShaderSource::Wgsl(include_wesl!("transparent_frag").into()),
             vertex_buffers: &[Vertex::desc()],
             fragment_targets: &[Some(wgpu::ColorTargetState {
-                format: wgpu::TextureFormat::Bgra8UnormSrgb,
+                format: config.0.format,
                 blend: Some(wgpu::BlendState::ALPHA_BLENDING),
                 write_mask: wgpu::ColorWrites::ALL,
             })],

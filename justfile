@@ -18,9 +18,6 @@ fix *args:
 #         Advanced commands
 # ---------------------------------
 
-bevy_debug *args:
-	cargo run --features bevy_ecs/trace --features bevy_ecs/track_location
-
 trace *args:
 	#!/usr/bin/env bash
 
@@ -34,6 +31,12 @@ trace *args:
 	fi
 
 	cargo run --features tracy
+
+debug_bevy *args:
+	cargo run --features bevy_ecs/trace --features bevy_ecs/track_location
+
+debug_wgpu *args:
+	RUST_LOG=wgpu=trace cargo run {{args}}
 
 debug *args:
 	#!/usr/bin/env bash
@@ -62,6 +65,3 @@ debug *args:
 	echo -e "\033[1;32mRunning with RUST_LOG=\033[0m$RUST_LOG"
 
 	cargo run
-
-
-

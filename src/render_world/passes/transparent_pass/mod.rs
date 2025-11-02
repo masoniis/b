@@ -17,7 +17,7 @@ use crate::{
         passes::transparent_pass::{
             prepare::prepare_transparent_meshes_system,
             queue::{queue_and_prepare_transparent_system, Transparent3dRenderPhase},
-            startup::startup_transparent_pass_system,
+            startup::setup_transparent_pass_system,
         },
         RenderSchedule, RenderSet,
     },
@@ -34,7 +34,7 @@ impl Plugin for TransparentRenderPassPlugin {
 
         builder
             .schedule_entry(RenderSchedule::Startup)
-            .add_systems(startup_transparent_pass_system);
+            .add_systems(setup_transparent_pass_system);
 
         // INFO: -----------------
         //         Extract
