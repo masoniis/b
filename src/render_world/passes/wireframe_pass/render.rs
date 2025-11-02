@@ -1,12 +1,12 @@
 use crate::{
     prelude::*,
     render_world::passes::{
-            core::{view::SharedCameraViewBuffer, RenderContext, RenderNode},
-            opaque_pass::startup::DepthTextureResource,
-            wireframe_pass::startup::{
-                setup_wireframe_mesh::DebugWireframeMesh, setup_wireframe_pipeline::*,
-            },
+        core::{view::SharedCameraViewBuffer, RenderContext, RenderNode},
+        opaque_pass::startup::DepthTextureResource,
+        wireframe_pass::startup::{
+            setup_wireframe_mesh::DebugWireframeMesh, setup_wireframe_pipeline::*,
         },
+    },
 };
 use bevy_ecs::prelude::*;
 

@@ -2,7 +2,7 @@ use crate::prelude::*;
 use crate::render_world::types::Vertex;
 use crate::simulation_world::asset_management::MeshAsset;
 use crate::simulation_world::block::block_registry::BlockId;
-use crate::simulation_world::chunk::async_chunking::ChunkNeighborData;
+use crate::simulation_world::chunk::ChunkNeighborData;
 use crate::simulation_world::{
     asset_management::texture_map_registry::TextureMapResource,
     block::BlockRegistryResource,
@@ -65,7 +65,10 @@ fn get_block_with_neighbors<'a>(
             .get_block(nx as usize, ny as usize, nz as usize)
             .unwrap_or(&AIR_BLOCK),
         None => {
-            &SOLID_VOID_BLOCK // neighbor is out of bounds, assume air
+            // this should only occur above/below the world and as such
+            // we claim the void is solid so that the mesher doesn't draw
+            // a face there.
+            &SOLID_VOID_BLOCK
         }
     }
 }
@@ -79,7 +82,6 @@ pub fn build_chunk_mesh(
     texture_map: &TextureMapResource,
     block_registry: &BlockRegistryResource,
 ) -> (Option<OpaqueMeshData>, Option<TransparentMeshData>) {
-    // --- Create two sets of buffers ---
     let mut opaque_vertices: Vec<Vertex> = Vec::new();
     let mut opaque_indices: Vec<u32> = Vec::new();
     let mut transparent_vertices: Vec<Vertex> = Vec::new();

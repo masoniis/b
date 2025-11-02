@@ -17,6 +17,8 @@ pub const CHUNK_DEPTH: usize = 2 << CHUNK_DIM_SHIFT;
 
 /// The distance in the xz plane, in chunks, to load around the camera.
 pub const RENDER_DISTANCE: i32 = 8;
+pub const LOAD_DISTANCE: i32 = RENDER_DISTANCE + 1; // load an extra ring of chunks for efficient meshing
+
 /// The size of the vertical column that we render (chunks above/below will never be generated)
 pub const WORLD_MIN_Y_CHUNK: i32 = 0;
 pub const WORLD_MAX_Y_CHUNK: i32 = 256 >> (CHUNK_DIM_SHIFT + 1);

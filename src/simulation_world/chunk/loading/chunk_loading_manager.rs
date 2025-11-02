@@ -4,11 +4,18 @@ use std::collections::HashMap;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ChunkState {
-    NeedsGenerating(Entity), // Entity that can be acquired for generation
-    Generating(Entity),      // Entity holds the generation Task component
-    NeedsMeshing(Entity),    // Data is generated, waiting for meshing slot
-    Meshing(Entity),         // Entity holds the meshing Task component
-    Loaded(Option<Entity>),  // Entity is the final, rendered chunk
+    /// Entity that can be acquired for generation
+    NeedsGenerating(Entity),
+    /// Entity holds the generation Task component
+    Generating(Entity),
+    /// Entity holds the generated data but may is not queued for meshing
+    DataReady(Entity),
+    /// Entity is awaiting a mesh slot
+    NeedsMeshing(Entity),
+    /// Entity holds the meshing Task component
+    Meshing(Entity),
+    /// Entity is the final, rendered chunk
+    Loaded(Option<Entity>),
 }
 
 impl ChunkState {
@@ -17,6 +24,7 @@ impl ChunkState {
         match *self {
             ChunkState::NeedsGenerating(e) => Some(e),
             ChunkState::Generating(e) => Some(e),
+            ChunkState::DataReady(e) => Some(e),
             ChunkState::NeedsMeshing(e) => Some(e),
             ChunkState::Meshing(e) => Some(e),
             ChunkState::Loaded(e) => e,
@@ -25,12 +33,12 @@ impl ChunkState {
 }
 
 #[derive(Resource, Default, Debug)]
-pub struct ChunkLoadManager {
+pub struct ChunkLoadingManager {
     /// Map tracking the state of all non-unloaded chunks.
     pub chunk_states: HashMap<IVec3, ChunkState>,
 }
 
-impl ChunkLoadManager {
+impl ChunkLoadingManager {
     /// Gets the current state of a chunk, if tracked.
     pub fn get_state(&self, coord: IVec3) -> Option<ChunkState> {
         self.chunk_states.get(&coord).copied()
@@ -60,7 +68,13 @@ impl ChunkLoadManager {
             .insert(coord, ChunkState::Generating(generation_task_entity));
     }
 
-    /// Called once a chunk's data is generated but needs to be meshed.
+    /// Called once a chunk's data is generated but not queued for meshing.
+    pub fn mark_as_data_ready(&mut self, coord: IVec3, data_ready_entity: Entity) {
+        self.chunk_states
+            .insert(coord, ChunkState::DataReady(data_ready_entity));
+    }
+
+    /// Called once a chunk's data is generated and is queued to be meshed.
     pub fn mark_as_needs_meshing(&mut self, coord: IVec3, needs_meshing_entity: Entity) {
         self.chunk_states
             .insert(coord, ChunkState::NeedsMeshing(needs_meshing_entity));
