@@ -54,7 +54,11 @@ pub fn setup_wireframe_pipeline_and_buffers(
         depth_write_enabled: false,
         depth_compare: wgpu::CompareFunction::GreaterEqual,
         stencil: wgpu::StencilState::default(),
-        bias: wgpu::DepthBiasState::default(),
+        bias: wgpu::DepthBiasState {
+            constant: 1, // ensure wireframe lines are rendered on top of filled geometry
+            slope_scale: 0.0,
+            clamp: 0.0,
+        },
     });
 
     // INFO: ----------------------------
