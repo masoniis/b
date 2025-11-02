@@ -3,16 +3,16 @@
 	display_name: "Block Name",
 	textures: (
 		// the fallback texture will apply to any face that doesn't have an
-		// assigned texture and is required even if you define all other faces
+		// assigned texture and is ALWAYS required
 		fallback: texture_file_name_without_extension,
 
 		// these textures are optional and can be omitted in favor of the fallback
-		top: Some(texture_file_name),
-		bottom: Some(texture_file_name),
-		north: Some(texture_file_name),
-		east: Some(texture_file_name),
-		south: Some(texture_file_name),
-		west: Some(texture_file_name),
+		top: Some(texture_file_name),    // +Y
+		bottom: Some(texture_file_name), // -Y
+		right: Some(texture_file_name),  // +X
+		left: Some(texture_file_name),   // -X
+		front: Some(texture_file_name),  // +Z
+		back: Some(texture_file_name),   // -Z
 	),
 	// this flag controls whether you can see through the block
 	//

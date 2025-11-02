@@ -9,6 +9,10 @@ pub enum ChunkState {
     /// Entity holds the generation Task component
     Generating(Entity),
     /// Entity holds the generated data but may is not queued for meshing
+    ///
+    /// This exists so that chunks can remain stagnant and hold data without
+    /// being queued for meshing. Important for the "generation buffer" ring
+    /// that extends past the mesh render distance (`LOAD_DISTANCE` const).
     DataReady(Entity),
     /// Entity is awaiting a mesh slot
     NeedsMeshing(Entity),

@@ -3,10 +3,10 @@
 	textures: (
 		fallback: grass,
 		bottom: Some(water),
-		north: Some(dirt),
-		east: Some(dirt),
-		south: Some(dirt),
-		west: Some(dirt),
+		front: Some(dirt),
+		right: Some(dirt),
+		back: Some(dirt),
+		left: Some(dirt),
 	),
 	is_transparent: false,
 )

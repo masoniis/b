@@ -20,10 +20,10 @@ pub struct BlockProperties {
 pub struct BlockFaceTextures {
     pub top: TextureId,
     pub bottom: TextureId,
-    pub north: TextureId,
-    pub south: TextureId,
-    pub east: TextureId,
-    pub west: TextureId,
+    pub front: TextureId,
+    pub back: TextureId,
+    pub right: TextureId,
+    pub left: TextureId,
 }
 
 mod raw {
@@ -48,13 +48,13 @@ mod raw {
         #[serde(default)]
         pub bottom: Option<TextureId>,
         #[serde(default)]
-        pub north: Option<TextureId>,
+        pub front: Option<TextureId>,
         #[serde(default)]
-        pub south: Option<TextureId>,
+        pub back: Option<TextureId>,
         #[serde(default)]
-        pub east: Option<TextureId>,
+        pub right: Option<TextureId>,
         #[serde(default)]
-        pub west: Option<TextureId>,
+        pub left: Option<TextureId>,
     }
 
     // convert "raw" ron into BlockProperties
@@ -76,10 +76,10 @@ mod raw {
             BlockFaceTextures {
                 top: self.top.unwrap_or_else(|| fallback.clone()),
                 bottom: self.bottom.unwrap_or_else(|| fallback.clone()),
-                north: self.north.unwrap_or_else(|| fallback.clone()),
-                south: self.south.unwrap_or_else(|| fallback.clone()),
-                east: self.east.unwrap_or_else(|| fallback.clone()),
-                west: self.west.unwrap_or_else(|| fallback.clone()),
+                front: self.front.unwrap_or_else(|| fallback.clone()),
+                back: self.back.unwrap_or_else(|| fallback.clone()),
+                right: self.right.unwrap_or_else(|| fallback.clone()),
+                left: self.left.unwrap_or_else(|| fallback.clone()),
             }
         }
     }

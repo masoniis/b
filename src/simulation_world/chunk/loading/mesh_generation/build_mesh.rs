@@ -136,7 +136,7 @@ pub fn build_chunk_mesh(
                 let neighbor_left = get_block_with_neighbors(ix - 1, iy, iz, chunk, neighbors);
                 if block_registry.get(*neighbor_left).is_transparent {
                     let base_vertex_count = target_vertices.len() as u32;
-                    let tex_id = &block_properties.textures.west;
+                    let tex_id = &block_properties.textures.left;
                     let tex_index = texture_map.registry.get(*tex_id);
                     let (face_verts, face_indices) =
                         get_face(Face::Left, x, y, z, tex_index, base_vertex_count);
@@ -148,7 +148,7 @@ pub fn build_chunk_mesh(
                 let neighbor_right = get_block_with_neighbors(ix + 1, iy, iz, chunk, neighbors);
                 if block_registry.get(*neighbor_right).is_transparent {
                     let base_vertex_count = target_vertices.len() as u32;
-                    let tex_id = &block_properties.textures.east;
+                    let tex_id = &block_properties.textures.right;
                     let tex_index = texture_map.registry.get(*tex_id);
                     let (face_verts, face_indices) =
                         get_face(Face::Right, x, y, z, tex_index, base_vertex_count);
@@ -160,7 +160,7 @@ pub fn build_chunk_mesh(
                 let neighbor_front = get_block_with_neighbors(ix, iy, iz + 1, chunk, neighbors);
                 if block_registry.get(*neighbor_front).is_transparent {
                     let base_vertex_count = target_vertices.len() as u32;
-                    let tex_id = &block_properties.textures.south;
+                    let tex_id = &block_properties.textures.back;
                     let tex_index = texture_map.registry.get(*tex_id);
                     let (face_verts, face_indices) =
                         get_face(Face::Front, x, y, z, tex_index, base_vertex_count);
@@ -172,7 +172,7 @@ pub fn build_chunk_mesh(
                 let neighbor_back = get_block_with_neighbors(ix, iy, iz - 1, chunk, neighbors);
                 if block_registry.get(*neighbor_back).is_transparent {
                     let base_vertex_count = target_vertices.len() as u32;
-                    let tex_id = &block_properties.textures.north;
+                    let tex_id = &block_properties.textures.front;
                     let tex_index = texture_map.registry.get(*tex_id);
                     let (face_verts, face_indices) =
                         get_face(Face::Back, x, y, z, tex_index, base_vertex_count);
