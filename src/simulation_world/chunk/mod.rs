@@ -12,10 +12,7 @@ pub use loading::*;
 
 use crate::{
     ecs_core::{EcsBuilder, Plugin},
-    simulation_world::{
-        camera::ActiveCamera, chunk::data_gen_tasks::free_unneeded_chunk_data_system,
-        scheduling::FixedUpdateSet, SimulationSchedule,
-    },
+    simulation_world::{camera::ActiveCamera, scheduling::FixedUpdateSet, SimulationSchedule},
     SimulationSet,
 };
 use bevy_ecs::prelude::*;
@@ -25,18 +22,18 @@ pub struct ChunkLoadingPlugin;
 
 impl Plugin for ChunkLoadingPlugin {
     fn build(&self, builder: &mut EcsBuilder) {
-        builder.add_resource(ChunkLoadingManager::default());
+        builder.add_resource(ChunkStateManager::default());
 
         builder
             .schedule_entry(SimulationSchedule::Main)
             .add_systems(
-                (manage_chunk_loading_system, manage_chunk_meshing_system)
+                (manage_distance_based_chunk_loading_targets_system)
                     .run_if(
                         |camera: Res<ActiveCamera>, q: Query<(), Changed<ChunkCoord>>| {
                             q.get(camera.0).is_ok()
                         },
                     )
-                    .in_set(SimulationSet::Update),
+                    .in_set(SimulationSet::PreUpdate),
             );
 
         builder
@@ -47,7 +44,6 @@ impl Plugin for ChunkLoadingPlugin {
                     poll_chunk_generation_tasks,
                     start_pending_meshing_tasks_system,
                     poll_chunk_meshing_tasks,
-                    free_unneeded_chunk_data_system,
                 )
                     .in_set(FixedUpdateSet::MainLogic),
             );

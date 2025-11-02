@@ -16,7 +16,7 @@ pub enum ChunkState {
     /// that extends past the mesh render distance (`LOAD_DISTANCE` const).
     DataReady(Entity),
     /// Entity is awaiting a mesh slot
-    NeedsMeshing(Entity),
+    WantsMeshing(Entity),
     /// Entity holds the meshing Task component
     Meshing(Entity),
     /// Entity is the final, rendered chunk
@@ -30,7 +30,7 @@ impl ChunkState {
             ChunkState::NeedsGenerating(e) => Some(e),
             ChunkState::Generating(e) => Some(e),
             ChunkState::DataReady(e) => Some(e),
-            ChunkState::NeedsMeshing(e) => Some(e),
+            ChunkState::WantsMeshing(e) => Some(e),
             ChunkState::Meshing(e) => Some(e),
             ChunkState::Loaded(e) => e,
         }
@@ -56,12 +56,12 @@ pub struct NeighborInfo {
 }
 
 #[derive(Resource, Default, Debug)]
-pub struct ChunkLoadingManager {
+pub struct ChunkStateManager {
     /// Map tracking the state of all non-unloaded chunks.
     pub chunk_states: HashMap<IVec3, ChunkState>,
 }
 
-impl ChunkLoadingManager {
+impl ChunkStateManager {
     /// Gets the current state of a chunk, if tracked.
     pub fn get_state(&self, coord: IVec3) -> Option<ChunkState> {
         self.chunk_states.get(&coord).copied()
@@ -100,7 +100,7 @@ impl ChunkLoadingManager {
     /// Called once a chunk's data is generated and is queued to be meshed.
     pub fn mark_as_needs_meshing(&mut self, coord: IVec3, needs_meshing_entity: Entity) {
         self.chunk_states
-            .insert(coord, ChunkState::NeedsMeshing(needs_meshing_entity));
+            .insert(coord, ChunkState::WantsMeshing(needs_meshing_entity));
     }
 
     /// Called once a chunk starts meshing.
@@ -137,7 +137,7 @@ impl ChunkLoadingManager {
     /// chunks per frame/tick.
     pub fn iter_needs_meshing(&self) -> impl Iterator<Item = &IVec3> {
         self.chunk_states.iter().filter_map(|(coord, state)| {
-            if matches!(state, ChunkState::NeedsMeshing(_)) {
+            if matches!(state, ChunkState::WantsMeshing(_)) {
                 Some(coord)
             } else {
                 None

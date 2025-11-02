@@ -1,13 +1,12 @@
 use crate::prelude::*;
-use crate::simulation_world::chunk::data_gen_tasks::CheckForBlockDataIsNoLongerNeeded;
 use crate::simulation_world::chunk::mesh::TransparentMeshComponent;
 use crate::simulation_world::chunk::ChunkState;
 use crate::simulation_world::{
     asset_management::{texture_map_registry::TextureMapResource, AssetStorageResource, MeshAsset},
     block::BlockRegistryResource,
     chunk::{
-        build_chunk_mesh, ChunkBlocksComponent, ChunkCoord, ChunkLoadingManager,
-        OpaqueMeshComponent, TransformComponent, CHUNK_DEPTH, CHUNK_HEIGHT, CHUNK_WIDTH,
+        build_chunk_mesh, ChunkBlocksComponent, ChunkCoord, ChunkStateManager, OpaqueMeshComponent,
+        TransformComponent, CHUNK_DEPTH, CHUNK_HEIGHT, CHUNK_WIDTH,
     },
 };
 use bevy_ecs::prelude::*;
@@ -59,7 +58,7 @@ pub fn start_pending_meshing_tasks_system(
 
     // Resources needed to start meshing
     mut commands: Commands,
-    mut chunk_manager: ResMut<ChunkLoadingManager>,
+    mut chunk_manager: ResMut<ChunkStateManager>,
     texture_map: Res<TextureMapResource>,
     block_registry: Res<BlockRegistryResource>,
     mesh_assets: Res<AssetStorageResource<MeshAsset>>,
@@ -67,7 +66,7 @@ pub fn start_pending_meshing_tasks_system(
     'chunk_loop: for (entity, chunk_comp, chunk_coord) in pending_chunks_query.iter_mut() {
         // check for cancellation
         match chunk_manager.get_state(chunk_coord.pos) {
-            Some(ChunkState::NeedsMeshing(state_entity)) if state_entity == entity => {
+            Some(ChunkState::WantsMeshing(state_entity)) if state_entity == entity => {
                 // state is correct, proceed to start meshing
             }
             _ => {
@@ -205,81 +204,70 @@ pub fn poll_chunk_meshing_tasks(
 
     // Output
     mut commands: Commands,
-    mut chunk_manager: ResMut<ChunkLoadingManager>,
+    mut chunk_manager: ResMut<ChunkStateManager>,
 ) {
+    // poll all mesh task
     for (entity, meshing_task_component, coord) in tasks_query.iter_mut() {
-        // check for cancellation
-        match chunk_manager.get_state(coord.pos) {
-            Some(ChunkState::Meshing(state_entity)) if state_entity == entity => {
-                // state is correct, proceed
-            }
-            _ => {
-                debug!(
-                    target : "chunk_loading",
-                    "Chunk meshing task for {} found but manager state is not Meshing({:?}). Assuming cancelled.",
-                    coord, entity
-                );
-                continue;
-            }
-        }
-
-        // poll mesh task
         match meshing_task_component.receiver.try_recv() {
             Ok((opaque_mesh_option, transparent_mesh_option)) => {
-                trace!(target : "chunk_loading","Chunk meshing finished for {:?}", coord);
+                let current_state = chunk_manager.get_state(coord.pos);
+                match current_state {
+                    Some(ChunkState::Meshing(gen_entity)) if gen_entity == entity => {
+                        trace!(target : "chunk_loading","Chunk meshing finished for {:?}", coord);
 
-                match (opaque_mesh_option, transparent_mesh_option) {
-                    (Some(opaque_mesh), Some(transparent_mesh)) => {
+                        match (opaque_mesh_option, transparent_mesh_option) {
+                            (Some(opaque_mesh), Some(transparent_mesh)) => {
+                                commands
+                                    .entity(entity)
+                                    .insert((opaque_mesh, transparent_mesh));
+                            }
+                            (Some(opaque_mesh), None) => {
+                                commands.entity(entity).insert(opaque_mesh);
+                            }
+                            (None, Some(transparent_mesh)) => {
+                                commands.entity(entity).insert(transparent_mesh);
+                            }
+                            (None, None) => {
+                                warn!("Both opaque and transparent meshes are empty for chunk at {:?} after meshing, but typically this should be avoided by despawning the entity after generation to avoid meshing entirely. Despawning entity now.", coord);
+                                commands.entity(entity).despawn();
+                                chunk_manager.mark_as_loaded_but_empty(coord.pos);
+                                return; // return to avoid adding transform component
+                            }
+                        }
+
                         commands
                             .entity(entity)
-                            .insert((opaque_mesh, transparent_mesh));
+                            .insert(TransformComponent {
+                                position: Vec3::new(
+                                    (coord.x * CHUNK_WIDTH as i32) as f32,
+                                    (coord.y * CHUNK_HEIGHT as i32) as f32,
+                                    (coord.z * CHUNK_DEPTH as i32) as f32,
+                                ),
+                                rotation: Quat::IDENTITY,
+                                scale: Vec3::ONE,
+                            })
+                            .remove::<ChunkMeshingTaskComponent>();
+
+                        chunk_manager.mark_as_loaded(coord.pos, entity);
                     }
-                    (Some(opaque_mesh), None) => {
-                        commands.entity(entity).insert(opaque_mesh);
+                    Some(_) => {
+                        error!(
+                            "Chunk meshing task for {} completed but manager state entity does not match ({:?} != {:?}).",
+                            coord, current_state.unwrap().entity(), entity
+                        );
                     }
-                    (None, Some(transparent_mesh)) => {
-                        commands.entity(entity).insert(transparent_mesh);
-                    }
-                    (None, None) => {
-                        warn!("Both opaque and transparent meshes are empty for chunk at {:?} after meshing, but typically this should be avoided by despawning the entity after generation to avoid meshing entirely. Despawning entity now.", coord);
-                        commands.entity(entity).despawn();
-                        chunk_manager.mark_as_loaded_but_empty(coord.pos);
-                        return; // return to avoid adding transform component
+                    _ => {
+                        debug!(
+                            target : "chunk_loading",
+                            "Mesh generation completed for unloaded chunk coord {}. Cleaning up entity {}.",
+                            coord, entity
+                        );
+                        commands
+                            .entity(entity)
+                            .remove::<ChunkMeshingTaskComponent>();
+                        continue;
                     }
                 }
-
-                commands
-                    .entity(entity)
-                    .insert(TransformComponent {
-                        position: Vec3::new(
-                            (coord.x * CHUNK_WIDTH as i32) as f32,
-                            (coord.y * CHUNK_HEIGHT as i32) as f32,
-                            (coord.z * CHUNK_DEPTH as i32) as f32,
-                        ),
-                        rotation: Quat::IDENTITY,
-                        scale: Vec3::ONE,
-                    })
-                    .remove::<ChunkMeshingTaskComponent>();
-
-                // ping any neighbors that may be able to clear their data now
-                for neighbor in chunk_manager.iter_neighbors(coord.pos) {
-                    match neighbor.state {
-                        ChunkState::Loaded(_) => {
-                            commands
-                                .entity(neighbor.entity)
-                                .insert(CheckForBlockDataIsNoLongerNeeded);
-                        }
-                        _ => {}
-                    }
-                }
-
-                // TODO: remoivng chunk blocks will save memory but if we remove
-                // early then chunks next to it can't mesh so have to have a event
-                // driven system for this probably
-                // .remove::<ChunkCoord>()
-                // .remove::<ChunkBlocksComponent>()
-
-                chunk_manager.mark_as_loaded(coord.pos, entity);
             }
             Err(TryRecvError::Empty) => {
                 // task still running
