@@ -15,6 +15,16 @@ I would recommend release mode unless you are curious to see logging statements 
 
 ### Usage guide
 
-One you have the program running, there are a few binds to be aware of...
+NOTE: The simulation currently doesn't actually pause, but you can still use `Escape` to unlock and unhide the cursor.
 
-TODO
+| Key(s)       | Action                       |
+| :----------- | :--------------------------- |
+| `W`          | Move forward                 |
+| `S`          | Move backward                |
+| `A`          | Move left                    |
+| `D`          | Move right                   |
+| `Left Shift` | Move faster                  |
+| `Escape`     | Toggle "pause"               |
+| `F1` or `1`  | Toggle diagnostics           |
+| `F2` or `2`  | Toggle opaque wireframe mode |
+| `F3` or `3`  | Toggle chunk borders         |
