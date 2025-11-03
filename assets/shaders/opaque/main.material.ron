@@ -40,5 +40,21 @@ MaterialDefinition(
                 ),
             ],
         ),
+
+		// sky params
+    3: BindGroupLayoutDef(
+      bindings: [
+        // @binding(0): SkyParamsData
+        BindingDef(
+          binding: 0,
+          visibility: ["Fragment"],
+          ty: "Buffer",
+          buffer_options: Some(BufferOptions(
+            ty: "Uniform",
+            has_dynamic_offset: false,
+          )),
+        ),
+      ],
+    ),
     },
 )

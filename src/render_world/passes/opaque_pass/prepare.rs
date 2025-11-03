@@ -2,8 +2,11 @@ use crate::{
     prelude::*,
     render_world::{
         global_extract::resources::RenderMeshStorageResource,
-        graphics_context::resources::RenderDevice,
-        passes::opaque_pass::extract::OpaqueRenderMeshComponent,
+        graphics_context::resources::{RenderDevice, RenderQueue},
+        passes::opaque_pass::{
+            extract::OpaqueRenderMeshComponent,
+            startup::{SkyboxParamsBuffer, SkyboxParamsData},
+        },
         types::mesh::create_gpu_mesh_from_data,
     },
     simulation_world::asset_management::{AssetStorageResource, MeshAsset},
@@ -49,4 +52,16 @@ pub fn prepare_opaque_meshes_system(
             }
         }
     }
+}
+
+#[instrument(skip_all)]
+pub fn prepare_skybox_buffer_system(
+    buffer: Res<SkyboxParamsBuffer>,
+
+    // Output (writing buffer to queue)
+    queue: Res<RenderQueue>,
+) {
+    let skybox_params = SkyboxParamsData::new([0.0, 0.0, 0.0], [0.08, 0.12, 0.45], [0.0, 0.0, 0.0]);
+
+    queue.write_buffer(&buffer.buffer, 0, bytemuck::cast_slice(&[skybox_params]));
 }

@@ -13,10 +13,13 @@ use crate::{
     ecs_core::{EcsBuilder, Plugin},
     render_world::{
         global_extract::extract_resource_system,
-        passes::wireframe_pass::{
-            extract::{WireframeToggleExtractor, WireframeToggleState},
-            queue::{clear_wireframe_buffer_system, queue_wireframe_system},
-            startup::{setup_wireframe_mesh_system, setup_wireframe_pipeline_and_buffers},
+        passes::{
+            core,
+            wireframe_pass::{
+                extract::{WireframeToggleExtractor, WireframeToggleState},
+                queue::{clear_wireframe_buffer_system, queue_wireframe_system},
+                startup::{setup_wireframe_mesh_system, setup_wireframe_pipeline_and_buffers},
+            },
         },
         RenderSchedule, RenderSet,
     },
@@ -35,7 +38,8 @@ impl Plugin for WireframeRenderPassPlugin {
             .schedule_entry(RenderSchedule::Startup)
             .add_systems((
                 setup_wireframe_mesh_system,
-                setup_wireframe_pipeline_and_buffers,
+                setup_wireframe_pipeline_and_buffers
+                    .after(core::setup_view_bind_group_layout_system),
             ));
 
         // INFO: -----------------

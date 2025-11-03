@@ -6,7 +6,7 @@ use crate::render_world::passes::opaque_pass::extract::OpaqueRenderMeshComponent
 use crate::render_world::passes::opaque_pass::queue::Opaque3dRenderPhase;
 use crate::render_world::passes::opaque_pass::startup::{
     DepthTextureResource, OpaqueMaterialBindGroup, OpaqueObjectBuffer, OpaquePipelines,
-    OpaqueRenderMode,
+    OpaqueRenderMode, SkyboxParamsBuffer,
 };
 use bevy_ecs::prelude::*;
 
@@ -38,6 +38,7 @@ impl RenderNode for OpaquePassRenderNode {
             Some(depth_texture),
             Some(pipelines),
             Some(render_mode),
+            Some(skybox_params),
         ) = (
             world.get_resource::<Opaque3dRenderPhase>(),
             world.get_resource::<RenderMeshStorageResource>(),
@@ -47,6 +48,7 @@ impl RenderNode for OpaquePassRenderNode {
             world.get_resource::<DepthTextureResource>(),
             world.get_resource::<OpaquePipelines>(),
             world.get_resource::<OpaqueRenderMode>(),
+            world.get_resource::<SkyboxParamsBuffer>(),
         )
         else {
             warn!("Missing one or more required resources for the Opaque Pass. Skipping pass.");
@@ -92,15 +94,25 @@ impl RenderNode for OpaquePassRenderNode {
                     occlusion_query_set: None,
                 });
 
+        // INFO: -------------------------
+        //         skybox pipeline
+        // -------------------------------
+        render_pass.set_pipeline(&pipelines.skybox.pipeline);
+        render_pass.set_bind_group(0, &view_buffer.bind_group, &[]);
+        render_pass.set_bind_group(1, &skybox_params.bind_group, &[]);
+
+        render_pass.draw(0..6, 0..1);
+
+        // INFO: -----------------------------------------
+        //         mesh pipeline: iterate and draw
+        // -----------------------------------------------
         render_pass.set_pipeline(&active_pipeline);
 
         render_pass.set_bind_group(0, &view_buffer.bind_group, &[]);
         render_pass.set_bind_group(1, &material_bind_group.0, &[]);
         render_pass.set_bind_group(2, &object_buffer.bind_group, &[]);
+        render_pass.set_bind_group(3, &skybox_params.bind_group, &[]);
 
-        // INFO: --------------------------------------
-        //         iterate meshes and draw them
-        // --------------------------------------------
         for (i, item) in phase.items.iter().enumerate() {
             if let Ok(render_mesh_comp) = self.mesh_query.get(world, item.entity) {
                 if let Some(gpu_mesh) = mesh_storage.meshes.get(&render_mesh_comp.mesh_handle.id())

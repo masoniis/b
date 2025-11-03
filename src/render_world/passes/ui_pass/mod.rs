@@ -38,7 +38,7 @@ impl Plugin for UiRenderPassPlugin {
         builder.schedule_entry(RenderSchedule::Startup).add_systems(
             (
                 startup::setup_ui_pipeline.after(core::setup_view_bind_group_layout_system),
-                startup::setup_ui_screen_quad_system,
+                startup::setup_ui_unit_quad_system,
                 startup::setup_ui_buffers,
                 startup::setup_glyphon_resources,
             )

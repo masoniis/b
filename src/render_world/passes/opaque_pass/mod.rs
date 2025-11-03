@@ -25,7 +25,7 @@ use crate::{
                 queue::Opaque3dRenderPhase,
                 startup::{
                     setup_opaque_buffers_and_bind_groups, setup_opaque_depth_texture_system,
-                    setup_opaque_pipelines,
+                    setup_opaque_pipelines, setup_skybox_params_buffer_system,
                 },
             },
         },
@@ -47,6 +47,7 @@ impl Plugin for OpaqueRenderPassPlugin {
                 setup_opaque_pipelines.after(core::setup_view_bind_group_layout_system),
                 setup_opaque_buffers_and_bind_groups,
                 setup_opaque_depth_texture_system,
+                setup_skybox_params_buffer_system,
             )
                 .chain(),
         );
@@ -67,6 +68,7 @@ impl Plugin for OpaqueRenderPassPlugin {
             (
                 (startup::setup_opaque_depth_texture_system)
                     .run_if(resource_changed_or_removed::<RenderSurfaceConfig>),
+                prepare::prepare_skybox_buffer_system,
                 prepare::prepare_opaque_meshes_system.run_if(in_state(AppState::Running)),
             )
                 .in_set(RenderSet::Prepare),

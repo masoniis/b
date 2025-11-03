@@ -1,4 +1,5 @@
-import package::transparent::common::{camera, myTexture, mySampler, objects, VertexInput, VertexOutput};
+import package::transparent::common::{myTexture, mySampler, objects, VertexInput, VertexOutput};
+import package::lib::camera_uniform::{camera};
 
 @vertex
 fn vs_main(

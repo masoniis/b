@@ -1,0 +1,20 @@
+MaterialDefinition(
+  vertex_buffers: [],
+  bind_group_layouts: {
+    // @group(1)
+    1: BindGroupLayoutDef(
+      bindings: [
+        // @binding(0): SkyParamsData
+        BindingDef(
+          binding: 0,
+          visibility: ["Fragment"],
+          ty: "Buffer",
+          buffer_options: Some(BufferOptions(
+            ty: "Uniform",
+            has_dynamic_offset: false,
+          )),
+        ),
+      ],
+    ),
+  },
+)

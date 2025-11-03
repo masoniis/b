@@ -13,10 +13,10 @@ pub struct ScreenQuadResource {
 
 /// A one-time system that creates the shared quad mesh on the GPU.
 ///
-/// The quad is intended to be the root canvas for all drawing, and
-/// as such it covers the entire screen.
+/// This quad just represents a unit quad that every UI element can use
+/// by applying their respective model matrix to scale/position it.
 #[instrument(skip_all)]
-pub fn setup_ui_screen_quad_system(
+pub fn setup_ui_unit_quad_system(
     // Input
     device: Res<RenderDevice>,
 

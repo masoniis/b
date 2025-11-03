@@ -9,12 +9,16 @@ use crate::render_world::types::vertex::Vertex;
 use bevy_ecs::prelude::*;
 use wesl::include_wesl;
 
-/// A resource that holds all the opaque pipelines. Currently, this includes the
-/// default "fill rasterization" and alternative "wireframe rasterization" pipelines.
+/// A resource that holds all the opaque phase pipelines.
 #[derive(Resource)]
 pub struct OpaquePipelines {
+    /// A pipeline that draws filled opaque geometry.
     pub fill: CreatedPipeline,
+    /// A pipeline that draws wireframe opaque geometry.
     pub wireframe: CreatedPipeline,
+
+    /// A pipeline that draws the skybox.
+    pub skybox: CreatedPipeline,
 }
 
 /// A resource that defines the current opaque render mode
@@ -95,6 +99,38 @@ pub fn setup_opaque_pipelines(
     let wireframe_pipeline: CreatedPipeline =
         create_render_pipeline_from_def(&device, &view_layout, wireframe_pipeline_def);
 
+    // INFO: --------------------------------
+    //         skybox opaque pipeline
+    // --------------------------------------
+
+    let skybox_depth_stencil = Some(wgpu::DepthStencilState {
+        format: DEPTH_FORMAT,
+        depth_write_enabled: false,
+        depth_compare: wgpu::CompareFunction::GreaterEqual,
+        stencil: wgpu::StencilState::default(),
+        bias: wgpu::DepthBiasState::default(),
+    });
+
+    let skybox_pipeline_def = PipelineDefinition {
+        label: "Skybox Opaque Pipeline",
+        material_path: "assets/shaders/skybox/main.material.ron",
+        vs_shader_source: wgpu::ShaderSource::Wgsl(include_wesl!("skybox_vert").into()),
+        fs_shader_source: wgpu::ShaderSource::Wgsl(include_wesl!("skybox_frag").into()),
+        vertex_buffers: &[],
+        fragment_targets: &opaque_fragment_target,
+        depth_stencil: skybox_depth_stencil,
+        primitive: wgpu::PrimitiveState {
+            topology: wgpu::PrimitiveTopology::TriangleList,
+            front_face: wgpu::FrontFace::Ccw,
+            polygon_mode: wgpu::PolygonMode::Fill,
+            cull_mode: None,
+            ..Default::default()
+        },
+    };
+
+    let skybox_pipeline: CreatedPipeline =
+        create_render_pipeline_from_def(&device, &view_layout, skybox_pipeline_def);
+
     // INFO: -------------------------
     //         setup resources
     // -------------------------------
@@ -102,6 +138,7 @@ pub fn setup_opaque_pipelines(
     commands.insert_resource(OpaquePipelines {
         fill: fill_pipeline,
         wireframe: wireframe_pipeline,
+        skybox: skybox_pipeline,
     });
 
     commands.insert_resource(OpaqueRenderMode::default());

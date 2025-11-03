@@ -74,6 +74,16 @@ fn main() {
         "opaque_frag",
     );
 
+    // NOTE: Skybox shaders
+    compiler.build_artifact(
+        &"package::skybox::main_vert".parse().unwrap(),
+        "skybox_vert",
+    );
+    compiler.build_artifact(
+        &"package::skybox::main_frag".parse().unwrap(),
+        "skybox_frag",
+    );
+
     // NOTE: Transparent shaders
     compiler.build_artifact(
         &"package::transparent::main_vert".parse().unwrap(),

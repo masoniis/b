@@ -11,14 +11,14 @@ use bytemuck::{Pod, Zeroable};
 #[derive(Resource)]
 pub struct OpaqueMaterialBindGroup(pub wgpu::BindGroup);
 
+const INITIAL_OPAQUE_OBJECT_BUFFER_CAPACITY: usize = 128;
+
 #[derive(Resource)]
 pub struct OpaqueObjectBuffer {
     pub buffer: wgpu::Buffer,
     pub bind_group: wgpu::BindGroup,
     pub objects: Vec<OpaqueObjectData>,
 }
-
-const INITIAL_OPAQUE_OBJECT_BUFFER_CAPACITY: usize = 128;
 
 // INFO: ---------------------------
 //         Buffer data types

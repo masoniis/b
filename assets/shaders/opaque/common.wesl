@@ -1,11 +1,3 @@
-// Per-view data (Camera)
-struct CameraUniform {
-    view_proj: mat4x4<f32>,
-    world_position: vec3<f32>,
-};
-@group(0) @binding(0)
-var<uniform> camera: CameraUniform;
-
 // Per-material data (Texture Atlas)
 @group(1) @binding(0)
 var myTexture: texture_2d_array<f32>;
