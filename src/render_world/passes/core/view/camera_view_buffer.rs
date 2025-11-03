@@ -18,9 +18,14 @@ pub struct SharedCameraViewBuffer {
 
 /// The data structure representing the camera view information to be stored in the view buffer.
 #[repr(C)]
-#[derive(Clone, Copy, Pod, Zeroable)]
+#[derive(Clone, Copy, Pod, Zeroable, Default)]
 pub struct SharedCameraViewData {
+    /// combined view-projection matrix
     pub view_proj_matrix: [f32; 16],
+
+    /// position of camera for distance-based fog
+    pub world_position: [f32; 3],
+    _padding: u32, // align to 16 bytes
 }
 
 /// A system to setup the shared camera view buffer and its associated bind group, @group(0).
@@ -73,6 +78,8 @@ pub fn update_camera_view_buffer_system(
 
     let camera_data = SharedCameraViewData {
         view_proj_matrix: view_proj_matrix.to_cols_array(),
+        world_position: camera_info.world_position.into(),
+        ..Default::default()
     };
 
     queue.write_buffer(&view_buffer.buffer, 0, bytemuck::cast_slice(&[camera_data]));
