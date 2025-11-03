@@ -3,7 +3,8 @@ use crate::render_world::graphics_context::resources::{RenderDevice, RenderSurfa
 use crate::render_world::passes::core::create_render_pipeline::{
     CreatedPipeline, PipelineDefinition,
 };
-use crate::render_world::passes::core::{create_render_pipeline_from_def, ViewBindGroupLayout};
+use crate::render_world::passes::core::create_render_pipeline_from_def;
+use crate::render_world::passes::main_camera_centric::shared::CentralCameraViewBindGroupLayout;
 use bevy_ecs::prelude::*;
 use derive_more::{Deref, DerefMut};
 use wesl::include_wesl;
@@ -26,7 +27,7 @@ pub fn setup_ui_pipeline(
     mut commands: Commands,
     device: Res<RenderDevice>,
     config: Res<RenderSurfaceConfig>,
-    view_layout: Res<ViewBindGroupLayout>,
+    view_layout: Res<CentralCameraViewBindGroupLayout>,
 ) {
     let device = &device;
 
@@ -50,7 +51,7 @@ pub fn setup_ui_pipeline(
     };
 
     let created_pipeline: CreatedPipeline =
-        create_render_pipeline_from_def(device, &view_layout, ui_pipeline_def);
+        create_render_pipeline_from_def(device, &[&view_layout.0], ui_pipeline_def);
 
     commands.insert_resource(UiPipeline {
         inner: created_pipeline,

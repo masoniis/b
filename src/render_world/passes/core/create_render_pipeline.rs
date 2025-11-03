@@ -1,4 +1,4 @@
-use crate::render_world::passes::core::{BindingDef, MaterialDefinition, ViewBindGroupLayout};
+use crate::render_world::passes::core::{BindingDef, MaterialDefinition};
 use std::collections::BTreeMap;
 use std::fs;
 
@@ -21,28 +21,17 @@ pub struct CreatedPipeline {
 impl CreatedPipeline {
     /// Get a reference to a created bind group layout by its group index
     pub fn get_layout(&self, group_index: u32) -> &wgpu::BindGroupLayout {
-        self.bind_group_layouts
-            .get(&group_index)
-            .expect("Bind group layout not found")
-    }
-
-    /// Convenience helper to get the material layout (@group(1)).
-    /// Panics if the layout is not present.
-    pub fn material_layout(&self) -> &wgpu::BindGroupLayout {
-        self.get_layout(1)
-    }
-
-    /// Convenience helper to get the object layout (@group(2)).
-    /// Panics if the layout is not present.
-    pub fn object_layout(&self) -> &wgpu::BindGroupLayout {
-        self.get_layout(2)
+        self.bind_group_layouts.get(&group_index).expect(&format!(
+            "Bind group layout for @group({}) not found in CreatedPipeline",
+            group_index
+        ))
     }
 }
 
 /// Generic function to create a render pipeline from a material and definition
 pub fn create_render_pipeline_from_def(
     device: &wgpu::Device,
-    view_layout: &ViewBindGroupLayout, // common binding @group(0)
+    shared_layouts: &[&wgpu::BindGroupLayout],
     pipeline_def: PipelineDefinition,
 ) -> CreatedPipeline {
     // process and parse the shader and ron file
@@ -54,11 +43,23 @@ pub fn create_render_pipeline_from_def(
     // TODO: validate the shader against the material_def here.
 
     // INFO: ---------------------------------------------------------------
-    //         generate a layout for each bind group in material def
+    //        generate a layout for each bind group in material def
     // ---------------------------------------------------------------------
 
     let mut created_layouts: BTreeMap<u32, wgpu::BindGroupLayout> = BTreeMap::new();
     for (&group_index, layout_def) in &material_def.bind_group_layouts {
+        if (group_index as usize) < shared_layouts.len() {
+            panic!(
+                "Material '{}' tries to define @group({}), which is reserved by a shared layout.
+                (Shared layouts occupy groups 0..{}).
+                Please start the material-defined groups at @group({}).",
+                pipeline_def.material_path,
+                group_index,
+                shared_layouts.len(),
+                shared_layouts.len()
+            );
+        }
+
         let entries: Vec<wgpu::BindGroupLayoutEntry> = layout_def
             .bindings
             .iter()
@@ -74,11 +75,15 @@ pub fn create_render_pipeline_from_def(
         created_layouts.insert(group_index, layout);
     }
 
+    // get a reference to the newly created RON layouts, sorted by key
+    let ron_layouts_ref: Vec<&wgpu::BindGroupLayout> = created_layouts.values().collect();
+
     // combine all parsed layouts into a single pipeline layout
-    let pipeline_bind_group_layouts_ref: Vec<&wgpu::BindGroupLayout> =
-        std::iter::once(&view_layout.0) // @group(0)
-            .chain(created_layouts.values()) // @group(1), @group(2), etc
-            .collect();
+    let pipeline_bind_group_layouts_ref: Vec<&wgpu::BindGroupLayout> = shared_layouts
+        .iter()
+        .copied()
+        .chain(ron_layouts_ref.into_iter())
+        .collect();
 
     let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
         label: Some(&format!("{} Pipeline Layout", pipeline_def.label)),
@@ -87,7 +92,7 @@ pub fn create_render_pipeline_from_def(
     });
 
     // INFO: --------------------------------------
-    //         construct rendering pipeline
+    //        construct rendering pipeline
     // --------------------------------------------
 
     let vs_shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {

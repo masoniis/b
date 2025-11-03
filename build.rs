@@ -66,41 +66,57 @@ fn main() {
 
     // NOTE: Opaque shaders
     compiler.build_artifact(
-        &"package::opaque::main_vert".parse().unwrap(),
+        &"package::camera_centric::opaque::main_vert"
+            .parse()
+            .unwrap(),
         "opaque_vert",
     );
     compiler.build_artifact(
-        &"package::opaque::main_frag".parse().unwrap(),
+        &"package::camera_centric::opaque::main_frag"
+            .parse()
+            .unwrap(),
         "opaque_frag",
     );
 
     // NOTE: Skybox shaders
     compiler.build_artifact(
-        &"package::skybox::main_vert".parse().unwrap(),
+        &"package::camera_centric::skybox::main_vert"
+            .parse()
+            .unwrap(),
         "skybox_vert",
     );
     compiler.build_artifact(
-        &"package::skybox::main_frag".parse().unwrap(),
+        &"package::camera_centric::skybox::main_frag"
+            .parse()
+            .unwrap(),
         "skybox_frag",
     );
 
     // NOTE: Transparent shaders
     compiler.build_artifact(
-        &"package::transparent::main_vert".parse().unwrap(),
+        &"package::camera_centric::transparent::main_vert"
+            .parse()
+            .unwrap(),
         "transparent_vert",
     );
     compiler.build_artifact(
-        &"package::transparent::main_frag".parse().unwrap(),
+        &"package::camera_centric::transparent::main_frag"
+            .parse()
+            .unwrap(),
         "transparent_frag",
     );
 
     // NOTE: Wireframe shaders
     compiler.build_artifact(
-        &"package::wireframe::main_vert".parse().unwrap(),
+        &"package::camera_centric::wireframe::main_vert"
+            .parse()
+            .unwrap(),
         "wireframe_vert",
     );
     compiler.build_artifact(
-        &"package::wireframe::main_frag".parse().unwrap(),
+        &"package::camera_centric::wireframe::main_frag"
+            .parse()
+            .unwrap(),
         "wireframe_frag",
     );
 

@@ -3,10 +3,10 @@ use crate::render_world::graphics_context::resources::{
     RenderDevice, RenderQueue, RenderSurface, RenderSurfaceConfig,
 };
 use crate::render_world::passes::core::{RenderContext, RenderGraph};
-use crate::render_world::passes::opaque_pass::OpaquePassRenderNode;
-use crate::render_world::passes::transparent_pass::render::TransparentPassRenderNode;
+use crate::render_world::passes::main_camera_centric::opaque_pass::OpaquePassRenderNode;
+use crate::render_world::passes::main_camera_centric::transparent_pass::render::TransparentPassRenderNode;
+use crate::render_world::passes::main_camera_centric::wireframe_pass::render::WireframeRenderNode;
 use crate::render_world::passes::ui_pass::render::UiRenderPassNode;
-use crate::render_world::passes::wireframe_pass::render::WireframeRenderNode;
 use bevy_ecs::prelude::*;
 
 // INFO: --------------------------------------------------------

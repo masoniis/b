@@ -1,8 +1,6 @@
 pub mod core;
-pub mod opaque_pass;
-pub mod transparent_pass;
+pub mod main_camera_centric;
 pub mod ui_pass;
-pub mod wireframe_pass;
 
 // INFO: ---------------------------
 //         Plugin definition
@@ -11,23 +9,11 @@ pub mod wireframe_pass;
 use bevy_ecs::schedule::IntoScheduleConfigs;
 
 use crate::{
-    ecs_core::{
-        state_machine::{in_state, AppState},
-        EcsBuilder, Plugin,
-    },
+    ecs_core::{EcsBuilder, Plugin},
     render_world::{
         passes::{
-            core::{
-                execute_render_graph_system, setup_view_bind_group_layout_system,
-                view::{
-                    camera_view_buffer::setup_camera_view_buffer_system,
-                    update_camera_view_buffer_system,
-                },
-            },
-            opaque_pass::OpaqueRenderPassPlugin,
-            transparent_pass::TransparentRenderPassPlugin,
+            core::execute_render_graph_system, main_camera_centric::PlayerCentricRenderPassPlugin,
             ui_pass::UiRenderPassPlugin,
-            wireframe_pass::WireframeRenderPassPlugin,
         },
         scheduling::{RenderSchedule, RenderSet},
     },
@@ -39,36 +25,9 @@ pub struct RenderPassManagerPlugin;
 
 impl Plugin for RenderPassManagerPlugin {
     fn build(&self, builder: &mut EcsBuilder) {
-        // renderpass plugins
         builder
-            .add_plugin(TransparentRenderPassPlugin)
-            .add_plugin(OpaqueRenderPassPlugin)
-            .add_plugin(UiRenderPassPlugin)
-            .add_plugin(WireframeRenderPassPlugin);
-
-        // INFO: -----------------
-        //         Startup
-        // -----------------------
-
-        // these startup schedules are shared by multiple passes
-
-        builder.schedule_entry(RenderSchedule::Startup).add_systems(
-            (
-                setup_view_bind_group_layout_system,
-                setup_camera_view_buffer_system,
-            )
-                .chain(),
-        );
-
-        // INFO: -----------------
-        //         Prepare
-        // -----------------------
-
-        builder.schedule_entry(RenderSchedule::Main).add_systems(
-            update_camera_view_buffer_system
-                .run_if(in_state(AppState::Running))
-                .in_set(RenderSet::Prepare),
-        );
+            .add_plugin(PlayerCentricRenderPassPlugin)
+            .add_plugin(UiRenderPassPlugin);
 
         // INFO: ----------------
         //         Render
