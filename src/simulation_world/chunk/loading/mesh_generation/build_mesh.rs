@@ -162,8 +162,8 @@ pub fn build_chunk_mesh(
                                 // mesh only if they are different blocks
                                 *current_block_id != *neighbor_block_id
                             } else {
-                                // neighbor is opaque, so we can see this face, must mesh
-                                true
+                                // neighbor is opaque, so we can't see this face
+                                false
                             }
                         } else {
                             // only mesh if neighbor is transparent
@@ -415,69 +415,69 @@ fn create_quad(
 
     // define vertices and normals based on face
     let (verts, normal, uvs): (Vec<[f32; 3]>, [f32; 3], [[f32; 2]; 4]) = match face {
+        #[rustfmt::skip]
         Face::Top => (
-            vec![
-                [-0.5 + x, 0.5 + y, -0.5 + z],                  // 0 (Start)
-                [-0.5 + x + width, 0.5 + y, -0.5 + z],          // 1 (End Width)
-                [-0.5 + x + width, 0.5 + y, -0.5 + z + height], // 2 (End Width & Height)
-                [-0.5 + x, 0.5 + y, -0.5 + z + height],         // 3 (End Height)
+            vec![                                               // counter-clockwise quad vertices
+                [-0.5 + x, 0.5 + y, -0.5 + z],                  // 0 "bottom left"
+                [-0.5 + x + width, 0.5 + y, -0.5 + z],          // 1 "bottom right"
+                [-0.5 + x + width, 0.5 + y, -0.5 + z + height], // 2 "top right"
+                [-0.5 + x, 0.5 + y, -0.5 + z + height],         // 3 "top left"
             ],
             [0.0, 1.0, 0.0],
             [[0.0, height], [width, height], [width, 0.0], [0.0, 0.0]],
         ),
         Face::Bottom => (
             vec![
-                [-0.5 + x, -0.5 + y, -0.5 + z + height],         // 0
-                [-0.5 + x + width, -0.5 + y, -0.5 + z + height], // 1
-                [-0.5 + x + width, -0.5 + y, -0.5 + z],          // 2
-                [-0.5 + x, -0.5 + y, -0.5 + z],                  // 3
+                [-0.5 + x, -0.5 + y, -0.5 + z + height],
+                [-0.5 + x + width, -0.5 + y, -0.5 + z + height],
+                [-0.5 + x + width, -0.5 + y, -0.5 + z],
+                [-0.5 + x, -0.5 + y, -0.5 + z],
             ],
             [0.0, -1.0, 0.0],
             [[0.0, 0.0], [width, 0.0], [width, height], [0.0, height]],
         ),
         Face::Right => (
             vec![
-                [0.5 + x, -0.5 + y, -0.5 + z],                  // 0
-                [0.5 + x, -0.5 + y, -0.5 + z + height],         // 1
-                [0.5 + x, -0.5 + y + width, -0.5 + z + height], // 2
-                [0.5 + x, -0.5 + y + width, -0.5 + z],          // 3
+                [0.5 + x, -0.5 + y, -0.5 + z],
+                [0.5 + x, -0.5 + y, -0.5 + z + height],
+                [0.5 + x, -0.5 + y + width, -0.5 + z + height],
+                [0.5 + x, -0.5 + y + width, -0.5 + z],
             ],
             [1.0, 0.0, 0.0],
             [[0.0, 0.0], [height, 0.0], [height, width], [0.0, width]],
         ),
         Face::Left => (
             vec![
-                [-0.5 + x, -0.5 + y, -0.5 + z + height],         // 0
-                [-0.5 + x, -0.5 + y, -0.5 + z],                  // 1
-                [-0.5 + x, -0.5 + y + width, -0.5 + z],          // 2
-                [-0.5 + x, -0.5 + y + width, -0.5 + z + height], // 3
+                [-0.5 + x, -0.5 + y, -0.5 + z + height],
+                [-0.5 + x, -0.5 + y, -0.5 + z],
+                [-0.5 + x, -0.5 + y + width, -0.5 + z],
+                [-0.5 + x, -0.5 + y + width, -0.5 + z + height],
             ],
             [-1.0, 0.0, 0.0],
             [[0.0, 0.0], [height, 0.0], [height, width], [0.0, width]],
         ),
         Face::Front => (
             vec![
-                [-0.5 + x + width, -0.5 + y, 0.5 + z],          // 0
-                [-0.5 + x, -0.5 + y, 0.5 + z],                  // 1
-                [-0.5 + x, -0.5 + y + height, 0.5 + z],         // 2
-                [-0.5 + x + width, -0.5 + y + height, 0.5 + z], // 3
+                [-0.5 + x + width, -0.5 + y, 0.5 + z],
+                [-0.5 + x, -0.5 + y, 0.5 + z],
+                [-0.5 + x, -0.5 + y + height, 0.5 + z],
+                [-0.5 + x + width, -0.5 + y + height, 0.5 + z],
             ],
             [0.0, 0.0, 1.0],
             [[width, 0.0], [0.0, 0.0], [0.0, height], [width, height]],
         ),
         Face::Back => (
             vec![
-                [-0.5 + x, -0.5 + y, -0.5 + z],                  // 0
-                [-0.5 + x + width, -0.5 + y, -0.5 + z],          // 1
-                [-0.5 + x + width, -0.5 + y + height, -0.5 + z], // 2
-                [-0.5 + x, -0.5 + y + height, -0.5 + z],         // 3
+                [-0.5 + x, -0.5 + y, -0.5 + z],
+                [-0.5 + x + width, -0.5 + y, -0.5 + z],
+                [-0.5 + x + width, -0.5 + y + height, -0.5 + z],
+                [-0.5 + x, -0.5 + y + height, -0.5 + z],
             ],
             [0.0, 0.0, -1.0],
             [[0.0, 0.0], [width, 0.0], [width, height], [0.0, height]],
         ),
     };
 
-    // create the 4 vertices for this quad
     let final_vertices = vec![
         Vertex::new(verts[0], normal, uvs[0], tex_index),
         Vertex::new(verts[1], normal, uvs[1], tex_index),
@@ -485,7 +485,6 @@ fn create_quad(
         Vertex::new(verts[3], normal, uvs[3], tex_index),
     ];
 
-    // indices in clockwise order
     let indices = [
         base_vertex_count + 0,
         base_vertex_count + 2,
