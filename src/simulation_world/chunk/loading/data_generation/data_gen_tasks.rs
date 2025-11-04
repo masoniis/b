@@ -60,13 +60,19 @@ pub fn start_pending_generation_tasks_system(
             }
         }
 
-        debug!(
-            target: "chunk_loading",
-            "Starting generation task for {}.",
-            coord
-        );
+        // check if the chunk is empty according to the terrain generator
+        if terrain_generator.0.is_chunk_empty(coord.pos) {
+            trace!(
+                target: "chunk_loading",
+                "Chunk {} is empty according to terrain generator. Skipping generation.",
+                coord
+            );
+            commands.entity(entity).despawn();
+            chunk_manager.mark_as_loaded_but_empty(coord.pos);
+            continue;
+        }
 
-        // spawn in the task with resources needed
+        // start the generation thread task if not
         let (sender, receiver) = unbounded();
 
         let blocks_clone = block_registry.clone();

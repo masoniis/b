@@ -80,6 +80,16 @@ pub trait TerrainGenerator: Send + Sync + Debug {
         block_registry: &BlockRegistryResource,
         biome_registry: &BiomeRegistryResource,
     ) -> GeneratedTerrainData;
+
+    /// A fast, cheap check to see if this chunk will be *guaranteed* empty.
+    /// If this returns `true`, `generate_terrain_chunk`, and neither is the
+    /// biome generation for the chunk. This has massive performance gains.
+    ///
+    /// This is an optimization. By default, we assume the chunk is not empty
+    /// to force the full generation path.
+    fn is_chunk_empty(&self, _: IVec3) -> bool {
+        false
+    }
 }
 
 /// A struct representing generated chunk data.

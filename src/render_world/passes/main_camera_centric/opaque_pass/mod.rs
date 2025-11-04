@@ -19,7 +19,7 @@ use crate::{
         global_extract::{
             extract_resource_system, ExtractComponentPlugin, RenderWindowSizeResource,
         },
-        graphics_context::{reconfigure_wgpu_surface_system, resources::RenderSurfaceConfig},
+        graphics_context::reconfigure_wgpu_surface_system,
         passes::main_camera_centric::{
             opaque_pass::{
                 extract::OpaqueRenderModeExtractor,

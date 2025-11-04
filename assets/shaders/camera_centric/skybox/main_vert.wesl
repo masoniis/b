@@ -1,8 +1,8 @@
 struct VertexOutput {
     @builtin(position) clip_position: vec4<f32>,
 
-  // We pass the clip-space position (without perspective divide)
-  // to the fragment shader so it can un-project it.
+    // We pass the clip-space position (without perspective divide)
+    // to the fragment shader so it can un-project it.
     @location(0) clip_pos_for_unproject: vec4<f32>,
 };
 
@@ -12,7 +12,7 @@ fn vs_main(
 ) -> VertexOutput {
     var out: VertexOutput;
 
-	// full screen quad
+    // full screen quad
     let vertices = array<vec2<f32>, 6>(
         vec2<f32>(-1.0, -1.0), // triangle 1
         vec2<f32>(1.0, -1.0),
@@ -24,7 +24,7 @@ fn vs_main(
 
     let pos = vertices[in_vertex_index];
 
-	// the full screen quad is at the maximum distance (0.0)
+    // the full screen quad is at the maximum distance (0.0)
     out.clip_position = vec4<f32>(pos, 0.0, 1.0);
     out.clip_pos_for_unproject = out.clip_position;
 

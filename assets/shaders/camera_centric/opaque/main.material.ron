@@ -7,7 +7,7 @@ MaterialDefinition(
     // @group(2): Per-Material (Texture)
     2: BindGroupLayoutDef(
       bindings: [
-        // Diffuse Texture
+        // diffuse Texture
         BindingDef(
           binding: 0,
           visibility: ["Fragment"],
@@ -18,7 +18,7 @@ MaterialDefinition(
             multisampled: false,
           )),
         ),
-        // Diffuse Sampler
+        // diffuse Sampler
         BindingDef(
           binding: 1,
           visibility: ["Fragment"],

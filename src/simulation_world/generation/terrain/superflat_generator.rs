@@ -23,19 +23,24 @@ impl SuperflatGenerator {
 
 impl TerrainGenerator for SuperflatGenerator {
     #[instrument(skip_all)]
+    fn is_chunk_empty(&self, coord: IVec3) -> bool {
+        if coord.y != 0 {
+            true
+        } else {
+            false
+        }
+    }
+
+    #[instrument(skip_all)]
     fn generate_terrain_chunk(
         &self,
-        coord: IVec3,
+        _coord: IVec3,
         biome_map: &BiomeMapComponent,
         _climate_map: &TerrainClimateMapComponent,
 
         blocks: &BlockRegistryResource,
         biomes: &BiomeRegistryResource,
     ) -> GeneratedTerrainData {
-        if coord.y != 0 {
-            return GeneratedTerrainData::empty();
-        }
-
         let layer_blocks: Vec<_> = self
             .base_layers
             .iter()
