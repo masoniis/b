@@ -16,15 +16,17 @@ use crate::{
         EcsBuilder, Plugin,
     },
     render_world::{
-        global_extract::{extract_resource_system, ExtractComponentPlugin},
-        graphics_context::resources::RenderSurfaceConfig,
+        global_extract::{
+            extract_resource_system, ExtractComponentPlugin, RenderWindowSizeResource,
+        },
+        graphics_context::{reconfigure_wgpu_surface_system, resources::RenderSurfaceConfig},
         passes::main_camera_centric::{
             opaque_pass::{
                 extract::OpaqueRenderModeExtractor,
                 queue::Opaque3dRenderPhase,
                 startup::{
-                    setup_opaque_buffers_and_bind_groups, setup_opaque_depth_texture_system,
-                    setup_opaque_pipelines,
+                    setup_opaque_buffers_and_bind_groups, setup_opaque_pipelines,
+                    setup_or_resize_opaque_depth_texture_system,
                 },
             },
             shared::setup_central_camera_layout_system,
@@ -46,7 +48,7 @@ impl Plugin for OpaqueRenderPassPlugin {
             (
                 setup_opaque_pipelines.after(setup_central_camera_layout_system),
                 setup_opaque_buffers_and_bind_groups,
-                setup_opaque_depth_texture_system,
+                setup_or_resize_opaque_depth_texture_system,
             )
                 .chain(),
         );
@@ -65,8 +67,9 @@ impl Plugin for OpaqueRenderPassPlugin {
         // -----------------------
         builder.schedule_entry(RenderSchedule::Main).add_systems(
             (
-                (startup::setup_opaque_depth_texture_system)
-                    .run_if(resource_changed_or_removed::<RenderSurfaceConfig>),
+                startup::setup_or_resize_opaque_depth_texture_system
+                    .run_if(resource_changed_or_removed::<RenderWindowSizeResource>)
+                    .after(reconfigure_wgpu_surface_system),
                 prepare::prepare_opaque_meshes_system.run_if(in_state(AppState::Running)),
             )
                 .in_set(RenderSet::Prepare),

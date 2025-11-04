@@ -19,16 +19,17 @@ pub const DEPTH_FORMAT: wgpu::TextureFormat = wgpu::TextureFormat::Depth32Float;
 /// Since the depth texture depends on the surface configuration (width, height, format),
 /// this system must run again if the surface is resized.
 #[instrument(skip_all)]
-pub fn setup_opaque_depth_texture_system(
+pub fn setup_or_resize_opaque_depth_texture_system(
     // Input
     device: Res<RenderDevice>,
     config: Res<RenderSurfaceConfig>,
 
-    // Output (spawned resource)
+    // Output (spawned/updated resource)
     mut commands: Commands,
+    depth_texture_res: Option<ResMut<DepthTextureResource>>,
 ) {
     let depth_texture = device.create_texture(&wgpu::TextureDescriptor {
-        label: Some("Depth Texture"),
+        label: Some("Opaque Depth Texture"),
         size: wgpu::Extent3d {
             width: config.width,
             height: config.height,
@@ -44,8 +45,24 @@ pub fn setup_opaque_depth_texture_system(
 
     let depth_view = depth_texture.create_view(&Default::default());
 
-    commands.insert_resource(DepthTextureResource {
-        view: depth_view,
-        texture: depth_texture,
-    });
+    if let Some(mut existing_depth_res) = depth_texture_res {
+        // resize existing
+        debug!(
+            target : "wgpu_resize",
+            "Updating opauqe depth texture resource to use width {}x{}",
+            config.width,
+            config.height
+        );
+
+        *existing_depth_res = DepthTextureResource {
+            view: depth_view,
+            texture: depth_texture,
+        };
+    } else {
+        // insert for first time
+        commands.insert_resource(DepthTextureResource {
+            view: depth_view,
+            texture: depth_texture,
+        });
+    }
 }
