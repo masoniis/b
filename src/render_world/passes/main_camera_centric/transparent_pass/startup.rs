@@ -1,13 +1,11 @@
+use super::super::shared::{CentralCameraViewBindGroupLayout, EnvironmentBindGroupLayout};
 use crate::prelude::*;
-use crate::render_world::passes::core::create_render_pipeline::create_render_pipeline_from_def;
 use crate::render_world::passes::core::CreatedPipeline;
-use crate::render_world::passes::main_camera_centric::shared::{
-    CentralCameraViewBindGroupLayout, EnvironmentBindGroupLayout,
-};
-use crate::render_world::types::vertex::Vertex;
 use crate::render_world::{
     graphics_context::resources::{RenderDevice, RenderSurfaceConfig},
+    passes::core::create_render_pipeline_from_def,
     textures::resource::TextureArrayResource,
+    types::Vertex,
 };
 use bevy_ecs::prelude::*;
 use bytemuck::{Pod, Zeroable};

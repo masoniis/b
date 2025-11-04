@@ -6,8 +6,6 @@ pub mod ui_pass;
 //         Plugin definition
 // ---------------------------------
 
-use bevy_ecs::schedule::IntoScheduleConfigs;
-
 use crate::{
     ecs_core::{EcsBuilder, Plugin},
     render_world::{
@@ -18,6 +16,7 @@ use crate::{
         scheduling::{RenderSchedule, RenderSet},
     },
 };
+use bevy_ecs::schedule::IntoScheduleConfigs;
 
 /// A plugin that sets up all the necessary resources and render
 /// passes used in the rendering pipeline.

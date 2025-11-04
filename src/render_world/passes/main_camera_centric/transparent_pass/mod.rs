@@ -4,11 +4,11 @@ pub mod queue;
 pub mod render;
 pub mod startup;
 
+pub use render::TransparentPassRenderNode;
+
 // INFO: ---------------------------
 //         Plugin definition
 // ---------------------------------
-
-use bevy_ecs::schedule::IntoScheduleConfigs;
 
 use crate::{
     ecs_core::{EcsBuilder, Plugin},
@@ -23,6 +23,7 @@ use crate::{
     },
     simulation_world::chunk::mesh::TransparentMeshComponent,
 };
+use bevy_ecs::schedule::IntoScheduleConfigs;
 
 pub struct TransparentRenderPassPlugin;
 

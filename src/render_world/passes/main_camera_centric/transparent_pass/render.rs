@@ -1,21 +1,21 @@
-use crate::prelude::*;
-use crate::render_world::global_extract::RenderMeshStorageResource;
-use crate::render_world::passes::core::{RenderContext, RenderNode};
-use crate::render_world::passes::main_camera_centric::shared::CentralCameraViewBuffer;
-use crate::render_world::passes::main_camera_centric::transparent_pass::extract::TransparentRenderMeshComponent;
-use crate::render_world::passes::main_camera_centric::transparent_pass::queue::Transparent3dRenderPhase;
-use crate::render_world::passes::main_camera_centric::transparent_pass::startup::{
-    TransparentMaterialBindGroup, TransparentObjectBuffer, TransparentPipeline,
+use super::{
+    super::{
+        opaque_pass::startup::DepthTextureResource,
+        shared::shared_environment_buffer::EnvironmentBuffer, shared::CentralCameraViewBuffer,
+    },
+    extract::TransparentRenderMeshComponent,
+    queue::Transparent3dRenderPhase,
+    startup::{TransparentMaterialBindGroup, TransparentObjectBuffer, TransparentPipeline},
 };
-use crate::render_world::passes::main_camera_centric::{
-    opaque_pass::startup::DepthTextureResource,
-    shared::shared_environment_buffer::EnvironmentBuffer,
+use crate::prelude::*;
+use crate::render_world::{
+    global_extract::RenderMeshStorageResource,
+    passes::core::{RenderContext, RenderNode},
 };
 use bevy_ecs::prelude::*;
 
 pub struct TransparentPassRenderNode {
-    // caches the queries
-    mesh_query: QueryState<&'static TransparentRenderMeshComponent>,
+    mesh_query: QueryState<&'static TransparentRenderMeshComponent>, // cached query
 }
 
 impl TransparentPassRenderNode {

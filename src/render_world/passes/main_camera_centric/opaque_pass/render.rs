@@ -1,15 +1,16 @@
 use crate::prelude::*;
-use crate::render_world::global_extract::RenderMeshStorageResource;
-use crate::render_world::passes::core::{RenderContext, RenderNode};
-use crate::render_world::passes::main_camera_centric::opaque_pass::extract::OpaqueRenderMeshComponent;
-use crate::render_world::passes::main_camera_centric::opaque_pass::queue::Opaque3dRenderPhase;
-use crate::render_world::passes::main_camera_centric::shared::CentralCameraViewBuffer;
-use crate::render_world::passes::main_camera_centric::{
-    opaque_pass::startup::{
-        DepthTextureResource, OpaqueMaterialBindGroup, OpaqueObjectBuffer, OpaquePipelines,
-        OpaqueRenderMode,
+use crate::render_world::{
+    global_extract::RenderMeshStorageResource,
+    passes::core::{RenderContext, RenderNode},
+    passes::main_camera_centric::opaque_pass::{
+        extract::OpaqueRenderMeshComponent,
+        queue::Opaque3dRenderPhase,
+        startup::{
+            DepthTextureResource, OpaqueMaterialBindGroup, OpaqueObjectBuffer, OpaquePipelines,
+            OpaqueRenderMode,
+        },
     },
-    shared::shared_environment_buffer::EnvironmentBuffer,
+    passes::main_camera_centric::shared::{CentralCameraViewBuffer, EnvironmentBuffer},
 };
 use bevy_ecs::prelude::*;
 

@@ -1,5 +1,5 @@
-use crate::render_world::graphics_context::resources::RenderDevice;
-use crate::{prelude::*, render_world::graphics_context::resources::RenderQueue};
+use crate::prelude::*;
+use crate::render_world::graphics_context::resources::{RenderDevice, RenderQueue};
 use bevy_ecs::prelude::*;
 use bytemuck::{Pod, Zeroable};
 

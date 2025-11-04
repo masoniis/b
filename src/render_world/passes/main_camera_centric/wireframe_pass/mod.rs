@@ -14,11 +14,13 @@ use crate::{
     render_world::{
         global_extract::extract_resource_system,
         passes::main_camera_centric::{
-            shared::setup_central_camera_layout_system,
+            shared,
             wireframe_pass::{
                 extract::{WireframeToggleExtractor, WireframeToggleState},
                 queue::{clear_wireframe_buffer_system, queue_wireframe_system},
-                startup::{setup_wireframe_mesh_system, setup_wireframe_pipeline_and_buffers},
+                startup::{
+                    setup_unit_wireframe_cube_mesh_system, setup_wireframe_pipeline_and_buffers,
+                },
             },
         },
         RenderSchedule, RenderSet,
@@ -37,8 +39,9 @@ impl Plugin for WireframeRenderPassPlugin {
         builder
             .schedule_entry(RenderSchedule::Startup)
             .add_systems((
-                setup_wireframe_mesh_system,
-                setup_wireframe_pipeline_and_buffers.after(setup_central_camera_layout_system),
+                setup_unit_wireframe_cube_mesh_system,
+                setup_wireframe_pipeline_and_buffers
+                    .after(shared::setup_central_camera_layout_system),
             ));
 
         // INFO: -----------------

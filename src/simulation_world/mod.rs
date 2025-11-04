@@ -5,17 +5,19 @@ pub mod block;
 pub mod camera;
 pub mod chunk;
 pub mod generation;
-
 pub mod input;
 pub mod scheduling;
 pub mod time;
 pub mod user_interface;
 
+pub use scheduling::{
+    FixedUpdateSet, OnEnter, OnExit, SimulationSchedule, SimulationSet, StartupSet,
+};
+
 // INFO: -----------------------------
 //         Sim world interface
 // -----------------------------------
 
-pub use self::scheduling::{OnExit, SimulationSchedule, SimulationSet};
 use crate::render_world::{
     global_extract::utils::initialize_simulation_world_for_extract, textures::TextureRegistry,
 };
@@ -27,7 +29,6 @@ use crate::simulation_world::camera::CameraPlugin;
 use crate::simulation_world::chunk::ChunkLoadingPlugin;
 use crate::simulation_world::generation::TerrainGenerationPlugin;
 use crate::simulation_world::input::InputModulePlugin;
-use crate::simulation_world::scheduling::{FixedUpdateSet, StartupSet};
 use crate::simulation_world::time::TimeControlPlugin;
 use crate::{
     ecs_core::{worlds::SimulationWorldMarker, CommonEcsInterface, EcsBuilder, PluginGroup},

@@ -1,11 +1,12 @@
+use crate::prelude::*;
 use crate::render_world::{
+    global_extract::resources::RenderCameraResource,
     graphics_context::resources::{RenderDevice, RenderQueue},
     passes::main_camera_centric::opaque_pass::{
         extract::{OpaqueRenderMeshComponent, RenderTransformComponent},
         startup::{OpaqueObjectBuffer, OpaqueObjectData, OpaquePipelines},
     },
 };
-use crate::{prelude::*, render_world::global_extract::resources::RenderCameraResource};
 use bevy_ecs::prelude::*;
 
 #[derive(Debug)]

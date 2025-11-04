@@ -1,12 +1,13 @@
 use crate::prelude::*;
-use crate::render_world::graphics_context::resources::{RenderDevice, RenderQueue};
-use crate::render_world::passes::main_camera_centric::opaque_pass::extract::RenderTransformComponent;
-use crate::render_world::passes::main_camera_centric::wireframe_pass::startup::setup_wireframe_pipeline::{
-    WireframeObjectBuffer, WireframeObjectData, WireframePipeline,
+use crate::render_world::{
+    graphics_context::resources::{RenderDevice, RenderQueue},
+    passes::main_camera_centric::{
+        opaque_pass::extract::RenderTransformComponent,
+        wireframe_pass::startup::{WireframeObjectBuffer, WireframeObjectData, WireframePipeline},
+    },
 };
-use crate::simulation_world::chunk::consts::*;
+use crate::simulation_world::chunk::consts::{CHUNK_DEPTH, CHUNK_HEIGHT, CHUNK_WIDTH};
 use bevy_ecs::prelude::*;
-use glam::Mat4;
 
 /// A simple system to run when wireframes are disabled to ensure the buffer is cleared.
 pub fn clear_wireframe_buffer_system(mut wireframe_buffer: ResMut<WireframeObjectBuffer>) {
