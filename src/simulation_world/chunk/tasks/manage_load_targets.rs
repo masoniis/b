@@ -1,13 +1,11 @@
 use crate::prelude::*;
 use crate::simulation_world::chunk::{
-    CheckForMeshing, ChunkCoord, ChunkState, ChunkStateManager, WantsMeshing, RENDER_DISTANCE,
+    CheckForMeshing, ChunkCoord, ChunkState, ChunkStateManager, NeedsGenerating, WantsMeshing,
+    RENDER_DISTANCE,
 };
 use crate::simulation_world::{
     camera::ActiveCamera,
-    chunk::{
-        data_gen_tasks::NeedsGenerating,
-        {LOAD_DISTANCE, WORLD_MAX_Y_CHUNK, WORLD_MIN_Y_CHUNK},
-    },
+    chunk::{LOAD_DISTANCE, WORLD_MAX_Y_CHUNK, WORLD_MIN_Y_CHUNK},
 };
 use bevy_ecs::prelude::*;
 use glam::IVec3;

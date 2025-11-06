@@ -5,8 +5,8 @@ use std::hash::{Hash, Hasher};
 #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
 pub struct Vertex {
     pub position: [f32; 3],
-    pub color: [f32; 3],
     pub normal: [f32; 3],
+    pub color: [f32; 3],
     pub tex_coords: [f32; 2],
     pub texture_index: u32,
 }
@@ -23,12 +23,13 @@ impl Vertex {
     pub fn new(
         position: [f32; 3],
         normal: [f32; 3],
+        color: [f32; 3],
         tex_coords: [f32; 2],
         texture_index: u32,
     ) -> Self {
         Self {
             position,
-            color: [1.0, 1.0, 1.0],
+            color,
             normal,
             tex_coords,
             texture_index,

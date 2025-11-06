@@ -1,10 +1,12 @@
 pub mod components;
 pub mod consts;
-pub mod loading;
+pub mod meshing;
+pub mod tasks;
 
 pub use components::*;
 pub use consts::*;
-pub use loading::*;
+pub use meshing::*;
+pub use tasks::*;
 
 // INFO: ------------------------------
 //         Chunk loading plugin

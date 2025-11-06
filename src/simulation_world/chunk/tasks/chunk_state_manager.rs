@@ -37,15 +37,34 @@ impl ChunkState {
     }
 }
 
-/// Offsets to find the 6 direct neighbors of a chunk.
-pub const NEIGHBOR_OFFSETS: [IVec3; 6] = [
-    IVec3::new(1, 0, 0),  // +X
-    IVec3::new(-1, 0, 0), // -X
-    IVec3::new(0, 1, 0),  // +Y
-    IVec3::new(0, -1, 0), // -Y
-    IVec3::new(0, 0, 1),  // +Z
-    IVec3::new(0, 0, -1), // -Z
-];
+/// Offsets to find the 26 direct neighbors of a chunk.
+///
+/// If you imagine a chunk as the center of a 3x3 grid, then
+/// this returns every offset in the grid except the 0-offset
+/// which is the center chunk.
+pub const NEIGHBOR_OFFSETS: [IVec3; 26] = {
+    let mut offsets = [IVec3::ZERO; 26];
+
+    let mut index = 0;
+    let mut x = -1;
+    while x <= 1 {
+        let mut y = -1;
+        while y <= 1 {
+            let mut z = -1;
+            while z <= 1 {
+                if x != 0 || y != 0 || z != 0 {
+                    offsets[index] = IVec3::new(x, y, z);
+                    index += 1;
+                }
+                z += 1;
+            }
+            y += 1;
+        }
+        x += 1;
+    }
+
+    offsets
+};
 
 /// Holds information about a chunk's existing neighbor.
 pub struct NeighborInfo {
@@ -147,8 +166,9 @@ impl ChunkStateManager {
 
     /// Returns an iterator over all *existing* neighbors of a chunk.
     ///
-    /// This will only yield neighbors that are tracked by the manager
-    /// and have an associated entity.
+    /// A chunk neighbor is defined as ALL 26 other chunks in the 3x3
+    /// cube that the chunk is the center of. Note that this only will
+    /// yield neighbors currently tracked with an entity.
     pub fn iter_neighbors(&self, coord: IVec3) -> impl Iterator<Item = NeighborInfo> + '_ {
         NEIGHBOR_OFFSETS.into_iter().filter_map(move |offset| {
             let neighbor_coord = coord + offset;

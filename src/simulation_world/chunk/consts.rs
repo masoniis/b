@@ -7,9 +7,10 @@
 // 2^CHUNK_DIM_SHIFT will be the size of each side of the chunks
 const CHUNK_DIM_SHIFT: usize = 4;
 
-pub const CHUNK_WIDTH: usize = 2 << CHUNK_DIM_SHIFT;
-pub const CHUNK_HEIGHT: usize = 2 << CHUNK_DIM_SHIFT;
-pub const CHUNK_DEPTH: usize = 2 << CHUNK_DIM_SHIFT;
+pub const CHUNK_SIDE_LENGTH: usize = 2 << CHUNK_DIM_SHIFT;
+pub const CHUNK_WIDTH: usize = CHUNK_SIDE_LENGTH;
+pub const CHUNK_HEIGHT: usize = CHUNK_SIDE_LENGTH;
+pub const CHUNK_DEPTH: usize = CHUNK_SIDE_LENGTH;
 
 // INFO: -------------------------
 //         render distance

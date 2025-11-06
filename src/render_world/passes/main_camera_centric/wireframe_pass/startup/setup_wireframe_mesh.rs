@@ -16,19 +16,21 @@ pub struct DebugWireframeMesh {
 pub fn setup_unit_wireframe_cube_mesh_system(mut commands: Commands, device: Res<RenderDevice>) {
     let dummy_normal = [0.0, 1.0, 0.0];
     let dummy_uv = [0.0, 0.0];
+    let dummy_color = [1.0, 1.0, 1.0];
     let dummy_tex_index = 0;
 
+    #[rustfmt::skip]
     let vertices: [Vertex; 8] = [
         // Bottom face
-        Vertex::new([-0.5, -0.5, -0.5], dummy_normal, dummy_uv, dummy_tex_index), // 0
-        Vertex::new([0.5, -0.5, -0.5], dummy_normal, dummy_uv, dummy_tex_index),  // 1
-        Vertex::new([0.5, -0.5, 0.5], dummy_normal, dummy_uv, dummy_tex_index),   // 2
-        Vertex::new([-0.5, -0.5, 0.5], dummy_normal, dummy_uv, dummy_tex_index),  // 3
+        Vertex::new([-0.5, -0.5, -0.5], dummy_normal, dummy_color,  dummy_uv, dummy_tex_index), // 0
+        Vertex::new([0.5, -0.5, -0.5], dummy_normal, dummy_color, dummy_uv, dummy_tex_index),  // 1
+        Vertex::new([0.5, -0.5, 0.5], dummy_normal, dummy_color, dummy_uv, dummy_tex_index),   // 2
+        Vertex::new([-0.5, -0.5, 0.5], dummy_normal, dummy_color, dummy_uv, dummy_tex_index),  // 3
         // Top face
-        Vertex::new([-0.5, 0.5, -0.5], dummy_normal, dummy_uv, dummy_tex_index), // 4
-        Vertex::new([0.5, 0.5, -0.5], dummy_normal, dummy_uv, dummy_tex_index),  // 5
-        Vertex::new([0.5, 0.5, 0.5], dummy_normal, dummy_uv, dummy_tex_index),   // 6
-        Vertex::new([-0.5, 0.5, 0.5], dummy_normal, dummy_uv, dummy_tex_index),  // 7
+        Vertex::new([-0.5, 0.5, -0.5], dummy_normal, dummy_color, dummy_uv, dummy_tex_index), // 4
+        Vertex::new([0.5, 0.5, -0.5], dummy_normal, dummy_color, dummy_uv, dummy_tex_index),  // 5
+        Vertex::new([0.5, 0.5, 0.5], dummy_normal, dummy_color, dummy_uv, dummy_tex_index),   // 6
+        Vertex::new([-0.5, 0.5, 0.5], dummy_normal, dummy_color, dummy_uv, dummy_tex_index),  // 7
     ];
 
     // buffer

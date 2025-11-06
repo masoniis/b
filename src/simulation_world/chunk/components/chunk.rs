@@ -33,6 +33,15 @@ impl ChunkBlocksComponent {
         self.blocks.get(index)
     }
 
+    /// UNSAFELY gets a reference to the block at the given local coordinates within the chunk.
+    ///
+    /// This WILL cause undefined behavior if the coordinates are out of bounds.
+    #[inline(always)]
+    pub fn get_unchecked_block(&self, x: usize, y: usize, z: usize) -> &BlockId {
+        let index = (y << Y_SHIFT) | (z << Z_SHIFT) | x;
+        unsafe { self.blocks.get_unchecked(index) }
+    }
+
     /// Sets the block at the given local coordinates within the chunk.
     #[inline(always)]
     pub fn set_block(&mut self, x: usize, y: usize, z: usize, block: BlockId) {

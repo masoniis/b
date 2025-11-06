@@ -289,10 +289,10 @@ fn get_face(
     // Define standard UVs
     let uvs = [[0.0, 1.0], [1.0, 1.0], [1.0, 0.0], [0.0, 0.0]];
     let final_vertices = vec![
-        Vertex::new(verts[0], normal, uvs[0], tex_index),
-        Vertex::new(verts[1], normal, uvs[1], tex_index),
-        Vertex::new(verts[2], normal, uvs[2], tex_index),
-        Vertex::new(verts[3], normal, uvs[3], tex_index),
+        Vertex::new(verts[0], normal, [1.0, 1.0, 1.0], uvs[0], tex_index),
+        Vertex::new(verts[1], normal, [1.0, 1.0, 1.0], uvs[1], tex_index),
+        Vertex::new(verts[2], normal, [1.0, 1.0, 1.0], uvs[2], tex_index),
+        Vertex::new(verts[3], normal, [1.0, 1.0, 1.0], uvs[3], tex_index),
     ];
 
     let indices = [
