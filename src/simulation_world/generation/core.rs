@@ -1,8 +1,9 @@
 use crate::prelude::*;
 use crate::simulation_world::block::BlockRegistryResource;
+use crate::simulation_world::chunk::{WorldVoxelIteratorWithColumn, WorldVoxelPositionIterator};
 use crate::simulation_world::{
     biome::BiomeRegistryResource,
-    chunk::{ChunkBlocksComponent, ChunkCoord},
+    chunk::{types::ChunkLod, ChunkBlocksComponent},
     generation::{
         BiomeMapComponent, ClimateNoiseGenerator, DefaultBiomeGenerator, SuperflatGenerator,
         TerrainClimateMapComponent,
@@ -35,14 +36,17 @@ impl Default for ActiveBiomeGenerator {
 //         Biome generator
 // -------------------------------
 
-/// A trait for just generating the biome map
+/// A trait for just filling the biome map
 pub trait BiomeGenerator: Send + Sync + Debug {
     fn generate_biome_chunk(
         &self,
-        coord: &ChunkCoord,
+        biome_map: &mut BiomeMapComponent,
+        terrain_climate_map: &mut TerrainClimateMapComponent,
+        iterator: WorldVoxelIteratorWithColumn,
+
         climate_noise: &ClimateNoiseGenerator,
         biome_registry: &BiomeRegistryResource,
-    ) -> GeneratedBiomeData;
+    );
 }
 
 /// A struct representing generated biome data for every block in a chunk.
@@ -52,10 +56,10 @@ pub struct GeneratedBiomeData {
 }
 
 impl GeneratedBiomeData {
-    pub fn empty() -> Self {
+    pub fn empty(lod: ChunkLod) -> Self {
         Self {
-            biome_map: BiomeMapComponent::empty(),
-            terrain_climate_map: TerrainClimateMapComponent::empty(),
+            biome_map: BiomeMapComponent::new_empty(lod),
+            terrain_climate_map: TerrainClimateMapComponent::new_empty(lod),
         }
     }
 
@@ -70,23 +74,25 @@ impl GeneratedBiomeData {
 
 /// A trait for chunk generators to implement.
 pub trait TerrainGenerator: Send + Sync + Debug {
-    /// Returns generated chunk data for the given chunk coordinates.
+    /// Takes in empty chunk blocks and fills them in according to the generator's logic.
     fn generate_terrain_chunk(
         &self,
-        coord: IVec3,
+        chunk_blocks: &mut ChunkBlocksComponent,
+        iterator: WorldVoxelPositionIterator,
+
         biome_map: &BiomeMapComponent,
         climate_map: &TerrainClimateMapComponent,
 
         block_registry: &BlockRegistryResource,
         biome_registry: &BiomeRegistryResource,
-    ) -> GeneratedTerrainData;
+    );
 
     /// A fast, cheap check to see if this chunk will be *guaranteed* empty.
-    /// If this returns `true`, `generate_terrain_chunk`, and neither is the
-    /// biome generation for the chunk. This has massive performance gains.
+    /// If this returns `true`, `generate_terrain_chunk` is never called and
+    /// the biome generation never happens, resulting in massive perf gains.
     ///
-    /// This is an optimization. By default, we assume the chunk is not empty
-    /// to force the full generation path.
+    /// This is an optimization specific to each generator. By default, we
+    /// assume the chunk is not empty to force the full generation path.
     fn is_chunk_empty(&self, _: IVec3) -> bool {
         false
     }
@@ -106,7 +112,7 @@ impl GeneratedTerrainData {
     /// Generates an all-air chunk data instance.
     pub fn all_air() -> Self {
         Self {
-            chunk_blocks: Some(ChunkBlocksComponent::empty()),
+            chunk_blocks: Some(ChunkBlocksComponent::new_empty(ChunkLod(0))),
         }
     }
 }

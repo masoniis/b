@@ -41,7 +41,7 @@ pub fn poll_chunk_generation_tasks(
             Ok(gen_bundle) => {
                 let current_state = chunk_manager.get_state(coord.pos);
                 match current_state {
-                    Some(ChunkState::Generating(gen_entity)) if gen_entity == entity => {
+                    Some(ChunkState::Generating { entity: gen_entity }) if gen_entity == entity => {
                         if let Some(chunk_blocks) = gen_bundle.chunk_blocks {
                             let mut is_in_mesh_radius = false;
                             if let Ok(cam_pos) = camera_chunk_pos {
@@ -89,7 +89,7 @@ pub fn poll_chunk_generation_tasks(
                         // ping any neighbors that may have been waiting on this chunk
                         for neighbor in chunk_manager.iter_neighbors(coord.pos) {
                             match neighbor.state {
-                                ChunkState::WantsMeshing(_) => {
+                                ChunkState::WantsMeshing { .. } => {
                                     commands.entity(neighbor.entity).insert(CheckForMeshing);
                                 }
                                 _ => {}

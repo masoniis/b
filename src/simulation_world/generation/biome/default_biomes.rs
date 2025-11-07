@@ -1,13 +1,9 @@
 use crate::prelude::*;
-use glam::IVec3;
-use std::fmt::Debug;
-
+use crate::simulation_world::chunk::WorldVoxelIteratorWithColumn;
 use crate::simulation_world::{
     biome::BiomeRegistryResource,
-    chunk::{ChunkCoord, CHUNK_DEPTH, CHUNK_HEIGHT, CHUNK_WIDTH},
     generation::{
-        core::{BiomeGenerator, GeneratedBiomeData},
-        BiomeMapComponent, ClimateNoiseGenerator, TerrainClimateMapComponent,
+        core::BiomeGenerator, BiomeMapComponent, ClimateNoiseGenerator, TerrainClimateMapComponent,
     },
 };
 
@@ -19,45 +15,46 @@ impl BiomeGenerator for DefaultBiomeGenerator {
     #[instrument(skip_all)]
     fn generate_biome_chunk(
         &self,
-        coord: &ChunkCoord,
+        biome_map: &mut BiomeMapComponent,
+        terrain_climate_map: &mut TerrainClimateMapComponent,
+        iterator: WorldVoxelIteratorWithColumn,
+
         climate_noise: &ClimateNoiseGenerator,
         biome_registry: &BiomeRegistryResource,
-    ) -> GeneratedBiomeData {
-        // maps to populate
-        let mut biome_map = BiomeMapComponent::empty();
-        let mut terrain_climate_map = TerrainClimateMapComponent::empty();
-
+    ) {
         let plains_id = biome_registry.get_biome_id_or_default("plains");
         let ocean_id = biome_registry.get_biome_id_or_default("ocean");
 
-        for x in 0..CHUNK_WIDTH {
-            for z in 0..CHUNK_DEPTH {
-                // generate 2d noise params
-                let world_pos = coord.get_block_world_pos(IVec3::new(x as i32, 0 as i32, z as i32));
+        let mut climate_data_for_column = Default::default();
 
-                // FIXME: this line is causing the slow down
-                let climate_data = climate_noise.get_climate_at(world_pos.x, world_pos.z);
-                terrain_climate_map.set_climate(x, z, climate_data.terrain_climate);
-                let (temperature, _precipitation) =
-                    (climate_data.temperature, climate_data.precipitation);
+        // --- Single loop using the smart iterator ---
+        for item in iterator {
+            // Destructure the local coordinates
+            let (x, y, z) = item.local;
 
-                for y in 0..CHUNK_HEIGHT {
-                    // INFO: --------------------------
-                    //         Determine biomes
-                    // --------------------------------
+            // --- 1. 2D Column Work ---
+            // Check if this is the first (y=0) voxel of a new (x, z) column
+            if item.is_new_column {
+                // Calculate 2D noise data *once* per column
+                climate_data_for_column = climate_noise.get_climate_at(item.world.x, item.world.z);
 
-                    if temperature >= 0.5 {
-                        biome_map.set_biome(x, y, z, plains_id);
-                    } else {
-                        biome_map.set_biome(x, y, z, ocean_id);
-                    }
-                }
+                // Set the 2D climate map
+                terrain_climate_map.set_data(x, z, climate_data_for_column.terrain_climate);
+            }
+
+            // --- 2. 3D Voxel Work ---
+            // This code runs for every 'y' in the column,
+            // reusing the cached 'climate_data_for_column'.
+            // INFO: --------------------------
+            //         Determine biomes
+            // --------------------------------
+
+            let temperature = climate_data_for_column.temperature;
+            if temperature >= 0.5 {
+                biome_map.set_data(x, y, z, plains_id);
+            } else {
+                biome_map.set_data(x, y, z, ocean_id);
             }
         }
-
-        return GeneratedBiomeData {
-            biome_map,
-            terrain_climate_map,
-        };
     }
 }

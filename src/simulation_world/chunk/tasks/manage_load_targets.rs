@@ -54,12 +54,12 @@ pub fn manage_distance_based_chunk_loading_targets_system(
         // if chunk is within render distance and has data, ensure it is meshed
         if desired_mesh_chunks.contains(coord) {
             match state {
-                ChunkState::DataReady(entity) => {
+                ChunkState::DataReady { entity } => {
                     debug!(target:"chunk_meshing", "Promoting chunk {:?} to NeedsMeshing", coord);
                     commands
                         .entity(*entity)
                         .insert((WantsMeshing, CheckForMeshing));
-                    *state = ChunkState::WantsMeshing(*entity);
+                    *state = ChunkState::WantsMeshing { entity: *entity };
                 }
                 _ => {}
             }
@@ -71,16 +71,18 @@ pub fn manage_distance_based_chunk_loading_targets_system(
             } else {
                 // chunk is outside load distance, unload it completely
                 match state {
-                    ChunkState::NeedsGenerating(entity)
-                    | ChunkState::Generating(entity)
-                    | ChunkState::DataReady(entity)
-                    | ChunkState::WantsMeshing(entity)
-                    | ChunkState::Meshing(entity)
-                    | ChunkState::Loaded(Some(entity)) => {
+                    ChunkState::NeedsGenerating { entity, .. }
+                    | ChunkState::Generating { entity }
+                    | ChunkState::DataReady { entity }
+                    | ChunkState::WantsMeshing { entity }
+                    | ChunkState::Meshing { entity }
+                    | ChunkState::Loaded {
+                        entity: Some(entity),
+                    } => {
                         debug!(target:"chunk_loading", "Unloading chunk at {:?} (Entity: {:?})", coord, entity);
                         commands.entity(*entity).despawn();
                     }
-                    ChunkState::Loaded(None) => {
+                    ChunkState::Loaded { entity: None } => {
                         // already unloaded, nothing to despawn
                         debug!(target:"chunk_loading", "Marking chunk at {:?} as unloaded (was already unloaded)", coord);
                     }
@@ -110,7 +112,7 @@ pub fn manage_distance_based_chunk_loading_targets_system(
             let ent = commands
                 .spawn((NeedsGenerating, ChunkCoord { pos: coord }))
                 .id();
-            chunk_manager.mark_as_needs_generating(coord, ent);
+            chunk_manager.mark_as_needs_generating(coord, 0, ent);
         }
     }
 }

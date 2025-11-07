@@ -1,4 +1,5 @@
-use crate::simulation_world::chunk::{CHUNK_AREA, Z_SHIFT};
+use crate::prelude::*;
+use crate::simulation_world::chunk::{types::ChunkLod, ChunkColumnData};
 use bevy_ecs::component::Component;
 
 // INFO: --------------------------------
@@ -31,26 +32,15 @@ pub struct TerrainClimateData {
 }
 
 /// Stores the climate data (temperature, precipitation) for every COLUMN in a chunk.
-#[derive(Component, Clone)]
-pub struct TerrainClimateMapComponent(pub [TerrainClimateData; CHUNK_AREA]);
+#[derive(Component, Clone, Deref, DerefMut)]
+pub struct TerrainClimateMapComponent(pub ChunkColumnData<TerrainClimateData>);
 
 impl TerrainClimateMapComponent {
     /// Creates a new climate map filled with default values (0.0 for temp/precip).
-    pub fn empty() -> Self {
-        Self([TerrainClimateData::default(); CHUNK_AREA])
-    }
-
-    /// Gets the climate data for a specific block coordinate within the chunk.
-    #[inline(always)]
-    pub fn get_climate(&self, x: usize, z: usize) -> TerrainClimateData {
-        let index = (z << Z_SHIFT) | x;
-        self.0[index]
-    }
-
-    /// Sets the climate data for a specific block coordinate within the chunk.
-    #[inline(always)]
-    pub fn set_climate(&mut self, x: usize, z: usize, climate: TerrainClimateData) {
-        let index = (z << Z_SHIFT) | x;
-        self.0[index] = climate;
+    pub fn new_empty(lod: ChunkLod) -> Self {
+        Self(ChunkColumnData::new_filled(
+            lod,
+            TerrainClimateData::default(),
+        ))
     }
 }

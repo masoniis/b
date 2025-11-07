@@ -24,7 +24,7 @@ pub fn poll_chunk_meshing_tasks(
             Ok((opaque_mesh_option, transparent_mesh_option)) => {
                 let current_state = chunk_manager.get_state(coord.pos);
                 match current_state {
-                    Some(ChunkState::Meshing(gen_entity)) if gen_entity == entity => {
+                    Some(ChunkState::Meshing { entity: gen_entity }) if gen_entity == entity => {
                         trace!(target : "chunk_loading","Chunk meshing finished for {:?}", coord);
 
                         match (opaque_mesh_option, transparent_mesh_option) {

@@ -1,5 +1,9 @@
 use crate::prelude::*;
-use crate::simulation_world::chunk::{ChunkGenerationTaskComponent, ChunkState, NeedsGenerating};
+use crate::simulation_world::chunk::{
+    ChunkBlocksComponent, ChunkGenerationTaskComponent, ChunkLod, ChunkState, NeedsGenerating,
+    WorldVoxelIteratorWithColumn, WorldVoxelPositionIterator,
+};
+use crate::simulation_world::generation::{BiomeMapComponent, TerrainClimateMapComponent};
 use crate::simulation_world::{
     biome::BiomeRegistryResource,
     block::BlockRegistryResource,
@@ -33,7 +37,10 @@ pub fn start_pending_generation_tasks_system(
     for (entity, _, coord) in pending_chunks_query.iter_mut() {
         // check for cancellation
         match chunk_manager.get_state(coord.pos) {
-            Some(ChunkState::NeedsGenerating(state_entity)) if state_entity == entity => {
+            Some(ChunkState::NeedsGenerating {
+                entity: state_entity,
+                ..
+            }) if state_entity == entity => {
                 // state is correct, proceed to start generation
             }
             _ => {
@@ -69,14 +76,31 @@ pub fn start_pending_generation_tasks_system(
         let coord_clone = coord.clone();
 
         rayon::spawn(move || {
-            let (biome_map, climate_map) = biome_gen
-                .generate_biome_chunk(&coord_clone, &climate_noise_clone, &biomes_clone)
-                .as_tuple();
+            // for debugging, override the chunk lod for now
+            let mut lod = ChunkLod(0);
+            if coord_clone.z >= 5 && (coord_clone.x == 0 || coord_clone.x == 1) {
+                lod = ChunkLod(3);
+            }
 
-            let tgen = terrain_gen.generate_terrain_chunk(
-                coord_clone.pos,
+            let iterator = WorldVoxelIteratorWithColumn::new(coord_clone.pos, lod);
+            let mut biome_map = BiomeMapComponent::new_empty(lod);
+            let mut terrain_map = TerrainClimateMapComponent::new_empty(lod);
+
+            biome_gen.generate_biome_chunk(
+                &mut biome_map,
+                &mut terrain_map,
+                iterator,
+                &climate_noise_clone,
+                &biomes_clone,
+            );
+
+            let mut chunk_blocks = ChunkBlocksComponent::new_empty(lod);
+            let iterator = WorldVoxelPositionIterator::new(coord_clone.pos, lod);
+            terrain_gen.generate_terrain_chunk(
+                &mut chunk_blocks,
+                iterator,
                 &biome_map,
-                &climate_map,
+                &terrain_map,
                 &blocks_clone,
                 &biomes_clone,
             );
@@ -88,7 +112,7 @@ pub fn start_pending_generation_tasks_system(
             );
 
             let bundle = GeneratedChunkComponentBundle {
-                chunk_blocks: tgen.chunk_blocks,
+                chunk_blocks: Some(chunk_blocks),
                 biome_map: biome_map,
             };
             let _ = sender.send(bundle);

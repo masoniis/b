@@ -6,7 +6,7 @@ use crate::simulation_world::{
         block_registry::{BlockId, AIR_BLOCK_ID},
         BlockProperties, BlockRegistryResource,
     },
-    chunk::{PaddedChunkView, CHUNK_DEPTH, CHUNK_HEIGHT, CHUNK_WIDTH},
+    chunk::{types::ChunkLod, NeighborLODs, PaddedChunkView, CHUNK_SIDE_LENGTH},
 };
 
 type OpaqueMeshData = MeshAsset;
@@ -207,6 +207,9 @@ fn should_render_face(
     neighbor_id: BlockId,
     neighbor_transparent: bool,
 ) -> bool {
+    // TODO: if block is on a border and neighbor is UPSAMPLED then we should conservatively
+    // always render the face
+
     match (current_transparent, neighbor_transparent) {
         (false, true) => true,                     // opaque facing transparent
         (true, true) => current_id != neighbor_id, // different transparent blocks
@@ -254,11 +257,18 @@ pub fn build_chunk_mesh(
     let mut transparent_vertices: Vec<Vertex> = Vec::new();
     let mut transparent_indices: Vec<u32> = Vec::new();
 
-    for y in 0..CHUNK_HEIGHT {
-        for z in 0..CHUNK_DEPTH {
-            for x in 0..CHUNK_WIDTH {
-                let pos = IVec3::new(x as i32, y as i32, z as i32);
+    let size = padded_chunk.size() as usize;
+    let scale = (CHUNK_SIDE_LENGTH / size) as f32;
 
+    // get LOD info for visual stitching
+    let i_size = padded_chunk.size();
+    let center_lod = padded_chunk.center_lod();
+    let all_lods = padded_chunk.neighbor_lods();
+
+    for x in 0..size {
+        for z in 0..size {
+            for y in 0..size {
+                let pos = IVec3::new(x as i32, y as i32, z as i32);
                 let current_block_id = padded_chunk.get_block(pos);
 
                 // skip air blocks
@@ -266,8 +276,8 @@ pub fn build_chunk_mesh(
                     continue;
                 }
 
+                // get block properties
                 let current_block_props = block_registry.get(current_block_id);
-
                 let (target_vertices, target_indices) = if current_block_props.is_transparent {
                     (&mut transparent_vertices, &mut transparent_indices)
                 } else {
@@ -290,7 +300,7 @@ pub fn build_chunk_mesh(
                         let tex_id = (direction.get_texture)(current_block_props);
                         let tex_index = texture_map.registry.get(tex_id);
 
-                        // AO calculation for the face
+                        // calculate ao
                         let face_index = direction.face as usize;
                         let ao_values = [
                             AO_MAPPING[get_ao(
@@ -329,12 +339,14 @@ pub fn build_chunk_mesh(
 
                         let (face_verts, face_indices) = create_face_verts(
                             &direction.face,
-                            x,
-                            y,
-                            z,
+                            pos,
+                            scale,
                             tex_index,
                             base_vertex_count,
                             ao_values,
+                            i_size,
+                            center_lod,
+                            all_lods,
                         );
                         target_vertices.extend(face_verts);
                         target_indices.extend(face_indices);
@@ -377,101 +389,279 @@ enum Face {
     Back = 5,
 }
 
+/// Vertex offsets for each corner of a block's face.
+/// Used to determine which chunks share a given vertex.
+const VERTEX_OFFSETS: [[IVec3; 4]; 6] = [
+    // Top
+    [
+        IVec3::new(-1, 1, 1),  // v0 (front-left)
+        IVec3::new(1, 1, 1),   // v1 (front-right)
+        IVec3::new(1, 1, -1),  // v2 (back-right)
+        IVec3::new(-1, 1, -1), // v3 (back-left)
+    ],
+    // Bottom
+    [
+        IVec3::new(-1, -1, -1),
+        IVec3::new(1, -1, -1),
+        IVec3::new(1, -1, 1),
+        IVec3::new(-1, -1, 1),
+    ],
+    // Left
+    [
+        IVec3::new(-1, -1, -1),
+        IVec3::new(-1, -1, 1),
+        IVec3::new(-1, 1, 1),
+        IVec3::new(-1, 1, -1),
+    ],
+    // Right
+    [
+        IVec3::new(1, -1, 1),
+        IVec3::new(1, -1, -1),
+        IVec3::new(1, 1, -1),
+        IVec3::new(1, 1, 1),
+    ],
+    // Front
+    [
+        IVec3::new(-1, -1, 1),
+        IVec3::new(1, -1, 1),
+        IVec3::new(1, 1, 1),
+        IVec3::new(-1, 1, 1),
+    ],
+    // Back
+    [
+        IVec3::new(1, -1, -1),
+        IVec3::new(-1, -1, -1),
+        IVec3::new(-1, 1, -1),
+        IVec3::new(1, 1, -1),
+    ],
+];
+
+/// Calculates the snapped position of a vertex based on the max LOD of all chunks sharing it.
+fn get_snapped_pos(
+    vertex_world_pos: [f32; 3],
+    vertex_offset: IVec3, // vertex's offset from the block center (e.g., (1, 1, 1))
+    block_chunk_pos: IVec3, // block's position within the chunk (0-31)
+    chunk_size: i32,
+    center_lod: ChunkLod,
+    all_lods: &NeighborLODs,
+) -> [f32; 3] {
+    let max_idx = chunk_size - 1;
+
+    // INFO: -----------------------------------------------
+    //         determine if we are on chunk boundary
+    // -----------------------------------------------------
+
+    let x_check_idx = if block_chunk_pos.x == 0 && vertex_offset.x < 0 {
+        0 // on -X boundary
+    } else if block_chunk_pos.x == max_idx && vertex_offset.x > 0 {
+        2 // on +X boundary
+    } else {
+        1 // not on X boundary
+    };
+
+    let y_check_idx = if block_chunk_pos.y == 0 && vertex_offset.y < 0 {
+        0 // On -Y boundary
+    } else if block_chunk_pos.y == max_idx && vertex_offset.y > 0 {
+        2 // on +Y boundary
+    } else {
+        1 // not on Y boundary
+    };
+
+    let z_check_idx = if block_chunk_pos.z == 0 && vertex_offset.z < 0 {
+        0 // on -Z boundary
+    } else if block_chunk_pos.z == max_idx && vertex_offset.z > 0 {
+        2 // on +Z boundary
+    } else {
+        1 // not on Z boundary
+    };
+
+    // INFO: ------------------------------------------------
+    //         find highest LOD of all sharing chunks
+    // ------------------------------------------------------
+
+    let (x_min, x_max) = if x_check_idx != 1 {
+        (x_check_idx.min(1), x_check_idx.max(1))
+    } else {
+        (1, 1)
+    };
+    let (y_min, y_max) = if y_check_idx != 1 {
+        (y_check_idx.min(1), y_check_idx.max(1))
+    } else {
+        (1, 1)
+    };
+    let (z_min, z_max) = if z_check_idx != 1 {
+        (z_check_idx.min(1), z_check_idx.max(1))
+    } else {
+        (1, 1)
+    };
+
+    let mut max_lod = center_lod;
+    for i in x_min..=x_max {
+        for j in y_min..=y_max {
+            for k in z_min..=z_max {
+                if let Some(lod) = all_lods[i as usize][j as usize][k as usize] {
+                    max_lod = max_lod.max(lod);
+                }
+            }
+        }
+    }
+
+    // snap to max lod grid
+    if max_lod > center_lod {
+        let grid_scale = (1 << *max_lod) as f32;
+        let snap = |c: f32| (c / grid_scale).round() * grid_scale;
+        [
+            snap(vertex_world_pos[0]),
+            snap(vertex_world_pos[1]),
+            snap(vertex_world_pos[2]),
+        ]
+    } else {
+        vertex_world_pos // no snapping
+    }
+}
+
 fn create_face_verts(
     face: &Face,
-    x: usize,
-    y: usize,
-    z: usize,
+    block_pos: IVec3,
+    scale: f32,
     tex_index: u32,
     base_vertex_count: u32,
     ao_values: [f32; 4],
+    size: i32,
+    center_lod: ChunkLod,
+    all_lods: &NeighborLODs,
 ) -> (Vec<Vertex>, [u32; 6]) {
-    let (fx, fy, fz) = (x as f32, y as f32, z as f32);
+    let half_s = scale * 0.5;
+    let (fx, fy, fz) = (
+        (block_pos.x as f32 * scale) + half_s,
+        (block_pos.y as f32 * scale) + half_s,
+        (block_pos.z as f32 * scale) + half_s,
+    );
 
     let (verts, normal): (Vec<[f32; 3]>, [f32; 3]) = match face {
         Face::Top => (
             vec![
-                [-0.5 + fx, 0.5 + fy, 0.5 + fz],  // v0
-                [0.5 + fx, 0.5 + fy, 0.5 + fz],   // v1
-                [0.5 + fx, 0.5 + fy, -0.5 + fz],  // v2
-                [-0.5 + fx, 0.5 + fy, -0.5 + fz], // v3
+                [-half_s + fx, half_s + fy, half_s + fz],  // v0
+                [half_s + fx, half_s + fy, half_s + fz],   // v1
+                [half_s + fx, half_s + fy, -half_s + fz],  // v2
+                [-half_s + fx, half_s + fy, -half_s + fz], // v3
             ],
             [0.0, 1.0, 0.0],
         ),
         Face::Bottom => (
             vec![
-                [-0.5 + fx, -0.5 + fy, -0.5 + fz],
-                [0.5 + fx, -0.5 + fy, -0.5 + fz],
-                [0.5 + fx, -0.5 + fy, 0.5 + fz],
-                [-0.5 + fx, -0.5 + fy, 0.5 + fz],
+                [-half_s + fx, -half_s + fy, -half_s + fz],
+                [half_s + fx, -half_s + fy, -half_s + fz],
+                [half_s + fx, -half_s + fy, half_s + fz],
+                [-half_s + fx, -half_s + fy, half_s + fz],
             ],
             [0.0, -1.0, 0.0],
         ),
         Face::Left => (
             vec![
-                [-0.5 + fx, -0.5 + fy, -0.5 + fz],
-                [-0.5 + fx, -0.5 + fy, 0.5 + fz],
-                [-0.5 + fx, 0.5 + fy, 0.5 + fz],
-                [-0.5 + fx, 0.5 + fy, -0.5 + fz],
+                [-half_s + fx, -half_s + fy, -half_s + fz],
+                [-half_s + fx, -half_s + fy, half_s + fz],
+                [-half_s + fx, half_s + fy, half_s + fz],
+                [-half_s + fx, half_s + fy, -half_s + fz],
             ],
             [-1.0, 0.0, 0.0],
         ),
         Face::Right => (
             vec![
-                [0.5 + fx, -0.5 + fy, 0.5 + fz],
-                [0.5 + fx, -0.5 + fy, -0.5 + fz],
-                [0.5 + fx, 0.5 + fy, -0.5 + fz],
-                [0.5 + fx, 0.5 + fy, 0.5 + fz],
+                [half_s + fx, -half_s + fy, half_s + fz],
+                [half_s + fx, -half_s + fy, -half_s + fz],
+                [half_s + fx, half_s + fy, -half_s + fz],
+                [half_s + fx, half_s + fy, half_s + fz],
             ],
             [1.0, 0.0, 0.0],
         ),
         Face::Front => (
             vec![
-                [-0.5 + fx, -0.5 + fy, 0.5 + fz],
-                [0.5 + fx, -0.5 + fy, 0.5 + fz],
-                [0.5 + fx, 0.5 + fy, 0.5 + fz],
-                [-0.5 + fx, 0.5 + fy, 0.5 + fz],
+                [-half_s + fx, -half_s + fy, half_s + fz],
+                [half_s + fx, -half_s + fy, half_s + fz],
+                [half_s + fx, half_s + fy, half_s + fz],
+                [-half_s + fx, half_s + fy, half_s + fz],
             ],
             [0.0, 0.0, 1.0],
         ),
         Face::Back => (
             vec![
-                [0.5 + fx, -0.5 + fy, -0.5 + fz],
-                [-0.5 + fx, -0.5 + fy, -0.5 + fz],
-                [-0.5 + fx, 0.5 + fy, -0.5 + fz],
-                [0.5 + fx, 0.5 + fy, -0.5 + fz],
+                [half_s + fx, -half_s + fy, -half_s + fz],
+                [-half_s + fx, -half_s + fy, -half_s + fz],
+                [-half_s + fx, half_s + fy, -half_s + fz],
+                [half_s + fx, half_s + fy, -half_s + fz],
             ],
             [0.0, 0.0, -1.0],
         ),
     };
+
+    // Get the vertex offsets for the current face
+    let face_idx = *face as usize;
+    let v_offsets = &VERTEX_OFFSETS[face_idx];
+
+    // Calculate final snapped positions
+    let snapped_verts = [
+        get_snapped_pos(
+            verts[0],
+            v_offsets[0],
+            block_pos,
+            size,
+            center_lod,
+            all_lods,
+        ),
+        get_snapped_pos(
+            verts[1],
+            v_offsets[1],
+            block_pos,
+            size,
+            center_lod,
+            all_lods,
+        ),
+        get_snapped_pos(
+            verts[2],
+            v_offsets[2],
+            block_pos,
+            size,
+            center_lod,
+            all_lods,
+        ),
+        get_snapped_pos(
+            verts[3],
+            v_offsets[3],
+            block_pos,
+            size,
+            center_lod,
+            all_lods,
+        ),
+    ];
 
     let uvs = [[0.0, 1.0], [1.0, 1.0], [1.0, 0.0], [0.0, 0.0]];
 
     // apply ao to color for the 4 vertices
     let final_vertices = vec![
         Vertex::new(
-            verts[0],
+            snapped_verts[0],
             normal,
             [ao_values[0], ao_values[0], ao_values[0]],
             uvs[0],
             tex_index,
         ),
         Vertex::new(
-            verts[1],
+            snapped_verts[1],
             normal,
             [ao_values[1], ao_values[1], ao_values[1]],
             uvs[1],
             tex_index,
         ),
         Vertex::new(
-            verts[2],
+            snapped_verts[2],
             normal,
             [ao_values[2], ao_values[2], ao_values[2]],
             uvs[2],
             tex_index,
         ),
         Vertex::new(
-            verts[3],
+            snapped_verts[3],
             normal,
             [ao_values[3], ao_values[3], ao_values[3]],
             uvs[3],
