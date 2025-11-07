@@ -17,27 +17,18 @@ impl ChunkBlocksComponent {
         }
     }
 
-    /// Gets a reference to the block at the given local coordinates within the chunk.
-    #[inline(always)]
-    pub fn get_block(&self, x: usize, y: usize, z: usize) -> Option<&BlockId> {
-        if cfg!(debug_assertions) && (x >= CHUNK_WIDTH || y >= CHUNK_HEIGHT || z >= CHUNK_DEPTH) {
-            error!(
-                "get_block: Attempted to access block out of bounds: ({}, {}, {})",
-                x, y, z
-            );
-            return None;
-        }
-
-        let index = (y << Y_SHIFT) | (z << Z_SHIFT) | x;
-
-        self.blocks.get(index)
-    }
-
     /// UNSAFELY gets a reference to the block at the given local coordinates within the chunk.
     ///
     /// This WILL cause undefined behavior if the coordinates are out of bounds.
     #[inline(always)]
     pub fn get_unchecked_block(&self, x: usize, y: usize, z: usize) -> &BlockId {
+        if cfg!(debug_assertions) && (x >= CHUNK_WIDTH || y >= CHUNK_HEIGHT || z >= CHUNK_DEPTH) {
+            error!(
+                "get_block: Attempted to access block out of bounds: ({}, {}, {})",
+                x, y, z
+            );
+        }
+
         let index = (y << Y_SHIFT) | (z << Z_SHIFT) | x;
         unsafe { self.blocks.get_unchecked(index) }
     }

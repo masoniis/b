@@ -1,13 +1,12 @@
 use crate::prelude::*;
 use crate::render_world::types::{TextureId, Vertex};
-use crate::simulation_world::asset_management::MeshAsset;
-use crate::simulation_world::block::block_registry::{BlockId, AIR_BLOCK_ID};
-use crate::simulation_world::block::BlockProperties;
-use crate::simulation_world::chunk::padded_chunk_view::PaddedChunkView;
 use crate::simulation_world::{
-    asset_management::texture_map_registry::TextureMapResource,
-    block::BlockRegistryResource,
-    chunk::{CHUNK_DEPTH, CHUNK_HEIGHT, CHUNK_WIDTH},
+    asset_management::{texture_map_registry::TextureMapResource, MeshAsset},
+    block::{
+        block_registry::{BlockId, AIR_BLOCK_ID},
+        BlockProperties, BlockRegistryResource,
+    },
+    chunk::{PaddedChunkView, CHUNK_DEPTH, CHUNK_HEIGHT, CHUNK_WIDTH},
 };
 
 type OpaqueMeshData = MeshAsset;
@@ -44,12 +43,12 @@ const FACE_DIRECTIONS: [FaceDirection; 6] = [
     FaceDirection {
         offset: IVec3::new(0, 0, 1),
         face: Face::Front,
-        get_texture: |props| props.textures.back,
+        get_texture: |props| props.textures.front,
     },
     FaceDirection {
         offset: IVec3::new(0, 0, -1),
         face: Face::Back,
-        get_texture: |props| props.textures.front,
+        get_texture: |props| props.textures.back,
     },
 ];
 
@@ -385,7 +384,7 @@ fn create_face_verts(
     z: usize,
     tex_index: u32,
     base_vertex_count: u32,
-    ao_values: [f32; 4], // AO values for v0, v1, v2, v3
+    ao_values: [f32; 4],
 ) -> (Vec<Vertex>, [u32; 6]) {
     let (fx, fy, fz) = (x as f32, y as f32, z as f32);
 
@@ -448,7 +447,7 @@ fn create_face_verts(
 
     let uvs = [[0.0, 1.0], [1.0, 1.0], [1.0, 0.0], [0.0, 0.0]];
 
-    // apply AO to color for the 4 vertices
+    // apply ao to color for the 4 vertices
     let final_vertices = vec![
         Vertex::new(
             verts[0],

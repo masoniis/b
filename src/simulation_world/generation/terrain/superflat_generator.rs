@@ -16,7 +16,11 @@ pub struct SuperflatGenerator {
 impl SuperflatGenerator {
     pub fn new() -> Self {
         Self {
-            base_layers: vec!["stone".to_string(), "stone".to_string()],
+            base_layers: vec![
+                "stone".to_string(),
+                "stone".to_string(),
+                "stone".to_string(),
+            ],
         }
     }
 }

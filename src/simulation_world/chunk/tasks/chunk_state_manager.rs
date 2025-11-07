@@ -2,6 +2,8 @@ use bevy_ecs::prelude::*;
 use glam::IVec3;
 use std::collections::HashMap;
 
+use crate::simulation_world::chunk::{WORLD_MAX_Y_CHUNK, WORLD_MIN_Y_CHUNK};
+
 /// Represents the various states a chunk can be in during loading and generation.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ChunkState {
@@ -146,9 +148,9 @@ impl ChunkStateManager {
         self.chunk_states.remove(&coord);
     }
 
-    // INFO: -----------------------------
-    //         util/helper methods
-    // -----------------------------------
+    // INFO: -------------------------------
+    //         util instance methods
+    // -------------------------------------
 
     /// A help to iterate over all chunks needing meshing.
     ///
@@ -181,5 +183,15 @@ impl ChunkStateManager {
                     entity,
                 })
         })
+    }
+
+    // INFO: -----------------------------
+    //         static util methods
+    // -----------------------------------
+
+    /// Determines if a coord is in bounds
+    pub fn is_in_bounds(coord: IVec3) -> bool {
+        let pos_y = coord.y;
+        return (pos_y >= WORLD_MIN_Y_CHUNK) && (pos_y <= WORLD_MAX_Y_CHUNK);
     }
 }

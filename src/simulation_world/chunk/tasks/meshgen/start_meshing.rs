@@ -1,7 +1,7 @@
 use crate::prelude::*;
 use crate::simulation_world::chunk::chunk_state_manager::NEIGHBOR_OFFSETS;
 use crate::simulation_world::chunk::mesh::TransparentMeshComponent;
-use crate::simulation_world::chunk::padded_chunk_view::PaddedChunkView;
+use crate::simulation_world::chunk::padded_chunk_view::{ChunkDataOption, PaddedChunkView};
 use crate::simulation_world::chunk::{
     CheckForMeshing, ChunkMeshingTaskComponent, ChunkState, WantsMeshing,
 };
@@ -56,54 +56,39 @@ pub fn start_pending_meshing_tasks_system(
         //         Ensure neighbors have been generated
         // ----------------------------------------------------
 
-        let get_neighbor = |offset: IVec3| -> Option<Option<ChunkBlocksComponent>> {
+        let get_neighbor = |offset: IVec3| -> Option<ChunkDataOption> {
             let neighbor_coord = chunk_coord.pos + offset;
-            match chunk_manager.get_entity(neighbor_coord) {
-                Some(entity) => match all_generated_chunks.get(entity) {
-                    Ok(blocks) => Some(Some(blocks.clone())), // found data
-                    Err(_) => None,                           // must wait for generation
-                },
-                None => Some(None), // is out of bounds
+
+            if !ChunkStateManager::is_in_bounds(neighbor_coord) {
+                return Some(ChunkDataOption::OutOfBounds);
+            }
+
+            match chunk_manager.get_state(neighbor_coord) {
+                Some(ChunkState::Loaded(None)) => Some(ChunkDataOption::Empty),
+                Some(ChunkState::Loaded(Some(entity)))
+                | Some(ChunkState::DataReady(entity))
+                | Some(ChunkState::WantsMeshing(entity))
+                | Some(ChunkState::Meshing(entity)) => {
+                    let blocks = all_generated_chunks.get(entity).unwrap();
+                    Some(ChunkDataOption::Generated(blocks.clone()))
+                }
+                _ => None, // neighbor not generated
             }
         };
 
-        // for chunk in chunk_manager.iter_neighbors(chunk_coord.pos) {}
-        let mut chunks: [[[Option<ChunkBlocksComponent>; 3]; 3]; 3] = [
-            // X = 0
-            [
-                [None, None, None], // Y = 0
-                [None, None, None], // Y = 1
-                [None, None, None], // Y = 2
-            ],
-            // X = 1
-            [
-                [None, None, None], // Y = 0
-                [None, None, None], // Y = 1
-                [None, None, None], // Y = 2
-            ],
-            // X = 2
-            [
-                [None, None, None], // Y = 0
-                [None, None, None], // Y = 1
-                [None, None, None], // Y = 2
-            ],
-        ];
-
-        // Set the center chunk (index [1][1][1])
-        chunks[1][1][1] = Some(chunk_comp.clone());
+        let mut chunks: [[[ChunkDataOption; 3]; 3]; 3] = Default::default();
+        chunks[1][1][1] = ChunkDataOption::Generated(chunk_comp.clone()); // center chunk
 
         for chunk in NEIGHBOR_OFFSETS {
             let neighbor_data = match get_neighbor(chunk) {
-                Some(data) => data, // This is Option<ChunkBlocksComponent>
+                Some(data) => data,
                 None => {
-                    // Neighbor isn't generated, abort meshing for this frame
-                    // and remove the "check" component.
                     commands.entity(entity).remove::<CheckForMeshing>();
-                    continue 'chunk_loop;
+                    continue 'chunk_loop; // abort as neighbor not generated
                 }
             };
 
-            // Map offset (e.g., -1, 0, 1) to array index (e.g., 0, 1, 2)
+            // map offset (e.g., -1, 0, 1) to array index (e.g., 0, 1, 2)
             let idx_x = (chunk.x + 1) as usize;
             let idx_y = (chunk.y + 1) as usize;
             let idx_z = (chunk.z + 1) as usize;
