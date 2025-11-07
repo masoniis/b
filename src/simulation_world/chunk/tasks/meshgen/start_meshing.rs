@@ -1,5 +1,7 @@
 use crate::prelude::*;
+use crate::simulation_world::chunk::chunk_state_manager::NEIGHBOR_OFFSETS;
 use crate::simulation_world::chunk::mesh::TransparentMeshComponent;
+use crate::simulation_world::chunk::padded_chunk_view::PaddedChunkView;
 use crate::simulation_world::chunk::{
     CheckForMeshing, ChunkMeshingTaskComponent, ChunkState, WantsMeshing,
 };
@@ -12,16 +14,6 @@ use crate::simulation_world::{
 };
 use bevy_ecs::prelude::*;
 use crossbeam::channel::unbounded;
-
-/// Neighboring chunk data needed for meshing.
-pub struct ChunkNeighborData {
-    pub right: Option<ChunkBlocksComponent>,  // +X
-    pub left: Option<ChunkBlocksComponent>,   // -X
-    pub top: Option<ChunkBlocksComponent>,    // +Y
-    pub bottom: Option<ChunkBlocksComponent>, // -Y
-    pub front: Option<ChunkBlocksComponent>,  // +Z
-    pub back: Option<ChunkBlocksComponent>,   // -Z
-}
 
 /// Queries for chunks needing meshing and starts a limited number of tasks per frame.
 #[instrument(skip_all)]
@@ -64,12 +56,6 @@ pub fn start_pending_meshing_tasks_system(
         //         Ensure neighbors have been generated
         // ----------------------------------------------------
 
-        // TODO: try to use a more concise method like iter neighbors here.
-        // also depensd on how we are constructing padded chunk data which
-        // is currently TBD
-
-        // for chunk in chunk_manager.iter_neighbors(chunk_coord.pos) {}
-
         let get_neighbor = |offset: IVec3| -> Option<Option<ChunkBlocksComponent>> {
             let neighbor_coord = chunk_coord.pos + offset;
             match chunk_manager.get_entity(neighbor_coord) {
@@ -81,57 +67,49 @@ pub fn start_pending_meshing_tasks_system(
             }
         };
 
-        let right = match get_neighbor(IVec3::new(1, 0, 0)) {
-            Some(data) => data,
-            None => {
-                commands.entity(entity).remove::<CheckForMeshing>();
-                continue 'chunk_loop;
-            }
-        };
-        let left = match get_neighbor(IVec3::new(-1, 0, 0)) {
-            Some(data) => data,
-            None => {
-                commands.entity(entity).remove::<CheckForMeshing>();
-                continue 'chunk_loop;
-            }
-        };
-        let top = match get_neighbor(IVec3::new(0, 1, 0)) {
-            Some(data) => data,
-            None => {
-                commands.entity(entity).remove::<CheckForMeshing>();
-                continue 'chunk_loop;
-            }
-        };
-        let bottom = match get_neighbor(IVec3::new(0, -1, 0)) {
-            Some(data) => data,
-            None => {
-                commands.entity(entity).remove::<CheckForMeshing>();
-                continue 'chunk_loop;
-            }
-        };
-        let front = match get_neighbor(IVec3::new(0, 0, 1)) {
-            Some(data) => data,
-            None => {
-                commands.entity(entity).remove::<CheckForMeshing>();
-                continue 'chunk_loop;
-            }
-        };
-        let back = match get_neighbor(IVec3::new(0, 0, -1)) {
-            Some(data) => data,
-            None => {
-                commands.entity(entity).remove::<CheckForMeshing>();
-                continue 'chunk_loop;
-            }
-        };
+        // for chunk in chunk_manager.iter_neighbors(chunk_coord.pos) {}
+        let mut chunks: [[[Option<ChunkBlocksComponent>; 3]; 3]; 3] = [
+            // X = 0
+            [
+                [None, None, None], // Y = 0
+                [None, None, None], // Y = 1
+                [None, None, None], // Y = 2
+            ],
+            // X = 1
+            [
+                [None, None, None], // Y = 0
+                [None, None, None], // Y = 1
+                [None, None, None], // Y = 2
+            ],
+            // X = 2
+            [
+                [None, None, None], // Y = 0
+                [None, None, None], // Y = 1
+                [None, None, None], // Y = 2
+            ],
+        ];
 
-        let neighbor_data_for_task = ChunkNeighborData {
-            right,
-            left,
-            top,
-            bottom,
-            front,
-            back,
-        };
+        // Set the center chunk (index [1][1][1])
+        chunks[1][1][1] = Some(chunk_comp.clone());
+
+        for chunk in NEIGHBOR_OFFSETS {
+            let neighbor_data = match get_neighbor(chunk) {
+                Some(data) => data, // This is Option<ChunkBlocksComponent>
+                None => {
+                    // Neighbor isn't generated, abort meshing for this frame
+                    // and remove the "check" component.
+                    commands.entity(entity).remove::<CheckForMeshing>();
+                    continue 'chunk_loop;
+                }
+            };
+
+            // Map offset (e.g., -1, 0, 1) to array index (e.g., 0, 1, 2)
+            let idx_x = (chunk.x + 1) as usize;
+            let idx_y = (chunk.y + 1) as usize;
+            let idx_z = (chunk.z + 1) as usize;
+
+            chunks[idx_x][idx_y][idx_z] = neighbor_data;
+        }
 
         trace!(target: "chunk_loading", "Starting meshing task for {}.", chunk_coord.pos);
 
@@ -142,15 +120,14 @@ pub fn start_pending_meshing_tasks_system(
         let texture_map_clone = texture_map.clone();
         let block_registry_clone = block_registry.clone();
         let mesh_assets_clone = mesh_assets.clone();
-        let chunk_component_for_task = chunk_comp.clone();
         let coord_clone = chunk_coord.clone();
+        let padded_view = PaddedChunkView::new(chunks);
 
         let (sender, receiver) = unbounded();
         rayon::spawn(move || {
             let (opaque_mesh_option, transparent_mesh_option) = build_chunk_mesh(
                 &coord_clone.to_string(),
-                &chunk_component_for_task,
-                &neighbor_data_for_task,
+                padded_view,
                 &texture_map_clone,
                 &block_registry_clone,
             );

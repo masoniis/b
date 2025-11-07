@@ -6,6 +6,7 @@ use std::collections::HashMap;
 use std::{fs, sync::Arc};
 
 pub type BlockId = u8;
+pub const AIR_BLOCK_ID: BlockId = 0;
 
 #[derive(Resource, Default, Clone)]
 pub struct BlockRegistryResource {

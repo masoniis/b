@@ -4,12 +4,12 @@ use crate::simulation_world::{
 };
 use glam::IVec3;
 
-// A type alias for clarity
+// type alias for clarity in this file
 type ChunkData = Option<ChunkBlocksComponent>;
 
 /// A 3x3x3 view of chunk data, centered on the chunk being meshed.
 #[derive(Clone)]
-pub struct MesherChunkView {
+pub struct PaddedChunkView {
     /// A 3x3x3 grid of chunk block data.
     /// Index [1][1][1] is the center chunk being meshed.
     /// Index [0][1][1] is the -X (left) neighbor.
@@ -17,7 +17,7 @@ pub struct MesherChunkView {
     chunks: [[[ChunkData; 3]; 3]; 3],
 }
 
-impl MesherChunkView {
+impl PaddedChunkView {
     /// Creates a new view from a 3x3x3 array of chunk data.
     pub fn new(chunks: [[[ChunkData; 3]; 3]; 3]) -> Self {
         Self { chunks }
@@ -28,7 +28,7 @@ impl MesherChunkView {
     ///
     /// WARN: Assumes valid input for runtime efficiency, but if you exit
     /// the neighbor chunk undefined behavior may occur.
-    pub fn get_voxel(&self, pos: IVec3) -> BlockId {
+    pub fn get_block(&self, pos: IVec3) -> BlockId {
         const W: i32 = CHUNK_WIDTH as i32;
         const H: i32 = CHUNK_HEIGHT as i32;
         const D: i32 = CHUNK_DEPTH as i32;

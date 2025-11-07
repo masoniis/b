@@ -1,84 +1,252 @@
 use crate::prelude::*;
-use crate::render_world::types::Vertex;
+use crate::render_world::types::{TextureId, Vertex};
 use crate::simulation_world::asset_management::MeshAsset;
-use crate::simulation_world::block::block_registry::BlockId;
-use crate::simulation_world::chunk::ChunkNeighborData;
+use crate::simulation_world::block::block_registry::{BlockId, AIR_BLOCK_ID};
+use crate::simulation_world::block::BlockProperties;
+use crate::simulation_world::chunk::padded_chunk_view::PaddedChunkView;
 use crate::simulation_world::{
     asset_management::texture_map_registry::TextureMapResource,
     block::BlockRegistryResource,
-    chunk::{ChunkBlocksComponent, CHUNK_DEPTH, CHUNK_HEIGHT, CHUNK_WIDTH},
+    chunk::{CHUNK_DEPTH, CHUNK_HEIGHT, CHUNK_WIDTH},
 };
 
 type OpaqueMeshData = MeshAsset;
 type TransparentMeshData = MeshAsset;
 
-const AIR_BLOCK: BlockId = 0;
+/// Represents a direction to check for face rendering
+struct FaceDirection {
+    offset: IVec3,
+    face: Face,
+    get_texture: fn(&BlockProperties) -> TextureId,
+}
 
-/// Doesn't really matter what block this is, but it ensures that the chunks on
-/// the edge of render distance don't mesh their edge since a different block
-/// is detected so it wouldn't be visible
-const SOLID_VOID_BLOCK: BlockId = 1;
+const FACE_DIRECTIONS: [FaceDirection; 6] = [
+    FaceDirection {
+        offset: IVec3::new(0, 1, 0),
+        face: Face::Top,
+        get_texture: |props| props.textures.top,
+    },
+    FaceDirection {
+        offset: IVec3::new(0, -1, 0),
+        face: Face::Bottom,
+        get_texture: |props| props.textures.bottom,
+    },
+    FaceDirection {
+        offset: IVec3::new(-1, 0, 0),
+        face: Face::Left,
+        get_texture: |props| props.textures.left,
+    },
+    FaceDirection {
+        offset: IVec3::new(1, 0, 0),
+        face: Face::Right,
+        get_texture: |props| props.textures.right,
+    },
+    FaceDirection {
+        offset: IVec3::new(0, 0, 1),
+        face: Face::Front,
+        get_texture: |props| props.textures.back,
+    },
+    FaceDirection {
+        offset: IVec3::new(0, 0, -1),
+        face: Face::Back,
+        get_texture: |props| props.textures.front,
+    },
+];
 
-/// Helper function to get a block, checking neighbors if coordinates are out of bounds.
+/// Brightness levels for AO, from 0 (open) to 3 (fully occluded)
+const AO_MAPPING: [f32; 4] = [1.0, 0.7, 0.4, 0.2];
+
+/// Occlusion offsets for each vertex (v0, v1, v2, v3) of each face.
+///
+/// Each vertex checks 3 blocks (side1, side2, corner) to check occlusion.
+const AO_OFFSETS: [[[IVec3; 3]; 4]; 6] = [
+    // Face::Top (Y+)
+    [
+        [
+            IVec3::new(-1, 1, 0),
+            IVec3::new(0, 1, 1),
+            IVec3::new(-1, 1, 1),
+        ], // front-left
+        [
+            IVec3::new(1, 1, 0),
+            IVec3::new(0, 1, 1),
+            IVec3::new(1, 1, 1),
+        ], // front-right
+        [
+            IVec3::new(1, 1, 0),
+            IVec3::new(0, 1, -1),
+            IVec3::new(1, 1, -1),
+        ], // back-right
+        [
+            IVec3::new(-1, 1, 0),
+            IVec3::new(0, 1, -1),
+            IVec3::new(-1, 1, -1),
+        ], // back-left
+    ],
+    // Face::Bottom (Y-)
+    [
+        [
+            IVec3::new(-1, -1, 0),
+            IVec3::new(0, -1, -1),
+            IVec3::new(-1, -1, -1),
+        ],
+        [
+            IVec3::new(1, -1, 0),
+            IVec3::new(0, -1, -1),
+            IVec3::new(1, -1, -1),
+        ],
+        [
+            IVec3::new(1, -1, 0),
+            IVec3::new(0, -1, 1),
+            IVec3::new(1, -1, 1),
+        ],
+        [
+            IVec3::new(-1, -1, 0),
+            IVec3::new(0, -1, 1),
+            IVec3::new(-1, -1, 1),
+        ],
+    ],
+    // Face::Left (X-)
+    [
+        [
+            IVec3::new(-1, -1, 0),
+            IVec3::new(-1, 0, -1),
+            IVec3::new(-1, -1, -1),
+        ],
+        [
+            IVec3::new(-1, -1, 0),
+            IVec3::new(-1, 0, 1),
+            IVec3::new(-1, -1, 1),
+        ],
+        [
+            IVec3::new(-1, 1, 0),
+            IVec3::new(-1, 0, 1),
+            IVec3::new(-1, 1, 1),
+        ],
+        [
+            IVec3::new(-1, 1, 0),
+            IVec3::new(-1, 0, -1),
+            IVec3::new(-1, 1, -1),
+        ],
+    ],
+    // Face::Right (X+)
+    [
+        [
+            IVec3::new(1, -1, 0),
+            IVec3::new(1, 0, 1),
+            IVec3::new(1, -1, 1),
+        ],
+        [
+            IVec3::new(1, -1, 0),
+            IVec3::new(1, 0, -1),
+            IVec3::new(1, -1, -1),
+        ],
+        [
+            IVec3::new(1, 1, 0),
+            IVec3::new(1, 0, -1),
+            IVec3::new(1, 1, -1),
+        ],
+        [
+            IVec3::new(1, 1, 0),
+            IVec3::new(1, 0, 1),
+            IVec3::new(1, 1, 1),
+        ],
+    ],
+    // Face::Front (Z+)
+    [
+        [
+            IVec3::new(-1, 0, 1),
+            IVec3::new(0, -1, 1),
+            IVec3::new(-1, -1, 1),
+        ],
+        [
+            IVec3::new(1, 0, 1),
+            IVec3::new(0, -1, 1),
+            IVec3::new(1, -1, 1),
+        ],
+        [
+            IVec3::new(1, 0, 1),
+            IVec3::new(0, 1, 1),
+            IVec3::new(1, 1, 1),
+        ],
+        [
+            IVec3::new(-1, 0, 1),
+            IVec3::new(0, 1, 1),
+            IVec3::new(-1, 1, 1),
+        ],
+    ],
+    // Face::Back (Z-)
+    [
+        [
+            IVec3::new(1, 0, -1),
+            IVec3::new(0, -1, -1),
+            IVec3::new(1, -1, -1),
+        ],
+        [
+            IVec3::new(-1, 0, -1),
+            IVec3::new(0, -1, -1),
+            IVec3::new(-1, -1, -1),
+        ],
+        [
+            IVec3::new(-1, 0, -1),
+            IVec3::new(0, 1, -1),
+            IVec3::new(-1, 1, -1),
+        ],
+        [
+            IVec3::new(1, 0, -1),
+            IVec3::new(0, 1, -1),
+            IVec3::new(1, 1, -1),
+        ],
+    ],
+];
+
+/// Determine if a face should be rendered based on transparency rules
 #[inline(always)]
-fn get_block_with_neighbors<'a>(
-    x: isize,
-    y: isize,
-    z: isize,
-    current_chunk: &'a ChunkBlocksComponent,
-    neighbors: &'a ChunkNeighborData,
-) -> &'a BlockId {
-    // check if we are in bounds
-    if x >= 0
-        && x < CHUNK_WIDTH as isize
-        && y >= 0
-        && y < CHUNK_HEIGHT as isize
-        && z >= 0
-        && z < CHUNK_DEPTH as isize
-    {
-        return current_chunk
-            .get_block(x as usize, y as usize, z as usize)
-            .unwrap_or(&AIR_BLOCK);
-    }
-
-    // if out, determine the neighbor to check
-    let (neighbor_chunk, nx, ny, nz) = if x < 0 {
-        (&neighbors.left, x + CHUNK_WIDTH as isize, y, z)
-    } else if x >= CHUNK_WIDTH as isize {
-        (&neighbors.right, x - CHUNK_WIDTH as isize, y, z)
-    } else if y < 0 {
-        (&neighbors.bottom, x, y + CHUNK_HEIGHT as isize, z)
-    } else if y >= CHUNK_HEIGHT as isize {
-        (&neighbors.top, x, y - CHUNK_HEIGHT as isize, z)
-    } else if z < 0 {
-        (&neighbors.back, x, y, z + CHUNK_DEPTH as isize)
-    } else if z >= CHUNK_DEPTH as isize {
-        (&neighbors.front, x, y, z - CHUNK_DEPTH as isize)
-    } else {
-        error!("Logic error in get_block_with_neighbors");
-        return &AIR_BLOCK;
-    };
-
-    // and then check the neighbor
-    match neighbor_chunk {
-        Some(neighbor_data) => neighbor_data
-            .get_block(nx as usize, ny as usize, nz as usize)
-            .unwrap_or(&AIR_BLOCK),
-        None => {
-            // this should only occur above/below the world and as such
-            // we claim the void is solid so that the mesher doesn't draw
-            // a face there.
-            &SOLID_VOID_BLOCK
-        }
+fn should_render_face(
+    current_id: BlockId,
+    current_transparent: bool,
+    neighbor_id: BlockId,
+    neighbor_transparent: bool,
+) -> bool {
+    match (current_transparent, neighbor_transparent) {
+        (false, true) => true,                     // opaque facing transparent
+        (true, true) => current_id != neighbor_id, // different transparent blocks
+        _ => false,
     }
 }
 
-/// Helper function to build a mesh for a single chunk, considering neighbors.
+/// Get the AO value (0-3) for a single vertex.
+#[inline(always)]
+fn get_ao(
+    pos: IVec3,
+    side1_off: IVec3,
+    side2_off: IVec3,
+    corner_off: IVec3,
+    padded_chunk: &PaddedChunkView,
+    block_registry: &BlockRegistryResource,
+) -> u8 {
+    let s1 = !block_registry
+        .get(padded_chunk.get_block(pos + side1_off))
+        .is_transparent;
+    let s2 = !block_registry
+        .get(padded_chunk.get_block(pos + side2_off))
+        .is_transparent;
+    let c = !block_registry
+        .get(padded_chunk.get_block(pos + corner_off))
+        .is_transparent;
+
+    if s1 && s2 {
+        3 // max occlusion if both sides are blocked
+    } else {
+        (s1 as u8) + (s2 as u8) + (c as u8)
+    }
+}
+
+/// Build a mesh for a single chunk, considering neighbors.
 #[instrument(skip_all)]
 pub fn build_chunk_mesh(
     name: &str,
-    chunk: &ChunkBlocksComponent,
-    neighbors: &ChunkNeighborData,
+    padded_chunk: PaddedChunkView,
     texture_map: &TextureMapResource,
     block_registry: &BlockRegistryResource,
 ) -> (Option<OpaqueMeshData>, Option<TransparentMeshData>) {
@@ -90,94 +258,88 @@ pub fn build_chunk_mesh(
     for y in 0..CHUNK_HEIGHT {
         for z in 0..CHUNK_DEPTH {
             for x in 0..CHUNK_WIDTH {
-                // cast to isize for neighbor checking
-                let (ix, iy, iz) = (x as isize, y as isize, z as isize);
+                let pos = IVec3::new(x as i32, y as i32, z as i32);
+
+                let current_block_id = padded_chunk.get_block(pos);
 
                 // skip air blocks
-                let blockid = chunk.get_block(x, y, z).unwrap_or(&AIR_BLOCK);
-                if *blockid == AIR_BLOCK {
+                if current_block_id == AIR_BLOCK_ID {
                     continue;
                 }
 
-                let block_properties = block_registry.get(*blockid);
+                let current_block_props = block_registry.get(current_block_id);
 
-                let (target_vertices, target_indices) = if block_properties.is_transparent {
+                let (target_vertices, target_indices) = if current_block_props.is_transparent {
                     (&mut transparent_vertices, &mut transparent_indices)
                 } else {
                     (&mut opaque_vertices, &mut opaque_indices)
                 };
 
-                // +Y (Top)
-                let neighbor_top = get_block_with_neighbors(ix, iy + 1, iz, chunk, neighbors);
-                if block_registry.get(*neighbor_top).is_transparent {
-                    let base_vertex_count = target_vertices.len() as u32;
-                    let tex_id = &block_properties.textures.top;
-                    let tex_index = texture_map.registry.get(*tex_id);
-                    let (face_verts, face_indices) =
-                        get_face(Face::Top, x, y, z, tex_index, base_vertex_count);
-                    // Add to the *target* buffer
-                    target_vertices.extend(face_verts);
-                    target_indices.extend(face_indices);
-                }
+                // check all 6 faces
+                for direction in &FACE_DIRECTIONS {
+                    let neighbor_pos = pos + direction.offset;
+                    let neighbor_id = padded_chunk.get_block(neighbor_pos);
+                    let neighbor_props = block_registry.get(neighbor_id);
 
-                // -Y (Bottom)
-                let neighbor_bottom = get_block_with_neighbors(ix, iy - 1, iz, chunk, neighbors);
-                if block_registry.get(*neighbor_bottom).is_transparent {
-                    let base_vertex_count = target_vertices.len() as u32;
-                    let tex_id = &block_properties.textures.bottom;
-                    let tex_index = texture_map.registry.get(*tex_id);
-                    let (face_verts, face_indices) =
-                        get_face(Face::Bottom, x, y, z, tex_index, base_vertex_count);
-                    target_vertices.extend(face_verts);
-                    target_indices.extend(face_indices);
-                }
+                    if should_render_face(
+                        current_block_id,
+                        current_block_props.is_transparent,
+                        neighbor_id,
+                        neighbor_props.is_transparent,
+                    ) {
+                        let base_vertex_count = target_vertices.len() as u32;
+                        let tex_id = (direction.get_texture)(current_block_props);
+                        let tex_index = texture_map.registry.get(tex_id);
 
-                // -X (Left / West)
-                let neighbor_left = get_block_with_neighbors(ix - 1, iy, iz, chunk, neighbors);
-                if block_registry.get(*neighbor_left).is_transparent {
-                    let base_vertex_count = target_vertices.len() as u32;
-                    let tex_id = &block_properties.textures.left;
-                    let tex_index = texture_map.registry.get(*tex_id);
-                    let (face_verts, face_indices) =
-                        get_face(Face::Left, x, y, z, tex_index, base_vertex_count);
-                    target_vertices.extend(face_verts);
-                    target_indices.extend(face_indices);
-                }
+                        // AO calculation for the face
+                        let face_index = direction.face as usize;
+                        let ao_values = [
+                            AO_MAPPING[get_ao(
+                                pos,
+                                AO_OFFSETS[face_index][0][0],
+                                AO_OFFSETS[face_index][0][1],
+                                AO_OFFSETS[face_index][0][2],
+                                &padded_chunk,
+                                block_registry,
+                            ) as usize],
+                            AO_MAPPING[get_ao(
+                                pos,
+                                AO_OFFSETS[face_index][1][0],
+                                AO_OFFSETS[face_index][1][1],
+                                AO_OFFSETS[face_index][1][2],
+                                &padded_chunk,
+                                block_registry,
+                            ) as usize],
+                            AO_MAPPING[get_ao(
+                                pos,
+                                AO_OFFSETS[face_index][2][0],
+                                AO_OFFSETS[face_index][2][1],
+                                AO_OFFSETS[face_index][2][2],
+                                &padded_chunk,
+                                block_registry,
+                            ) as usize],
+                            AO_MAPPING[get_ao(
+                                pos,
+                                AO_OFFSETS[face_index][3][0],
+                                AO_OFFSETS[face_index][3][1],
+                                AO_OFFSETS[face_index][3][2],
+                                &padded_chunk,
+                                block_registry,
+                            ) as usize],
+                        ];
 
-                // +X (Right / East)
-                let neighbor_right = get_block_with_neighbors(ix + 1, iy, iz, chunk, neighbors);
-                if block_registry.get(*neighbor_right).is_transparent {
-                    let base_vertex_count = target_vertices.len() as u32;
-                    let tex_id = &block_properties.textures.right;
-                    let tex_index = texture_map.registry.get(*tex_id);
-                    let (face_verts, face_indices) =
-                        get_face(Face::Right, x, y, z, tex_index, base_vertex_count);
-                    target_vertices.extend(face_verts);
-                    target_indices.extend(face_indices);
-                }
-
-                // +Z (Front / South)
-                let neighbor_front = get_block_with_neighbors(ix, iy, iz + 1, chunk, neighbors);
-                if block_registry.get(*neighbor_front).is_transparent {
-                    let base_vertex_count = target_vertices.len() as u32;
-                    let tex_id = &block_properties.textures.back;
-                    let tex_index = texture_map.registry.get(*tex_id);
-                    let (face_verts, face_indices) =
-                        get_face(Face::Front, x, y, z, tex_index, base_vertex_count);
-                    target_vertices.extend(face_verts);
-                    target_indices.extend(face_indices);
-                }
-
-                // -Z (Back / North)
-                let neighbor_back = get_block_with_neighbors(ix, iy, iz - 1, chunk, neighbors);
-                if block_registry.get(*neighbor_back).is_transparent {
-                    let base_vertex_count = target_vertices.len() as u32;
-                    let tex_id = &block_properties.textures.front;
-                    let tex_index = texture_map.registry.get(*tex_id);
-                    let (face_verts, face_indices) =
-                        get_face(Face::Back, x, y, z, tex_index, base_vertex_count);
-                    target_vertices.extend(face_verts);
-                    target_indices.extend(face_indices);
+                        let (face_verts, face_indices) = create_face_verts(
+                            &direction.face,
+                            x,
+                            y,
+                            z,
+                            tex_index,
+                            base_vertex_count,
+                            ao_values,
+                        );
+                        target_vertices.extend(face_verts);
+                        target_indices.extend(face_indices);
+                    }
                 }
             }
         }
@@ -206,35 +368,37 @@ pub fn build_chunk_mesh(
     (opaque_mesh, transparent_mesh)
 }
 
+#[derive(Clone, Copy)]
 enum Face {
-    Top,
-    Bottom,
-    Left,
-    Right,
-    Front,
-    Back,
+    Top = 0,
+    Bottom = 1,
+    Left = 2,
+    Right = 3,
+    Front = 4,
+    Back = 5,
 }
 
-fn get_face(
-    face: Face,
+fn create_face_verts(
+    face: &Face,
     x: usize,
     y: usize,
     z: usize,
     tex_index: u32,
     base_vertex_count: u32,
+    ao_values: [f32; 4], // AO values for v0, v1, v2, v3
 ) -> (Vec<Vertex>, [u32; 6]) {
     let (fx, fy, fz) = (x as f32, y as f32, z as f32);
 
     let (verts, normal): (Vec<[f32; 3]>, [f32; 3]) = match face {
         Face::Top => (
             vec![
-                [-0.5 + fx, 0.5 + fy, 0.5 + fz],
-                [0.5 + fx, 0.5 + fy, 0.5 + fz],
-                [0.5 + fx, 0.5 + fy, -0.5 + fz],
-                [-0.5 + fx, 0.5 + fy, -0.5 + fz],
+                [-0.5 + fx, 0.5 + fy, 0.5 + fz],  // v0
+                [0.5 + fx, 0.5 + fy, 0.5 + fz],   // v1
+                [0.5 + fx, 0.5 + fy, -0.5 + fz],  // v2
+                [-0.5 + fx, 0.5 + fy, -0.5 + fz], // v3
             ],
             [0.0, 1.0, 0.0],
-        ), // +Y Normal
+        ),
         Face::Bottom => (
             vec![
                 [-0.5 + fx, -0.5 + fy, -0.5 + fz],
@@ -243,66 +407,99 @@ fn get_face(
                 [-0.5 + fx, -0.5 + fy, 0.5 + fz],
             ],
             [0.0, -1.0, 0.0],
-        ), // -Y Normal
+        ),
         Face::Left => (
             vec![
-                // -X Face
                 [-0.5 + fx, -0.5 + fy, -0.5 + fz],
                 [-0.5 + fx, -0.5 + fy, 0.5 + fz],
                 [-0.5 + fx, 0.5 + fy, 0.5 + fz],
                 [-0.5 + fx, 0.5 + fy, -0.5 + fz],
             ],
             [-1.0, 0.0, 0.0],
-        ), // -X Normal
+        ),
         Face::Right => (
             vec![
-                // +X Face
                 [0.5 + fx, -0.5 + fy, 0.5 + fz],
                 [0.5 + fx, -0.5 + fy, -0.5 + fz],
                 [0.5 + fx, 0.5 + fy, -0.5 + fz],
                 [0.5 + fx, 0.5 + fy, 0.5 + fz],
             ],
             [1.0, 0.0, 0.0],
-        ), // +X Normal
+        ),
         Face::Front => (
             vec![
-                // +Z Face
                 [-0.5 + fx, -0.5 + fy, 0.5 + fz],
                 [0.5 + fx, -0.5 + fy, 0.5 + fz],
                 [0.5 + fx, 0.5 + fy, 0.5 + fz],
                 [-0.5 + fx, 0.5 + fy, 0.5 + fz],
             ],
             [0.0, 0.0, 1.0],
-        ), // +Z Normal
+        ),
         Face::Back => (
             vec![
-                // -Z Face
                 [0.5 + fx, -0.5 + fy, -0.5 + fz],
                 [-0.5 + fx, -0.5 + fy, -0.5 + fz],
                 [-0.5 + fx, 0.5 + fy, -0.5 + fz],
                 [0.5 + fx, 0.5 + fy, -0.5 + fz],
             ],
             [0.0, 0.0, -1.0],
-        ), // -Z Normal
+        ),
     };
 
-    // Define standard UVs
     let uvs = [[0.0, 1.0], [1.0, 1.0], [1.0, 0.0], [0.0, 0.0]];
+
+    // apply AO to color for the 4 vertices
     let final_vertices = vec![
-        Vertex::new(verts[0], normal, [1.0, 1.0, 1.0], uvs[0], tex_index),
-        Vertex::new(verts[1], normal, [1.0, 1.0, 1.0], uvs[1], tex_index),
-        Vertex::new(verts[2], normal, [1.0, 1.0, 1.0], uvs[2], tex_index),
-        Vertex::new(verts[3], normal, [1.0, 1.0, 1.0], uvs[3], tex_index),
+        Vertex::new(
+            verts[0],
+            normal,
+            [ao_values[0], ao_values[0], ao_values[0]],
+            uvs[0],
+            tex_index,
+        ),
+        Vertex::new(
+            verts[1],
+            normal,
+            [ao_values[1], ao_values[1], ao_values[1]],
+            uvs[1],
+            tex_index,
+        ),
+        Vertex::new(
+            verts[2],
+            normal,
+            [ao_values[2], ao_values[2], ao_values[2]],
+            uvs[2],
+            tex_index,
+        ),
+        Vertex::new(
+            verts[3],
+            normal,
+            [ao_values[3], ao_values[3], ao_values[3]],
+            uvs[3],
+            tex_index,
+        ),
     ];
 
-    let indices = [
-        base_vertex_count + 0,
-        base_vertex_count + 1,
-        base_vertex_count + 2,
-        base_vertex_count + 2,
-        base_vertex_count + 3,
-        base_vertex_count + 0,
-    ];
+    // ao diagonal determines triangle split
+    let indices = if (ao_values[0] + ao_values[2]) > (ao_values[1] + ao_values[3]) {
+        [
+            base_vertex_count + 0,
+            base_vertex_count + 1,
+            base_vertex_count + 2,
+            base_vertex_count + 2,
+            base_vertex_count + 3,
+            base_vertex_count + 0,
+        ]
+    } else {
+        [
+            base_vertex_count + 0,
+            base_vertex_count + 1,
+            base_vertex_count + 3,
+            base_vertex_count + 1,
+            base_vertex_count + 2,
+            base_vertex_count + 3,
+        ]
+    };
 
     (final_vertices, indices)
 }
