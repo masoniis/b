@@ -125,3 +125,19 @@ pub struct GeneratedChunkComponentBundle {
     pub chunk_blocks: Option<ChunkBlocksComponent>,
     pub biome_map: BiomeMapComponent,
 }
+
+/// A resource holding a list of terrain generators to cycle through.
+#[derive(Resource)]
+pub struct TerrainGeneratorCycle {
+    pub generators: Vec<Arc<dyn TerrainGenerator>>,
+    pub current_index: usize,
+}
+
+impl Default for TerrainGeneratorCycle {
+    fn default() -> Self {
+        Self {
+            generators: Vec::new(),
+            current_index: 0,
+        }
+    }
+}

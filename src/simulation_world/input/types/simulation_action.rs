@@ -8,6 +8,9 @@ pub enum SimulationAction {
     MoveRight,
     MoveFaster,
 
+    // Terrain interactions
+    CycleActiveTerrainGenerator,
+
     // Misc
     ToggleDiagnostics,
     ToggleOpaqueWireframeMode,

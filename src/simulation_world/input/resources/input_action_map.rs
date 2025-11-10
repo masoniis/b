@@ -56,6 +56,11 @@ impl Default for InputActionMapResource {
                     Input::Key(PhysicalKey::Code(KeyCode::ShiftLeft)),
                     SimulationAction::MoveFaster,
                 ),
+                // Terrain gen
+                (
+                    Input::Key(PhysicalKey::Code(KeyCode::KeyT)),
+                    SimulationAction::CycleActiveTerrainGenerator,
+                ),
                 // Misc
                 (
                     Input::Key(PhysicalKey::Code(KeyCode::Escape)),
