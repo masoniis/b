@@ -3,19 +3,17 @@ use crate::{
     render_world::passes::{
         core::{RenderContext, RenderNode},
         main_camera_centric::{
+            bounding_box_pass::startup::{setup_bb_mesh::DebugWireframeMesh, setup_bb_pipeline::*},
             opaque_pass::startup::DepthTextureResource,
             shared::{CentralCameraViewBuffer, EnvironmentBuffer},
-            wireframe_pass::startup::{
-                setup_wireframe_mesh::DebugWireframeMesh, setup_wireframe_pipeline::*,
-            },
         },
     },
 };
 use bevy_ecs::prelude::*;
 
-pub struct WireframeRenderNode;
+pub struct BoundingBoxNode;
 
-impl RenderNode for WireframeRenderNode {
+impl RenderNode for BoundingBoxNode {
     #[instrument(skip_all, name = "wireframe_pass_render_node")]
     fn run(&mut self, render_context: &mut RenderContext, world: &World) {
         // INFO: ---------------------------

@@ -3,7 +3,7 @@ pub mod queue;
 pub mod render;
 pub mod startup;
 
-pub use render::WireframeRenderNode;
+pub use render::BoundingBoxNode;
 
 // INFO: ---------------------------
 //         plugin definition
@@ -14,14 +14,12 @@ use crate::{
     render_world::{
         global_extract::extract_resource_system,
         passes::main_camera_centric::{
-            shared,
-            wireframe_pass::{
+            bounding_box_pass::{
                 extract::{WireframeToggleExtractor, WireframeToggleState},
                 queue::{clear_wireframe_buffer_system, queue_wireframe_system},
-                startup::{
-                    setup_unit_wireframe_cube_mesh_system, setup_wireframe_pipeline_and_buffers,
-                },
+                startup::{setup_bb_pipeline_and_buffers, setup_unit_bounding_box_mesh_system},
             },
+            shared,
         },
         RenderSchedule, RenderSet,
     },
@@ -39,9 +37,8 @@ impl Plugin for WireframeRenderPassPlugin {
         builder
             .schedule_entry(RenderSchedule::Startup)
             .add_systems((
-                setup_unit_wireframe_cube_mesh_system,
-                setup_wireframe_pipeline_and_buffers
-                    .after(shared::setup_central_camera_layout_system),
+                setup_unit_bounding_box_mesh_system,
+                setup_bb_pipeline_and_buffers.after(shared::setup_central_camera_layout_system),
             ));
 
         // INFO: -----------------

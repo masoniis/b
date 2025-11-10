@@ -4,8 +4,8 @@ use crate::render_world::{
     passes::{
         core::{RenderContext, RenderGraph},
         main_camera_centric::{
-            opaque_pass::OpaquePassRenderNode, transparent_pass::TransparentPassRenderNode,
-            wireframe_pass::WireframeRenderNode,
+            bounding_box_pass::BoundingBoxNode, opaque_pass::OpaquePassRenderNode,
+            transparent_pass::TransparentPassRenderNode,
         },
         ui_pass::UiRenderPassNode,
     },
@@ -24,7 +24,7 @@ pub fn setup_render_graph(world: &mut World) {
     let transparent_pass_node = TransparentPassRenderNode::new(world);
     let opaque_pass_node = OpaquePassRenderNode::new(world);
     let ui_pass_node = UiRenderPassNode;
-    let wireframe_pass_node = WireframeRenderNode;
+    let bounding_box_node = BoundingBoxNode;
 
     render_graph.add_node::<OpaquePassRenderNode, _>("OpaquePass", opaque_pass_node, true);
     render_graph.add_node::<TransparentPassRenderNode, _>(
@@ -33,10 +33,10 @@ pub fn setup_render_graph(world: &mut World) {
         true,
     );
     render_graph.add_node::<UiRenderPassNode, _>("UiPass", ui_pass_node, true);
-    render_graph.add_node::<WireframeRenderNode, _>("WireframePass", wireframe_pass_node, true);
+    render_graph.add_node::<BoundingBoxNode, _>("WireframePass", bounding_box_node, true);
 
     render_graph.add_node_dependency::<TransparentPassRenderNode, OpaquePassRenderNode>();
-    render_graph.add_node_dependency::<WireframeRenderNode, TransparentPassRenderNode>();
+    render_graph.add_node_dependency::<BoundingBoxNode, TransparentPassRenderNode>();
     render_graph.add_node_dependency::<UiRenderPassNode, TransparentPassRenderNode>();
 
     world.insert_resource(render_graph);

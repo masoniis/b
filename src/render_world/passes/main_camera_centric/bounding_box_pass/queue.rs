@@ -2,8 +2,10 @@ use crate::prelude::*;
 use crate::render_world::{
     graphics_context::resources::{RenderDevice, RenderQueue},
     passes::main_camera_centric::{
+        bounding_box_pass::startup::{
+            WireframeObjectBuffer, WireframeObjectData, WireframePipeline,
+        },
         opaque_pass::extract::RenderTransformComponent,
-        wireframe_pass::startup::{WireframeObjectBuffer, WireframeObjectData, WireframePipeline},
     },
 };
 use crate::simulation_world::chunk::consts::{CHUNK_DEPTH, CHUNK_HEIGHT, CHUNK_WIDTH};
@@ -25,9 +27,9 @@ pub fn queue_wireframe_system(
     wireframe_buffer.objects.clear();
 
     let translation_matrix = Mat4::from_translation(glam::vec3(
-        (CHUNK_WIDTH - 1) as f32 / 2.0,
-        (CHUNK_HEIGHT - 1) as f32 / 2.0,
-        (CHUNK_DEPTH - 1) as f32 / 2.0,
+        CHUNK_WIDTH as f32 / 2.0,
+        CHUNK_HEIGHT as f32 / 2.0,
+        CHUNK_DEPTH as f32 / 2.0,
     ));
     let scale_matrix = Mat4::from_scale(glam::vec3(
         CHUNK_WIDTH as f32,

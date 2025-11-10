@@ -1,7 +1,7 @@
+pub mod bounding_box_pass;
 pub mod opaque_pass;
 pub mod shared;
 pub mod transparent_pass;
-pub mod wireframe_pass;
 
 // INFO: ---------------------------
 //         Plugin definition
@@ -23,9 +23,9 @@ use crate::{
     },
 };
 use bevy_ecs::schedule::IntoScheduleConfigs;
+use bounding_box_pass::WireframeRenderPassPlugin;
 use opaque_pass::OpaqueRenderPassPlugin;
 use transparent_pass::TransparentRenderPassPlugin;
-use wireframe_pass::WireframeRenderPassPlugin;
 
 /// A plugin that sets up all the necessary resources and render
 /// passes used in the rendering pipeline.

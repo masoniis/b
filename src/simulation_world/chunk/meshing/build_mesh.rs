@@ -209,7 +209,6 @@ fn should_render_face(
 ) -> bool {
     // TODO: if block is on a border and neighbor is UPSAMPLED then we should conservatively
     // always render the face
-
     match (current_transparent, neighbor_transparent) {
         (false, true) => true,                     // opaque facing transparent
         (true, true) => current_id != neighbor_id, // different transparent blocks

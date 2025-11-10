@@ -39,7 +39,7 @@ pub struct WireframeObjectData {
 
 /// A startup system that creates the `WireframePipeline` and `WireframeObjectBuffer`.
 #[instrument(skip_all)]
-pub fn setup_wireframe_pipeline_and_buffers(
+pub fn setup_bb_pipeline_and_buffers(
     mut commands: Commands,
     device: Res<RenderDevice>,
     config: Res<RenderSurfaceConfig>,

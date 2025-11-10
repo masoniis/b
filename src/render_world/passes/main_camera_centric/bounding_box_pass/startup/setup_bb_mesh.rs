@@ -13,7 +13,7 @@ pub struct DebugWireframeMesh {
 
 /// Creates a 1x1x1 wireframe cube mesh to be used for representing chunk bounding boxes.
 #[instrument(skip_all)]
-pub fn setup_unit_wireframe_cube_mesh_system(mut commands: Commands, device: Res<RenderDevice>) {
+pub fn setup_unit_bounding_box_mesh_system(mut commands: Commands, device: Res<RenderDevice>) {
     let dummy_normal = [0.0, 1.0, 0.0];
     let dummy_uv = [0.0, 0.0];
     let dummy_color = [1.0, 1.0, 1.0];
