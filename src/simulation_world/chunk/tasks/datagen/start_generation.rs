@@ -3,6 +3,7 @@ use crate::simulation_world::chunk::{
     ChunkBlocksComponent, ChunkGenerationTaskComponent, ChunkLod, ChunkState, NeedsGenerating,
     WorldVoxelIteratorWithColumn, WorldVoxelPositionIterator,
 };
+use crate::simulation_world::terrain::core::ChunkUniformity;
 use crate::simulation_world::terrain::generators::core::{PaintResultBuilder, ShapeResultBuilder};
 use crate::simulation_world::terrain::{BiomeMapComponent, TerrainClimateMapComponent};
 use crate::simulation_world::{
@@ -59,7 +60,7 @@ pub fn start_pending_generation_tasks_system(
         }
 
         // check if the chunk is empty according to the terrain generator
-        if terrain_generator.0.is_chunk_empty(coord.pos) {
+        if terrain_generator.determine_chunk_uniformity(coord.pos) == ChunkUniformity::Empty {
             trace!(
                 target: "chunk_loading",
                 "Chunk {} is empty according to terrain generator. Skipping generation.",
@@ -69,6 +70,7 @@ pub fn start_pending_generation_tasks_system(
             chunk_manager.mark_as_loaded_but_empty(coord.pos);
             continue;
         }
+        // TODO: if uniformity is all solid we can optimize like in the empty case
 
         // start the generation thread task if not
         let (sender, receiver) = unbounded();

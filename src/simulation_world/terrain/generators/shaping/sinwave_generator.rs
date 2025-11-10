@@ -1,11 +1,11 @@
 use crate::prelude::*;
-use crate::simulation_world::chunk::{WorldVoxelPositionIterator, CHUNK_SIDE_LENGTH};
-use crate::simulation_world::terrain::generators::core::ShapeResultBuilder;
 use crate::simulation_world::{
     biome::BiomeRegistryResource,
+    chunk::{WorldVoxelPositionIterator, CHUNK_SIDE_LENGTH},
     terrain::{
         components::{climate_map::TerrainClimateMapComponent, BiomeMapComponent},
-        generators::core::TerrainShaper,
+        core::ChunkUniformity,
+        generators::core::{ShapeResultBuilder, TerrainShaper},
     },
 };
 
@@ -23,31 +23,36 @@ pub struct SinWaveGenerator {
 impl SinWaveGenerator {
     pub fn new() -> Self {
         Self {
-            base_height: 32, // Average world height
-            amplitude: 12.0, // Max height variation from base
-            frequency: 0.04, // How "spread out" the waves are
+            base_height: 32, // average world height
+            amplitude: 12.0,
+            frequency: 0.04,
         }
     }
 }
 
 impl TerrainShaper for SinWaveGenerator {
     #[instrument(skip_all)]
-    fn is_chunk_empty(&self, coord: IVec3) -> bool {
+    fn determine_chunk_uniformity(&self, coord: IVec3) -> ChunkUniformity {
         let chunk_y_min = coord.y * CHUNK_SIDE_LENGTH as i32;
         let chunk_y_max = (coord.y + 1) * CHUNK_SIDE_LENGTH as i32 - 1;
 
-        // max height for sin
-        let world_top_y = (self.base_height as f32 + self.amplitude * 2.0).round() as i32;
+        let max_variation = self.amplitude * 2.0;
+        let max_possible_y = (self.base_height as f32 + max_variation).round() as i32;
 
-        // assumed 0 is the bottom of the world here
-        let world_bottom_y = 0;
-
-        if chunk_y_max < world_bottom_y || chunk_y_min > world_top_y {
-            info!("Culling empty chunk at {coord:?}");
-            true
-        } else {
-            false
+        // if above max y, all empty
+        if chunk_y_min > max_possible_y {
+            return ChunkUniformity::Empty;
         }
+
+        let min_possible_y = (self.base_height as f32 - max_variation).round() as i32;
+        let effective_terrain_floor = min_possible_y.max(1);
+
+        // if below sin variation, all solid
+        if chunk_y_max < effective_terrain_floor {
+            return ChunkUniformity::Solid;
+        }
+
+        ChunkUniformity::Mixed
     }
 
     #[instrument(skip_all)]
@@ -63,7 +68,6 @@ impl TerrainShaper for SinWaveGenerator {
         for pos in iterator {
             let (x, y, z) = pos.local;
             let world_x = pos.world.x as f32;
-            let world_y = pos.world.y;
             let world_z = pos.world.z as f32;
 
             // sin application
@@ -72,8 +76,9 @@ impl TerrainShaper for SinWaveGenerator {
             let surface_y = (self.base_height as f32 + wave).round() as i32;
 
             // block determinance
-            if (world_y > 0) && (world_y < surface_y) {
-                shaper.set_filled_blocks(x, y, z);
+            let world_y = pos.world.y;
+            if world_y < surface_y {
+                shaper.mark_as_solid(x, y, z);
             }
         }
 

@@ -97,15 +97,25 @@ pub trait TerrainShaper: Send + Sync + Debug {
         biome_registry: &BiomeRegistryResource,
     ) -> ShapeResultBuilder;
 
-    /// A fast, cheap check to see if this chunk will be *guaranteed* empty.
-    /// If this returns `true`, `shape_terrain_chunk` is never called and
-    /// the biome generation never happens, resulting in massive perf gains.
+    /// A fast, cheap check to see if this chunk will be uniform (all air or all solid).
     ///
-    /// This is an optimization specific to each generator. By default, we
-    /// assume the chunk is not empty to force the full generation path.
-    fn is_chunk_empty(&self, _: IVec3) -> bool {
-        false
+    /// By implementing this, generators can help the engine optimize performance with
+    /// the ability to entirely skip generating uniform chunks, and skip biome compute
+    /// for all air (empty) chunks.
+    fn determine_chunk_uniformity(&self, _: IVec3) -> ChunkUniformity {
+        ChunkUniformity::Mixed
     }
+}
+
+/// Describes the density uniformity of a chunk.
+#[derive(Debug, PartialEq, Eq)]
+pub enum ChunkUniformity {
+    /// The chunk is 100% empty (all air).
+    Empty,
+    /// The chunk is 100% solid (all filled).
+    Solid,
+    /// The chunk contains a mix of empty and solid blocks.
+    Mixed,
 }
 
 pub struct ShapeResultBuilder {
@@ -118,7 +128,7 @@ impl ShapeResultBuilder {
         Self { blocks }
     }
 
-    pub fn set_filled_blocks(&mut self, x: usize, y: usize, z: usize) {
+    pub fn mark_as_solid(&mut self, x: usize, y: usize, z: usize) {
         self.blocks.set_data(x, y, z, SOLID_BLOCK_ID);
     }
 

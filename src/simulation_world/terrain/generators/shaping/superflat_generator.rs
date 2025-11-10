@@ -1,11 +1,11 @@
 use crate::prelude::*;
-use crate::simulation_world::chunk::{WorldVoxelPositionIterator, CHUNK_SIDE_LENGTH};
-use crate::simulation_world::terrain::generators::core::ShapeResultBuilder;
 use crate::simulation_world::{
     biome::BiomeRegistryResource,
+    chunk::{WorldVoxelPositionIterator, CHUNK_SIDE_LENGTH},
     terrain::{
         components::{climate_map::TerrainClimateMapComponent, BiomeMapComponent},
-        generators::core::TerrainShaper,
+        core::ChunkUniformity,
+        generators::core::{ShapeResultBuilder, TerrainShaper},
     },
 };
 
@@ -26,15 +26,25 @@ impl HeightmapShaper {
 
 impl TerrainShaper for HeightmapShaper {
     #[instrument(skip_all)]
-    fn is_chunk_empty(&self, coord: IVec3) -> bool {
+    fn determine_chunk_uniformity(&self, coord: IVec3) -> ChunkUniformity {
         let chunk_y_min = coord.y * CHUNK_SIDE_LENGTH as i32;
+        let chunk_y_max = (coord.y + 1) * CHUNK_SIDE_LENGTH as i32 - 1;
 
         let world_top_y = self.land_height;
+        let world_bottom_y = self.ocean_height;
+
+        // if above highest, empty
         if chunk_y_min > world_top_y {
-            true
-        } else {
-            false
+            return ChunkUniformity::Empty;
         }
+
+        // if below lowest, solid
+        if chunk_y_max < world_bottom_y {
+            return ChunkUniformity::Solid;
+        }
+
+        // otherwise mixed
+        ChunkUniformity::Mixed
     }
 
     #[instrument(skip_all)]
@@ -66,7 +76,7 @@ impl TerrainShaper for HeightmapShaper {
             }
 
             if world_y <= surface_height {
-                shaper.set_filled_blocks(x, y, z);
+                shaper.mark_as_solid(x, y, z);
             }
         }
 
