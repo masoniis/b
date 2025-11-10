@@ -6,7 +6,10 @@ use std::collections::HashMap;
 use std::{fs, sync::Arc};
 
 pub type BlockId = u8;
+/// ID of the default "air" block.
 pub const AIR_BLOCK_ID: BlockId = 0;
+/// ID of a default solid block guaranteed to exist (probably stone).
+pub const SOLID_BLOCK_ID: BlockId = 1;
 
 #[derive(Resource, Default, Clone)]
 pub struct BlockRegistryResource {

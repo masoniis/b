@@ -1,5 +1,5 @@
 use crate::prelude::*;
-use crate::simulation_world::generation::climate_map::{BiomeClimateData, TerrainClimateData};
+use crate::simulation_world::terrain::components::climate_map::{BiomeClimateData, TerrainClimateData};
 use bevy_ecs::resource::Resource;
 use noise::{Fbm, MultiFractal, NoiseFn, OpenSimplex};
 

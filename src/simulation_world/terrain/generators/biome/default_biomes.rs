@@ -2,8 +2,13 @@ use crate::prelude::*;
 use crate::simulation_world::chunk::WorldVoxelIteratorWithColumn;
 use crate::simulation_world::{
     biome::BiomeRegistryResource,
-    generation::{
-        core::BiomeGenerator, BiomeMapComponent, ClimateNoiseGenerator, TerrainClimateMapComponent,
+    terrain::{
+        biome::ClimateNoiseGenerator,
+        components::{
+            climate_map::TerrainClimateMapComponent,
+            BiomeMapComponent,
+        },
+        generators::core::BiomeGenerator,
     },
 };
 

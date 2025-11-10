@@ -1,10 +1,12 @@
 use crate::prelude::*;
 use crate::simulation_world::chunk::{WorldVoxelPositionIterator, CHUNK_SIDE_LENGTH};
+use crate::simulation_world::terrain::generators::core::ShapeResultBuilder;
 use crate::simulation_world::{
     biome::BiomeRegistryResource,
-    block::BlockRegistryResource,
-    chunk::ChunkBlocksComponent,
-    generation::{BiomeMapComponent, TerrainClimateMapComponent, TerrainGenerator},
+    terrain::{
+        components::{climate_map::TerrainClimateMapComponent, BiomeMapComponent},
+        generators::core::TerrainShaper,
+    },
 };
 
 /// Generates a simple, rolling terrain using two sine waves.
@@ -28,7 +30,7 @@ impl SinWaveGenerator {
     }
 }
 
-impl TerrainGenerator for SinWaveGenerator {
+impl TerrainShaper for SinWaveGenerator {
     #[instrument(skip_all)]
     fn is_chunk_empty(&self, coord: IVec3) -> bool {
         let chunk_y_min = coord.y * CHUNK_SIDE_LENGTH as i32;
@@ -41,6 +43,7 @@ impl TerrainGenerator for SinWaveGenerator {
         let world_bottom_y = 0;
 
         if chunk_y_max < world_bottom_y || chunk_y_min > world_top_y {
+            info!("Culling empty chunk at {coord:?}");
             true
         } else {
             false
@@ -48,21 +51,15 @@ impl TerrainGenerator for SinWaveGenerator {
     }
 
     #[instrument(skip_all)]
-    fn generate_terrain_chunk(
+    fn shape_terrain_chunk(
         &self,
-        chunk_blocks: &mut ChunkBlocksComponent,
+        mut shaper: ShapeResultBuilder,
         iterator: WorldVoxelPositionIterator,
 
         _biome_map: &BiomeMapComponent,
         _climate_map: &TerrainClimateMapComponent,
-        blocks: &BlockRegistryResource,
         _biomes: &BiomeRegistryResource,
-    ) {
-        let stone_block = blocks.get_block_by_name("stone");
-        let grass_block = blocks.get_block_by_name("grass");
-        let dirt_block = blocks.get_block_by_name("dirt");
-        let air_block = blocks.get_block_by_name("air");
-
+    ) -> ShapeResultBuilder {
         for pos in iterator {
             let (x, y, z) = pos.local;
             let world_x = pos.world.x as f32;
@@ -75,19 +72,11 @@ impl TerrainGenerator for SinWaveGenerator {
             let surface_y = (self.base_height as f32 + wave).round() as i32;
 
             // block determinance
-            let block_to_set = if world_y < 0 {
-                air_block
-            } else if world_y > surface_y {
-                air_block
-            } else if world_y == surface_y {
-                grass_block
-            } else if world_y >= surface_y - 3 {
-                dirt_block
-            } else {
-                stone_block
-            };
-
-            chunk_blocks.set_data(x, y, z, block_to_set);
+            if (world_y > 0) && (world_y < surface_y) {
+                shaper.set_filled_blocks(x, y, z);
+            }
         }
+
+        shaper
     }
 }

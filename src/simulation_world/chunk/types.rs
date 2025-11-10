@@ -405,3 +405,88 @@ impl Iterator for WorldVoxelIteratorWithColumn {
         Some(item)
     }
 }
+
+/// An iterator that yields the (x, z) columns for a chunk.
+///
+/// Iteration order is X-major, Z-medial (e.g., (0,0), (0,1), ..., (1,0), (1,1), ...).
+/// This is intended for O(n^2) terrain painting passes.
+pub struct WorldColumnIterator {
+    base_world_pos: IVec3,
+    size: usize,
+    step: i32,
+
+    // current iterator state
+    x: usize,
+    z: usize,
+}
+
+impl WorldColumnIterator {
+    /// Creates a new iterator for a chunk at `coord` and `lod`.
+    pub fn new(coord: IVec3, lod: ChunkLod) -> Self {
+        let size = lod.sidelength();
+        let step = 1i32 << lod.0;
+        let base_world_pos = coord * CHUNK_SIDE_LENGTH as i32;
+
+        Self {
+            base_world_pos,
+            size,
+            step,
+            x: 0,
+            z: 0,
+        }
+    }
+
+    /// Get the size (sidelength) of the chunk.
+    pub fn size(&self) -> usize {
+        self.size
+    }
+
+    /// Get the world-space step size for this LOD.
+    pub fn step(&self) -> i32 {
+        self.step
+    }
+
+    /// Get the base world-space Y coordinate for this chunk.
+    pub fn base_world_y(&self) -> i32 {
+        self.base_world_pos.y
+    }
+}
+
+/// The item yielded by the WorldColumnIterator.
+pub struct ColumnPos {
+    /// The local column coordinate (e.g., 0..31) at this LOD.
+    pub local: (usize, usize), // (x, z)
+    /// The corresponding world-space XZ coordinate.
+    pub world_xz: (i32, i32), // (world_x, world_z)
+}
+
+impl Iterator for WorldColumnIterator {
+    type Item = ColumnPos;
+
+    #[inline(always)]
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.x >= self.size {
+            return None; // finished iterating
+        }
+
+        let local_pos = (self.x, self.z);
+
+        // calculate world xz pos
+        let world_x = self.base_world_pos.x + (self.x as i32 * self.step);
+        let world_z = self.base_world_pos.z + (self.z as i32 * self.step);
+
+        let item = ColumnPos {
+            local: local_pos,
+            world_xz: (world_x, world_z),
+        };
+
+        // advance state (z -> x)
+        self.z += 1;
+        if self.z >= self.size {
+            self.z = 0;
+            self.x += 1;
+        }
+
+        Some(item)
+    }
+}

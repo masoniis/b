@@ -1,18 +1,19 @@
-use crate::simulation_world::generation::{
-    ActiveTerrainGenerator, SinWaveGenerator, SuperflatGenerator, TerrainGenerator,
+use crate::simulation_world::terrain::{
+    generators::core::{ActiveTerrainGenerator, TerrainShaper},
+    HeightmapShaper, SinWaveGenerator,
 };
 use bevy_ecs::system::{Local, ResMut};
 use std::sync::Arc;
 
 // A type alias for a function that constructs a terrain generator
-type GeneratorConstructor = fn() -> Arc<dyn TerrainGenerator>;
+type GeneratorConstructor = fn() -> Arc<dyn TerrainShaper>;
 
 // Simple constructor functions
-fn new_superflat() -> Arc<dyn TerrainGenerator> {
-    Arc::new(SuperflatGenerator::new())
+fn new_superflat() -> Arc<dyn TerrainShaper> {
+    Arc::new(HeightmapShaper::new())
 }
 
-fn new_sinwave() -> Arc<dyn TerrainGenerator> {
+fn new_sinwave() -> Arc<dyn TerrainShaper> {
     Arc::new(SinWaveGenerator::new())
 }
 

@@ -11,7 +11,7 @@ use bevy_ecs::prelude::*;
 pub fn setup_camera_system(mut commands: Commands) {
     info!("Spawning default graphics camera.");
 
-    let start_position = Vec3::new((CHUNK_WIDTH / 2) as f32, 16.0, (CHUNK_DEPTH / 2) as f32);
+    let start_position = Vec3::new((CHUNK_WIDTH / 2) as f32, 40.0, (CHUNK_DEPTH / 2) as f32);
     let start_chunk = world_to_chunk_pos(start_position);
 
     let camera_entity = commands

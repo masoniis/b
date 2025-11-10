@@ -2,7 +2,9 @@ pub mod block_definition;
 pub mod block_registry;
 
 pub use block_definition::{load_block_from_str, BlockFaceTextures, BlockProperties};
-pub use block_registry::{load_block_definitions_system, BlockRegistryResource};
+pub use block_registry::{
+    load_block_definitions_system, BlockId, BlockRegistryResource, AIR_BLOCK_ID, SOLID_BLOCK_ID,
+};
 
 // INFO: ----------------------
 //         Block plugin

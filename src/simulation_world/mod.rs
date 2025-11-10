@@ -4,9 +4,9 @@ pub mod biome;
 pub mod block;
 pub mod camera;
 pub mod chunk;
-pub mod generation;
 pub mod input;
 pub mod scheduling;
+pub mod terrain;
 pub mod time;
 pub mod user_interface;
 
@@ -27,8 +27,8 @@ use crate::simulation_world::biome::BiomePlugin;
 use crate::simulation_world::block::BlockPlugin;
 use crate::simulation_world::camera::CameraPlugin;
 use crate::simulation_world::chunk::ChunkLoadingPlugin;
-use crate::simulation_world::generation::TerrainGenerationPlugin;
 use crate::simulation_world::input::InputModulePlugin;
+use crate::simulation_world::terrain::TerrainGenerationPlugin;
 use crate::simulation_world::time::TimeControlPlugin;
 use crate::{
     ecs_core::{worlds::SimulationWorldMarker, CommonEcsInterface, EcsBuilder, PluginGroup},
