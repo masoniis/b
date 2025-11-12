@@ -56,11 +56,6 @@ pub fn poll_chunk_meshing_tasks(
                                 commands.entity(entity).insert(transparent_mesh);
                             }
                             (None, None) => {
-                                // TODO: this is a bug. A all stone mesh in a  mountain will get no mesh
-                                // and then get despawned. then a chunk next to it will see it is "loaded but empty" and
-                                // assume air. This results in interior faces being meshed.
-                                warn!("Both opaque and transparent meshes are empty for chunk at {:?} after meshing, but typically this should be avoided by despawning the entity after generation to avoid meshing entirely. Despawning entity now.", coord);
-
                                 commands
                                     .entity(entity)
                                     .remove::<ChunkMeshingTaskComponent>();

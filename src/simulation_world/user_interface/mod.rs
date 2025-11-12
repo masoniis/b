@@ -9,8 +9,9 @@ pub mod text;
 
 use self::layout::handle_window_resize_system;
 use crate::simulation_world::scheduling::StartupSet;
-use crate::simulation_world::user_interface::screens::debug::DebugScreenPlugin;
-use crate::simulation_world::user_interface::screens::LoadingScreenPlugin;
+use crate::simulation_world::user_interface::screens::{
+    DebugScreenPlugin, GameScreenPlugin, LoadingScreenPlugin,
+};
 use crate::{
     ecs_core::{EcsBuilder, Plugin},
     simulation_world::{SimulationSchedule, SimulationSet},
@@ -45,7 +46,8 @@ impl Plugin for UiPlugin {
 
         builder
             .add_plugin(LoadingScreenPlugin)
-            .add_plugin(DebugScreenPlugin);
+            .add_plugin(DebugScreenPlugin)
+            .add_plugin(GameScreenPlugin);
 
         // INFO: -----------------
         //         Systems

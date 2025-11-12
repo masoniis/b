@@ -19,6 +19,8 @@ pub fn spawn_ui_root_system(mut commands: Commands) {
                 position: taffy::style::Position::Absolute,
                 width: Size::Percent(100.0),
                 height: Size::Percent(100.0),
+                justify_content: Some(taffy::style::JustifyContent::Center),
+                align_items: Some(taffy::style::AlignItems::Center),
                 ..Default::default()
             },
         ))
