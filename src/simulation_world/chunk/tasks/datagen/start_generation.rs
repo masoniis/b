@@ -1,4 +1,5 @@
 use crate::prelude::*;
+use crate::simulation_world::block::SOLID_BLOCK_ID;
 use crate::simulation_world::chunk::{
     ChunkBlocksComponent, ChunkGenerationTaskComponent, ChunkLod, ChunkState, NeedsGenerating,
     WorldVoxelIteratorWithColumn, WorldVoxelPositionIterator,
@@ -40,12 +41,11 @@ pub fn start_pending_generation_tasks_system(
     terrain_painter: Res<ActiveTerrainPainter>,
     climate_noise: Res<ClimateNoiseGenerator>,
 ) {
-    for (entity, _, coord) in pending_chunks_query.iter_mut() {
+    for (entity, needs_generating, coord) in pending_chunks_query.iter_mut() {
         // check for cancellation
         match chunk_manager.get_state(coord.pos) {
             Some(ChunkState::NeedsGenerating {
                 entity: state_entity,
-                ..
             }) if state_entity == entity => {
                 // state is correct, proceed to start generation
             }
@@ -59,18 +59,43 @@ pub fn start_pending_generation_tasks_system(
             }
         }
 
+        let lod = needs_generating.lod;
+
         // check if the chunk is empty according to the terrain generator
-        if terrain_generator.determine_chunk_uniformity(coord.pos) == ChunkUniformity::Empty {
-            trace!(
-                target: "chunk_loading",
-                "Chunk {} is empty according to terrain generator. Skipping generation.",
-                coord
-            );
-            commands.entity(entity).despawn();
-            chunk_manager.mark_as_loaded_but_empty(coord.pos);
-            continue;
+        match terrain_generator.determine_chunk_uniformity(coord.pos) {
+            ChunkUniformity::Empty => {
+                trace!(
+                    target: "chunk_loading",
+                    "Chunk {} is empty according to terrain generator. Skipping generation.",
+                    coord
+                );
+                commands.entity(entity).despawn();
+                chunk_manager.mark_as_loaded_but_empty(coord.pos);
+                continue;
+            }
+            ChunkUniformity::Solid => {
+                let chunk_blocks = ChunkBlocksComponent::new_filled(lod, SOLID_BLOCK_ID);
+
+                let bundle = GeneratedChunkComponentBundle {
+                    chunk_blocks: Some(chunk_blocks),
+                    chunk_metadata: None,
+                    biome_map: BiomeMapComponent::new_empty(lod),
+                };
+
+                // instant completed task
+                let (sender, receiver) = unbounded();
+                let _ = sender.send(bundle);
+
+                commands
+                    .entity(entity)
+                    .insert(ChunkGenerationTaskComponent { receiver })
+                    .remove::<NeedsGenerating>();
+
+                chunk_manager.mark_as_generating(coord.pos, entity);
+                continue;
+            }
+            _ => {}
         }
-        // TODO: if uniformity is all solid we can optimize like in the empty case
 
         // start the generation thread task if not
         let (sender, receiver) = unbounded();

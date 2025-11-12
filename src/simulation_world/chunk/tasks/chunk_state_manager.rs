@@ -8,7 +8,7 @@ use crate::simulation_world::chunk::{WORLD_MAX_Y_CHUNK, WORLD_MIN_Y_CHUNK};
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ChunkState {
     /// Entity that can be acquired for generation
-    NeedsGenerating { lod: u32, entity: Entity },
+    NeedsGenerating { entity: Entity },
     /// Entity holds the generation Task component
     Generating { entity: Entity },
     /// Entity holds the generated data but is not queued for meshing
@@ -29,7 +29,7 @@ impl ChunkState {
     /// Returns the Entity associated with this chunk state.
     pub fn entity(&self) -> Option<Entity> {
         match *self {
-            ChunkState::NeedsGenerating { entity, .. } => Some(entity),
+            ChunkState::NeedsGenerating { entity } => Some(entity),
             ChunkState::Generating { entity } => Some(entity),
             ChunkState::DataReady { entity } => Some(entity),
             ChunkState::WantsMeshing { entity } => Some(entity),
@@ -99,16 +99,10 @@ impl ChunkStateManager {
     }
 
     /// Marks that a chunk is requested to be loaded.
-    pub fn mark_as_needs_generating(
-        &mut self,
-        coord: IVec3,
-        lod: u32,
-        needs_generation_task_entity: Entity,
-    ) {
+    pub fn mark_as_needs_generating(&mut self, coord: IVec3, needs_generation_task_entity: Entity) {
         self.chunk_states.insert(
             coord,
             ChunkState::NeedsGenerating {
-                lod,
                 entity: needs_generation_task_entity,
             },
         );

@@ -1,7 +1,7 @@
 use crate::prelude::*;
 use crate::simulation_world::chunk::{
-    CheckForMeshing, ChunkCoord, ChunkState, ChunkStateManager, NeedsGenerating, WantsMeshing,
-    RENDER_DISTANCE,
+    CheckForMeshing, ChunkCoord, ChunkLod, ChunkState, ChunkStateManager, NeedsGenerating,
+    WantsMeshing, RENDER_DISTANCE,
 };
 use crate::simulation_world::{
     camera::ActiveCamera,
@@ -110,9 +110,12 @@ pub fn manage_distance_based_chunk_loading_targets_system(
         if !chunk_manager.is_chunk_present_or_loading(coord) {
             debug!(target:"chunk_loading","Marking chunk needs-generation at {:?}", coord);
             let ent = commands
-                .spawn((NeedsGenerating, ChunkCoord { pos: coord }))
+                .spawn((
+                    NeedsGenerating { lod: ChunkLod(0) },
+                    ChunkCoord { pos: coord },
+                ))
                 .id();
-            chunk_manager.mark_as_needs_generating(coord, 0, ent);
+            chunk_manager.mark_as_needs_generating(coord, ent);
         }
     }
 }

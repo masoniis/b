@@ -60,8 +60,11 @@ pub fn poll_chunk_meshing_tasks(
                                 // and then get despawned. then a chunk next to it will see it is "loaded but empty" and
                                 // assume air. This results in interior faces being meshed.
                                 warn!("Both opaque and transparent meshes are empty for chunk at {:?} after meshing, but typically this should be avoided by despawning the entity after generation to avoid meshing entirely. Despawning entity now.", coord);
-                                commands.entity(entity).despawn();
-                                chunk_manager.mark_as_loaded_but_empty(coord.pos);
+
+                                commands
+                                    .entity(entity)
+                                    .remove::<ChunkMeshingTaskComponent>();
+                                chunk_manager.mark_as_loaded(coord.pos, entity);
                                 return; // return to avoid adding transform component
                             }
                         }

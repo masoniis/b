@@ -14,4 +14,8 @@ impl ChunkBlocksComponent {
     pub fn new_empty(lod: ChunkLod) -> Self {
         Self(ChunkVolumeData::new_filled(lod, AIR_BLOCK_ID))
     }
+
+    pub fn new_filled(lod: ChunkLod, block_id: BlockId) -> Self {
+        Self(ChunkVolumeData::new_filled(lod, block_id))
+    }
 }
