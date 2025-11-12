@@ -61,6 +61,10 @@ impl Default for InputActionMapResource {
                     Input::MouseButton(MouseButton::Left),
                     SimulationAction::BreakVoxel,
                 ),
+                (
+                    Input::MouseButton(MouseButton::Right),
+                    SimulationAction::PlaceVoxel,
+                ),
                 // Terrain gen
                 (
                     Input::Key(PhysicalKey::Code(KeyCode::KeyT)),

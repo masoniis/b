@@ -10,6 +10,7 @@ pub enum SimulationAction {
 
     // Core player interaction
     BreakVoxel,
+    PlaceVoxel,
 
     // Terrain interactions
     CycleActiveTerrainGenerator,

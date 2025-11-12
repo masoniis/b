@@ -1,4 +1,5 @@
 use crate::prelude::*;
+use crate::simulation_world::block::TargetedBlock;
 use crate::simulation_world::{
     block::block_registry::AIR_BLOCK_ID,
     chunk::{
@@ -7,6 +8,7 @@ use crate::simulation_world::{
     },
 };
 use bevy_ecs::prelude::{Commands, Entity, Message, MessageReader, Query};
+use bevy_ecs::prelude::{MessageWriter, Res};
 
 /// An event that is sent when a voxel should be broken.
 #[derive(Message, Clone)]
@@ -15,8 +17,20 @@ pub struct BreakVoxelEvent {
     pub world_pos: IVec3,
 }
 
+/// Fires a `BreakVoxelEvent` for the currently targeted block.
+pub fn break_targeted_voxel_system(
+    targeted_block: Res<TargetedBlock>,
+    mut break_voxel_writer: MessageWriter<BreakVoxelEvent>,
+) {
+    if let Some(voxel_pos) = targeted_block.position {
+        break_voxel_writer.write(BreakVoxelEvent {
+            world_pos: voxel_pos,
+        });
+    }
+}
+
 /// A system that handles the `BreakVoxelEvent`.
-pub fn break_voxel_system(
+pub fn handle_break_voxel_events_system(
     // input
     mut events: MessageReader<BreakVoxelEvent>,
 

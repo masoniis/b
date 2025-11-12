@@ -2,11 +2,10 @@ use crate::prelude::*;
 use crate::simulation_world::chunk::{ChunkCoord, ChunkState};
 use crate::simulation_world::{
     block::{block_registry::AIR_BLOCK_ID, TargetedBlock},
-    chunk::BreakVoxelEvent,
     chunk::{ChunkBlocksComponent, ChunkStateManager},
     player::{ActiveCamera, CameraComponent},
 };
-use bevy_ecs::prelude::{MessageWriter, Query, Res, ResMut};
+use bevy_ecs::prelude::{Query, Res, ResMut};
 
 /// Max raycast traverse distance in blocks
 const RAYCAST_MAX_DIST: f32 = 8.0;
@@ -87,16 +86,4 @@ fn get_block_at_world_pos(
     }
 
     None // chunk isn't loaded or doesn't have blocks
-}
-
-/// Fires a `BreakVoxelEvent` for the currently targeted block.
-pub fn break_targeted_voxel_system(
-    targeted_block: Res<TargetedBlock>,
-    mut break_voxel_writer: MessageWriter<BreakVoxelEvent>,
-) {
-    if let Some(voxel_pos) = targeted_block.position {
-        break_voxel_writer.write(BreakVoxelEvent {
-            world_pos: voxel_pos,
-        });
-    }
 }

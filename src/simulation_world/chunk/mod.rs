@@ -1,11 +1,9 @@
-pub mod break_voxel;
 pub mod components;
 pub mod consts;
 pub mod meshing;
 pub mod tasks;
 pub mod types;
 
-pub use break_voxel::*;
 pub use components::*;
 pub use consts::*;
 pub use meshing::*;
@@ -21,15 +19,13 @@ use crate::{
     simulation_world::{player::ActiveCamera, scheduling::FixedUpdateSet, SimulationSchedule},
     SimulationSet,
 };
-use bevy_ecs::schedule::IntoScheduleConfigs;
-use bevy_ecs::{message::Messages, prelude::*};
+use bevy_ecs::prelude::*;
 
 pub struct ChunkLoadingPlugin;
 
 impl Plugin for ChunkLoadingPlugin {
     fn build(&self, builder: &mut EcsBuilder) {
         builder.add_resource(ChunkStateManager::default());
-        builder.init_resource::<Messages<BreakVoxelEvent>>();
 
         builder
             .schedule_entry(SimulationSchedule::Main)
@@ -41,8 +37,7 @@ impl Plugin for ChunkLoadingPlugin {
                         },
                     )
                     .in_set(SimulationSet::PreUpdate),
-            )
-            .add_systems((break_voxel_system,).in_set(SimulationSet::Update));
+            );
 
         builder
             .schedule_entry(SimulationSchedule::FixedUpdate)
