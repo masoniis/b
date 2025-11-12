@@ -1,6 +1,6 @@
 use crate::prelude::*;
+use crate::simulation_world::player::CameraComponent;
 use crate::simulation_world::{
-    camera::CameraComponent,
     chunk::ChunkCoord,
     time::FrameClock,
     user_interface::{

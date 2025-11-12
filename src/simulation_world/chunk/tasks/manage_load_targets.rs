@@ -3,10 +3,8 @@ use crate::simulation_world::chunk::{
     CheckForMeshing, ChunkCoord, ChunkLod, ChunkState, ChunkStateManager, NeedsGenerating,
     WantsMeshing, RENDER_DISTANCE,
 };
-use crate::simulation_world::{
-    camera::ActiveCamera,
-    chunk::{LOAD_DISTANCE, WORLD_MAX_Y_CHUNK, WORLD_MIN_Y_CHUNK},
-};
+use crate::simulation_world::chunk::{LOAD_DISTANCE, WORLD_MAX_Y_CHUNK, WORLD_MIN_Y_CHUNK};
+use crate::simulation_world::player::ActiveCamera;
 use bevy_ecs::prelude::*;
 use glam::IVec3;
 use std::collections::HashSet;

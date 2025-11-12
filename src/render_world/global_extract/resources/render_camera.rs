@@ -1,6 +1,6 @@
-use crate::prelude::*;
 use crate::render_world::global_extract::run_extract_schedule::SimulationWorld;
-use crate::simulation_world::camera::{ActiveCamera, CameraComponent};
+use crate::simulation_world::player::CameraComponent;
+use crate::{prelude::*, simulation_world::player::ActiveCamera};
 use bevy_ecs::prelude::{Res, ResMut, Resource};
 
 /// A resource in the render world holding the extracted camera matrices.

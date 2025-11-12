@@ -2,9 +2,9 @@ pub mod app_lifecycle;
 pub mod asset_management;
 pub mod biome;
 pub mod block;
-pub mod camera;
 pub mod chunk;
 pub mod input;
+pub mod player;
 pub mod scheduling;
 pub mod terrain;
 pub mod time;
@@ -25,9 +25,9 @@ use crate::simulation_world::asset_management::texture_map_registry::TextureMapR
 use crate::simulation_world::asset_management::{AssetManagementPlugin, MeshAsset};
 use crate::simulation_world::biome::BiomePlugin;
 use crate::simulation_world::block::BlockPlugin;
-use crate::simulation_world::camera::CameraPlugin;
 use crate::simulation_world::chunk::ChunkLoadingPlugin;
 use crate::simulation_world::input::InputModulePlugin;
+use crate::simulation_world::player::PlayerPlugin;
 use crate::simulation_world::terrain::TerrainGenerationPlugin;
 use crate::simulation_world::time::TimeControlPlugin;
 use crate::{
@@ -152,7 +152,7 @@ struct ClientOnlyPlugins;
 impl PluginGroup for ClientOnlyPlugins {
     fn build(self, builder: &mut EcsBuilder) {
         builder
-            .add_plugin(CameraPlugin)
+            .add_plugin(PlayerPlugin)
             .add_plugin(UiPlugin)
             .add_plugin(InputModulePlugin);
     }

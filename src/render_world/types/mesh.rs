@@ -15,18 +15,17 @@ pub fn create_gpu_mesh_from_data(
     indices: &[u32],
 ) -> GpuMesh {
     let vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-        label: Some("Vertex Buffer"),
+        label: Some("Mesh Vertex Buffer"),
         contents: bytemuck::cast_slice(vertices),
         usage: wgpu::BufferUsages::VERTEX,
     });
 
     let index_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-        label: Some("Index Buffer"),
+        label: Some("Mesh Index Buffer"),
         contents: bytemuck::cast_slice(indices),
         usage: wgpu::BufferUsages::INDEX,
     });
 
-    // Wrap the GpuMesh in an Arc
     GpuMesh {
         vertex_buffer,
         index_buffer,

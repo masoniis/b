@@ -1,7 +1,7 @@
+use crate::prelude::*;
 use crate::simulation_world::chunk::{CHUNK_DEPTH, CHUNK_HEIGHT, CHUNK_WIDTH};
 use bevy_ecs::prelude::*;
 use derive_more::{Deref, DerefMut};
-use glam::IVec3;
 use std::fmt;
 
 const X_SHIFT: i32 = CHUNK_WIDTH.trailing_zeros() as i32;
@@ -36,15 +36,36 @@ impl ChunkCoord {
             self.pos.z << Z_SHIFT,
         )
     }
-}
 
-/// Convert a world position to chunk coordinate
-pub fn world_to_chunk_pos(world_pos: glam::Vec3) -> IVec3 {
-    let int_pos = world_pos.floor().as_ivec3();
+    // INFO: -----------------------------
+    //         static method utils
+    // -----------------------------------
 
-    IVec3::new(
-        int_pos.x >> X_SHIFT,
-        int_pos.y >> Y_SHIFT,
-        int_pos.z >> Z_SHIFT,
-    )
+    /// Helper to convert world coordinates to chunk/local coordinates
+    pub fn world_to_chunk_and_local_pos(world_pos: IVec3) -> (IVec3, IVec3) {
+        let chunk_coord = IVec3::new(
+            world_pos.x >> X_SHIFT,
+            world_pos.y >> Y_SHIFT,
+            world_pos.z >> Z_SHIFT,
+        );
+
+        let local_pos = IVec3::new(
+            world_pos.x & (CHUNK_WIDTH as i32 - 1),
+            world_pos.y & (CHUNK_HEIGHT as i32 - 1),
+            world_pos.z & (CHUNK_DEPTH as i32 - 1),
+        );
+
+        (chunk_coord, local_pos)
+    }
+
+    /// Convert a world position to chunk coordinate
+    pub fn world_to_chunk_pos(world_pos: Vec3) -> IVec3 {
+        let int_pos = world_pos.floor().as_ivec3();
+
+        IVec3::new(
+            int_pos.x >> X_SHIFT,
+            int_pos.y >> Y_SHIFT,
+            int_pos.z >> Z_SHIFT,
+        )
+    }
 }

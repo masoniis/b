@@ -1,5 +1,5 @@
 use crate::simulation_world::{
-    camera::{ActiveCamera, CameraComponent},
+    player::{ActiveCamera, CameraComponent},
     user_interface::{components::UiText, screens::debug::debug_screen::CameraXYZCoordTextMarker},
 };
 use bevy_ecs::prelude::*;

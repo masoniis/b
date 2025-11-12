@@ -1,4 +1,5 @@
 use crate::prelude::*;
+use crate::render_world::passes::main_camera_centric::bounding_box_pass::extract::WireframeToggleState;
 use crate::render_world::{
     graphics_context::resources::{RenderDevice, RenderQueue},
     passes::main_camera_centric::{
@@ -12,18 +13,15 @@ use crate::simulation_world::block::TargetedBlock;
 use crate::simulation_world::chunk::consts::{CHUNK_DEPTH, CHUNK_HEIGHT, CHUNK_WIDTH};
 use bevy_ecs::prelude::*;
 
-/// A simple system to run when wireframes are disabled to ensure the buffer is cleared.
-pub fn clear_wireframe_buffer_system(mut wireframe_buffer: ResMut<WireframeObjectBuffer>) {
-    wireframe_buffer.objects.clear();
-}
-
 #[instrument(skip_all)]
 pub fn queue_wireframe_system(
     // input
     queue: Res<RenderQueue>,
     device: Res<RenderDevice>,
     wireframe_pipeline: Res<WireframePipeline>,
+
     chunk_query: Query<&RenderTransformComponent>,
+    active_bounds: Res<WireframeToggleState>,
     targeted_block: Res<TargetedBlock>,
 
     // output
@@ -31,24 +29,30 @@ pub fn queue_wireframe_system(
 ) {
     wireframe_buffer.objects.clear();
 
-    // add all chunk wireframes
-    let translation_matrix = Mat4::from_translation(glam::vec3(
-        CHUNK_WIDTH as f32 / 2.0,
-        CHUNK_HEIGHT as f32 / 2.0,
-        CHUNK_DEPTH as f32 / 2.0,
-    ));
-    let scale_matrix = Mat4::from_scale(glam::vec3(
-        CHUNK_WIDTH as f32,
-        CHUNK_HEIGHT as f32,
-        CHUNK_DEPTH as f32,
-    ));
+    if !active_bounds.enabled && targeted_block.position.is_none() {
+        return;
+    }
 
-    for transform in chunk_query.iter() {
-        let model_matrix = transform.transform * translation_matrix * scale_matrix;
+    if active_bounds.enabled {
+        // add all chunk wireframes
+        let translation_matrix = Mat4::from_translation(glam::vec3(
+            CHUNK_WIDTH as f32 / 2.0,
+            CHUNK_HEIGHT as f32 / 2.0,
+            CHUNK_DEPTH as f32 / 2.0,
+        ));
+        let scale_matrix = Mat4::from_scale(glam::vec3(
+            CHUNK_WIDTH as f32,
+            CHUNK_HEIGHT as f32,
+            CHUNK_DEPTH as f32,
+        ));
 
-        wireframe_buffer.objects.push(WireframeObjectData {
-            model_matrix: model_matrix.to_cols_array(),
-        });
+        for transform in chunk_query.iter() {
+            let model_matrix = transform.transform * translation_matrix * scale_matrix;
+
+            wireframe_buffer.objects.push(WireframeObjectData {
+                model_matrix: model_matrix.to_cols_array(),
+            });
+        }
     }
 
     // add targeted block wireframe if exists

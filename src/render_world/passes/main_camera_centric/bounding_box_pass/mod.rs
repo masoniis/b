@@ -15,8 +15,8 @@ use crate::{
         global_extract::{clone_resource_system, extract_resource_system},
         passes::main_camera_centric::{
             bounding_box_pass::{
-                extract::{WireframeToggleExtractor, WireframeToggleState},
-                queue::{clear_wireframe_buffer_system, queue_wireframe_system},
+                extract::WireframeToggleExtractor,
+                queue::queue_wireframe_system,
                 startup::{setup_bb_pipeline_and_buffers, setup_unit_bounding_box_mesh_system},
             },
             shared,
@@ -25,7 +25,7 @@ use crate::{
     },
     simulation_world::block::TargetedBlock,
 };
-use bevy_ecs::schedule::{common_conditions::resource_equals, IntoScheduleConfigs};
+use bevy_ecs::schedule::IntoScheduleConfigs;
 
 pub struct WireframeRenderPassPlugin;
 
@@ -57,12 +57,8 @@ impl Plugin for WireframeRenderPassPlugin {
         //         Queue
         // ---------------------
 
-        builder.schedule_entry(RenderSchedule::Main).add_systems((
-            queue_wireframe_system
-                .in_set(RenderSet::Queue)
-                .run_if(resource_equals(WireframeToggleState { enabled: true })),
-            clear_wireframe_buffer_system
-                .run_if(resource_equals(WireframeToggleState { enabled: false })),
-        ));
+        builder
+            .schedule_entry(RenderSchedule::Main)
+            .add_systems(queue_wireframe_system.in_set(RenderSet::Queue));
     }
 }

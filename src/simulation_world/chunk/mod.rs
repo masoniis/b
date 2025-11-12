@@ -18,7 +18,7 @@ pub use types::*;
 
 use crate::{
     ecs_core::{EcsBuilder, Plugin},
-    simulation_world::{camera::ActiveCamera, scheduling::FixedUpdateSet, SimulationSchedule},
+    simulation_world::{player::ActiveCamera, scheduling::FixedUpdateSet, SimulationSchedule},
     SimulationSet,
 };
 use bevy_ecs::schedule::IntoScheduleConfigs;

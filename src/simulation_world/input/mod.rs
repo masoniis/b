@@ -20,9 +20,9 @@ use crate::{
             },
             resources::DesiredCursorState,
             systems::{
-                raycast_break_voxel_event_system, toggle_chunk_borders::ChunkBoundsToggle,
-                toggle_chunk_borders_system, toggle_cursor_system,
-                toggle_opaque_wireframe::OpaqueWireframeMode, toggle_opaque_wireframe_mode_system,
+                toggle_chunk_borders::ChunkBoundsToggle, toggle_chunk_borders_system,
+                toggle_cursor_system, toggle_opaque_wireframe::OpaqueWireframeMode,
+                toggle_opaque_wireframe_mode_system,
             },
         },
         scheduling::OnExit,
@@ -130,16 +130,6 @@ impl Plugin for InputModulePlugin {
             .add_systems(toggle_chunk_borders_system.run_if(
                 |action_state: Res<ActionStateResource>| {
                     action_state.just_happened(SimulationAction::ToggleChunkBorders)
-                },
-            ));
-
-        // break voxel on click
-        builder
-            .add_resource(ChunkBoundsToggle::default())
-            .schedule_entry(SimulationSchedule::Main)
-            .add_systems(raycast_break_voxel_event_system.run_if(
-                |action_state: Res<ActionStateResource>| {
-                    action_state.just_happened(SimulationAction::BreakVoxel)
                 },
             ));
     }

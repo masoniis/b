@@ -1,8 +1,7 @@
 use crate::prelude::*;
+use crate::simulation_world::player::{ActiveCamera, CameraComponent};
 use crate::simulation_world::{
-    camera::{ActiveCamera, CameraComponent},
-    chunk::ChunkCoord,
-    user_interface::components::UiText,
+    chunk::ChunkCoord, user_interface::components::UiText,
     user_interface::screens::debug_screen::CameraChunkCoordTextMarker,
 };
 use bevy_ecs::prelude::*;

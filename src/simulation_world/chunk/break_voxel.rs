@@ -2,7 +2,7 @@ use crate::prelude::*;
 use crate::simulation_world::{
     block::block_registry::AIR_BLOCK_ID,
     chunk::{
-        components::{world_to_chunk_pos, ChunkBlocksComponent, ChunkCoord, ChunkMeshDirty},
+        components::{ChunkBlocksComponent, ChunkCoord, ChunkMeshDirty},
         CHUNK_SIDE_LENGTH,
     },
 };
@@ -25,18 +25,13 @@ pub fn break_voxel_system(
     mut commands: Commands,
 ) {
     for event in events.read() {
-        let chunk_pos = world_to_chunk_pos(event.world_pos.as_vec3());
+        let chunk_pos = ChunkCoord::world_to_chunk_pos(event.world_pos.as_vec3());
 
         if let Some((entity, _, mut chunk_blocks)) = chunks
             .iter_mut()
             .find(|(_, coord, _)| coord.pos == chunk_pos)
         {
             let local_pos = event.world_pos - (chunk_pos * CHUNK_SIDE_LENGTH as i32);
-
-            info!(
-                "Breaking voxel at world pos {:?}, chunk pos {:?}, local pos {:?}",
-                event.world_pos, chunk_pos, local_pos
-            );
 
             chunk_blocks.set_data(
                 local_pos.x as usize,

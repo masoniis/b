@@ -1,10 +1,10 @@
 use crate::prelude::*;
-use crate::simulation_world::camera::ActiveCamera;
 use crate::simulation_world::chunk::{
     CheckForMeshing, ChunkGenerationTaskComponent, ChunkState, WantsMeshing, RENDER_DISTANCE,
     WORLD_MAX_Y_CHUNK, WORLD_MIN_Y_CHUNK,
 };
 use crate::simulation_world::chunk::{ChunkCoord, ChunkStateManager};
+use crate::simulation_world::player::ActiveCamera;
 use bevy_ecs::prelude::*;
 use crossbeam::channel::TryRecvError;
 

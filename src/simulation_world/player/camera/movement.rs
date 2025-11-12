@@ -1,12 +1,12 @@
 use crate::prelude::*;
-use crate::simulation_world::camera::{ActiveCamera, CameraComponent};
-use crate::simulation_world::chunk::{world_to_chunk_pos, ChunkCoord};
-use crate::simulation_world::time::FrameClock;
 use crate::{
+    simulation_world::chunk::ChunkCoord,
     simulation_world::input::resources::WindowSizeResource,
     simulation_world::input::{
         resources::CursorMovement, types::simulation_action::SimulationAction, ActionStateResource,
     },
+    simulation_world::player::{ActiveCamera, CameraComponent},
+    simulation_world::time::FrameClock,
 };
 use bevy_ecs::prelude::*;
 use glam::{Mat4, Vec3};
@@ -127,7 +127,7 @@ pub fn update_camera_chunk_chord_system(
     };
 
     // update chunk chord if it is different
-    let new_chunk_pos = world_to_chunk_pos(camera.position);
+    let new_chunk_pos = ChunkCoord::world_to_chunk_pos(camera.position);
     if new_chunk_pos != vicinity.pos {
         debug!(
             target: "camera_chunk",
