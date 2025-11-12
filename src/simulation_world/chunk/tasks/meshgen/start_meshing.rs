@@ -5,8 +5,8 @@ use crate::simulation_world::chunk::padded_chunk_view::{
     ChunkDataOption, NeighborLODs, PaddedChunkView,
 };
 use crate::simulation_world::chunk::{
-    downsample_chunk, upsample_chunk, CheckForMeshing, ChunkMeshingTaskComponent, ChunkState,
-    WantsMeshing,
+    downsample_chunk, upsample_chunk, CheckForMeshing, ChunkMeshDirty, ChunkMeshingTaskComponent,
+    ChunkState, WantsMeshing,
 };
 use crate::simulation_world::{
     asset_management::{texture_map_registry::TextureMapResource, AssetStorageResource, MeshAsset},
@@ -17,6 +17,31 @@ use crate::simulation_world::{
 };
 use bevy_ecs::prelude::*;
 use crossbeam::channel::unbounded;
+
+/// A system that detects chunks marked as dirty and prepares them for re-meshing.
+pub fn handle_dirty_chunks_system(
+    // input
+    dirty_chunks_query: Query<(Entity, &ChunkCoord), With<ChunkMeshDirty>>,
+
+    // output
+    mut commands: Commands,
+    mut chunk_manager: ResMut<ChunkStateManager>,
+) {
+    for (entity, coord) in dirty_chunks_query.iter() {
+        trace!(
+            "Chunk {:?} at {} was marked as dirty, preparing for re-meshing.",
+            entity,
+            coord.pos
+        );
+
+        chunk_manager.mark_as_needs_meshing(coord.pos, entity);
+
+        commands
+            .entity(entity)
+            .insert((WantsMeshing, CheckForMeshing))
+            .remove::<ChunkMeshDirty>();
+    }
+}
 
 /// Queries for chunks needing meshing and starts a limited number of tasks per frame.
 #[instrument(skip_all)]

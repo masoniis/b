@@ -4,10 +4,7 @@ use crate::simulation_world::{
     biome::BiomeRegistryResource,
     terrain::{
         biome::ClimateNoiseGenerator,
-        components::{
-            climate_map::TerrainClimateMapComponent,
-            BiomeMapComponent,
-        },
+        components::{climate_map::TerrainClimateMapComponent, BiomeMapComponent},
         generators::core::BiomeGenerator,
     },
 };

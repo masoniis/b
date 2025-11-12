@@ -1,10 +1,12 @@
 pub mod block_definition;
 pub mod block_registry;
+pub mod selected_block;
 
 pub use block_definition::{load_block_from_str, BlockFaceTextures, BlockProperties};
 pub use block_registry::{
     load_block_definitions_system, BlockId, BlockRegistryResource, AIR_BLOCK_ID, SOLID_BLOCK_ID,
 };
+pub use selected_block::TargetedBlock;
 
 // INFO: ----------------------
 //         Block plugin
@@ -21,6 +23,7 @@ pub struct BlockPlugin;
 impl Plugin for BlockPlugin {
     fn build(&self, builder: &mut EcsBuilder) {
         builder.add_resource(BlockRegistryResource::default());
+        builder.add_resource(TargetedBlock::default());
 
         builder
             .schedule_entry(SimulationSchedule::Startup)

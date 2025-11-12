@@ -8,6 +8,9 @@ pub enum SimulationAction {
     MoveRight,
     MoveFaster,
 
+    // Core player interaction
+    BreakVoxel,
+
     // Terrain interactions
     CycleActiveTerrainGenerator,
 

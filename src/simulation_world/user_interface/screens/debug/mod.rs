@@ -9,14 +9,14 @@ pub use elements::mesh_counter::{update_mesh_counter_screen_text_system, MeshCou
 //         Plugin
 // ----------------------
 
-use crate::ecs_core::state_machine::{in_state, AppState};
-use crate::simulation_world::input::types::SimulationAction;
+use crate::prelude::*;
 use crate::simulation_world::user_interface::screens::elements::memory_counter::SystemInfoResource;
 use crate::simulation_world::user_interface::screens::elements::mesh_counter::{
     mesh_add_observer, mesh_remove_observer,
 };
 use crate::simulation_world::user_interface::screens::elements::{
-    update_camera_chunk_chord_screen_text, update_memory_counter_screen_text,
+    update_camera_chunk_coord_screen_text, update_camera_xyz_coord_screen_text,
+    update_memory_counter_screen_text,
 };
 use crate::{
     ecs_core::{EcsBuilder, Plugin},
@@ -29,7 +29,7 @@ pub struct DebugScreenPlugin;
 
 impl Plugin for DebugScreenPlugin {
     fn build(&self, builder: &mut EcsBuilder) {
-        // Mesh counting
+        // mesh counting utils
         builder
             .init_resource::<MeshCounterResource>()
             .init_resource::<SystemInfoResource>()
@@ -40,7 +40,7 @@ impl Plugin for DebugScreenPlugin {
             .schedule_entry(SimulationSchedule::Main)
             .add_systems(
                 (
-                    (toggle_debug_diagnostics_system,).chain().run_if(
+                    toggle_debug_diagnostics_system.run_if(
                         (|action_state: Res<ActionStateResource>| {
                             action_state.just_happened(SimulationAction::ToggleDiagnostics)
                         })
@@ -56,7 +56,8 @@ impl Plugin for DebugScreenPlugin {
             .schedule_entry(SimulationSchedule::FixedUpdate)
             .add_systems(
                 (
-                    update_camera_chunk_chord_screen_text,
+                    update_camera_xyz_coord_screen_text,
+                    update_camera_chunk_coord_screen_text,
                     update_fps_counter_screen_text_system,
                     update_memory_counter_screen_text,
                 )

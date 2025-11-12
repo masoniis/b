@@ -1,9 +1,8 @@
 use crate::prelude::*;
 use crate::simulation_world::chunk::{
-    CheckForMeshing, ChunkMeshingTaskComponent, ChunkState, WantsMeshing,
-};
-use crate::simulation_world::chunk::{
-    ChunkCoord, ChunkStateManager, TransformComponent, CHUNK_DEPTH, CHUNK_HEIGHT, CHUNK_WIDTH,
+    CheckForMeshing, ChunkCoord, ChunkMeshingTaskComponent, ChunkState, ChunkStateManager,
+    OpaqueMeshComponent, TransformComponent, TransparentMeshComponent, WantsMeshing,
+    CHUNK_SIDE_LENGTH,
 };
 use bevy_ecs::prelude::*;
 use crossbeam::channel::TryRecvError;
@@ -13,6 +12,10 @@ use crossbeam::channel::TryRecvError;
 pub fn poll_chunk_meshing_tasks(
     // Input
     mut tasks_query: Query<(Entity, &mut ChunkMeshingTaskComponent, &ChunkCoord)>,
+    existing_meshes: Query<(
+        Option<&OpaqueMeshComponent>,
+        Option<&TransparentMeshComponent>,
+    )>,
 
     // Output
     mut commands: Commands,
@@ -24,8 +27,21 @@ pub fn poll_chunk_meshing_tasks(
             Ok((opaque_mesh_option, transparent_mesh_option)) => {
                 let current_state = chunk_manager.get_state(coord.pos);
                 match current_state {
-                    Some(ChunkState::Meshing { entity: gen_entity }) if gen_entity == entity => {
+                    Some(
+                        ChunkState::Meshing { entity: gen_entity }
+                        | ChunkState::WantsMeshing { entity: gen_entity },
+                    ) if gen_entity == entity => {
                         trace!(target : "chunk_loading","Chunk meshing finished for {:?}", coord);
+
+                        let (exists_opaque, exists_transparent) =
+                            existing_meshes.get(entity).unwrap_or((None, None));
+
+                        if exists_opaque.is_some() {
+                            commands.entity(entity).remove::<OpaqueMeshComponent>();
+                        }
+                        if exists_transparent.is_some() {
+                            commands.entity(entity).remove::<TransparentMeshComponent>();
+                        }
 
                         match (opaque_mesh_option, transparent_mesh_option) {
                             (Some(opaque_mesh), Some(transparent_mesh)) => {
@@ -54,9 +70,9 @@ pub fn poll_chunk_meshing_tasks(
                             .entity(entity)
                             .insert(TransformComponent {
                                 position: Vec3::new(
-                                    (coord.x * CHUNK_WIDTH as i32) as f32,
-                                    (coord.y * CHUNK_HEIGHT as i32) as f32,
-                                    (coord.z * CHUNK_DEPTH as i32) as f32,
+                                    (coord.x * CHUNK_SIDE_LENGTH as i32) as f32,
+                                    (coord.y * CHUNK_SIDE_LENGTH as i32) as f32,
+                                    (coord.z * CHUNK_SIDE_LENGTH as i32) as f32,
                                 ),
                                 rotation: Quat::IDENTITY,
                                 scale: Vec3::ONE,

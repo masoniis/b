@@ -27,6 +27,12 @@ impl Asset for MeshAsset {
     }
 }
 
+/// Tracks the last-known mesh handle for each entity.
+#[derive(Resource, Default, Debug)]
+pub struct OpaqueMeshShadow {
+    pub entity_to_handle: HashMap<Entity, Handle<MeshAsset>>,
+}
+
 /// A resource that tracks reference counts for mesh assets. Used to determine
 /// when to remove meshes from asset storage that are no longer in use.
 #[derive(Resource, Default, Debug)]
@@ -87,10 +93,12 @@ pub fn mesh_ref_count_add_observer(
 
     // Output (update ref counts)
     mut mesh_ref_counts: ResMut<MeshRefCounts>,
+    mut shadow: ResMut<OpaqueMeshShadow>,
 ) {
     if let Ok(mesh_component) = mesh_query.get(trigger.entity) {
         let handle = mesh_component.mesh_handle;
         mesh_ref_counts.increment(handle);
+        shadow.entity_to_handle.insert(trigger.entity, handle);
     }
 }
 
@@ -103,11 +111,17 @@ pub fn mesh_ref_count_remove_observer(
     mesh_query: Query<&OpaqueMeshComponent>,
 
     // Output (update ref counts and request deletions)
+    mut shadow: ResMut<OpaqueMeshShadow>,
     mut mesh_ref_counts: ResMut<MeshRefCounts>,
     mut stale_mesh_writer: MessageWriter<MeshDeletionRequest>,
 ) {
     if let Ok(mesh_component) = mesh_query.get(trigger.entity) {
-        let handle = mesh_component.mesh_handle;
+        // if a shadow handle exists that is different from the current handle, dec that
+        let mut handle = mesh_component.mesh_handle;
+        let shadow_handle = shadow.entity_to_handle.get(&trigger.entity);
+        if let Some(shadow_handle) = shadow_handle {
+            handle = *shadow_handle;
+        }
 
         if let Some(new_count) = mesh_ref_counts.decrement(handle) {
             // send deletion request if count is zero
@@ -122,6 +136,8 @@ pub fn mesh_ref_count_remove_observer(
                 });
             }
         }
+
+        shadow.entity_to_handle.remove(&trigger.entity);
     }
 }
 

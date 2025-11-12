@@ -1,7 +1,7 @@
 use crate::prelude::*;
 use bevy_ecs::prelude::Resource;
 use std::{
-    collections::hash_map::{Entry, HashMap},
+    collections::hash_map::HashMap,
     hash::Hash,
     marker::PhantomData,
     sync::{
@@ -94,37 +94,29 @@ impl<T> AssetStorageResource<T> {
 }
 
 impl<T: Asset + Send + Sync + 'static> AssetStorageResource<T> {
-    /// Adds an asset to the storage, returning a handle to it.
+    /// Adds an asset to the storage, returning a handle to it. Note that
+    /// adding a mesh of identical name will overwrite the previous one
+    /// in the name map, but not delete the old mesh itself.
+    ///
+    ///
     /// This will acquire a write lock. Only one thread can add at a time.
     pub fn add(&self, asset: T) -> Handle<T> {
+        let id = self.next_id.fetch_add(1, Ordering::Relaxed);
         let asset_name = asset.name().to_string();
 
-        // will acquire a short write lock on the name map
-        let mut name_to_id = self.name_to_id.write().unwrap();
-        match name_to_id.entry(asset_name) {
-            Entry::Vacant(entry) => {
-                // get id atomically
-                let id = self.next_id.fetch_add(1, Ordering::Relaxed);
-                entry.insert(id);
-                drop(name_to_id);
-
-                // acquire a write lock on the main storage to insert the asset.
-                let mut storage = self.storage.write().unwrap();
-                storage.insert(id, asset);
-                Handle::new(id)
-            }
-            Entry::Occupied(entry) => {
-                let existing_id = *entry.get();
-                debug!(
-                    target : "duplicate_assets",
-                    "Attempted to add a duplicate asset with name: '{}'. \
-                    The new asset was rejected. Returning a handle to the existing asset (ID: {}).",
-                    entry.key(),
-                    existing_id
-                );
-                Handle::new(existing_id)
-            }
+        // add mesh
+        {
+            let mut storage = self.storage.write().unwrap();
+            storage.insert(id, asset);
         }
+
+        // update name map
+        {
+            let mut name_to_id = self.name_to_id.write().unwrap();
+            name_to_id.insert(asset_name, id);
+        }
+
+        Handle::new(id)
     }
 
     pub fn get_by_name(&self, name: &str) -> Option<Handle<T>> {

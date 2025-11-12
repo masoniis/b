@@ -56,6 +56,11 @@ impl Default for InputActionMapResource {
                     Input::Key(PhysicalKey::Code(KeyCode::ShiftLeft)),
                     SimulationAction::MoveFaster,
                 ),
+                // Core player actions
+                (
+                    Input::MouseButton(MouseButton::Left),
+                    SimulationAction::BreakVoxel,
+                ),
                 // Terrain gen
                 (
                     Input::Key(PhysicalKey::Code(KeyCode::KeyT)),

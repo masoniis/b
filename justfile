@@ -58,7 +58,7 @@ debug *args:
 	# Add targets to the rust log env variable
 	log_targets=""
 	for target in "$@"; do
-		log_targets="$log_targets$target=debug,"
+		log_targets="$log_targets$target=trace,"
 	done
 	export RUST_LOG="${log_targets%,},b=info"
 

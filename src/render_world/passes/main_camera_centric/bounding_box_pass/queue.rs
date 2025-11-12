@@ -8,6 +8,7 @@ use crate::render_world::{
         opaque_pass::extract::RenderTransformComponent,
     },
 };
+use crate::simulation_world::block::TargetedBlock;
 use crate::simulation_world::chunk::consts::{CHUNK_DEPTH, CHUNK_HEIGHT, CHUNK_WIDTH};
 use bevy_ecs::prelude::*;
 
@@ -18,14 +19,19 @@ pub fn clear_wireframe_buffer_system(mut wireframe_buffer: ResMut<WireframeObjec
 
 #[instrument(skip_all)]
 pub fn queue_wireframe_system(
-    mut wireframe_buffer: ResMut<WireframeObjectBuffer>,
-    chunk_query: Query<&RenderTransformComponent>,
+    // input
     queue: Res<RenderQueue>,
     device: Res<RenderDevice>,
     wireframe_pipeline: Res<WireframePipeline>,
+    chunk_query: Query<&RenderTransformComponent>,
+    targeted_block: Res<TargetedBlock>,
+
+    // output
+    mut wireframe_buffer: ResMut<WireframeObjectBuffer>,
 ) {
     wireframe_buffer.objects.clear();
 
+    // add all chunk wireframes
     let translation_matrix = Mat4::from_translation(glam::vec3(
         CHUNK_WIDTH as f32 / 2.0,
         CHUNK_HEIGHT as f32 / 2.0,
@@ -39,6 +45,22 @@ pub fn queue_wireframe_system(
 
     for transform in chunk_query.iter() {
         let model_matrix = transform.transform * translation_matrix * scale_matrix;
+
+        wireframe_buffer.objects.push(WireframeObjectData {
+            model_matrix: model_matrix.to_cols_array(),
+        });
+    }
+
+    // add targeted block wireframe if exists
+    if let Some(block_pos) = targeted_block.position {
+        let block_translation = glam::vec3(
+            block_pos.x as f32 + 0.5,
+            block_pos.y as f32 + 0.5,
+            block_pos.z as f32 + 0.5,
+        );
+        let block_translation_matrix = Mat4::from_translation(block_translation);
+        let block_scale_matrix = Mat4::from_scale(glam::vec3(1.01, 1.01, 1.01));
+        let model_matrix = Mat4::IDENTITY * block_translation_matrix * block_scale_matrix;
 
         wireframe_buffer.objects.push(WireframeObjectData {
             model_matrix: model_matrix.to_cols_array(),

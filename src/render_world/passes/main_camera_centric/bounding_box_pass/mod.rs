@@ -12,7 +12,7 @@ pub use render::BoundingBoxNode;
 use crate::{
     ecs_core::{EcsBuilder, Plugin},
     render_world::{
-        global_extract::extract_resource_system,
+        global_extract::{clone_resource_system, extract_resource_system},
         passes::main_camera_centric::{
             bounding_box_pass::{
                 extract::{WireframeToggleExtractor, WireframeToggleState},
@@ -23,6 +23,7 @@ use crate::{
         },
         RenderSchedule, RenderSet,
     },
+    simulation_world::block::TargetedBlock,
 };
 use bevy_ecs::schedule::{common_conditions::resource_equals, IntoScheduleConfigs};
 
@@ -47,7 +48,10 @@ impl Plugin for WireframeRenderPassPlugin {
 
         builder
             .schedule_entry(RenderSchedule::Extract)
-            .add_systems(extract_resource_system::<WireframeToggleExtractor>);
+            .add_systems((
+                extract_resource_system::<WireframeToggleExtractor>,
+                clone_resource_system::<TargetedBlock>,
+            ));
 
         // INFO: ---------------
         //         Queue

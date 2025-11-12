@@ -18,7 +18,8 @@ use bevy_ecs::{prelude::*, relationship::RelatedSpawnerCommands};
 /// An enum representing all possible statistic text markers.
 pub enum StatMarker {
     // information
-    CameraXYZ(CameraChunkChordTextMarker),
+    CameraXYZ(CameraXYZCoordTextMarker),
+    CameraChunk(CameraChunkCoordTextMarker),
     // performance
     Fps(FpsCounterTextElementMarker),
     Memory(MemoryCounterTextElementMarker),
@@ -31,9 +32,13 @@ pub enum StatMarker {
 #[derive(Component)]
 pub struct RootDiagnosticScreenMarker;
 
+/// A marker component for the camera precise coordinate text element.
+#[derive(Component)]
+pub struct CameraXYZCoordTextMarker;
+
 /// A marker component for the camera XYZ text element.
 #[derive(Component)]
-pub struct CameraChunkChordTextMarker;
+pub struct CameraChunkCoordTextMarker;
 
 /// A marker component for the FPS counter text element.
 #[derive(Component)]
@@ -83,8 +88,15 @@ pub fn toggle_debug_diagnostics_system(
         info!("Despawning Diagnostic UI...");
         commands.entity(ui_entity).despawn();
     } else {
-        if let Ok((_, chord)) = camera_query.single() {
-            spawn_diagnostic_ui(&mut commands, &root_node, &mesh_stats, &chord, &time_stats);
+        if let Ok((cam, chord)) = camera_query.single() {
+            spawn_diagnostic_ui(
+                &mut commands,
+                &root_node,
+                &mesh_stats,
+                cam,
+                chord,
+                &time_stats,
+            );
         } else {
             error!("Cannot spawn Diagnostic UI: No camera with ChunkChord found!");
         }
@@ -98,6 +110,7 @@ fn spawn_diagnostic_ui(
 
     // init stats
     mesh_stats: &Res<MeshCounterResource>,
+    camera: &CameraComponent,
     camera_chord: &ChunkCoord,
     time_stats: &Res<FrameClock>,
 ) {
@@ -135,13 +148,25 @@ fn spawn_diagnostic_ui(
                         ..Default::default()
                     },
                 ))
-                // chunk chord line
                 .with_children(|parent| {
+                    // precise coord line
+                    let precise_coord_line_elements = vec![StatLineElement {
+                        prefix: "XYZ coord: ".to_string(),
+                        content: format!(
+                            "{:.2}, {:.2}, {:.2}",
+                            camera.position.x, camera.position.y, camera.position.z
+                        ), // Initial value
+                        color: [0.8, 0.8, 0.8, 1.0],
+                        marker: StatMarker::CameraXYZ(CameraXYZCoordTextMarker),
+                    }];
+                    spawn_stats_line(parent, precise_coord_line_elements, font_size, align);
+
+                    // chunk chord line
                     let chord_line_elements = vec![StatLineElement {
-                        prefix: "Camera chunk: ".to_string(),
+                        prefix: "Chunk coord: ".to_string(),
                         content: camera_chord.to_string(),
                         color: [0.8, 0.8, 0.2, 1.0],
-                        marker: StatMarker::CameraXYZ(CameraChunkChordTextMarker),
+                        marker: StatMarker::CameraChunk(CameraChunkCoordTextMarker),
                     }];
                     spawn_stats_line(parent, chord_line_elements, font_size, align);
                 });
@@ -271,6 +296,7 @@ fn spawn_stats_line(
                 ));
                 match element.marker {
                     StatMarker::CameraXYZ(marker) => text_entity.insert(marker),
+                    StatMarker::CameraChunk(marker) => text_entity.insert(marker),
                     StatMarker::Fps(marker) => text_entity.insert(marker),
                     StatMarker::Memory(marker) => text_entity.insert(marker),
                     StatMarker::MeshCount(marker) => text_entity.insert(marker),
