@@ -1,5 +1,6 @@
-import super::common::{myTexture, mySampler};
 import super::super::lib::environment_uniform::{env_params};
+import super::super::lib::camera_uniform::{camera};
+import super::common::{myTexture, mySampler};
 
 @fragment
 fn fs_main(
@@ -12,8 +13,7 @@ fn fs_main(
     let texture_color: vec4<f32> = textureSample(myTexture, mySampler, tex_coords, texture_index);
     let occluded_color = vec4(texture_color.rgb * color, texture_color.a);
 
-    // TODO: smoothstep params should be placed env params so that it can be adjusted by things like render distance
-    let fog_amount = smoothstep(128.0, 256.0, distance_from_camera);
+    let fog_amount = smoothstep(camera.render_distance * 0.75, camera.render_distance, distance_from_camera);
     let final_color = mix(occluded_color, vec4(env_params.horizon_color, 1.0), fog_amount);
 
     return final_color;
