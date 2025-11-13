@@ -1,5 +1,6 @@
 use crate::prelude::*;
 use crate::simulation_world::block::TargetedBlock;
+use crate::simulation_world::chunk::ChunkStateManager;
 use crate::simulation_world::{
     block::block_registry::SOLID_BLOCK_ID,
     chunk::{
@@ -7,14 +8,13 @@ use crate::simulation_world::{
         CHUNK_SIDE_LENGTH,
     },
 };
-use bevy_ecs::prelude::{Commands, Entity, Message, MessageReader, Query};
+use bevy_ecs::prelude::{Commands, Message, MessageReader, Query};
 use bevy_ecs::prelude::{MessageWriter, Res};
 
 /// An event that is sent when a voxel should be placed.
 #[derive(Message, Clone)]
 pub struct PlaceVoxelEvent {
-    /// The world position of the block *face* that was targeted.
-    /// The new block will be placed adjacent to this.
+    /// The world position to place a voxel.
     pub target_pos: IVec3,
 }
 
@@ -23,9 +23,9 @@ pub fn place_targeted_voxel_system(
     targeted_block: Res<TargetedBlock>,
     mut place_voxel_writer: MessageWriter<PlaceVoxelEvent>,
 ) {
-    if let Some(voxel_pos) = targeted_block.position {
+    if let (Some(voxel_pos), Some(normal)) = (targeted_block.position, targeted_block.normal) {
         place_voxel_writer.write(PlaceVoxelEvent {
-            target_pos: voxel_pos,
+            target_pos: voxel_pos + normal,
         });
     }
 }
@@ -34,31 +34,58 @@ pub fn place_targeted_voxel_system(
 pub fn handle_place_voxel_events_system(
     // input
     mut events: MessageReader<PlaceVoxelEvent>,
+    chunk_manager: Res<ChunkStateManager>,
 
     // output
-    mut chunks: Query<(Entity, &ChunkCoord, &mut ChunkBlocksComponent)>,
+    mut chunks: Query<&mut ChunkBlocksComponent>,
     mut commands: Commands,
 ) {
     for event in events.read() {
-        // TODO: properly place against face highlighted, not just y + 1
-        let new_block_pos = event.target_pos + IVec3::Y;
-
+        let new_block_pos = event.target_pos;
         let chunk_pos = ChunkCoord::world_to_chunk_pos(new_block_pos.as_vec3());
 
-        if let Some((entity, _, mut chunk_blocks)) = chunks
-            .iter_mut()
-            .find(|(_, coord, _)| coord.pos == chunk_pos)
-        {
-            let local_pos = new_block_pos - (chunk_pos * CHUNK_SIDE_LENGTH as i32);
+        if let Some(entity) = chunk_manager.get_entity(chunk_pos) {
+            if let Ok(mut chunk_blocks) = chunks.get_mut(entity) {
+                let local_pos = new_block_pos - (chunk_pos * CHUNK_SIDE_LENGTH as i32);
 
-            chunk_blocks.set_data(
-                local_pos.x as usize,
-                local_pos.y as usize,
-                local_pos.z as usize,
-                SOLID_BLOCK_ID,
-            );
+                chunk_blocks.set_data(
+                    local_pos.x as usize,
+                    local_pos.y as usize,
+                    local_pos.z as usize,
+                    SOLID_BLOCK_ID,
+                );
 
-            commands.entity(entity).insert(ChunkMeshDirty);
+                // mark primary chunk as dirty
+                commands.entity(entity).insert(ChunkMeshDirty);
+
+                // mark any neighbors as dirty if relevant
+                let max_idx = (CHUNK_SIDE_LENGTH - 1) as i32;
+                let mut neighbor_coords_to_dirty = Vec::with_capacity(3);
+
+                if local_pos.x == 0 {
+                    neighbor_coords_to_dirty.push(chunk_pos - IVec3::X);
+                } else if local_pos.x == max_idx {
+                    neighbor_coords_to_dirty.push(chunk_pos + IVec3::X);
+                }
+
+                if local_pos.y == 0 {
+                    neighbor_coords_to_dirty.push(chunk_pos - IVec3::Y);
+                } else if local_pos.y == max_idx {
+                    neighbor_coords_to_dirty.push(chunk_pos + IVec3::Y);
+                }
+
+                if local_pos.z == 0 {
+                    neighbor_coords_to_dirty.push(chunk_pos - IVec3::Z);
+                } else if local_pos.z == max_idx {
+                    neighbor_coords_to_dirty.push(chunk_pos + IVec3::Z);
+                }
+
+                for neighbor_coord in neighbor_coords_to_dirty {
+                    if let Some(neighbor_entity) = chunk_manager.get_entity(neighbor_coord) {
+                        commands.entity(neighbor_entity).insert(ChunkMeshDirty);
+                    }
+                }
+            }
         }
     }
 }

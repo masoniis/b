@@ -34,7 +34,9 @@ pub fn update_targeted_block_system(
 
     // simple voxel raycast
     let mut last_voxel_pos = None;
-    let mut target = None;
+
+    let mut target_pos = None;
+    let mut target_normal = None;
 
     let steps = (RAYCAST_MAX_DIST / RAYCAST_STEP) as u32;
 
@@ -53,14 +55,18 @@ pub fn update_targeted_block_system(
 
         // check if we hit something
         if block_id != Some(AIR_BLOCK_ID) && block_id.is_some() {
-            target = Some(current_voxel_pos);
+            target_pos = Some(current_voxel_pos);
+            if let Some(last_pos) = last_voxel_pos {
+                target_normal = Some(last_pos - current_voxel_pos);
+            }
             break;
         }
 
         last_voxel_pos = Some(current_voxel_pos);
     }
 
-    targeted_block.position = target;
+    targeted_block.position = target_pos;
+    targeted_block.normal = target_normal;
 }
 
 /// Helper function to get a block from world coordinates

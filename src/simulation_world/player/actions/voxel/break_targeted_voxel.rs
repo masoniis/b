@@ -1,5 +1,6 @@
 use crate::prelude::*;
 use crate::simulation_world::block::TargetedBlock;
+use crate::simulation_world::chunk::ChunkStateManager;
 use crate::simulation_world::{
     block::block_registry::AIR_BLOCK_ID,
     chunk::{
@@ -7,7 +8,7 @@ use crate::simulation_world::{
         CHUNK_SIDE_LENGTH,
     },
 };
-use bevy_ecs::prelude::{Commands, Entity, Message, MessageReader, Query};
+use bevy_ecs::prelude::{Commands, Message, MessageReader, Query};
 use bevy_ecs::prelude::{MessageWriter, Res};
 
 /// An event that is sent when a voxel should be broken.
@@ -33,28 +34,57 @@ pub fn break_targeted_voxel_system(
 pub fn handle_break_voxel_events_system(
     // input
     mut events: MessageReader<BreakVoxelEvent>,
+    chunk_manager: Res<ChunkStateManager>,
 
     // output
-    mut chunks: Query<(Entity, &ChunkCoord, &mut ChunkBlocksComponent)>,
+    mut chunks: Query<&mut ChunkBlocksComponent>,
     mut commands: Commands,
 ) {
     for event in events.read() {
         let chunk_pos = ChunkCoord::world_to_chunk_pos(event.world_pos.as_vec3());
 
-        if let Some((entity, _, mut chunk_blocks)) = chunks
-            .iter_mut()
-            .find(|(_, coord, _)| coord.pos == chunk_pos)
-        {
-            let local_pos = event.world_pos - (chunk_pos * CHUNK_SIDE_LENGTH as i32);
+        if let Some(entity) = chunk_manager.get_entity(chunk_pos) {
+            if let Ok(mut chunk_blocks) = chunks.get_mut(entity) {
+                let local_pos = event.world_pos - (chunk_pos * CHUNK_SIDE_LENGTH as i32);
 
-            chunk_blocks.set_data(
-                local_pos.x as usize,
-                local_pos.y as usize,
-                local_pos.z as usize,
-                AIR_BLOCK_ID,
-            );
+                chunk_blocks.set_data(
+                    local_pos.x as usize,
+                    local_pos.y as usize,
+                    local_pos.z as usize,
+                    AIR_BLOCK_ID,
+                );
 
-            commands.entity(entity).insert(ChunkMeshDirty);
+                // mark the primary chunk as dirty
+                commands.entity(entity).insert(ChunkMeshDirty);
+
+                // mark any neighbors as dirty if we are on the edge
+                let max_idx = (CHUNK_SIDE_LENGTH - 1) as i32;
+                let mut neighbor_coords_to_dirty = Vec::with_capacity(3);
+
+                if local_pos.x == 0 {
+                    neighbor_coords_to_dirty.push(chunk_pos - IVec3::X);
+                } else if local_pos.x == max_idx {
+                    neighbor_coords_to_dirty.push(chunk_pos + IVec3::X);
+                }
+
+                if local_pos.y == 0 {
+                    neighbor_coords_to_dirty.push(chunk_pos - IVec3::Y);
+                } else if local_pos.y == max_idx {
+                    neighbor_coords_to_dirty.push(chunk_pos + IVec3::Y);
+                }
+
+                if local_pos.z == 0 {
+                    neighbor_coords_to_dirty.push(chunk_pos - IVec3::Z);
+                } else if local_pos.z == max_idx {
+                    neighbor_coords_to_dirty.push(chunk_pos + IVec3::Z);
+                }
+
+                for neighbor_coord in neighbor_coords_to_dirty {
+                    if let Some(neighbor_entity) = chunk_manager.get_entity(neighbor_coord) {
+                        commands.entity(neighbor_entity).insert(ChunkMeshDirty);
+                    }
+                }
+            }
         }
     }
 }

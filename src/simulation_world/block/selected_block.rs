@@ -4,4 +4,5 @@ use bevy_ecs::prelude::*;
 #[derive(Resource, Clone, Default)]
 pub struct TargetedBlock {
     pub position: Option<IVec3>,
+    pub normal: Option<IVec3>,
 }
