@@ -8,12 +8,12 @@ fn vs_main(
 ) -> VertexOutput {
     var out: VertexOutput;
 
-	// get model matrix from buffer and apply it
+    // get model matrix from buffer and apply it
     let model = objects[index].model_matrix;
     let world_position = model * vec4<f32>(model_in.position, 1.0);
     out.clip_position = camera.view_proj * world_position;
 
-	// pass other attributes to the fragment shader
+    // pass other attributes to the fragment shader
     out.normal = model_in.normal;
     out.color = model_in.color;
     out.tex_coords = model_in.tex_coords;

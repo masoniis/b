@@ -15,7 +15,7 @@ fn fs_main(
       discard;
     }
 
-	  // TODO: smoothstep params should be placed sky params so that it can be adjusted by things like render distance
+    // TODO: smoothstep params should be placed sky params so that it can be adjusted by things like render distance
     let fog_amount = smoothstep(200.0, 256.0, distance_from_camera);
     let final_color = mix(texture_color, vec4(env_params.horizon_color, 1.0), fog_amount);
 
