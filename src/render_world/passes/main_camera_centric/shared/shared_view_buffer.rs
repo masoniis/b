@@ -3,6 +3,7 @@ use crate::render_world::{
     global_extract::resources::RenderCameraResource,
     graphics_context::resources::{RenderDevice, RenderQueue},
 };
+use crate::simulation_world::chunk::{CHUNK_SIDE_LENGTH, RENDER_DISTANCE};
 use bevy_ecs::prelude::*;
 use bytemuck::{Pod, Zeroable};
 
@@ -28,9 +29,14 @@ struct CentralCameraViewData {
     /// combined view-projection matrix
     pub view_proj_matrix: [f32; 16],
 
+    /// inverse of the combined view-projection matrix
+    pub inverse_view_proj_matrix: [f32; 16],
+
     /// position of camera for distance-based fog
     pub world_position: [f32; 3],
-    _padding: u32, // align to 16 bytes
+
+    /// Render distance for fog calculations
+    pub render_distance: f32,
 }
 
 // INFO: ----------------------------
@@ -47,7 +53,7 @@ pub fn setup_central_camera_layout_system(mut commands: Commands, device: Res<Re
         label: Some("Central Camera View Bind Group Layout"),
         entries: &[wgpu::BindGroupLayoutEntry {
             binding: 0,
-            visibility: wgpu::ShaderStages::VERTEX,
+            visibility: wgpu::ShaderStages::VERTEX | wgpu::ShaderStages::FRAGMENT,
             ty: wgpu::BindingType::Buffer {
                 ty: wgpu::BufferBindingType::Uniform,
                 has_dynamic_offset: false,
@@ -109,7 +115,9 @@ pub fn update_camera_view_buffer_system(
 
     let camera_data = CentralCameraViewData {
         view_proj_matrix: view_proj_matrix.to_cols_array(),
+        inverse_view_proj_matrix: view_proj_matrix.inverse().to_cols_array(),
         world_position: camera_info.world_position.into(),
+        render_distance: (RENDER_DISTANCE * CHUNK_SIDE_LENGTH as i32) as f32,
         ..Default::default()
     };
 

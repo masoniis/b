@@ -104,7 +104,7 @@ pub fn prepare_environment_buffer_system(
     // Output (writing buffer to queue)
     queue: Res<RenderQueue>,
 ) {
-    let skybox_params = EnvironmentData::new([0.0, 0.0, 0.0], [0.08, 0.12, 0.45], [0.0, 0.0, 0.0]);
+    let skybox_params = EnvironmentData::new([0.0, 1.0, 0.0], [0.08, 0.12, 0.45], [0.3, 0.5, 0.8]);
 
     queue.write_buffer(&buffer.buffer, 0, bytemuck::cast_slice(&[skybox_params]));
 }

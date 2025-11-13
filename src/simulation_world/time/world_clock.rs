@@ -6,14 +6,13 @@ use std::time::Duration;
 pub const SECONDS_IN_A_DAY: f32 = 1200.0;
 
 /// A resource that tracks the in-game date and time.
-/// This clock is advanced by the fixed simulation tick, not real-world time.
 #[derive(Resource, Debug)]
 pub struct WorldClockResource {
     /// The total number of full days that have passed since the world began.
     pub total_days: u64,
     /// The current time within the 24-hour cycle.
     pub time_of_day: Duration,
-
+    /// The duration of a full in-game day.
     pub day_duration: Duration,
 }
 
@@ -29,7 +28,7 @@ impl Default for WorldClockResource {
 
 impl WorldClockResource {
     /// Returns the current time of day as a value from 0.0 (midnight) to 1.0 (next midnight).
-    pub fn day_night_cycle(&self) -> f32 {
+    pub fn day_night_cycle_value(&self) -> f32 {
         self.time_of_day.as_secs_f32() / SECONDS_IN_A_DAY
     }
 }

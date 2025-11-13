@@ -1,10 +1,10 @@
 MaterialDefinition(
   vertex_buffers: [],
   bind_group_layouts: {
-	  // group 1 and 2 is the view and environment data
+	  // group 0 and 1 is the view and environment data
 		// handled directly by the material system
 
-    // @group(2): Per-Material (Texture)
+    // @group(2): per-material (texture)
     2: BindGroupLayoutDef(
       bindings: [
         // diffuse Texture
@@ -30,7 +30,7 @@ MaterialDefinition(
       ],
     ),
 
-    // @group(2): Per-Object (Model)
+    // @group(2): per-object (model)
     3: BindGroupLayoutDef( bindings: [
         BindingDef(
           binding: 0,
