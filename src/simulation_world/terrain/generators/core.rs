@@ -7,8 +7,8 @@ use crate::simulation_world::{
         WorldVoxelPositionIterator,
     },
     terrain::{
-        BiomeMapComponent, ClimateNoiseGenerator, DefaultBiomeGenerator, HeightmapShaper,
-        SimpleSurfacePainter, TerrainClimateMapComponent,
+        BiomeMapComponent, ClimateNoiseGenerator, DefaultBiomeGenerator, SimpleSurfacePainter,
+        SuperflatShaper, TerrainClimateMapComponent,
     },
 };
 use bevy_ecs::prelude::{Component, Resource};
@@ -20,7 +20,7 @@ pub struct ActiveTerrainGenerator(pub Arc<dyn TerrainShaper>);
 
 impl Default for ActiveTerrainGenerator {
     fn default() -> Self {
-        ActiveTerrainGenerator(Arc::new(HeightmapShaper::new()))
+        ActiveTerrainGenerator(Arc::new(SuperflatShaper::new()))
     }
 }
 
@@ -89,19 +89,19 @@ pub trait TerrainShaper: Send + Sync + Debug {
     /// Takes in empty chunk blocks and fills them in according to the generator's logic.
     fn shape_terrain_chunk(
         &self,
-        shaper: ShapeResultBuilder,
+        // input
         iterator: WorldVoxelPositionIterator,
-
-        biome_map: &BiomeMapComponent,
         climate_map: &TerrainClimateMapComponent,
-        biome_registry: &BiomeRegistryResource,
+
+        // output
+        shaper: ShapeResultBuilder,
     ) -> ShapeResultBuilder;
 
     /// A fast, cheap check to see if this chunk will be uniform (all air or all solid).
     ///
     /// By implementing this, generators can help the engine optimize performance with
-    /// the ability to entirely skip generating uniform chunks, and skip biome compute
-    /// for all air (empty) chunks.
+    /// the ability to entirely skip generating uniform chunks, and additionally skip
+    /// biome compute for all air (empty) chunks.
     fn determine_chunk_uniformity(&self, _: IVec3) -> ChunkUniformity {
         ChunkUniformity::Mixed
     }

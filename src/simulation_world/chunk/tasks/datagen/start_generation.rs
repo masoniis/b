@@ -128,27 +128,18 @@ pub fn start_pending_generation_tasks_system(
             );
 
             let chunk_blocks = ChunkBlocksComponent::new_empty(lod);
+
+            // shaping
             let shaper_iterator = WorldVoxelPositionIterator::new(coord_clone.pos, lod);
             let shaper = ShapeResultBuilder::new(chunk_blocks);
-
             let shaped_chunk_blocks = terrain_gen
-                .shape_terrain_chunk(
-                    shaper,
-                    shaper_iterator,
-                    &biome_map,
-                    &terrain_map,
-                    &biomes_clone,
-                )
+                .shape_terrain_chunk(shaper_iterator, &terrain_map, shaper)
                 .finish();
 
-            // Create a new iterator for the painter
+            // painting
             let painter_iterator = WorldVoxelPositionIterator::new(coord_clone.pos, lod);
-
-            // Create PaintResultBuilder
             let painter_builder =
                 PaintResultBuilder::new(shaped_chunk_blocks, blocks_clone.clone());
-
-            // Call paint_terrain_chunk
             let (painted_chunk_blocks, chunk_metadata) = terrain_paint
                 .paint_terrain_chunk(
                     painter_builder,

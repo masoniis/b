@@ -1,9 +1,8 @@
 use crate::prelude::*;
 use crate::simulation_world::{
-    biome::BiomeRegistryResource,
     chunk::{WorldVoxelPositionIterator, CHUNK_SIDE_LENGTH},
     terrain::{
-        components::{climate_map::TerrainClimateMapComponent, BiomeMapComponent},
+        components::climate_map::TerrainClimateMapComponent,
         core::ChunkUniformity,
         generators::core::{ShapeResultBuilder, TerrainShaper},
     },
@@ -58,12 +57,12 @@ impl TerrainShaper for SinWaveGenerator {
     #[instrument(skip_all)]
     fn shape_terrain_chunk(
         &self,
-        mut shaper: ShapeResultBuilder,
+        // input
         iterator: WorldVoxelPositionIterator,
-
-        _biome_map: &BiomeMapComponent,
         _climate_map: &TerrainClimateMapComponent,
-        _biomes: &BiomeRegistryResource,
+
+        // output
+        mut shaper: ShapeResultBuilder,
     ) -> ShapeResultBuilder {
         for pos in iterator {
             let (x, y, z) = pos.local;
