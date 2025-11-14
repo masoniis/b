@@ -1,4 +1,4 @@
-use crate::render_world::types::vertex::Vertex;
+use crate::render_world::types::vertex::WorldVertex;
 
 use wgpu::util::DeviceExt;
 
@@ -11,7 +11,7 @@ pub struct GpuMesh {
 
 pub fn create_gpu_mesh_from_data(
     device: &wgpu::Device,
-    vertices: &[Vertex],
+    vertices: &[WorldVertex],
     indices: &[u32],
 ) -> GpuMesh {
     let vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {

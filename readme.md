@@ -1,4 +1,9 @@
-# 🅱️
+# [🅱️][https://github.com/masoniis/b]
+
+- [Cool features](#cool-features)
+- [How to run the project](#how-to-run-the-project)
+  - [Usage guide](#usage-guide)
+- [Acknowledgments](#acknowledgments)
 
 ## Cool features
 
@@ -32,10 +37,13 @@ NOTE: The simulation currently doesn't actually pause, but you can still use `Es
 
 ## Acknowledgments
 
-The most essential dependencies this project uses are
+The most essential dependencies this project relies on are...
 
 1. `winit` for an abstraction layer on creating and managing OS windows and events
 2. `wgpu` for using the gpu to render graphics to the screen
-3. `glyphon` for handling text rendering with a glyph atlas, font loading, and vectorization.
-4. `bevy_ecs` for a framework to implement the entity component system
-5. `taffy` for computing UI layouts, particularly flex-box set ups, given a set of input styles.
+3. `wesl` as a `wgsl` preprocessor, enabling import statements in shaders for code reuse
+4. `glyphon` for handling text rendering with a glyph atlas, font loading, and vectorization.
+5. `bevy_ecs` for a framework to implement the entity component system
+6. `taffy` for computing UI layouts, particularly flex-box set ups, given a set of input styles.
+
+A full list of dependencies can be seen in the [cargo.toml](./Cargo.toml).

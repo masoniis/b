@@ -1,6 +1,6 @@
 pub mod core;
-pub mod main_camera_centric;
 pub mod ui_pass;
+pub mod world;
 
 // INFO: ---------------------------
 //         Plugin definition
@@ -10,8 +10,8 @@ use crate::{
     ecs_core::{EcsBuilder, Plugin},
     render_world::{
         passes::{
-            core::execute_render_graph_system, main_camera_centric::PlayerCentricRenderPassPlugin,
-            ui_pass::UiRenderPassPlugin,
+            core::execute_render_graph_system, ui_pass::UiRenderPassPlugin,
+            world::WorldRenderPassesPlugin,
         },
         scheduling::{RenderSchedule, RenderSet},
     },
@@ -25,7 +25,7 @@ pub struct RenderPassManagerPlugin;
 impl Plugin for RenderPassManagerPlugin {
     fn build(&self, builder: &mut EcsBuilder) {
         builder
-            .add_plugin(PlayerCentricRenderPassPlugin)
+            .add_plugin(WorldRenderPassesPlugin)
             .add_plugin(UiRenderPassPlugin);
 
         // INFO: ----------------

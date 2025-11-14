@@ -1,6 +1,6 @@
 use crate::prelude::*;
 use crate::{
-    render_world::types::Vertex,
+    render_world::types::WorldVertex,
     simulation_world::{
         asset_management::AssetStorageResource,
         asset_management::{Asset, Handle},
@@ -18,7 +18,7 @@ use std::collections::{hash_map::Entry, HashMap};
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct MeshAsset {
     pub name: String,
-    pub vertices: Vec<Vertex>,
+    pub vertices: Vec<WorldVertex>,
     pub indices: Vec<u32>,
 }
 impl Asset for MeshAsset {

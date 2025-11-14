@@ -12,6 +12,8 @@ use bevy_ecs::prelude::*;
 use glam::{Mat4, Vec3};
 use tracing::{instrument, warn};
 
+/// The distance the near plane is set to for the camera frustum.
+pub const CAMERA_NEAR_PLANE: f32 = 1.0;
 const MOVEMENT_SPEED: f32 = 32.0;
 const MOUSE_SENSITIVITY: f32 = 0.1;
 
@@ -110,7 +112,7 @@ pub fn camera_movement_system(
         cam.projection_matrix = Mat4::perspective_infinite_reverse_rh(
             cam.zoom.to_radians(),
             window.aspect_ratio(),
-            1.0,
+            CAMERA_NEAR_PLANE,
         );
     }
 }

@@ -1,13 +1,14 @@
 use crate::prelude::*;
+use crate::render_world::passes::world::shadow_pass::render::ShadowRenderPassNode;
 use crate::render_world::{
     graphics_context::resources::{RenderDevice, RenderQueue, RenderSurface, RenderSurfaceConfig},
     passes::{
         core::{RenderContext, RenderGraph},
-        main_camera_centric::{
+        ui_pass::UiRenderPassNode,
+        world::main_passes::{
             bounding_box_pass::BoundingBoxNode, opaque_pass::OpaquePassRenderNode,
             transparent_pass::TransparentPassRenderNode,
         },
-        ui_pass::UiRenderPassNode,
     },
 };
 use bevy_ecs::prelude::*;
@@ -21,20 +22,20 @@ use bevy_ecs::prelude::*;
 pub fn setup_render_graph(world: &mut World) {
     let mut render_graph = RenderGraph::default();
 
-    let transparent_pass_node = TransparentPassRenderNode::new(world);
+    let shadow_pass_node = ShadowRenderPassNode::new(world);
     let opaque_pass_node = OpaquePassRenderNode::new(world);
-    let ui_pass_node = UiRenderPassNode;
+    let transparent_pass_node = TransparentPassRenderNode::new(world);
     let bounding_box_node = BoundingBoxNode;
+    let ui_pass_node = UiRenderPassNode;
 
+    render_graph.add_node::<ShadowRenderPassNode, _>("ShadowPass", shadow_pass_node, true);
     render_graph.add_node::<OpaquePassRenderNode, _>("OpaquePass", opaque_pass_node, true);
-    render_graph.add_node::<TransparentPassRenderNode, _>(
-        "TransparentPass",
-        transparent_pass_node,
-        true,
-    );
+    #[rustfmt::skip]
+    render_graph.add_node::<TransparentPassRenderNode, _>("TransparentPass", transparent_pass_node, true);
     render_graph.add_node::<UiRenderPassNode, _>("UiPass", ui_pass_node, true);
     render_graph.add_node::<BoundingBoxNode, _>("WireframePass", bounding_box_node, true);
 
+    render_graph.add_node_dependency::<OpaquePassRenderNode, ShadowRenderPassNode>();
     render_graph.add_node_dependency::<TransparentPassRenderNode, OpaquePassRenderNode>();
     render_graph.add_node_dependency::<BoundingBoxNode, TransparentPassRenderNode>();
     render_graph.add_node_dependency::<UiRenderPassNode, TransparentPassRenderNode>();

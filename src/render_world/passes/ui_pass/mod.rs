@@ -15,7 +15,6 @@ use crate::{
     render_world::{
         global_extract::resources::RenderWindowSizeResource,
         passes::{
-            main_camera_centric::shared::setup_central_camera_layout_system,
             ui_pass::{
                 extract::ExtractedUiEvents,
                 prepare::UiChanges,
@@ -23,6 +22,7 @@ use crate::{
                     IsGlyphonDirty, PreparedUiBatches, UiElementCache, UiElementSortBufferResource,
                 },
             },
+            world::main_passes::shared_resources::setup_central_camera_layout_system,
         },
         scheduling::{RenderSchedule, RenderSet},
     },

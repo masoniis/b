@@ -1,6 +1,0 @@
-MaterialDefinition(
-  vertex_buffers: [],
-  bind_group_layouts: {
-    // only needs the shared groups (0 and 1) so no new things defined here
-  },
-)

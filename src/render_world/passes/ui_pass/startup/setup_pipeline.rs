@@ -1,12 +1,9 @@
 use crate::prelude::*;
-use crate::render_world::graphics_context::resources::{RenderDevice, RenderSurfaceConfig};
-use crate::render_world::passes::core::create_render_pipeline::{
-    CreatedPipeline, PipelineDefinition,
+use crate::render_world::{
+    graphics_context::resources::{RenderDevice, RenderSurfaceConfig},
+    passes::core::{create_render_pipeline_from_def, CreatedPipeline, PipelineDefinition},
 };
-use crate::render_world::passes::core::create_render_pipeline_from_def;
-use crate::render_world::passes::main_camera_centric::shared::CentralCameraViewBindGroupLayout;
 use bevy_ecs::prelude::*;
-use derive_more::{Deref, DerefMut};
 use wesl::include_wesl;
 
 /// A resource to hold the pipeline and bind group layouts for our UI shader.
@@ -27,7 +24,6 @@ pub fn setup_ui_pipeline(
     mut commands: Commands,
     device: Res<RenderDevice>,
     config: Res<RenderSurfaceConfig>,
-    view_layout: Res<CentralCameraViewBindGroupLayout>,
 ) {
     let device = &device;
 
@@ -43,7 +39,7 @@ pub fn setup_ui_pipeline(
         label: "UI Pipeline",
         material_path: "assets/shaders/ui/main.material.ron",
         vs_shader_source: wgpu::ShaderSource::Wgsl(include_wesl!("ui_vert").into()),
-        fs_shader_source: wgpu::ShaderSource::Wgsl(include_wesl!("ui_frag").into()),
+        fs_shader_source: Some(wgpu::ShaderSource::Wgsl(include_wesl!("ui_frag").into())),
         vertex_buffers: &[UI_VERTEX_BUFFER_LAYOUT],
         fragment_targets: &ui_fragment_target,
         primitive: wgpu::PrimitiveState::default(),
@@ -51,7 +47,7 @@ pub fn setup_ui_pipeline(
     };
 
     let created_pipeline: CreatedPipeline =
-        create_render_pipeline_from_def(device, &[&view_layout.0], ui_pipeline_def);
+        create_render_pipeline_from_def(device, &[], ui_pipeline_def);
 
     commands.insert_resource(UiPipeline {
         inner: created_pipeline,

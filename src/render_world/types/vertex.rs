@@ -1,9 +1,36 @@
 use std::hash::{Hash, Hasher};
 
-/// A type to represent a vertex with position and color for the gpu
+/// A type to represent a wireframe vertex with basic color support for the GPU
 #[repr(C)]
 #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
-pub struct Vertex {
+pub struct WireframeVertex {
+    pub position: [f32; 3],
+    pub color: [f32; 3],
+}
+
+impl WireframeVertex {
+    const ATTRIBUTES: [wgpu::VertexAttribute; 2] = wgpu::vertex_attr_array![
+        0 => Float32x3, // position
+        1 => Float32x3, // color
+    ];
+
+    pub fn new(position: [f32; 3], color: [f32; 3]) -> Self {
+        Self { position, color }
+    }
+
+    pub fn desc() -> wgpu::VertexBufferLayout<'static> {
+        wgpu::VertexBufferLayout {
+            array_stride: std::mem::size_of::<WireframeVertex>() as wgpu::BufferAddress,
+            step_mode: wgpu::VertexStepMode::Vertex,
+            attributes: &Self::ATTRIBUTES,
+        }
+    }
+}
+
+/// A type to represent a world vertex with full texture/color/etc support for the GPU
+#[repr(C)]
+#[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
+pub struct WorldVertex {
     pub position: [f32; 3],
     pub normal: [f32; 3],
     pub color: [f32; 3],
@@ -11,7 +38,7 @@ pub struct Vertex {
     pub texture_index: u32,
 }
 
-impl Vertex {
+impl WorldVertex {
     const ATTRIBUTES: [wgpu::VertexAttribute; 5] = wgpu::vertex_attr_array![
         0 => Float32x3, // position
         1 => Float32x3, // normal
@@ -38,14 +65,14 @@ impl Vertex {
 
     pub fn desc() -> wgpu::VertexBufferLayout<'static> {
         wgpu::VertexBufferLayout {
-            array_stride: std::mem::size_of::<Vertex>() as wgpu::BufferAddress,
+            array_stride: std::mem::size_of::<WorldVertex>() as wgpu::BufferAddress,
             step_mode: wgpu::VertexStepMode::Vertex,
             attributes: &Self::ATTRIBUTES,
         }
     }
 }
 
-impl PartialEq for Vertex {
+impl PartialEq for WorldVertex {
     fn eq(&self, other: &Self) -> bool {
         self.position
             .iter()
@@ -70,9 +97,9 @@ impl PartialEq for Vertex {
     }
 }
 
-impl Eq for Vertex {}
+impl Eq for WorldVertex {}
 
-impl Hash for Vertex {
+impl Hash for WorldVertex {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.position.iter().for_each(|f| f.to_bits().hash(state));
         self.color.iter().for_each(|f| f.to_bits().hash(state));

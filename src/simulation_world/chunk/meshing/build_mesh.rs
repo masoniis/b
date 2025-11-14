@@ -1,5 +1,5 @@
 use crate::prelude::*;
-use crate::render_world::types::{TextureId, Vertex};
+use crate::render_world::types::{TextureId, WorldVertex};
 use crate::simulation_world::{
     asset_management::{texture_map_registry::TextureMapResource, MeshAsset},
     block::{
@@ -251,9 +251,9 @@ pub fn build_chunk_mesh(
     texture_map: &TextureMapResource,
     block_registry: &BlockRegistryResource,
 ) -> (Option<OpaqueMeshData>, Option<TransparentMeshData>) {
-    let mut opaque_vertices: Vec<Vertex> = Vec::new();
+    let mut opaque_vertices: Vec<WorldVertex> = Vec::new();
     let mut opaque_indices: Vec<u32> = Vec::new();
-    let mut transparent_vertices: Vec<Vertex> = Vec::new();
+    let mut transparent_vertices: Vec<WorldVertex> = Vec::new();
     let mut transparent_indices: Vec<u32> = Vec::new();
 
     let size = padded_chunk.size() as usize;
@@ -529,7 +529,7 @@ fn create_face_verts(
     size: i32,
     center_lod: ChunkLod,
     all_lods: &NeighborLODs,
-) -> (Vec<Vertex>, [u32; 6]) {
+) -> (Vec<WorldVertex>, [u32; 6]) {
     let half_s = scale * 0.5;
     let (fx, fy, fz) = (
         (block_pos.x as f32 * scale) + half_s,
@@ -638,28 +638,28 @@ fn create_face_verts(
 
     // apply ao to color for the 4 vertices
     let final_vertices = vec![
-        Vertex::new(
+        WorldVertex::new(
             snapped_verts[0],
             normal,
             [ao_values[0], ao_values[0], ao_values[0]],
             uvs[0],
             tex_index,
         ),
-        Vertex::new(
+        WorldVertex::new(
             snapped_verts[1],
             normal,
             [ao_values[1], ao_values[1], ao_values[1]],
             uvs[1],
             tex_index,
         ),
-        Vertex::new(
+        WorldVertex::new(
             snapped_verts[2],
             normal,
             [ao_values[2], ao_values[2], ao_values[2]],
             uvs[2],
             tex_index,
         ),
-        Vertex::new(
+        WorldVertex::new(
             snapped_verts[3],
             normal,
             [ao_values[3], ao_values[3], ao_values[3]],

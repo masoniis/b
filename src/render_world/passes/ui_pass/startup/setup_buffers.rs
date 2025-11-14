@@ -1,5 +1,4 @@
 use crate::prelude::*;
-use crate::render_world::passes::main_camera_centric::shared::CentralCameraViewBindGroupLayout;
 use crate::render_world::{
     graphics_context::resources::RenderDevice, passes::ui_pass::startup::UiPipeline,
 };
@@ -63,7 +62,6 @@ pub fn setup_ui_buffers(
     // Input
     device: Res<RenderDevice>,
     pipeline: Res<UiPipeline>,
-    view_layout: Res<CentralCameraViewBindGroupLayout>,
 
     // Output (insert buffer resources into world)
     mut commands: Commands,
@@ -78,7 +76,7 @@ pub fn setup_ui_buffers(
 
     let view_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
         label: Some("UI View Bind Group"),
-        layout: &view_layout.0,
+        layout: &pipeline.get_layout(0),
         entries: &[wgpu::BindGroupEntry {
             binding: 0,
             resource: wgpu::BindingResource::Buffer(wgpu::BufferBinding {

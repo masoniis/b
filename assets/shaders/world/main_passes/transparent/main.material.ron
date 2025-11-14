@@ -1,0 +1,43 @@
+MaterialDefinition(
+  vertex_buffers: [],
+  bind_group_layouts: {
+    // per-material defs (texture)
+    2: BindGroupLayoutDef(
+      bindings: [
+        // diffuse texture
+        BindingDef(
+          binding: 0,
+          visibility: ["Fragment"],
+          ty: "Texture",
+          texture_options: Some((
+            sample_type: "Float",
+            view_dimension: "2d_array",
+            multisampled: false,
+          )),
+        ),
+        // diffuse sampler
+        BindingDef(
+          binding: 1,
+          visibility: ["Fragment"],
+          ty: "Sampler",
+          sampler_options: Some((
+            ty: "Filtering",
+          )),
+        ),
+      ],
+    ),
+    // per-object defs (model)
+    3: BindGroupLayoutDef( bindings: [
+        BindingDef(
+          binding: 0,
+          visibility: ["Vertex"],
+          ty: "Buffer",
+          buffer_options: Some((
+            ty: "Storage",
+            has_dynamic_offset: false,
+          )),
+        ),
+      ],
+    ),
+  },
+)

@@ -3,7 +3,7 @@ use crate::simulation_world::time::simulation_tick::SimulationTick;
 use bevy_ecs::prelude::*;
 use std::time::Duration;
 
-pub const SECONDS_IN_A_DAY: f32 = 1200.0;
+pub const SECONDS_IN_A_DAY: f32 = 180.0;
 
 /// A resource that tracks the in-game date and time.
 #[derive(Resource, Debug)]

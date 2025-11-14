@@ -6,7 +6,7 @@ pub struct PipelineDefinition<'a> {
     pub label: &'a str,
     pub material_path: &'a str,
     pub vs_shader_source: wgpu::ShaderSource<'a>,
-    pub fs_shader_source: wgpu::ShaderSource<'a>,
+    pub fs_shader_source: Option<wgpu::ShaderSource<'a>>,
     pub vertex_buffers: &'a [wgpu::VertexBufferLayout<'a>],
     pub fragment_targets: &'a [Option<wgpu::ColorTargetState>],
     pub depth_stencil: Option<wgpu::DepthStencilState>,
@@ -100,10 +100,25 @@ pub fn create_render_pipeline_from_def(
         source: pipeline_def.vs_shader_source,
     });
 
-    let fs_shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
-        label: Some(&format!("{} Fragment Shader", pipeline_def.label)),
-        source: pipeline_def.fs_shader_source,
-    });
+    let fs_shader = if let Some(fs_source) = pipeline_def.fs_shader_source {
+        Some(device.create_shader_module(wgpu::ShaderModuleDescriptor {
+            label: Some(&format!("{} Fragment Shader", pipeline_def.label)),
+            source: fs_source,
+        }))
+    } else {
+        None
+    };
+
+    let fragment_state = if let Some(ref fs_shader) = fs_shader {
+        Some(wgpu::FragmentState {
+            module: fs_shader,
+            entry_point: Some("fs_main"),
+            targets: pipeline_def.fragment_targets,
+            compilation_options: Default::default(),
+        })
+    } else {
+        None
+    };
 
     let pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
         label: Some(pipeline_def.label),
@@ -115,12 +130,7 @@ pub fn create_render_pipeline_from_def(
             buffers: pipeline_def.vertex_buffers,
             compilation_options: Default::default(),
         },
-        fragment: Some(wgpu::FragmentState {
-            module: &fs_shader,
-            entry_point: Some("fs_main"),
-            targets: pipeline_def.fragment_targets,
-            compilation_options: Default::default(),
-        }),
+        fragment: fragment_state,
         primitive: pipeline_def.primitive,
         depth_stencil: pipeline_def.depth_stencil,
         multisample: wgpu::MultisampleState::default(),
