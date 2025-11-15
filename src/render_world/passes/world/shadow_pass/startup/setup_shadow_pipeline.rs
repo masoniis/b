@@ -28,9 +28,11 @@ pub fn setup_shadow_pass_pipeline(
         depth_write_enabled: true,
         depth_compare: wgpu::CompareFunction::Less,
         stencil: wgpu::StencilState::default(),
-        // add small bias during shadow pass
+        // small bias prevents some artifacts in exchange for
+        // a small amount of peter panning which I am settling
+        // for for now
         bias: wgpu::DepthBiasState {
-            constant: 2,
+            constant: 1,
             slope_scale: 2.0,
             clamp: 0.0,
         },
@@ -52,7 +54,9 @@ pub fn setup_shadow_pass_pipeline(
             topology: wgpu::PrimitiveTopology::TriangleList,
             front_face: wgpu::FrontFace::Ccw,
             polygon_mode: wgpu::PolygonMode::Fill,
-            cull_mode: Some(wgpu::Face::Back),
+            // front cull prevents items from shadowing
+            // themselves which is an awesome technique
+            cull_mode: Some(wgpu::Face::Front),
             ..Default::default()
         },
     };

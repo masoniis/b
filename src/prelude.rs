@@ -19,7 +19,9 @@ pub use crate::{
 // ----------------------------
 
 pub use derive_more::{Deref, DerefMut};
-pub use glam::{vec2, vec3, vec4, IVec2, IVec3, IVec4, Mat3, Mat4, Quat, Vec2, Vec3, Vec4};
+pub use glam::{
+    vec2, vec3, vec4, IVec2, IVec3, IVec4, Mat3, Mat4, Quat, Vec2, Vec3, Vec4, Vec4Swizzles,
+};
 pub use std::sync::Arc;
 pub use tracing::{debug, error, info, info_span, instrument, trace, warn};
 pub use winit::{

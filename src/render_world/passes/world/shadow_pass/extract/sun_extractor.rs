@@ -33,10 +33,10 @@ impl ExtractResource for SunExtractor {
         // just goes in a circle on the xz plane for now
         let angle = day_night_value * 2.0 * PI;
         let x = angle.cos();
-        let z = angle.sin();
+        let y = angle.sin();
 
         let new_sun = ExtractedSun {
-            direction: [x, 0.25, z],
+            direction: [x, y, 0.0],
         };
 
         if let Some(mut target_res) = target {

@@ -4,7 +4,7 @@ use bevy_ecs::prelude::*;
 use wgpu::{Sampler, Texture, TextureView};
 
 pub const SHADOW_DEPTH_FORMAT: wgpu::TextureFormat = wgpu::TextureFormat::Depth32Float;
-pub const SHADOW_MAP_RESOLUTION: u32 = 1024;
+pub const SHADOW_MAP_RESOLUTION: u32 = 2048;
 
 /// A resource to hold the shadow depth texture and its view
 #[derive(Resource)]

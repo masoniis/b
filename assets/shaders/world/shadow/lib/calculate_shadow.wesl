@@ -17,6 +17,22 @@ fn calculate_shadow(
     let uv = shadow_coords.xy * 0.5 + 0.5;
     let uv_flipped = vec2<f32>(uv.x, 1.0 - uv.y); // flip Y for texture coordinates
 
-    // sample shadow map with comparison (returns 1.0 if lit, 0.0 if shadowed)
-    return textureSampleCompare(shadow_tex, shadow_samp, uv_flipped, shadow_coords.z - 0.005);
+    // check if we are outside the shadow frustum in ANY dimension.
+    var shadow_factor = 1.0;
+    if (uv.x > 1.0 || uv.x < 0.0 ||
+        uv.y > 1.0 || uv.y < 0.0 ||
+        shadow_coords.z > 1.0)
+    {
+        // we are outside the frustum, so leave shadow_factor at 1.0 (lit)
+    } else {
+        // we are inside the frustum. Do the normal depth comparison.
+        shadow_factor = textureSampleCompare(
+            shadow_tex,
+            shadow_samp,
+            uv_flipped,
+            shadow_coords.z
+        );
+    }
+
+    return shadow_factor;
 }
