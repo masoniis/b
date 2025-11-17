@@ -12,6 +12,7 @@ use crate::{
     simulation_world::{OnExit, SimulationSchedule, SimulationSet},
 };
 use bevy_ecs::schedule::IntoScheduleConfigs;
+
 pub struct AppLifecyclePlugin;
 
 /// A plugin for the simulation world that sets up the necessary
@@ -38,11 +39,7 @@ impl Plugin for AppLifecyclePlugin {
         // systems to ensure rigidity
         builder
             .schedule_entry(SimulationSchedule::Startup)
-            .add_systems((
-                start_fake_work_system,
-                start_fake_work_system,
-                start_fake_work_system,
-            ));
+            .add_systems(start_fake_work_system);
 
         // INFO: ---------------------------
         //         state transitions

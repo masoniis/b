@@ -5,17 +5,18 @@ use std::path::Path;
 use wesl::Wesl;
 
 fn main() {
-    // INFO: -------------------------------------------
-    //         Task 1: Generating TextureId Enum
-    // -------------------------------------------------
+    // INFO: -------------------------------------
+    //         generating `TextureId` enum
+    // -------------------------------------------
 
-    println!("cargo:rerun-if-changed=assets/textures"); // run condition
+    // run condition
+    println!("cargo:rerun-if-changed=assets/textures");
 
     let out_dir = env::var("OUT_DIR").unwrap();
     let dest_path = Path::new(&out_dir).join("texture_ids.rs");
     let mut f = BufWriter::new(File::create(&dest_path).unwrap());
 
-    // Writing the code for the enum into the build file
+    // writing the code for the enum into the build file
     writeln!(
         &mut f,
         "#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, serde::Deserialize)]"
@@ -57,10 +58,11 @@ fn main() {
     writeln!(&mut f, "}}").unwrap();
 
     // INFO: --------------------------------------
-    //         Compile WESL shaders to WGSL
+    //         compile WESL shaders to WGSL
     // --------------------------------------------
 
-    println!("cargo:rerun-if-changed=src/shaders"); // run condition
+    // run condition
+    println!("cargo:rerun-if-changed=src/shaders");
 
     let compiler = Wesl::new("assets/shaders"); // src dir for shaders
 

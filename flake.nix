@@ -30,14 +30,15 @@
           mkShell (
             {
               buildInputs = [
-                # Rust
+                # rust
                 pkgs-unstable.cargo
-                pkgs-unstable.wgsl-analyzer
                 pkgs-unstable.tracy-glfw
+                pkgs-unstable.wgsl-analyzer
 
-                # Utils
+                # utils
                 just
                 ripgrep
+                gnuplot
               ]
               ++ (lib.optionals stdenv.isLinux [
                 libGL
@@ -50,9 +51,10 @@
               shellHook = ''
                 export PATH="$HOME/.cargo/bin:$PATH"
               '';
+
             }
             // (lib.optionalAttrs stdenv.isLinux {
-              RUST_SRC_PATH = "${pkgs.rust.packages.stable.rustPlatform.rustLibSrc}";
+              RUST_SRC_PATH = "${pkgs-unstable.rust.packages.stable.rustPlatform.rustLibSrc}";
 
               LD_LIBRARY_PATH = lib.makeLibraryPath [
                 libGL

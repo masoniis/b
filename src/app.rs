@@ -13,6 +13,7 @@ use crate::{
         SimulationSchedule, SimulationWorldInterface,
     },
 };
+use futures_lite::future::block_on;
 use std::{
     error::Error,
     sync::{Arc, Mutex},
@@ -95,8 +96,7 @@ impl ApplicationHandler for App {
             // ----------------------------------------------
 
             // world dependencies that the app must create (due to window)
-            let graphics_context =
-                futures_lite::future::block_on(GraphicsContext::new(window.clone()));
+            let graphics_context = block_on(GraphicsContext::new(window.clone()));
             let (texture_array, texture_registry) =
                 load_texture_array(&graphics_context.device, &graphics_context.queue).unwrap();
 

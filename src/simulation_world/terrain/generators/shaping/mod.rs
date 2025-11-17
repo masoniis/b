@@ -1,5 +1,7 @@
-pub mod sinwave_generator;
-pub mod superflat_generator;
+pub mod lib;
+pub mod sinwave_shaper;
+pub mod superflat_shaper;
 
-pub use sinwave_generator::SinWaveGenerator;
-pub use superflat_generator::SuperflatShaper;
+pub use lib::*;
+pub use sinwave_shaper::*;
+pub use superflat_shaper::*;

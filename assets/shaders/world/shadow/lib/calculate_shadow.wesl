@@ -19,10 +19,7 @@ fn calculate_shadow(
 
     // check if we are outside the shadow frustum in ANY dimension.
     var shadow_factor = 1.0;
-    if (uv.x > 1.0 || uv.x < 0.0 ||
-        uv.y > 1.0 || uv.y < 0.0 ||
-        shadow_coords.z > 1.0)
-    {
+    if uv.x > 1.0 || uv.x < 0.0 || uv.y > 1.0 || uv.y < 0.0 || shadow_coords.z > 1.0 {
         // we are outside the frustum, so leave shadow_factor at 1.0 (lit)
     } else {
         // we are inside the frustum. Do the normal depth comparison.

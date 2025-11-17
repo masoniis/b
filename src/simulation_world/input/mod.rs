@@ -3,7 +3,9 @@ pub mod resources;
 pub mod systems;
 pub mod types;
 
-pub use resources::{ActionStateResource, Buttons, CursorMovement, InputActionMapResource};
+pub use resources::{
+    ActionStateResource, Buttons, CursorMovement, InputActionMapResource, WindowSizeResource,
+};
 pub use types::*;
 
 // INFO: -----------------------------

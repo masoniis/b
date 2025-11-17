@@ -1,5 +1,5 @@
 use crate::prelude::*;
-use crate::simulation_world::chunk::{ChunkCoord, ChunkState, chunk_blocks::ChunkView};
+use crate::simulation_world::chunk::{chunk_blocks::ChunkView, ChunkCoord, ChunkState};
 use crate::simulation_world::{
     block::{block_registry::AIR_BLOCK_ID, TargetedBlock},
     chunk::{ChunkBlocksComponent, ChunkStateManager},

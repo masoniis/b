@@ -1,28 +1,23 @@
 pub mod components;
 pub mod generators;
+pub mod public;
 pub mod systems;
 
-pub use generators::*;
-
-use bevy_ecs::schedule::IntoScheduleConfigs;
 pub use components::*;
-pub use generators::core::{ActiveTerrainGenerator, ActiveTerrainPainter, TerrainShaper};
-pub use systems::*;
-
-use generators::core::ActiveBiomeGenerator;
-use systems::cycle_active_generator::cycle_active_generator;
+pub use generators::*;
+pub use public::*;
 
 // INFO: ----------------------------
 //         Terrain gen plugin
 // ----------------------------------
 
 use crate::prelude::*;
-use crate::simulation_world::input::SimulationAction;
 use crate::{
     ecs_core::{EcsBuilder, Plugin},
     simulation_world::input::ActionStateResource,
 };
-use bevy_ecs::prelude::Res;
+use bevy_ecs::prelude::{IntoScheduleConfigs, Res};
+use systems::cycle_active_generator;
 
 pub struct TerrainGenerationPlugin;
 
@@ -30,6 +25,7 @@ impl Plugin for TerrainGenerationPlugin {
     fn build(&self, builder: &mut EcsBuilder) {
         builder
             .add_resource(ClimateNoiseGenerator::new(0)) // hardcode seed 0 for now
+            .add_resource(ActiveClimateGenerator::default())
             .add_resource(ActiveBiomeGenerator::default())
             .add_resource(ActiveTerrainGenerator::default())
             .add_resource(ActiveTerrainPainter::default());

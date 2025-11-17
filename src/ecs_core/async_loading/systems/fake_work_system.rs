@@ -23,7 +23,7 @@ pub fn start_fake_work_system(mut commands: Commands) {
                 entity, i, WORK_DURATION
             );
 
-            let sleep_time = random_range(1.05..2.4);
+            let sleep_time = random_range(0.25..0.8);
             thread::sleep(Duration::from_secs_f32(sleep_time));
         }
         info!("[BACKGROUND {}] Fake work finished!", entity);

@@ -1,9 +1,14 @@
 # INFO: -----------------------------
-#         Basic Cargo aliases
+#         basic cargo aliases
 # -----------------------------------
 
 run *args:
 	cargo run {{args}}
+
+bench *args:
+	cargo bench {{args}}
+	echo "Opening Criterion report..."
+	open target/criterion/report/index.html
 
 check *args:
 	cargo check {{args}}
@@ -15,8 +20,12 @@ fix *args:
 	cargo fix --allow-dirty
 
 # INFO: ---------------------------
-#         Advanced commands
+#         advanced commands
 # ---------------------------------
+
+# requires https://crates.io/crates/cargo-show-asm
+asm path:
+    cargo asm --bin b --color {{path}}
 
 trace *args:
 	#!/usr/bin/env bash
@@ -30,7 +39,7 @@ trace *args:
 			tracy &
 	fi
 
-	cargo run --features tracy
+	cargo run --features tracy {{args}}
 
 debug_bevy *args:
 	cargo run --features bevy_ecs/trace --features bevy_ecs/track_location

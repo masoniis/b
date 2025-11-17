@@ -59,13 +59,22 @@ impl BiomeRegistryResource {
 //         System to load files
 // ------------------------------------
 
-/// Runs at startup, loads all biome definitions from `assets/biomes/`.
+/// A system that is built to run once at startup. It scans the biome directory and
+/// loads all definitions found into the `BiomeRegistryResource` for global access.
 #[instrument(skip_all)]
-pub fn load_biome_definitions_system(mut commands: Commands) {
+pub fn initialize_biome_registry_system(mut commands: Commands) {
+    let registry = load_biome_defs_from_disk();
+    commands.insert_resource(registry);
+}
+
+/// A util that scans the biome asset directory and loads all valid biome definitions
+/// found into a `BiomeRegistryResource` struct.
+#[instrument(skip_all)]
+pub fn load_biome_defs_from_disk() -> BiomeRegistryResource {
     info!("Loading biome definitions...");
 
-    let mut biome_definitions: Vec<BiomeDefinition> = Vec::new(); // Use Vec
-    let mut name_to_id: HashMap<String, BiomeId> = HashMap::new(); // String -> u8
+    let mut biome_definitions: Vec<BiomeDefinition> = Vec::new();
+    let mut name_to_id: HashMap<String, BiomeId> = HashMap::new();
     let biome_dir = Path::new("assets/biomes");
 
     // helper closure for local registration (identical to block loading)
@@ -174,5 +183,5 @@ pub fn load_biome_definitions_system(mut commands: Commands) {
         warn!("Only the default biome was loaded. Check 'assets/biomes/' directory for other biome files.");
     }
 
-    commands.insert_resource(registry);
+    return registry;
 }

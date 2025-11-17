@@ -28,7 +28,7 @@ fn fs_main(
     var lit_color: vec3<f32>;
 
     let shadow_factor = calculate_shadow(world_pos, shadow_camera, shadow_map, shadow_sampler);
-    if (shadow_factor == 1.0) {
+    if shadow_factor == 1.0 {
         // not in shadow, apply full lighting
         let diffuse_factor = max(dot(N, L), 0.0);
         let lighting_factor = ambient_strength + (1.0 - ambient_strength) * diffuse_factor;

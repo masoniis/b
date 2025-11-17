@@ -21,23 +21,23 @@ pub use scheduling::{
 use crate::render_world::{
     global_extract::utils::initialize_simulation_world_for_extract, textures::TextureRegistry,
 };
-use crate::simulation_world::asset_management::texture_map_registry::TextureMapResource;
-use crate::simulation_world::asset_management::{AssetManagementPlugin, MeshAsset};
-use crate::simulation_world::biome::BiomePlugin;
-use crate::simulation_world::block::BlockPlugin;
-use crate::simulation_world::chunk::ChunkLoadingPlugin;
-use crate::simulation_world::input::InputModulePlugin;
-use crate::simulation_world::player::PlayerPlugin;
-use crate::simulation_world::terrain::TerrainGenerationPlugin;
-use crate::simulation_world::time::TimeControlPlugin;
+use crate::simulation_world::{
+    asset_management::{AssetManagementPlugin, MeshAsset, TextureMapResource},
+    biome::BiomePlugin,
+    block::BlockPlugin,
+    chunk::ChunkLoadingPlugin,
+    input::{InputModulePlugin, WindowSizeResource},
+    player::PlayerPlugin,
+    terrain::TerrainGenerationPlugin,
+    time::TimeControlPlugin,
+    user_interface::UiPlugin,
+};
 use crate::{
     ecs_core::{worlds::SimulationWorldMarker, CommonEcsInterface, EcsBuilder, PluginGroup},
     simulation_world::app_lifecycle::AppLifecyclePlugin,
 };
 use bevy_ecs::prelude::*;
-use input::resources::WindowSizeResource;
 use std::ops::{Deref, DerefMut};
-use user_interface::UiPlugin;
 use winit::window::Window;
 
 pub struct SimulationWorldInterface {
@@ -46,7 +46,7 @@ pub struct SimulationWorldInterface {
 
 impl SimulationWorldInterface {
     pub fn send_event<E: Message>(&mut self, event: E) {
-        self.common.world.write_message(event);
+        self.world.write_message(event);
     }
 }
 
@@ -117,12 +117,8 @@ impl SimulationWorldInterface {
             },
         };
 
-        initialize_simulation_world_for_extract(&mut interface.common.world);
-
-        interface
-            .common
-            .world
-            .insert_resource(SimulationWorldMarker);
+        initialize_simulation_world_for_extract(&mut interface.world);
+        interface.world.insert_resource(SimulationWorldMarker);
 
         return interface;
     }

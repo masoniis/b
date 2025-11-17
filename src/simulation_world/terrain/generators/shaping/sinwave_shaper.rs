@@ -1,11 +1,8 @@
 use crate::prelude::*;
+use crate::simulation_world::terrain::climate::ClimateMapComponent;
 use crate::simulation_world::{
     chunk::CHUNK_SIDE_LENGTH,
-    terrain::{
-        components::climate_map::TerrainClimateMapComponent,
-        core::ChunkUniformity,
-        generators::core::{ShapeResultBuilder, TerrainShaper},
-    },
+    terrain::generators::shaping::{ChunkUniformity, ShapeResultBuilder, TerrainShaper},
 };
 
 /// Generates a simple, rolling terrain using two sine waves.
@@ -58,7 +55,7 @@ impl TerrainShaper for SinWaveGenerator {
     fn shape_terrain_chunk(
         &self,
         // input
-        _climate_map: &TerrainClimateMapComponent,
+        _climate_map: &ClimateMapComponent,
 
         // output
         mut shaper: ShapeResultBuilder,

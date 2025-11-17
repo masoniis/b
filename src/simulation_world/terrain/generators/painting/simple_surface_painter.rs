@@ -1,11 +1,9 @@
 use crate::prelude::*;
 use crate::simulation_world::biome::BiomeRegistryResource;
 use crate::simulation_world::block::BlockRegistryResource;
-use crate::simulation_world::chunk::WorldVoxelPositionIterator;
-use crate::simulation_world::terrain::components::{
-    climate_map::TerrainClimateMapComponent, BiomeMapComponent,
-};
-use crate::simulation_world::terrain::generators::core::{PaintResultBuilder, TerrainPainter};
+use crate::simulation_world::terrain::climate::ClimateMapComponent;
+use crate::simulation_world::terrain::generators::painting::{PaintResultBuilder, TerrainPainter};
+use crate::simulation_world::terrain::BiomeMapComponent;
 
 #[derive(Debug, Clone)]
 pub struct SimpleSurfacePainter;
@@ -23,9 +21,8 @@ impl TerrainPainter for SimpleSurfacePainter {
     fn paint_terrain_chunk(
         &self,
         mut painter: PaintResultBuilder,
-        _iterator: WorldVoxelPositionIterator,
         _biome_map: &BiomeMapComponent,
-        _climate_map: &TerrainClimateMapComponent,
+        _climate_map: &ClimateMapComponent,
         block_registry: &BlockRegistryResource,
         _biome_registry: &BiomeRegistryResource,
     ) -> PaintResultBuilder {

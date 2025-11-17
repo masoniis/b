@@ -8,6 +8,6 @@ pub struct BiomeMapComponent(pub ChunkVolumeData<BiomeId>);
 
 impl BiomeMapComponent {
     pub fn new_empty(lod: ChunkLod) -> Self {
-        Self(ChunkVolumeData::new_filled(lod, 0))
+        Self(ChunkVolumeData::new_zeroed(lod))
     }
 }

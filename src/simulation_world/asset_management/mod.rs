@@ -3,8 +3,8 @@ pub mod mesh_asset;
 pub mod texture_map_registry;
 
 pub use asset_storage::{Asset, AssetStorageResource, Handle};
-use bevy_ecs::{message::Messages, schedule::IntoScheduleConfigs};
 pub use mesh_asset::{delete_stale_mesh_assets, MeshAsset, MeshDeletionRequest};
+pub use texture_map_registry::TextureMapResource;
 
 // INFO: ---------------------------------
 //         Asset Management Plugin
@@ -21,6 +21,7 @@ use crate::{
     },
     SimulationSet,
 };
+use bevy_ecs::{message::Messages, schedule::IntoScheduleConfigs};
 
 pub struct AssetManagementPlugin;
 

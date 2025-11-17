@@ -3,12 +3,29 @@ name = "b"
 version = "0.0.1"
 edition = "2021"
 
+[lib]
+path = "src/lib.rs"
+
 [[bin]]
 name = "b"
 path = "src/main.rs"
 
+[[bench]]
+name = "generation_benchmarks"
+harness = false
+
 [features]
 tracy = ["dep:tracy-client", "dep:tracing-tracy"]
+
+[build-dependencies]
+glob = "0.3.3"
+serde = { version = "1.0.228", features = ["derive"] }
+serde_derive = "1.0.228"
+wesl = "0.2.0"                                         # shader conversion
+
+[dev-dependencies]
+criterion = { version = "0.5", features = ["html_reports"] }
+b = { path = "." }
 
 [dependencies]
 
@@ -56,8 +73,8 @@ bevy_ecs = "0.17.2"
 
 ## necessary for multi-threaded tasks
 futures-timer = "3.0.3"
-futures-lite = "2.6.1"
-rayon = "1.11.0"
+futures-lite = "2.6.1"  # future utils
+rayon = "1.11.0"        # multi threaded pooling
 
 # INFO: ---------------
 #         utils
@@ -71,9 +88,3 @@ ron = "0.11.0"                                                         # parsing
 sysinfo = "0.37.2"                                                     # memory usage
 noise = "0.9.0"                                                        # gen random noise
 crossbeam = "0.8.4"
-
-[build-dependencies]
-glob = "0.3.3"
-serde = { version = "1.0.228", features = ["derive"] }
-serde_derive = "1.0.228"
-wesl = "0.2.0"                                         # shader conversion

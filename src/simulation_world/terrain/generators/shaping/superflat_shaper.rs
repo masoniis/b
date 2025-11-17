@@ -1,11 +1,8 @@
 use crate::prelude::*;
 use crate::simulation_world::{
     chunk::CHUNK_SIDE_LENGTH,
-    terrain::{
-        components::climate_map::TerrainClimateMapComponent,
-        core::ChunkUniformity,
-        generators::core::{ShapeResultBuilder, TerrainShaper},
-    },
+    terrain::climate::ClimateMapComponent,
+    terrain::generators::shaping::{ChunkUniformity, ShapeResultBuilder, TerrainShaper},
 };
 
 #[derive(Debug, Clone)]
@@ -43,7 +40,7 @@ impl TerrainShaper for SuperflatShaper {
     #[instrument(skip_all)]
     fn shape_terrain_chunk(
         &self,
-        _climate_map: &TerrainClimateMapComponent,
+        _climate_map: &ClimateMapComponent,
         mut shaper: ShapeResultBuilder,
     ) -> ShapeResultBuilder {
         shaper.fill_from(|_local, world| world.y <= self.land_height);

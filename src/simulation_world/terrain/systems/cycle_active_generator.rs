@@ -1,6 +1,5 @@
 use crate::simulation_world::terrain::{
-    generators::core::{ActiveTerrainGenerator, TerrainShaper},
-    SinWaveGenerator, SuperflatShaper,
+    ActiveTerrainGenerator, SinWaveGenerator, SuperflatShaper, TerrainShaper,
 };
 use bevy_ecs::system::{Local, ResMut};
 use std::sync::Arc;

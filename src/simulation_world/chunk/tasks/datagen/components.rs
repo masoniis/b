@@ -1,6 +1,4 @@
-use crate::simulation_world::{
-    chunk::ChunkLod, terrain::generators::core::GeneratedChunkComponentBundle,
-};
+use crate::simulation_world::chunk::{components::GeneratedChunkComponentBundle, ChunkLod};
 use bevy_ecs::prelude::Component;
 use crossbeam::channel::Receiver;
 
