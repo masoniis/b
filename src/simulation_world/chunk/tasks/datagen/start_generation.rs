@@ -1,5 +1,4 @@
 use crate::prelude::*;
-use crate::simulation_world::block::SOLID_BLOCK_ID;
 use crate::simulation_world::chunk::{
     ChunkBlocksComponent, ChunkGenerationTaskComponent, ChunkLod, ChunkState, NeedsGenerating,
     WorldVoxelIteratorWithColumn, WorldVoxelPositionIterator,
@@ -74,7 +73,7 @@ pub fn start_pending_generation_tasks_system(
                 continue;
             }
             ChunkUniformity::Solid => {
-                let chunk_blocks = ChunkBlocksComponent::new_filled(lod, SOLID_BLOCK_ID);
+                let chunk_blocks = ChunkBlocksComponent::new_uniform_solid(lod);
 
                 let bundle = GeneratedChunkComponentBundle {
                     chunk_blocks: Some(chunk_blocks),
@@ -127,19 +126,21 @@ pub fn start_pending_generation_tasks_system(
                 &biomes_clone,
             );
 
-            let chunk_blocks = ChunkBlocksComponent::new_empty(lod);
+            let chunk_blocks = ChunkBlocksComponent::new_uniform_empty(lod);
 
             // shaping
-            let shaper_iterator = WorldVoxelPositionIterator::new(coord_clone.pos, lod);
-            let shaper = ShapeResultBuilder::new(chunk_blocks);
+            let shaper = ShapeResultBuilder::new(chunk_blocks, coord_clone.clone());
             let shaped_chunk_blocks = terrain_gen
-                .shape_terrain_chunk(shaper_iterator, &terrain_map, shaper)
+                .shape_terrain_chunk(&terrain_map, shaper)
                 .finish();
 
             // painting
             let painter_iterator = WorldVoxelPositionIterator::new(coord_clone.pos, lod);
-            let painter_builder =
-                PaintResultBuilder::new(shaped_chunk_blocks, blocks_clone.clone());
+            let painter_builder = PaintResultBuilder::new(
+                shaped_chunk_blocks,
+                coord_clone.clone(),
+                blocks_clone.clone(),
+            );
             let (painted_chunk_blocks, chunk_metadata) = terrain_paint
                 .paint_terrain_chunk(
                     painter_builder,

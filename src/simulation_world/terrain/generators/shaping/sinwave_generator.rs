@@ -1,6 +1,6 @@
 use crate::prelude::*;
 use crate::simulation_world::{
-    chunk::{WorldVoxelPositionIterator, CHUNK_SIDE_LENGTH},
+    chunk::CHUNK_SIDE_LENGTH,
     terrain::{
         components::climate_map::TerrainClimateMapComponent,
         core::ChunkUniformity,
@@ -58,28 +58,24 @@ impl TerrainShaper for SinWaveGenerator {
     fn shape_terrain_chunk(
         &self,
         // input
-        iterator: WorldVoxelPositionIterator,
         _climate_map: &TerrainClimateMapComponent,
 
         // output
         mut shaper: ShapeResultBuilder,
     ) -> ShapeResultBuilder {
-        for pos in iterator {
-            let (x, y, z) = pos.local;
-            let world_x = pos.world.x as f32;
-            let world_z = pos.world.z as f32;
+        let base = self.base_height as f32;
+        let amp = self.amplitude;
+        let freq = self.frequency;
 
-            // sin application
-            let wave = self.amplitude
-                * ((self.frequency * world_x).sin() + (self.frequency * world_z).sin());
-            let surface_y = (self.base_height as f32 + wave).round() as i32;
+        shaper.fill_from(|_local, world| {
+            let wx = world.x as f32;
+            let wz = world.z as f32;
 
-            // block determinance
-            let world_y = pos.world.y;
-            if world_y < surface_y {
-                shaper.mark_as_solid(x, y, z);
-            }
-        }
+            let wave = amp * ((freq * wx).sin() + (freq * wz).sin());
+            let surface_y = (base + wave).round() as i32;
+
+            world.y < surface_y
+        });
 
         shaper
     }

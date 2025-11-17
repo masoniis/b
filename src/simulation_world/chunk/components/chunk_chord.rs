@@ -1,12 +1,10 @@
 use crate::prelude::*;
-use crate::simulation_world::chunk::{CHUNK_DEPTH, CHUNK_HEIGHT, CHUNK_WIDTH};
+use crate::simulation_world::chunk::{CHUNK_DEPTH, CHUNK_HEIGHT, CHUNK_SIDE_LENGTH, CHUNK_WIDTH};
 use bevy_ecs::prelude::*;
 use derive_more::{Deref, DerefMut};
 use std::fmt;
 
-const X_SHIFT: i32 = CHUNK_WIDTH.trailing_zeros() as i32;
-const Y_SHIFT: i32 = CHUNK_HEIGHT.trailing_zeros() as i32;
-const Z_SHIFT: i32 = CHUNK_DEPTH.trailing_zeros() as i32;
+const BIT_SHIFT: i32 = CHUNK_SIDE_LENGTH.trailing_zeros() as i32;
 
 /// Stores the coordinate of the chunk an entity is currently in.
 #[derive(Component, Clone, Deref, DerefMut, Debug)]
@@ -23,17 +21,17 @@ impl fmt::Display for ChunkCoord {
 impl ChunkCoord {
     pub fn get_block_world_pos(&self, local_pos: IVec3) -> IVec3 {
         IVec3::new(
-            (self.pos.x << X_SHIFT) + local_pos.x,
-            (self.pos.y << Y_SHIFT) + local_pos.y,
-            (self.pos.z << Z_SHIFT) + local_pos.z,
+            (self.pos.x << BIT_SHIFT) + local_pos.x,
+            (self.pos.y << BIT_SHIFT) + local_pos.y,
+            (self.pos.z << BIT_SHIFT) + local_pos.z,
         )
     }
 
     pub fn as_world_pos(&self) -> IVec3 {
         IVec3::new(
-            self.pos.x << X_SHIFT,
-            self.pos.y << Y_SHIFT,
-            self.pos.z << Z_SHIFT,
+            self.pos.x << BIT_SHIFT,
+            self.pos.y << BIT_SHIFT,
+            self.pos.z << BIT_SHIFT,
         )
     }
 
@@ -44,9 +42,9 @@ impl ChunkCoord {
     /// Helper to convert world coordinates to chunk/local coordinates
     pub fn world_to_chunk_and_local_pos(world_pos: IVec3) -> (IVec3, IVec3) {
         let chunk_coord = IVec3::new(
-            world_pos.x >> X_SHIFT,
-            world_pos.y >> Y_SHIFT,
-            world_pos.z >> Z_SHIFT,
+            world_pos.x >> BIT_SHIFT,
+            world_pos.y >> BIT_SHIFT,
+            world_pos.z >> BIT_SHIFT,
         );
 
         let local_pos = IVec3::new(
@@ -63,9 +61,9 @@ impl ChunkCoord {
         let int_pos = world_pos.floor().as_ivec3();
 
         IVec3::new(
-            int_pos.x >> X_SHIFT,
-            int_pos.y >> Y_SHIFT,
-            int_pos.z >> Z_SHIFT,
+            int_pos.x >> BIT_SHIFT,
+            int_pos.y >> BIT_SHIFT,
+            int_pos.z >> BIT_SHIFT,
         )
     }
 }

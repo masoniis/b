@@ -41,7 +41,7 @@ impl BiomeGenerator for DefaultBiomeGenerator {
                 climate_data_for_column = climate_noise.get_climate_at(item.world.x, item.world.z);
 
                 // Set the 2D climate map
-                terrain_climate_map.set_data(x, z, climate_data_for_column.terrain_climate);
+                terrain_climate_map.set_data(x, z, climate_data_for_column.terrain_climate.clone());
             }
 
             // --- 2. 3D Voxel Work ---
@@ -52,10 +52,11 @@ impl BiomeGenerator for DefaultBiomeGenerator {
             // --------------------------------
 
             let temperature = climate_data_for_column.temperature;
+            let mut writer = biome_map.get_data_writer();
             if temperature >= 0.5 {
-                biome_map.set_data(x, y, z, plains_id);
+                writer.set_data(x, y, z, plains_id);
             } else {
-                biome_map.set_data(x, y, z, ocean_id);
+                writer.set_data(x, y, z, ocean_id);
             }
         }
     }

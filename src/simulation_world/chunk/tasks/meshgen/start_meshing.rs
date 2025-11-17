@@ -162,12 +162,13 @@ pub fn start_pending_meshing_tasks_system(
         let block_registry_clone = block_registry.clone();
         let mesh_assets_clone = mesh_assets.clone();
         let coord_clone = chunk_coord.clone();
-        let padded_view = PaddedChunkView::new(chunks, original_neighbor_lods);
 
         trace!(target: "chunk_loading", "Starting meshing task for {}.", chunk_coord.pos);
 
         let (sender, receiver) = unbounded();
         rayon::spawn(move || {
+            let padded_view = PaddedChunkView::new(&chunks, original_neighbor_lods);
+
             let (opaque_mesh_option, transparent_mesh_option) = build_chunk_mesh(
                 &coord_clone.to_string(),
                 padded_view,

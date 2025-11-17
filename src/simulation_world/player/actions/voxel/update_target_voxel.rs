@@ -1,5 +1,5 @@
 use crate::prelude::*;
-use crate::simulation_world::chunk::{ChunkCoord, ChunkState};
+use crate::simulation_world::chunk::{ChunkCoord, ChunkState, chunk_blocks::ChunkView};
 use crate::simulation_world::{
     block::{block_registry::AIR_BLOCK_ID, TargetedBlock},
     chunk::{ChunkBlocksComponent, ChunkStateManager},
@@ -82,11 +82,14 @@ fn get_block_at_world_pos(
     if let ChunkState::Loaded { entity } = chunk_state {
         if let Some(actual_entity) = entity {
             if let Ok(chunk_blocks) = chunks_query.get(actual_entity) {
-                return Some(chunk_blocks.get_data_unchecked(
-                    local_pos.x as usize,
-                    local_pos.y as usize,
-                    local_pos.z as usize,
-                ));
+                return Some(match chunk_blocks.get_view() {
+                    ChunkView::Uniform(block_id) => block_id,
+                    ChunkView::Dense(volume_view) => volume_view.get_data(
+                        local_pos.x as usize,
+                        local_pos.y as usize,
+                        local_pos.z as usize,
+                    ),
+                });
             }
         }
     }

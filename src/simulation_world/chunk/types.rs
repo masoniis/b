@@ -1,6 +1,7 @@
 use crate::prelude::*;
 use crate::simulation_world::chunk::CHUNK_SIDE_LENGTH;
 use std::fmt::{Display, Formatter};
+use std::mem::MaybeUninit;
 use std::sync::Arc;
 
 /// A type-safe wrapper for a Level of Detail value.
@@ -47,6 +48,130 @@ impl ChunkLod {
     }
 }
 
+/// A temporary read-only view into a volume's data optimized for hot loops.
+#[derive(Clone, Copy)]
+pub struct VolumeDataView<'a, T> {
+    data: &'a [T],
+    x_shift: u8,
+    z_shift: u8,
+}
+
+impl<'a, T: Copy> VolumeDataView<'a, T> {
+    /// Gets a piece of data from the chunk volume.
+    ///
+    /// Caller must ensure x, y, z are within bounds or undefined behavior will occur.
+    #[inline(always)]
+    pub fn get_data(&self, x: usize, y: usize, z: usize) -> T {
+        let index = (x << self.x_shift) | (z << self.z_shift) | y;
+
+        if cfg!(debug_assertions) {
+            let size = 1 << self.z_shift;
+            if x >= size || y >= size || z >= size {
+                error!(
+                    "get_data: Out of bounds: ({}, {}, {}) in chunk size {}",
+                    x, y, z, size
+                );
+            }
+        }
+
+        unsafe { *self.data.get_unchecked(index) }
+    }
+}
+
+/// A temporary accessor for safe, high-speed batch writes to a chunk volume.
+pub struct VolumeDataWriter<'a, T> {
+    data: &'a mut [T],
+    x_shift: u8,
+    z_shift: u8,
+}
+
+impl<'a, T: Copy> VolumeDataWriter<'a, T> {
+    /// Sets data in the chunk volume to a given value.
+    ///
+    /// Caller must ensure x, y, z are within bounds or undefined behavior will occur.
+    #[inline(always)]
+    pub fn set_data(&mut self, x: usize, y: usize, z: usize, data: T) {
+        let index = (x << self.x_shift) | (z << self.z_shift) | y;
+
+        if cfg!(debug_assertions) {
+            let size = 1 << self.z_shift; // Calculate size from shift
+            if x >= size || y >= size || z >= size {
+                panic!(
+                    "DenseDataAccessor::set_block: Out of bounds ({}, {}, {}) for size {}",
+                    x, y, z, size
+                );
+            }
+            // Also check index just in case logic is wrong
+            if index >= self.data.len() {
+                panic!(
+                    "DenseDataAccessor: Calculated index {} is out of bounds {}",
+                    index,
+                    self.data.len()
+                );
+            }
+        }
+
+        unsafe {
+            *self.data.get_unchecked_mut(index) = data;
+        }
+    }
+
+    /// Sets a piece of data from the chunk volume by index.
+    ///
+    /// Caller must insure the index is within bounds or undefined behavior will occur.
+    pub fn set_at_index(&mut self, index: usize, data: T) {
+        unsafe { *self.data.get_unchecked_mut(index) = data };
+    }
+
+    /// Gets a piece of data from the chunk volume by coordinate.
+    ///
+    /// Caller must ensure x, y, z are within bounds or undefined behavior will occur.
+    #[inline(always)]
+    pub fn get_data(&self, x: usize, y: usize, z: usize) -> T {
+        let index = (x << self.x_shift) | (z << self.z_shift) | y;
+
+        if cfg!(debug_assertions) {
+            let size = 1 << self.z_shift;
+            if x >= size || y >= size || z >= size {
+                error!(
+                    "get_data: Out of bounds: ({}, {}, {}) in chunk size {}",
+                    x, y, z, size
+                );
+            }
+        }
+
+        unsafe { *self.data.get_unchecked(index) }
+    }
+
+    /// Gets a piece of data from the chunk volume by index.
+    ///
+    /// Caller must insure the index is within bounds or undefined behavior will occur.
+    #[inline(always)]
+    pub fn get_at_index(&self, index: usize) -> T {
+        unsafe { *self.data.get_unchecked(index) }
+    }
+
+    /// Bulk sets the entire volume to a value (memset).
+    ///
+    /// MUCH faster than setting data one by one in a loop.
+    pub fn fill(&mut self, value: T)
+    where
+        T: Copy,
+    {
+        self.data.fill(value);
+    }
+
+    /// Copies data from a slice directly into this volume (memcpy).
+    ///
+    /// The source slice MUST be the same size as the chunk volume.
+    pub fn copy_from_slice(&mut self, source: &[T])
+    where
+        T: Copy,
+    {
+        self.data.copy_from_slice(source);
+    }
+}
+
 // INFO: ----------------------------------------
 //         generic chunk volume container
 // ----------------------------------------------
@@ -54,23 +179,81 @@ impl ChunkLod {
 /// Generic, LOD-aware, 3D container for chunk voxel data.
 #[derive(Clone)]
 pub struct ChunkVolumeData<T: Send + Sync + 'static> {
-    data: Arc<Vec<T>>,
+    data: Arc<[T]>,
 
     /// The size of one edge (e.g., 32, 16, 8, ...).
     size: usize,
     /// The level of detail (0 = full detail, 1 = half size, etc.).
     lod: ChunkLod,
-    /// Pre-calculated shift for Y (e.g., log2(size) * 2).
-    x_shift: u8,
+    /// Pre-calculated shift for X (e.g., log2(size) * 2).
+    pub x_shift: u8,
     /// Pre-calculated shift for Z (e.g., log2(size)).
-    z_shift: u8,
+    pub z_shift: u8,
 }
 
 impl<T: Copy + Send + Sync + 'static> ChunkVolumeData<T> {
-    /// Creates a new volume component filled with `data` for a specific `lod`.
+    /// Creates a new volume with all bits set to zero.
+    pub fn new_zeroed(lod: ChunkLod) -> Self {
+        let size = CHUNK_SIDE_LENGTH >> *lod;
+        let num_elements = size.pow(3);
+
+        // allocate uninitialized mem
+        let mut uninit_arc: Arc<[MaybeUninit<T>]> = Arc::new_uninit_slice(num_elements);
+        // get a raw mutable pointer to the data
+        let ptr = Arc::get_mut(&mut uninit_arc).unwrap().as_mut_ptr();
+        // memset to 0
+        unsafe {
+            std::ptr::write_bytes(ptr, 0, num_elements);
+        }
+        // freeze into an initialized Arc
+        let data: Arc<[T]> = unsafe { uninit_arc.assume_init() };
+
+        // calculate shifts
+        let z_shift = size.trailing_zeros() as u8;
+        let x_shift = (z_shift * 2) as u8;
+
+        Self {
+            data,
+            size,
+            lod,
+            x_shift,
+            z_shift,
+        }
+    }
+
+    /// Creates a new volume component filled with `value`.
+    pub fn new_filled(lod: ChunkLod, value: T) -> Self {
+        let size = CHUNK_SIDE_LENGTH >> *lod;
+        let num_elements = size.pow(3);
+
+        // allocate uninitialized mem
+        let mut uninit_arc: Arc<[MaybeUninit<T>]> = Arc::new_uninit_slice(num_elements);
+        // get a raw mutable slice
+        let uninit_slice = Arc::get_mut(&mut uninit_arc).unwrap();
+        // fill memory
+        for element in uninit_slice.iter_mut() {
+            element.write(value);
+        }
+        // freeze into an initialized Arc
+        let data: Arc<[T]> = unsafe { uninit_arc.assume_init() };
+
+        // calculate shifts
+        let z_shift = size.trailing_zeros() as u8;
+        let x_shift = (z_shift * 2) as u8;
+
+        Self {
+            data,
+            size,
+            lod,
+            x_shift,
+            z_shift,
+        }
+    }
+
+    /// Creates a new volume component from a vec `data` for a specific `lod`.
     ///
     /// Panics if the length of `data` does not match the expected size.
-    pub fn new(lod: ChunkLod, data: Vec<T>) -> Self {
+    pub fn from_vec(lod: ChunkLod, data: Vec<T>) -> Self {
         let size = CHUNK_SIDE_LENGTH >> *lod;
         let expected_len = size.pow(3);
 
@@ -85,23 +268,15 @@ impl<T: Copy + Send + Sync + 'static> ChunkVolumeData<T> {
         }
 
         let z_shift = size.trailing_zeros() as u8;
-        let y_shift = z_shift * 2 as u8;
+        let x_shift = (z_shift * 2) as u8;
 
         Self {
-            data: Arc::new(data),
+            data: data.into_boxed_slice().into(),
             size,
             lod,
-            x_shift: y_shift,
+            x_shift,
             z_shift,
         }
-    }
-
-    /// Creates a new volume component filled with a `default_value`.
-    pub fn new_filled(lod: ChunkLod, default_value: T) -> Self {
-        let size = CHUNK_SIDE_LENGTH >> *lod;
-        let num_elements = size.pow(3);
-        let data = vec![default_value; num_elements];
-        Self::new(lod, data)
     }
 
     /// Returns the size of one edge of the chunk volume.
@@ -114,9 +289,35 @@ impl<T: Copy + Send + Sync + 'static> ChunkVolumeData<T> {
         self.lod
     }
 
+    /// Returns a mutable reference to the underlying Vec, cloning if it's shared.
+    #[inline(always)]
+    pub fn get_data_mut(&mut self) -> &mut [T] {
+        Arc::make_mut(&mut self.data)
+    }
+
+    /// Returns an immutable view of the underlying volume data.
+    #[inline(always)]
+    pub fn get_data_view(&self) -> VolumeDataView<'_, T> {
+        VolumeDataView {
+            data: &self.data,
+            x_shift: self.x_shift,
+            z_shift: self.z_shift,
+        }
+    }
+
+    /// Returns a mutable accessor to the underlying volume data.
+    #[inline(always)]
+    pub fn get_data_writer(&mut self) -> VolumeDataWriter<'_, T> {
+        VolumeDataWriter {
+            data: Arc::make_mut(&mut self.data),
+            x_shift: self.x_shift,
+            z_shift: self.z_shift,
+        }
+    }
+
     /// Gets the data at the given local coordinates.
     ///
-    /// This is infallible but will return an incorrect value on out-of-bounds.
+    /// Has undefined behavior if called on indices out of chunk bounds.
     #[inline(always)]
     pub fn get_data_unchecked(&self, x: usize, y: usize, z: usize) -> T {
         let index = (x << self.x_shift) | (z << self.z_shift) | y;
@@ -129,21 +330,6 @@ impl<T: Copy + Send + Sync + 'static> ChunkVolumeData<T> {
         }
 
         unsafe { *self.data.get_unchecked(index) }
-    }
-
-    /// Sets the data at the given local coordinates.
-    #[inline(always)]
-    pub fn set_data(&mut self, x: usize, y: usize, z: usize, item: T) {
-        if cfg!(debug_assertions) && (x >= self.size || y >= self.size || z >= self.size) {
-            error!(
-                "set_data: Attempted to set voxel data out of bounds: ({}, {}, {}) in a chunk of size {}",
-                x, y, z, self.size
-            );
-            return;
-        }
-
-        let index = (x << self.x_shift) | (z << self.z_shift) | y;
-        Arc::make_mut(&mut self.data)[index] = item;
     }
 }
 

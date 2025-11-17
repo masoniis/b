@@ -48,7 +48,8 @@ pub fn handle_place_voxel_events_system(
             if let Ok(mut chunk_blocks) = chunks.get_mut(entity) {
                 let local_pos = new_block_pos - (chunk_pos * CHUNK_SIDE_LENGTH as i32);
 
-                chunk_blocks.set_data(
+                let mut writer = chunk_blocks.get_writer();
+                writer.set_data(
                     local_pos.x as usize,
                     local_pos.y as usize,
                     local_pos.z as usize,

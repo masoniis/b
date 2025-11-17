@@ -23,45 +23,72 @@ impl TerrainPainter for SimpleSurfacePainter {
     fn paint_terrain_chunk(
         &self,
         mut painter: PaintResultBuilder,
-        iterator: WorldVoxelPositionIterator,
-
+        _iterator: WorldVoxelPositionIterator,
         _biome_map: &BiomeMapComponent,
         _climate_map: &TerrainClimateMapComponent,
-
         block_registry: &BlockRegistryResource,
         _biome_registry: &BiomeRegistryResource,
     ) -> PaintResultBuilder {
-        let air_block_id = block_registry.get_block_by_name("air");
-        let water_block_id = block_registry.get_block_by_name("water");
-        let grass_block_id = block_registry.get_block_by_name("grass");
+        let air_id = block_registry.get_block_by_name("air");
+        let water_id = block_registry.get_block_by_name("water");
+        let grass_id = block_registry.get_block_by_name("grass");
 
-        let size = painter.get_chunk_size();
-        for pos in iterator {
-            let (x, y, z) = pos.local;
-            let world_y = pos.world.y;
+        let size = painter.size();
+        let base_world_pos = painter.chunk_coord.as_world_pos();
+        let base_y = base_world_pos.y;
+        let chunk_top_y = base_y + size as i32;
 
-            let current_block_id = painter.get_data_unchecked(x, y, z);
-
-            if current_block_id == air_block_id {
-                if world_y < SEA_LEVEL {
-                    painter.set_data(x, y, z, water_block_id);
-                }
-            } else {
-                if y < size - 1 {
-                    let block_above_id = painter.get_data_unchecked(x, y + 1, z);
-
-                    // if above block is air this is a "surface"
-                    if block_above_id == air_block_id {
-                        painter.set_data(x, y, z, grass_block_id);
-                    }
-                } else {
-                    // otherwise assume top of chunk just means surface this
-                    // is a weak heuristic for cubic chunks though, in future
-                    // this should be upgraded to be more thorough
-                    painter.set_data(x, y, z, grass_block_id);
+        // early exists and optimization
+        if let Some(uniform_id) = painter.is_uniform() {
+            if uniform_id == air_id {
+                if base_y >= SEA_LEVEL {
+                    return painter;
+                } else if chunk_top_y < SEA_LEVEL {
+                    // pure air below sea then fill with water
+                    painter.edit_arbitrary(|writer| {
+                        writer.fill(water_id);
+                    });
+                    return painter;
                 }
             }
+            // skip full solids
+            // TODO: technically a bug if the chunk is uniform but still located at
+            // the surface. This is a bit rare and i'm currently lazy to address it
+            if uniform_id != air_id {
+                return painter;
+            }
         }
+
+        // chunk is mixed
+        painter.edit_arbitrary(|writer| {
+            for x in 0..size {
+                for z in 0..size {
+                    for y in 0..size {
+                        let world_y = base_y + y as i32;
+                        let current_block_id = writer.get_block(x, y, z);
+
+                        // water fill
+                        if current_block_id == air_id {
+                            if world_y < SEA_LEVEL {
+                                writer.set_block(x, y, z, water_id);
+                            }
+                            continue;
+                        }
+
+                        // grass paint (top block never gets checked though, part of the todo above)
+                        if y < size - 1 {
+                            let block_above_id = writer.get_block(x, y + 1, z);
+
+                            if block_above_id == air_id {
+                                if world_y >= SEA_LEVEL {
+                                    writer.set_block(x, y, z, grass_id);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        });
 
         painter
     }

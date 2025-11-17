@@ -6,7 +6,9 @@ use crate::simulation_world::{
         block_registry::{BlockId, AIR_BLOCK_ID},
         BlockProperties, BlockRegistryResource,
     },
-    chunk::{types::ChunkLod, NeighborLODs, PaddedChunkView, CHUNK_SIDE_LENGTH},
+    chunk::{
+        chunk_blocks::ChunkView, types::ChunkLod, NeighborLODs, PaddedChunkView, CHUNK_SIDE_LENGTH,
+    },
 };
 
 type OpaqueMeshData = MeshAsset;
@@ -243,7 +245,29 @@ fn get_ao(
     }
 }
 
-/// Build a mesh for a single chunk, considering neighbors.
+/// Helper to check if a neighbor chunk is completely hidden (Solid Opaque).
+fn is_fully_occluded(
+    padded: &PaddedChunkView,
+    registry: &BlockRegistryResource,
+    center_id: BlockId,
+) -> bool {
+    let center_props = registry.get(center_id);
+
+    // If center is transparent (e.g. Water), we can't cull just because neighbors are solid.
+    if center_props.is_transparent {
+        return false;
+    }
+
+    // Check all 6 faces. If all neighbors are fully opaque, we are hidden.
+    padded.is_neighbor_fully_opaque(IVec3::Y, registry)
+        && padded.is_neighbor_fully_opaque(IVec3::NEG_Y, registry)
+        && padded.is_neighbor_fully_opaque(IVec3::NEG_X, registry)
+        && padded.is_neighbor_fully_opaque(IVec3::X, registry)
+        && padded.is_neighbor_fully_opaque(IVec3::Z, registry)
+        && padded.is_neighbor_fully_opaque(IVec3::NEG_Z, registry)
+}
+
+/// Main entry point: Build a mesh for a single chunk, filtering uniform cases.
 #[instrument(skip_all)]
 pub fn build_chunk_mesh(
     name: &str,
@@ -251,16 +275,50 @@ pub fn build_chunk_mesh(
     texture_map: &TextureMapResource,
     block_registry: &BlockRegistryResource,
 ) -> (Option<OpaqueMeshData>, Option<TransparentMeshData>) {
-    let mut opaque_vertices: Vec<WorldVertex> = Vec::new();
-    let mut opaque_indices: Vec<u32> = Vec::new();
-    let mut transparent_vertices: Vec<WorldVertex> = Vec::new();
-    let mut transparent_indices: Vec<u32> = Vec::new();
+    // 1. Get Center View
+    let center_view = padded_chunk.get_center_view();
 
-    let size = padded_chunk.size() as usize;
+    match center_view {
+        // CASE: Uniform Air
+        // Optimization: Instant Exit (0 cycles)
+        ChunkView::Uniform(block_id) if block_id == AIR_BLOCK_ID => (None, None),
+
+        // CASE: Uniform Solid
+        // Optimization: Hull Meshing
+        ChunkView::Uniform(block_id) => {
+            // Check if we are completely buried (occluded by neighbors)
+            if is_fully_occluded(&padded_chunk, block_registry, block_id) {
+                // Buried deep underground. Instant Exit.
+                (None, None)
+            } else {
+                // Touching air/transparent blocks. Run the Hull Mesher.
+                build_hull_mesh(name, padded_chunk, texture_map, block_registry, block_id)
+            }
+        }
+
+        // CASE: Dense (Mixed)
+        // Fallback: Run the standard Voxel Mesher
+        ChunkView::Dense(_) => build_dense_mesh(name, padded_chunk, texture_map, block_registry),
+    }
+}
+
+/// Standard mesher for dense, mixed-block chunks.
+fn build_dense_mesh(
+    name: &str,
+    padded_chunk: PaddedChunkView,
+    texture_map: &TextureMapResource,
+    block_registry: &BlockRegistryResource,
+) -> (Option<OpaqueMeshData>, Option<TransparentMeshData>) {
+    let mut opaque_vertices = Vec::new();
+    let mut opaque_indices = Vec::new();
+    let mut transparent_vertices = Vec::new();
+    let mut transparent_indices = Vec::new();
+
+    let size = padded_chunk.get_size() as usize;
     let scale = (CHUNK_SIDE_LENGTH / size) as f32;
 
     // get LOD info for visual stitching
-    let i_size = padded_chunk.size();
+    let i_size = padded_chunk.get_size();
     let center_lod = padded_chunk.center_lod();
     let all_lods = padded_chunk.neighbor_lods();
 
@@ -284,7 +342,7 @@ pub fn build_chunk_mesh(
                 };
 
                 // check all 6 faces
-                for direction in &FACE_DIRECTIONS {
+                for (face_index, direction) in FACE_DIRECTIONS.iter().enumerate() {
                     let neighbor_pos = pos + direction.offset;
                     let neighbor_id = padded_chunk.get_block(neighbor_pos);
                     let neighbor_props = block_registry.get(neighbor_id);
@@ -300,41 +358,8 @@ pub fn build_chunk_mesh(
                         let tex_index = texture_map.registry.get(tex_id);
 
                         // calculate ao
-                        let face_index = direction.face as usize;
-                        let ao_values = [
-                            AO_MAPPING[get_ao(
-                                pos,
-                                AO_OFFSETS[face_index][0][0],
-                                AO_OFFSETS[face_index][0][1],
-                                AO_OFFSETS[face_index][0][2],
-                                &padded_chunk,
-                                block_registry,
-                            ) as usize],
-                            AO_MAPPING[get_ao(
-                                pos,
-                                AO_OFFSETS[face_index][1][0],
-                                AO_OFFSETS[face_index][1][1],
-                                AO_OFFSETS[face_index][1][2],
-                                &padded_chunk,
-                                block_registry,
-                            ) as usize],
-                            AO_MAPPING[get_ao(
-                                pos,
-                                AO_OFFSETS[face_index][2][0],
-                                AO_OFFSETS[face_index][2][1],
-                                AO_OFFSETS[face_index][2][2],
-                                &padded_chunk,
-                                block_registry,
-                            ) as usize],
-                            AO_MAPPING[get_ao(
-                                pos,
-                                AO_OFFSETS[face_index][3][0],
-                                AO_OFFSETS[face_index][3][1],
-                                AO_OFFSETS[face_index][3][2],
-                                &padded_chunk,
-                                block_registry,
-                            ) as usize],
-                        ];
+                        let ao_values =
+                            calculate_ao_for_pos(pos, face_index, &padded_chunk, block_registry);
 
                         let (face_verts, face_indices) = create_face_verts(
                             &direction.face,
@@ -355,27 +380,185 @@ pub fn build_chunk_mesh(
         }
     }
 
-    let opaque_mesh = if !opaque_vertices.is_empty() {
+    build_mesh_assets(
+        name,
+        opaque_vertices,
+        opaque_indices,
+        transparent_vertices,
+        transparent_indices,
+    )
+}
+
+/// Optimized mesher for uniform solid chunks (e.g. Cave walls).
+/// Only iterates the 6 boundary faces, skipping the interior.
+fn build_hull_mesh(
+    name: &str,
+    padded_chunk: PaddedChunkView,
+    texture_map: &TextureMapResource,
+    block_registry: &BlockRegistryResource,
+    block_id: BlockId,
+) -> (Option<OpaqueMeshData>, Option<TransparentMeshData>) {
+    let mut vertices = Vec::new();
+    let mut indices = Vec::new();
+    let size = padded_chunk.get_size() as usize;
+    let scale = (CHUNK_SIDE_LENGTH / size) as f32;
+
+    let i_size = padded_chunk.get_size();
+    let center_lod = padded_chunk.center_lod();
+    let all_lods = padded_chunk.neighbor_lods();
+
+    let props = block_registry.get(block_id);
+    let is_trans = props.is_transparent;
+
+    // Helper macro to iterate a 2D plane
+    macro_rules! mesh_plane {
+        ($face_idx:expr, $u_range:expr, $v_range:expr, $pos_fn:expr) => {
+            // Optimization: Skip this face if the neighbor is fully opaque
+            let dir = &FACE_DIRECTIONS[$face_idx];
+            if !padded_chunk.is_neighbor_fully_opaque(dir.offset, block_registry) {
+                let tex_id = (dir.get_texture)(props);
+                let tex_index = texture_map.registry.get(tex_id);
+
+                for u in $u_range {
+                    for v in $v_range {
+                        let pos = $pos_fn(u, v);
+                        let neighbor_pos = pos + dir.offset;
+                        let neighbor_id = padded_chunk.get_block(neighbor_pos);
+                        let neighbor_props = block_registry.get(neighbor_id);
+
+                        if should_render_face(
+                            block_id,
+                            is_trans,
+                            neighbor_id,
+                            neighbor_props.is_transparent,
+                        ) {
+                            let base_count = vertices.len() as u32;
+                            let ao =
+                                calculate_ao_for_pos(pos, $face_idx, &padded_chunk, block_registry);
+
+                            let (v, i) = create_face_verts(
+                                &dir.face, pos, scale, tex_index, base_count, ao, i_size,
+                                center_lod, all_lods,
+                            );
+                            vertices.extend(v);
+                            indices.extend(i);
+                        }
+                    }
+                }
+            }
+        };
+    }
+
+    // Generate the 6 faces
+    mesh_plane!(0, 0..size, 0..size, |x, z| IVec3::new(
+        x as i32,
+        (size - 1) as i32,
+        z as i32
+    )); // Top
+    mesh_plane!(1, 0..size, 0..size, |x, z| IVec3::new(
+        x as i32, 0, z as i32
+    )); // Bottom
+    mesh_plane!(2, 0..size, 0..size, |y, z| IVec3::new(
+        0, y as i32, z as i32
+    )); // Left
+    mesh_plane!(3, 0..size, 0..size, |y, z| IVec3::new(
+        (size - 1) as i32,
+        y as i32,
+        z as i32
+    )); // Right
+    mesh_plane!(4, 0..size, 0..size, |x, y| IVec3::new(
+        x as i32,
+        y as i32,
+        (size - 1) as i32
+    )); // Front
+    mesh_plane!(5, 0..size, 0..size, |x, y| IVec3::new(
+        x as i32, y as i32, 0
+    )); // Back
+
+    // Return result
+    let (opaque_verts, opaque_inds, trans_verts, trans_inds) = if is_trans {
+        // If transparent, the generated vertices go into the TRANSPARENT buckets
+        (Vec::new(), Vec::new(), vertices, indices)
+    } else {
+        // If opaque, they go into the OPAQUE buckets
+        (vertices, indices, Vec::new(), Vec::new())
+    };
+
+    build_mesh_assets(name, opaque_verts, opaque_inds, trans_verts, trans_inds)
+}
+
+// --- Helpers ---
+
+fn calculate_ao_for_pos(
+    pos: IVec3,
+    face_idx: usize,
+    padded_chunk: &PaddedChunkView,
+    block_registry: &BlockRegistryResource,
+) -> [f32; 4] {
+    [
+        AO_MAPPING[get_ao(
+            pos,
+            AO_OFFSETS[face_idx][0][0],
+            AO_OFFSETS[face_idx][0][1],
+            AO_OFFSETS[face_idx][0][2],
+            padded_chunk,
+            block_registry,
+        ) as usize],
+        AO_MAPPING[get_ao(
+            pos,
+            AO_OFFSETS[face_idx][1][0],
+            AO_OFFSETS[face_idx][1][1],
+            AO_OFFSETS[face_idx][1][2],
+            padded_chunk,
+            block_registry,
+        ) as usize],
+        AO_MAPPING[get_ao(
+            pos,
+            AO_OFFSETS[face_idx][2][0],
+            AO_OFFSETS[face_idx][2][1],
+            AO_OFFSETS[face_idx][2][2],
+            padded_chunk,
+            block_registry,
+        ) as usize],
+        AO_MAPPING[get_ao(
+            pos,
+            AO_OFFSETS[face_idx][3][0],
+            AO_OFFSETS[face_idx][3][1],
+            AO_OFFSETS[face_idx][3][2],
+            padded_chunk,
+            block_registry,
+        ) as usize],
+    ]
+}
+
+fn build_mesh_assets(
+    name: &str,
+    ov: Vec<WorldVertex>,
+    oi: Vec<u32>,
+    tv: Vec<WorldVertex>,
+    ti: Vec<u32>,
+) -> (Option<OpaqueMeshData>, Option<TransparentMeshData>) {
+    let opaque = if !ov.is_empty() {
         Some(OpaqueMeshData {
             name: name.to_string(),
-            vertices: opaque_vertices,
-            indices: opaque_indices,
+            vertices: ov,
+            indices: oi,
         })
     } else {
         None
     };
 
-    let transparent_mesh = if !transparent_vertices.is_empty() {
+    let trans = if !tv.is_empty() {
         Some(TransparentMeshData {
-            name: format!("{}_transparent", name),
-            vertices: transparent_vertices,
-            indices: transparent_indices,
+            name: format!("{}_trans", name),
+            vertices: tv,
+            indices: ti,
         })
     } else {
         None
     };
 
-    (opaque_mesh, transparent_mesh)
+    (opaque, trans)
 }
 
 #[derive(Clone, Copy)]
