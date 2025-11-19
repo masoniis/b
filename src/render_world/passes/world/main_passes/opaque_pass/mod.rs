@@ -61,8 +61,10 @@ impl Plugin for OpaqueRenderPassPlugin {
         // -----------------------
 
         builder.schedule_entry(RenderSchedule::Main).add_systems(
-            prepare::prepare_opaque_meshes_system
-                .run_if(in_state(AppState::Running))
+            (
+                prepare::delete_gpu_buffers_system.before(prepare::prepare_opaque_meshes_system),
+                prepare::prepare_opaque_meshes_system.run_if(in_state(AppState::Running)),
+            )
                 .in_set(RenderSet::Prepare),
         );
 

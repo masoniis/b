@@ -1,4 +1,5 @@
 use crate::{
+    ecs_core::SimToRenderReceiver,
     prelude::*,
     render_world::{
         global_extract::resources::RenderMeshStorageResource,
@@ -47,6 +48,30 @@ pub fn prepare_opaque_meshes_system(
                     handle.id()
                 );
             }
+        }
+    }
+}
+
+/// A system that reads the cross-world command queue and deletes the corresponding
+/// GPU buffer objects from the render mesh storage.
+#[instrument(skip_all)]
+pub fn delete_gpu_buffers_system(
+    receiver_res: Res<SimToRenderReceiver>,
+    mut gpu_mesh_storage: ResMut<RenderMeshStorageResource>,
+) {
+    for command in receiver_res.0.try_iter() {
+        let handle_id = command.mesh_handle.id();
+        if let Some(_) = gpu_mesh_storage.meshes.remove(&handle_id) {
+            debug!(
+                target: "gpu_mesh_cleanup",
+                "Successfully removed and implicitly dropped GPU mesh for handle ID {}.",
+                handle_id
+            );
+        } else {
+            warn!(
+                "Attempted to clean up GPU mesh {} that was not found in storage.",
+                handle_id
+            );
         }
     }
 }

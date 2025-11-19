@@ -11,7 +11,7 @@ pub use render::TransparentPassRenderNode;
 // ---------------------------------
 
 use crate::{
-    ecs_core::{EcsBuilder, Plugin},
+    ecs_core::EcsBuilder, Plugin,
     render_world::{
         global_extract::ExtractComponentPlugin,
         passes::world::main_passes::transparent_pass::{
@@ -20,6 +20,7 @@ use crate::{
             startup::setup_transparent_pass_system,
         },
         RenderSchedule, RenderSet,
+        passes::world::main_passes::opaque_pass::prepare::delete_gpu_buffers_system,
     },
     simulation_world::chunk::mesh::TransparentMeshComponent,
 };
@@ -49,7 +50,13 @@ impl Plugin for TransparentRenderPassPlugin {
 
         builder
             .schedule_entry(RenderSchedule::Main)
-            .add_systems(prepare_transparent_meshes_system.in_set(RenderSet::Prepare));
+            .add_systems(
+                (
+                    delete_gpu_buffers_system.before(prepare_transparent_meshes_system),
+                    prepare_transparent_meshes_system,
+                )
+                    .in_set(RenderSet::Prepare),
+            );
 
         // INFO: ---------------
         //         Queue

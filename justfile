@@ -16,6 +16,9 @@ check *args:
 clean *args:
 	cargo clean {{args}}
 
+zip:
+	git archive --format=zip -o b.zip HEAD
+
 fix *args:
 	cargo fix --allow-dirty
 

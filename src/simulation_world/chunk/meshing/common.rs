@@ -289,6 +289,7 @@ pub fn get_ao(
 }
 
 /// Calculates the snapped position of a vertex based on the max LOD of all chunks sharing it.
+#[instrument(skip_all)]
 pub fn get_snapped_pos(
     vertex_world_pos: [f32; 3],
     vertex_offset: IVec3,
@@ -360,6 +361,8 @@ pub fn get_snapped_pos(
     }
 }
 
+/// Create the vertices for a specified face at a particular block position
+#[instrument(skip_all)]
 pub fn create_face_verts(
     face: &Face,
     block_pos: IVec3,
@@ -378,9 +381,6 @@ pub fn create_face_verts(
         (block_pos.z as f32 * scale) + half_s,
     );
 
-    // (Reuse your large match logic here for verts/normal...)
-    // For brevity, assuming the same logic as provided in previous snippets
-    // is pasted here.
     let (verts, normal): (Vec<[f32; 3]>, [f32; 3]) = match face {
         Face::Top => (
             vec![
@@ -532,6 +532,8 @@ pub fn create_face_verts(
     (final_vertices, indices)
 }
 
+/// Calculates the ambient occlusion (ao) for a chunk position
+#[instrument(skip_all)]
 pub fn calculate_ao_for_pos(
     pos: IVec3,
     face_idx: usize,
@@ -574,6 +576,8 @@ pub fn calculate_ao_for_pos(
     ]
 }
 
+/// Builds the mesh assets given chunk vertices
+#[instrument(skip_all)]
 pub fn build_mesh_assets(
     name: &str,
     opaque_verts: Vec<WorldVertex>,

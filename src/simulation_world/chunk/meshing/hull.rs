@@ -9,6 +9,7 @@ use crate::simulation_world::{
 /// Optimized mesher for uniform solid chunks.
 ///
 /// Only iterates the 6 boundary faces, skipping the interior.
+#[instrument(skip_all)]
 pub fn build_hull_mesh(
     name: &str,
     padded_chunk: PaddedChunkView,

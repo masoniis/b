@@ -1,17 +1,18 @@
+use crate::ecs_core::SimToRenderSender;
 use crate::prelude::*;
 use crate::{
     render_world::types::WorldVertex,
     simulation_world::{
         asset_management::AssetStorageResource,
         asset_management::{Asset, Handle},
-        chunk::OpaqueMeshComponent,
+        chunk::{OpaqueMeshComponent, TransparentMeshComponent},
     },
 };
 use bevy_ecs::prelude::*;
 use std::collections::{hash_map::Entry, HashMap};
 
 // INFO: -----------------------------
-//         Types and resources
+//         types and resources
 // -----------------------------------
 
 /// A 3D mesh asset consisting of vertices and indices.
@@ -27,9 +28,15 @@ impl Asset for MeshAsset {
     }
 }
 
-/// Tracks the last-known mesh handle for each entity.
+/// Tracks the last-known mesh handle for each entity (Opaque).
 #[derive(Resource, Default, Debug)]
 pub struct OpaqueMeshShadow {
+    pub entity_to_handle: HashMap<Entity, Handle<MeshAsset>>,
+}
+
+/// Tracks the last-known mesh handle for each entity (Transparent).
+#[derive(Resource, Default, Debug)]
+pub struct TransparentMeshShadow {
     pub entity_to_handle: HashMap<Entity, Handle<MeshAsset>>,
 }
 
@@ -74,18 +81,18 @@ impl MeshRefCounts {
 }
 
 // INFO: -----------------------
-//         Update system
+//          Update system
 // -----------------------------
 
 /// A message requesting deletion of a mesh asset from the asset storage.
-#[derive(Message)]
+#[derive(Message, Clone)]
 pub struct MeshDeletionRequest {
     pub mesh_handle: Handle<MeshAsset>,
 }
 
 /// Observer that increments mesh ref-counts when a component is added.
 #[instrument(skip_all)]
-pub fn mesh_ref_count_add_observer(
+pub fn opaque_mesh_added_observer(
     trigger: On<Add, OpaqueMeshComponent>,
 
     // Input
@@ -104,55 +111,120 @@ pub fn mesh_ref_count_add_observer(
 
 /// Observer that decrements mesh ref-counts when a component is removed.
 #[instrument(skip_all)]
-pub fn mesh_ref_count_remove_observer(
+pub fn opaque_mesh_removed_observer(
     trigger: On<Remove, OpaqueMeshComponent>,
 
     // Input
     mesh_query: Query<&OpaqueMeshComponent>,
 
-    // Output (update ref counts and request deletions)
+    // Output
     mut shadow: ResMut<OpaqueMeshShadow>,
     mut mesh_ref_counts: ResMut<MeshRefCounts>,
     mut stale_mesh_writer: MessageWriter<MeshDeletionRequest>,
 ) {
-    if let Ok(mesh_component) = mesh_query.get(trigger.entity) {
-        // if a shadow handle exists that is different from the current handle, dec that
-        let mut handle = mesh_component.mesh_handle;
-        let shadow_handle = shadow.entity_to_handle.get(&trigger.entity);
-        if let Some(shadow_handle) = shadow_handle {
-            handle = *shadow_handle;
-        }
+    let entity = trigger.entity;
 
+    match mesh_query.get(entity) {
+        Ok(mesh_component) => {
+            let handle = mesh_component.mesh_handle;
+
+            shadow.entity_to_handle.remove(&entity);
+
+            if let Some(new_count) = mesh_ref_counts.decrement(handle) {
+                if new_count == 0 {
+                    debug!(target: "asset_management", "Ref count zero (via Query). Deleting {:?}", handle.id());
+                    stale_mesh_writer.write(MeshDeletionRequest {
+                        mesh_handle: handle,
+                    });
+                }
+            }
+        }
+        Err(_) => {
+            error!(
+                "Component missing from Query. This is a Memory Leak for entity {:?}",
+                entity
+            );
+        }
+    }
+}
+
+#[instrument(skip_all)]
+pub fn transparent_mesh_added_observer(
+    trigger: On<Add, TransparentMeshComponent>,
+
+    // Input
+    mesh_query: Query<&TransparentMeshComponent>,
+
+    // Output (update ref counts)
+    mut mesh_ref_counts: ResMut<MeshRefCounts>,
+    mut shadow: ResMut<TransparentMeshShadow>,
+) {
+    if let Ok(mesh_component) = mesh_query.get(trigger.entity) {
+        let handle = mesh_component.mesh_handle;
+        mesh_ref_counts.increment(handle);
+        shadow.entity_to_handle.insert(trigger.entity, handle);
+    }
+}
+
+#[instrument(skip_all)]
+pub fn transparent_mesh_removed_observer(
+    trigger: On<Remove, TransparentMeshComponent>,
+
+    // Input
+    mut shadow: ResMut<TransparentMeshShadow>,
+
+    // Output
+    mut mesh_ref_counts: ResMut<MeshRefCounts>,
+    mut stale_mesh_writer: MessageWriter<MeshDeletionRequest>,
+) {
+    let entity = trigger.entity;
+
+    if let Some(handle) = shadow.entity_to_handle.remove(&entity) {
         if let Some(new_count) = mesh_ref_counts.decrement(handle) {
-            // send deletion request if count is zero
             if new_count == 0 {
-                debug!(
-                    target: "asset_management",
-                    "Ref count for mesh {:?} is zero. Sending deletion request.",
-                    handle.id()
-                );
+                debug!(target: "asset_management", "Ref count zero for Transparent mesh {:?}. Deleting.", handle.id());
                 stale_mesh_writer.write(MeshDeletionRequest {
                     mesh_handle: handle,
                 });
             }
         }
-
-        shadow.entity_to_handle.remove(&trigger.entity);
+    } else {
+        warn!(
+            "TransparentMeshComponent removed from {:?}, but no shadow handle found.",
+            entity
+        );
     }
 }
 
 /// A system that reads RemovedMesh events and deletes any mesh assets.
 pub fn delete_stale_mesh_assets(
     asset_storage: Res<AssetStorageResource<MeshAsset>>,
+    sender: Res<SimToRenderSender>,
     mut event_reader: MessageReader<MeshDeletionRequest>,
 ) {
     for event in event_reader.read() {
         let handle = event.mesh_handle;
 
+        match sender.0.send(event.clone()) {
+            Ok(_) => {}
+            Err(e) => {
+                error!(
+                    "MEMORY LEAK SOURCE: Render World channel disconnected while sending deletion request: {:?}",
+                    e
+                );
+            }
+        }
+
         if asset_storage.remove(handle).is_none() {
             error!(
                 asset_id = handle.id(),
                 "Attempted to remove mesh asset that does not exist in storage."
+            );
+        } else {
+            debug!(
+                target: "asset_management",
+                asset_id = handle.id(),
+                "Sim: Removed asset from CPU storage."
             );
         }
     }

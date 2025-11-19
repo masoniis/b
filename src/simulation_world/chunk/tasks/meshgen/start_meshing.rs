@@ -1,6 +1,5 @@
 use crate::prelude::*;
 use crate::simulation_world::chunk::chunk_state_manager::NEIGHBOR_OFFSETS;
-use crate::simulation_world::chunk::mesh::TransparentMeshComponent;
 use crate::simulation_world::chunk::padded_chunk_view::{
     ChunkDataOption, NeighborLODs, PaddedChunkView,
 };
@@ -9,10 +8,10 @@ use crate::simulation_world::chunk::{
     ChunkState, WantsMeshing,
 };
 use crate::simulation_world::{
-    asset_management::{texture_map_registry::TextureMapResource, AssetStorageResource, MeshAsset},
+    asset_management::texture_map_registry::TextureMapResource,
     block::BlockRegistryResource,
     chunk::{
-        build_chunk_mesh, ChunkBlocksComponent, ChunkCoord, ChunkStateManager, OpaqueMeshComponent,
+        build_chunk_mesh, ChunkBlocksComponent, ChunkCoord, ChunkStateManager,
     },
 };
 use bevy_ecs::prelude::*;
@@ -62,7 +61,6 @@ pub fn start_pending_meshing_tasks_system(
     mut chunk_manager: ResMut<ChunkStateManager>,
     texture_map: Res<TextureMapResource>,
     block_registry: Res<BlockRegistryResource>,
-    mesh_assets: Res<AssetStorageResource<MeshAsset>>,
 ) {
     'chunk_loop: for (entity, chunk_comp, chunk_coord) in pending_chunks_query.iter_mut() {
         // check for cancellation
@@ -83,7 +81,7 @@ pub fn start_pending_meshing_tasks_system(
         }
 
         // INFO: ----------------------------------------------
-        //         Ensure neighbors have been generated
+        //         ensure neighbors have been generated
         // ----------------------------------------------------
 
         let get_neighbor = |offset: IVec3| -> Option<ChunkDataOption> {
@@ -160,7 +158,6 @@ pub fn start_pending_meshing_tasks_system(
 
         let texture_map_clone = texture_map.clone();
         let block_registry_clone = block_registry.clone();
-        let mesh_assets_clone = mesh_assets.clone();
         let coord_clone = chunk_coord.clone();
 
         trace!(target: "chunk_loading", "Starting meshing task for {}.", chunk_coord.pos);
@@ -176,21 +173,7 @@ pub fn start_pending_meshing_tasks_system(
                 &block_registry_clone,
             );
 
-            let omesh = if let Some(opaque_mesh) = opaque_mesh_option {
-                let mesh_handle = mesh_assets_clone.add(opaque_mesh);
-                Some(OpaqueMeshComponent::new(mesh_handle))
-            } else {
-                None
-            };
-
-            let tmesh = if let Some(transparent_mesh) = transparent_mesh_option {
-                let mesh_handle = mesh_assets_clone.add(transparent_mesh);
-                Some(TransparentMeshComponent::new(mesh_handle))
-            } else {
-                None
-            };
-
-            let _ = sender.send((omesh, tmesh));
+            let _ = sender.send((opaque_mesh_option, transparent_mesh_option));
         });
 
         // update entity and manager

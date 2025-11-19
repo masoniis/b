@@ -30,6 +30,13 @@ impl Plugin for TerrainGenerationPlugin {
             .add_resource(ActiveTerrainGenerator::default())
             .add_resource(ActiveTerrainPainter::default());
 
+        // INFO: -----------------------
+        //         startup stuff
+        // -----------------------------
+        builder
+            .schedule_entry(SimulationSchedule::Startup)
+            .add_systems(cycle_active_generator.in_set(StartupSet::ResourceInitialization)); // set generator based on cycler at startup to override the default
+
         // INFO: -------------------------------------
         //         keybind-based actions below
         // -------------------------------------------

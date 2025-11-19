@@ -49,6 +49,7 @@ pub fn build_chunk_mesh(
 }
 
 /// Helper to check if a chunk is completely hidden (surrounded by solid opaque neighbors).
+#[instrument(skip_all)]
 fn is_fully_occluded(
     padded: &PaddedChunkView,
     registry: &BlockRegistryResource,

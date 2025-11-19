@@ -7,6 +7,7 @@ use crate::simulation_world::{
 };
 
 /// Standard mesher for dense, mixed-block chunks.
+#[instrument(skip_all)]
 pub fn build_dense_mesh(
     name: &str,
     padded_chunk: PaddedChunkView,

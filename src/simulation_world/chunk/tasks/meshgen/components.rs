@@ -1,14 +1,11 @@
-use crate::simulation_world::chunk::{OpaqueMeshComponent, TransparentMeshComponent};
+use crate::simulation_world::chunk::{OpaqueMeshData, TransparentMeshData};
 use bevy_ecs::prelude::Component;
 use crossbeam::channel::Receiver;
 
 /// Marks a chunk meshing task in the simulation world that returns a MeshComponent.
 #[derive(Component)]
 pub struct ChunkMeshingTaskComponent {
-    pub receiver: Receiver<(
-        Option<OpaqueMeshComponent>,
-        Option<TransparentMeshComponent>,
-    )>,
+    pub receiver: Receiver<(Option<OpaqueMeshData>, Option<TransparentMeshData>)>,
 }
 
 /// A signal marking that chunks should be checked for meshing. This check is a necessary

@@ -11,7 +11,7 @@ $(OUTPUT_EXE_NAME):
 	cp target/release/b $(OUTPUT_EXE_NAME)
 	@echo ""
 	@echo "Compiled executable placed at ./$(OUTPUT_EXE_NAME)"
-	@echo ""
+	@echo "\`make run\` is available to execute it."
 
 run: $(OUTPUT_EXE_NAME)
 	@echo ""

@@ -1,4 +1,5 @@
 use crate::prelude::*;
+use crate::simulation_world::asset_management::{AssetStorageResource, MeshAsset}; // Added imports
 use crate::simulation_world::chunk::{
     CheckForMeshing, ChunkCoord, ChunkMeshingTaskComponent, ChunkState, ChunkStateManager,
     OpaqueMeshComponent, TransformComponent, TransparentMeshComponent, WantsMeshing,
@@ -20,12 +21,14 @@ pub fn poll_chunk_meshing_tasks(
     // Output
     mut commands: Commands,
     mut chunk_manager: ResMut<ChunkStateManager>,
+    mesh_assets: ResMut<AssetStorageResource<MeshAsset>>,
 ) {
     // poll all mesh task
     for (entity, meshing_task_component, coord) in tasks_query.iter_mut() {
         match meshing_task_component.receiver.try_recv() {
-            Ok((opaque_mesh_option, transparent_mesh_option)) => {
+            Ok((opaque_asset_option, transparent_asset_option)) => {
                 let current_state = chunk_manager.get_state(coord.pos);
+
                 match current_state {
                     Some(
                         ChunkState::Meshing { entity: gen_entity }
@@ -33,6 +36,7 @@ pub fn poll_chunk_meshing_tasks(
                     ) if gen_entity == entity => {
                         trace!(target : "chunk_loading","Chunk meshing finished for {:?}", coord);
 
+                        // remove old if it exists
                         let (exists_opaque, exists_transparent) =
                             existing_meshes.get(entity).unwrap_or((None, None));
 
@@ -43,7 +47,23 @@ pub fn poll_chunk_meshing_tasks(
                             commands.entity(entity).remove::<TransparentMeshComponent>();
                         }
 
-                        match (opaque_mesh_option, transparent_mesh_option) {
+                        // add new comps to asset storage
+                        let opaque_component = if let Some(asset) = opaque_asset_option {
+                            let handle = mesh_assets.add(asset);
+                            Some(OpaqueMeshComponent::new(handle))
+                        } else {
+                            None
+                        };
+
+                        let transparent_component = if let Some(asset) = transparent_asset_option {
+                            let handle = mesh_assets.add(asset);
+                            Some(TransparentMeshComponent::new(handle))
+                        } else {
+                            None
+                        };
+
+                        // apply to entity
+                        match (opaque_component, transparent_component) {
                             (Some(opaque_mesh), Some(transparent_mesh)) => {
                                 commands
                                     .entity(entity)
@@ -64,6 +84,7 @@ pub fn poll_chunk_meshing_tasks(
                             }
                         }
 
+                        // insert to world
                         commands
                             .entity(entity)
                             .insert(TransformComponent {
@@ -88,9 +109,10 @@ pub fn poll_chunk_meshing_tasks(
                     _ => {
                         debug!(
                             target : "chunk_loading",
-                            "Mesh generation completed for unloaded chunk coord {}. Cleaning up entity {}.",
+                            "Mesh generation completed for unloaded chunk coord {}. Discarding assets and cleaning up entity {}.",
                             coord, entity
                         );
+
                         commands
                             .entity(entity)
                             .remove::<ChunkMeshingTaskComponent>();

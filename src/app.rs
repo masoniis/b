@@ -1,5 +1,9 @@
 use crate::{
-    ecs_core::{async_loading::LoadingTracker, frame_sync::FrameSync},
+    ecs_core::{
+        async_loading::LoadingTracker,
+        cross_world_communication::{SimToRenderReceiver, SimToRenderSender},
+        frame_sync::FrameSync,
+    },
     prelude::*,
     render_world::{
         global_extract::utils::run_extract_schedule, graphics_context::GraphicsContext,
@@ -13,6 +17,7 @@ use crate::{
         SimulationSchedule, SimulationWorldInterface,
     },
 };
+use crossbeam::channel::unbounded;
 use futures_lite::future::block_on;
 use std::{
     error::Error,
@@ -80,7 +85,7 @@ impl ApplicationHandler for App {
                 event_loop
                     .create_window(
                         Window::default_attributes()
-                            .with_title("🅱️")
+                            .with_title("🅱️ - Mason Bott")
                             .with_inner_size(LogicalSize::new(1280, 720)),
                     )
                     .unwrap(),
@@ -103,8 +108,16 @@ impl ApplicationHandler for App {
             let mut simulation_world = SimulationWorldInterface::new(&window, texture_registry);
             let mut render_world = RenderWorldInterface::new(graphics_context, texture_array);
 
+            // add loading trackers
             simulation_world.add_resource(self.loading_tracker.clone());
             render_world.add_resource(self.loading_tracker.clone());
+
+            // add cross communication channel
+            let (sender, receiver) = unbounded();
+            let sim_sender_resource = SimToRenderSender(sender);
+            let render_receiver_resource = SimToRenderReceiver(receiver);
+            simulation_world.add_resource(sim_sender_resource);
+            render_world.add_resource(render_receiver_resource);
 
             info!("Running startup systems...\n\n\n");
             simulation_world.run_schedule(SimulationSchedule::Startup);

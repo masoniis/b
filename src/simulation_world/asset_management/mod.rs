@@ -14,8 +14,9 @@ use crate::{
     ecs_core::{EcsBuilder, Plugin},
     simulation_world::{
         asset_management::mesh_asset::{
-            mesh_ref_count_add_observer, mesh_ref_count_remove_observer, MeshRefCounts,
-            OpaqueMeshShadow,
+            opaque_mesh_added_observer, opaque_mesh_removed_observer,
+            transparent_mesh_added_observer, transparent_mesh_removed_observer, MeshRefCounts,
+            OpaqueMeshShadow, TransparentMeshShadow,
         },
         SimulationSchedule,
     },
@@ -28,14 +29,18 @@ pub struct AssetManagementPlugin;
 impl Plugin for AssetManagementPlugin {
     fn build(&self, builder: &mut EcsBuilder) {
         // the mesh asset storage
-        builder.add_resource(AssetStorageResource::<MeshAsset>::default());
-        builder.add_resource(OpaqueMeshShadow::default());
+        builder
+            .add_resource(AssetStorageResource::<MeshAsset>::default())
+            .add_resource(TransparentMeshShadow::default())
+            .add_resource(OpaqueMeshShadow::default());
 
         // mesh ref count tracking
         builder
             .add_resource(MeshRefCounts::default())
-            .add_observer(mesh_ref_count_add_observer)
-            .add_observer(mesh_ref_count_remove_observer);
+            .add_observer(opaque_mesh_added_observer)
+            .add_observer(opaque_mesh_removed_observer)
+            .add_observer(transparent_mesh_added_observer)
+            .add_observer(transparent_mesh_removed_observer);
 
         // mesh deletion handling
         builder
