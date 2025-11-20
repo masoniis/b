@@ -5,7 +5,15 @@ use tracing_subscriber::{
 
 pub fn attach_logger() {
     let timer = LocalTime::new(format_description!("[hour repr:24]:[minute]:[second]"));
-    let env_filter = EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info"));
+
+    let default_level = if cfg!(debug_assertions) {
+        "info"
+    } else {
+        "warn"
+    };
+
+    let env_filter =
+        EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new(default_level));
 
     let fmt_layer = fmt::layer()
         .with_target(false)

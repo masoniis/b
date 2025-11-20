@@ -9,6 +9,7 @@ pub fn load_block_from_str(ron_string: &str) -> Result<BlockProperties, ron::Err
     Ok(raw_properties.into())
 }
 
+/// The properties of a individual block.
 #[derive(Debug, Clone)]
 pub struct BlockProperties {
     pub display_name: String,
@@ -16,15 +17,48 @@ pub struct BlockProperties {
     pub is_transparent: bool,
 }
 
-#[derive(Debug, Clone)]
-pub struct BlockFaceTextures {
-    pub top: TextureId,
-    pub bottom: TextureId,
-    pub front: TextureId,
-    pub back: TextureId,
-    pub right: TextureId,
-    pub left: TextureId,
+/// The textures associated with each face of a particular block type.
+#[derive(Debug, Clone, Copy)]
+pub struct BlockFaceTextures<T = TextureId> {
+    pub top: T,
+    pub bottom: T,
+    pub front: T,
+    pub back: T,
+    pub right: T,
+    pub left: T,
 }
+
+impl<T: Copy> BlockFaceTextures<T> {
+    pub fn map<U, F>(self, mut f: F) -> BlockFaceTextures<U>
+    where
+        F: FnMut(T) -> U,
+    {
+        BlockFaceTextures {
+            top: f(self.top),
+            bottom: f(self.bottom),
+            front: f(self.front),
+            back: f(self.back),
+            right: f(self.right),
+            left: f(self.left),
+        }
+    }
+
+    #[inline(always)]
+    pub fn get(&self, face_index: usize) -> T {
+        match face_index {
+            0 => self.top,
+            1 => self.bottom,
+            2 => self.left,
+            3 => self.right,
+            4 => self.front,
+            _ => self.back,
+        }
+    }
+}
+
+// INFO: ---------------------------------
+//         serde serializing logic
+// ---------------------------------------
 
 mod raw {
     use super::*;
@@ -40,7 +74,7 @@ mod raw {
     #[derive(Deserialize, Debug)]
     #[serde(deny_unknown_fields)]
     pub(super) struct TextureConfig {
-        pub(super) fallback: TextureId, // default if sides not specified
+        pub(super) fallback: TextureId, // default for if sides not specified
 
         // individual faces are optional
         #[serde(default)]

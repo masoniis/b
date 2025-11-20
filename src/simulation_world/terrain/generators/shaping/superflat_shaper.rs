@@ -17,6 +17,10 @@ impl SuperflatShaper {
 }
 
 impl TerrainShaper for SuperflatShaper {
+    fn name(&self) -> &str {
+        "Superflat"
+    }
+
     #[instrument(skip_all, fields(chunk = %coord))]
     fn determine_chunk_uniformity(&self, coord: IVec3) -> ChunkUniformity {
         let chunk_y_min = coord.y * CHUNK_SIDE_LENGTH as i32;

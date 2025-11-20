@@ -1,5 +1,6 @@
 use crate::prelude::*;
 use crate::simulation_world::player::CameraComponent;
+use crate::simulation_world::terrain::ActiveTerrainGenerator;
 use crate::simulation_world::{
     chunk::ChunkCoord,
     time::FrameClock,
@@ -20,6 +21,7 @@ pub enum StatMarker {
     // information
     CameraXYZ(CameraXYZCoordTextMarker),
     CameraChunk(CameraChunkCoordTextMarker),
+    ActiveGen(ActiveGenTextMarker),
     // performance
     Fps(FpsCounterTextElementMarker),
     Memory(MemoryCounterTextElementMarker),
@@ -39,6 +41,10 @@ pub struct CameraXYZCoordTextMarker;
 /// A marker component for the camera XYZ text element.
 #[derive(Component)]
 pub struct CameraChunkCoordTextMarker;
+
+/// A marker component for the active generator text element.
+#[derive(Component)]
+pub struct ActiveGenTextMarker;
 
 /// A marker component for the FPS counter text element.
 #[derive(Component)]
@@ -80,6 +86,7 @@ pub fn toggle_debug_diagnostics_system(
     mesh_stats: Res<MeshCounterResource>,
     camera_query: Query<(&CameraComponent, &ChunkCoord)>,
     time_stats: Res<FrameClock>,
+    active_gen: Res<ActiveTerrainGenerator>,
 
     // Output (toggling UI)
     mut commands: Commands,
@@ -96,6 +103,7 @@ pub fn toggle_debug_diagnostics_system(
                 cam,
                 chord,
                 &time_stats,
+                &active_gen,
             );
         } else {
             error!("Cannot spawn Diagnostic UI: No camera with ChunkChord found!");
@@ -113,6 +121,7 @@ fn spawn_diagnostic_ui(
     camera: &CameraComponent,
     camera_chord: &ChunkCoord,
     time_stats: &Res<FrameClock>,
+    active_gen: &Res<ActiveTerrainGenerator>,
 ) {
     info!("Spawning Diagnostic UI...");
     let root_entity = root_node.0;
@@ -169,6 +178,15 @@ fn spawn_diagnostic_ui(
                         marker: StatMarker::CameraChunk(CameraChunkCoordTextMarker),
                     }];
                     spawn_stats_line(parent, chord_line_elements, font_size, align);
+
+                    // active generator line
+                    let gen_line_elements = vec![StatLineElement {
+                        prefix: "Active gen: ".to_string(),
+                        content: active_gen.0.name().to_string(),
+                        color: [0.2, 0.8, 0.8, 1.0],
+                        marker: StatMarker::ActiveGen(ActiveGenTextMarker),
+                    }];
+                    spawn_stats_line(parent, gen_line_elements, font_size, align);
                 });
 
             // INFO: wrapper for elements on right side of screen
@@ -297,6 +315,7 @@ fn spawn_stats_line(
                 match element.marker {
                     StatMarker::CameraXYZ(marker) => text_entity.insert(marker),
                     StatMarker::CameraChunk(marker) => text_entity.insert(marker),
+                    StatMarker::ActiveGen(marker) => text_entity.insert(marker),
                     StatMarker::Fps(marker) => text_entity.insert(marker),
                     StatMarker::Memory(marker) => text_entity.insert(marker),
                     StatMarker::MeshCount(marker) => text_entity.insert(marker),

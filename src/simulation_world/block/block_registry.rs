@@ -3,6 +3,7 @@ use crate::render_world::types::TextureId;
 use crate::simulation_world::block::{load_block_from_str, BlockFaceTextures, BlockProperties};
 use bevy_ecs::prelude::*;
 use std::collections::HashMap;
+use std::path::Path;
 use std::{fs, sync::Arc};
 
 pub type BlockId = u8;
@@ -59,13 +60,23 @@ impl BlockRegistryResource {
 //         System to load files
 // ------------------------------------
 
-/// Runs at startup, loads all block definitions from `assets/blocks/`.
+/// A system that is built to run once at startup. It scans the block directory and
+/// loads all definitions found into the `BlockRegistryResource` for global access.
 #[instrument(skip_all)]
-pub fn load_block_definitions_system(mut commands: Commands) {
+pub fn initialize_block_registry_system(mut commands: Commands) {
+    let registry = load_block_defs_from_disk();
+    commands.insert_resource(registry);
+}
+
+/// A util that scans the block asset directory and loads all valid block definitions
+/// found into a `BlockRegistryResource` struct.
+#[instrument(skip_all)]
+pub fn load_block_defs_from_disk() -> BlockRegistryResource {
     info!("Loading block definitions...");
 
     let mut block_properties: Vec<BlockProperties> = Vec::new();
     let mut name_to_id: HashMap<String, BlockId> = HashMap::new();
+    let block_dir = Path::new("assets/blocks");
 
     // helper closure for local registration
     let mut register = |name: String, properties: BlockProperties| -> BlockId {
@@ -75,6 +86,7 @@ pub fn load_block_definitions_system(mut commands: Commands) {
         id
     };
 
+    // register airblock to always be id 0
     let air_properties = BlockProperties {
         display_name: "Air".to_string(),
         is_transparent: true,
@@ -87,38 +99,73 @@ pub fn load_block_definitions_system(mut commands: Commands) {
             bottom: TextureId::Missing,
         },
     };
-    register("air".to_string(), air_properties);
 
-    for entry in fs::read_dir("assets/blocks").unwrap() {
-        let entry = entry.unwrap();
-        let path = entry.path();
+    let air_id = register("air".to_string(), air_properties);
+    if air_id != 0 {
+        panic!("Critical: Air block was not registered as ID 0.");
+    }
+    info!("Registered default block 'air' as ID 0");
 
-        if path.extension().map_or(false, |s| s == "ron") {
-            let name = match path.file_stem().and_then(|s| s.to_str()) {
-                Some(name) => name.to_string(),
-                None => {
-                    warn!(
-                        "Skipping block definition with invalid filename: {:?}",
-                        path.file_name()
-                    );
+    // parse the rest of the blocks from disk
+    if block_dir.is_dir() {
+        for entry in fs::read_dir(block_dir).unwrap_or_else(|e| {
+            panic!("Failed to read block directory {:?}: {}", block_dir, e);
+        }) {
+            let entry = match entry {
+                Ok(e) => e,
+                Err(e) => {
+                    warn!("Failed to read entry in block directory: {}", e);
                     continue;
                 }
             };
+            let path = entry.path();
 
-            if name == "air" {
-                error!("Skipping 'air.ron' block definition since it's reserved.");
-                continue;
-            } else if name.starts_with("_") {
-                continue;
+            if path.is_file() && path.extension().map_or(false, |s| s == "ron") {
+                // name is the file stem
+                let name = match path.file_stem().and_then(|s| s.to_str()) {
+                    Some(name_str) => name_str.to_string(),
+                    None => {
+                        warn!(
+                            "Skipping block definition with invalid filename: {:?}",
+                            path.file_name()
+                        );
+                        continue;
+                    }
+                };
+
+                // skip reserved names or _ files
+                if name == "air" {
+                    error!("Skipping 'air.ron' block definition since it is reserved.");
+                    continue;
+                } else if name.starts_with("_") {
+                    continue;
+                }
+
+                let ron_string = match fs::read_to_string(&path) {
+                    Ok(s) => s,
+                    Err(e) => {
+                        error!("Failed to read block file {:?}: {}", path, e);
+                        continue;
+                    }
+                };
+
+                // construct concrete block definition object
+                match load_block_from_str(&ron_string) {
+                    Ok(properties) => {
+                        let id = register(name.clone(), properties);
+                        info!("Loaded block '{}' (runtime id={})", name, id);
+                    }
+                    Err(e) => {
+                        error!("Failed to parse block file {:?}: {}", path, e);
+                    }
+                }
             }
-
-            let ron_string = fs::read_to_string(&path).unwrap();
-            let properties = load_block_from_str(&ron_string).unwrap();
-
-            let id = register(name.clone(), properties);
-
-            info!("Loaded block '{}' (runtime id={})", name, id);
         }
+    } else {
+        warn!(
+            "Block directory not found at: {:?}. Only default 'Air' block was loaded.",
+            block_dir
+        );
     }
 
     let registry = BlockRegistryResource {
@@ -126,5 +173,5 @@ pub fn load_block_definitions_system(mut commands: Commands) {
         name_to_id: Arc::new(name_to_id),
     };
 
-    commands.insert_resource(registry);
+    return registry;
 }

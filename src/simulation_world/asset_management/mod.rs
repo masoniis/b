@@ -1,10 +1,8 @@
 pub mod asset_storage;
 pub mod mesh_asset;
-pub mod texture_map_registry;
 
 pub use asset_storage::{Asset, AssetStorageResource, Handle};
 pub use mesh_asset::{delete_stale_mesh_assets, MeshAsset, MeshDeletionRequest};
-pub use texture_map_registry::TextureMapResource;
 
 // INFO: ---------------------------------
 //         Asset Management Plugin

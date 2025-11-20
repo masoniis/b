@@ -1,28 +1,42 @@
+use crate::prelude::*;
 use crate::simulation_world::terrain::{
     ActiveTerrainGenerator, SinWaveGenerator, SuperflatShaper, TerrainShaper,
 };
-use bevy_ecs::system::{Local, ResMut};
+use bevy_ecs::{
+    resource::Resource,
+    system::{Local, Res, ResMut},
+};
 use std::sync::Arc;
 
-/// A type alias for a function that constructs a terrain generator
-type GeneratorConstructor = fn() -> Arc<dyn TerrainShaper>;
-
-// generator constructors
-fn new_superflat() -> Arc<dyn TerrainShaper> {
-    Arc::new(SuperflatShaper::new())
-}
-fn new_sinwave() -> Arc<dyn TerrainShaper> {
-    Arc::new(SinWaveGenerator::new())
+#[derive(Resource, Default)]
+pub struct TerrainGeneratorLibrary {
+    pub generators: Vec<Arc<dyn TerrainShaper + Send + Sync>>,
 }
 
-static GENERATOR_LIST: &[GeneratorConstructor] = &[new_superflat, new_sinwave];
+/// A system that sets up the terrain generator by loading a default set of generators
+/// into it.
+pub fn setup_terrain_gen_library(mut lib: ResMut<TerrainGeneratorLibrary>) {
+    lib.generators.push(Arc::new(SinWaveGenerator::new()));
+    lib.generators.push(Arc::new(SuperflatShaper::new()));
+}
 
-/// A simple system that cycles through generators by creating a new one each time.
+/// A simple startup system that sets the default terrain generator to avoid confusion
+/// regarding the default state of the `ActiveTerrainGenerator` resource.
+pub fn set_default_terrain_generator(
+    mut active_generator: ResMut<ActiveTerrainGenerator>,
+    library: Res<TerrainGeneratorLibrary>,
+) {
+    active_generator.0 = library.generators[0].clone();
+}
+
+/// A simple system that cycles through terran generators (shapers).
 pub fn cycle_active_generator(
     mut active_generator: ResMut<ActiveTerrainGenerator>,
+    library: Res<TerrainGeneratorLibrary>,
     mut current_index: Local<usize>,
 ) {
-    *current_index = (*current_index + 1) % GENERATOR_LIST.len();
-    let constructor = GENERATOR_LIST[*current_index];
-    active_generator.0 = constructor();
+    *current_index = (*current_index + 1) % library.generators.len();
+    active_generator.0 = library.generators[*current_index].clone();
+
+    info!("Switched to generator index: {}", *current_index);
 }

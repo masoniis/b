@@ -13,8 +13,8 @@ pub struct ChunkMeshingTaskComponent {
 #[derive(Component)]
 pub struct CheckForMeshing;
 
-/// A signal marking that chunks wants to be meshed. In this phase, the chunk is
-/// waiting to be assigned to the thread pool, and can't be assigned until all
-/// of its relevant neighbors have block data generated.
+/// A signal marking that chunks wants to be meshed. In this phase, the chunk is waiting
+/// to be assigned to the thread pool, but can't be assigned until all of its relevant
+/// neighbors have block data generated.
 #[derive(Component)]
 pub struct WantsMeshing;

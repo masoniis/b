@@ -16,6 +16,23 @@ harness = false
 
 [features]
 tracy = ["dep:tracy-client", "dep:tracing-tracy"]
+final_release = ["tracing/release_max_level_error"]
+
+# standard release: fastish, but compiles quicker than dist and keeps logging/debugging
+[profile.release]
+opt-level = 3
+lto = "thin"
+debug = true
+strip = false
+
+# distribution release: cargo build --profile distribution --features final_release
+[profile.distribution]
+inherits = "release"
+lto = "fat"
+codegen-units = 1
+panic = "abort"
+strip = true
+debug = false
 
 [build-dependencies]
 serde = { version = "1.0.228", features = ["derive"] } # serializing
@@ -34,7 +51,7 @@ b = { path = "." }
 # --------------------------------------
 
 time = { version = "0.3.43", features = ["formatting", "macros"] }
-tracing = "0.1.41"
+tracing = { version = "0.1.41", features = ["release_max_level_warn"] }
 tracing-subscriber = { version = "0.3.20", features = [
   "time",
   "local-time",
@@ -82,8 +99,8 @@ futures-lite = "2.6.1" # future utils
 derive_more = { version = "2.0.1", features = ["deref", "deref_mut"] }
 serde = { version = "1.0.228", features = ["derive"] }                 # serializing
 
-rand = "0.9.2"                                                         # rng
-ron = "0.11.0"                                                         # parsing RON files
-sysinfo = "0.37.2"                                                     # memory usage
-noise = "0.9.0"                                                        # gen random noise
-crossbeam = "0.8.4"                                                    # thread comms
+rand = "0.9.2"      # rng
+ron = "0.11.0"      # parsing RON files
+sysinfo = "0.37.2"  # memory usage
+noise = "0.9.0"     # gen random noise
+crossbeam = "0.8.4" # thread comms

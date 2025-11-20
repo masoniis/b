@@ -7,7 +7,7 @@ use crate::{
     prelude::*,
     render_world::{
         global_extract::utils::run_extract_schedule, graphics_context::GraphicsContext,
-        scheduling::RenderSchedule, textures::load_texture_array, RenderWorldInterface,
+        scheduling::RenderSchedule, textures::load_and_upload_textures, RenderWorldInterface,
     },
     simulation_world::{
         input::{
@@ -103,7 +103,8 @@ impl ApplicationHandler for App {
             // world dependencies that the app must create (due to window)
             let graphics_context = block_on(GraphicsContext::new(window.clone()));
             let (texture_array, texture_registry) =
-                load_texture_array(&graphics_context.device, &graphics_context.queue).unwrap();
+                load_and_upload_textures(&graphics_context.device, &graphics_context.queue)
+                    .unwrap();
 
             let mut simulation_world = SimulationWorldInterface::new(&window, texture_registry);
             let mut render_world = RenderWorldInterface::new(graphics_context, texture_array);

@@ -17,7 +17,10 @@ use crate::{
     simulation_world::input::ActionStateResource,
 };
 use bevy_ecs::prelude::{IntoScheduleConfigs, Res};
-use systems::cycle_active_generator;
+use systems::{
+    cycle_active_generator, set_default_terrain_generator, setup_terrain_gen_library,
+    TerrainGeneratorLibrary,
+};
 
 pub struct TerrainGenerationPlugin;
 
@@ -34,8 +37,13 @@ impl Plugin for TerrainGenerationPlugin {
         //         startup stuff
         // -----------------------------
         builder
+            .init_resource::<TerrainGeneratorLibrary>()
             .schedule_entry(SimulationSchedule::Startup)
-            .add_systems(cycle_active_generator.in_set(StartupSet::ResourceInitialization)); // set generator based on cycler at startup to override the default
+            .add_systems(
+                (setup_terrain_gen_library, set_default_terrain_generator)
+                    .chain()
+                    .in_set(StartupSet::ResourceInitialization),
+            );
 
         // INFO: -------------------------------------
         //         keybind-based actions below

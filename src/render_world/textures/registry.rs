@@ -1,10 +1,11 @@
 use super::super::types::TextureId;
 use crate::render_world::textures::TextureLoadError;
+use bevy_ecs::resource::Resource;
 use std::{collections::HashMap, sync::Arc};
 
 /// A registry for looking up texture indices from a compile-time safe TextureId.
-#[derive(Clone, bevy_ecs::prelude::Resource)]
-pub struct TextureRegistry {
+#[derive(Resource, Clone)]
+pub struct TextureRegistryResource {
     /// Maps the type-safe TextureId to its u32 index in the GPU texture array.
     map: Arc<HashMap<TextureId, u32>>,
 
@@ -12,7 +13,7 @@ pub struct TextureRegistry {
     missing_texture_index: u32,
 }
 
-impl TextureRegistry {
+impl TextureRegistryResource {
     /// Creates a new texture registry from a pre-populated map and the missing texture index.
     pub fn new(map: HashMap<TextureId, u32>) -> Result<Self, TextureLoadError> {
         let missing_texture_index = *map

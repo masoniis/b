@@ -80,8 +80,8 @@ impl ChunkBlocksComponent {
 
     /// Creates a new dense chunk from a vector.
     ///
-    /// Should be used as a last resort as it is slower than other methods.
-    /// Sometimes Vec is the easiest solution like loading from disk, for example.
+    /// Should be used as a last resort as it is slower than other methods, but I
+    /// think it will be useful for scenarios like loading from disk, for example.
     pub fn from_vec(lod: ChunkLod, block_data: Vec<BlockId>) -> Self {
         Self {
             data: ChunkData::Dense(ChunkVolumeData::from_vec(lod, block_data)),

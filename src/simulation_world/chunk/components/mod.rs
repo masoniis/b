@@ -5,7 +5,7 @@ pub mod generated;
 pub mod mesh;
 pub mod transform;
 
-pub use chunk_blocks::ChunkBlocksComponent;
+pub use chunk_blocks::{ChunkBlocksComponent, ChunkData, ChunkView};
 pub use chunk_chord::ChunkCoord;
 pub use dirty::ChunkMeshDirty;
 pub use generated::*;

@@ -2,6 +2,7 @@ pub mod debug_screen;
 pub mod elements;
 
 pub use debug_screen::{diagnostic_ui_is_visible, toggle_debug_diagnostics_system};
+pub use elements::active_gen_text::update_active_gen_text_system;
 pub use elements::fps_counter::update_fps_counter_screen_text_system;
 pub use elements::mesh_counter::{update_mesh_counter_screen_text_system, MeshCounterResource};
 
@@ -60,6 +61,7 @@ impl Plugin for DebugScreenPlugin {
                     update_camera_chunk_coord_screen_text,
                     update_fps_counter_screen_text_system,
                     update_memory_counter_screen_text,
+                    update_active_gen_text_system,
                 )
                     .run_if(diagnostic_ui_is_visible)
                     .in_set(SimulationSet::PostUpdate),

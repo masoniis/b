@@ -1,18 +1,17 @@
 use crate::prelude::*;
+use crate::render_world::textures::registry::TextureRegistryResource;
 use crate::simulation_world::chunk::chunk_state_manager::NEIGHBOR_OFFSETS;
-use crate::simulation_world::chunk::padded_chunk_view::{
-    ChunkDataOption, NeighborLODs, PaddedChunkView,
+use crate::simulation_world::chunk::common::padded_chunk_view::{
+    ChunkDataOption, NeighborLODs, PaddedChunk,
 };
+use crate::simulation_world::chunk::thread_buffer_pool::{acquire_buffer, release_buffer};
 use crate::simulation_world::chunk::{
     downsample_chunk, upsample_chunk, CheckForMeshing, ChunkMeshDirty, ChunkMeshingTaskComponent,
     ChunkState, WantsMeshing,
 };
 use crate::simulation_world::{
-    asset_management::texture_map_registry::TextureMapResource,
     block::BlockRegistryResource,
-    chunk::{
-        build_chunk_mesh, ChunkBlocksComponent, ChunkCoord, ChunkStateManager,
-    },
+    chunk::{build_chunk_mesh, ChunkBlocksComponent, ChunkCoord, ChunkStateManager},
 };
 use bevy_ecs::prelude::*;
 use crossbeam::channel::unbounded;
@@ -59,7 +58,7 @@ pub fn start_pending_meshing_tasks_system(
     // Resources needed to start meshing
     mut commands: Commands,
     mut chunk_manager: ResMut<ChunkStateManager>,
-    texture_map: Res<TextureMapResource>,
+    texture_map: Res<TextureRegistryResource>,
     block_registry: Res<BlockRegistryResource>,
 ) {
     'chunk_loop: for (entity, chunk_comp, chunk_coord) in pending_chunks_query.iter_mut() {
@@ -164,14 +163,19 @@ pub fn start_pending_meshing_tasks_system(
 
         let (sender, receiver) = unbounded();
         rayon::spawn(move || {
-            let padded_view = PaddedChunkView::new(&chunks, original_neighbor_lods);
+            let buffer = acquire_buffer();
+
+            let padded_view = PaddedChunk::new(&chunks, center_lod, original_neighbor_lods, buffer);
 
             let (opaque_mesh_option, transparent_mesh_option) = build_chunk_mesh(
                 &coord_clone.to_string(),
-                padded_view,
+                &padded_view,
                 &texture_map_clone,
                 &block_registry_clone,
             );
+
+            let used_buffer = padded_view.take_buffer();
+            release_buffer(used_buffer);
 
             let _ = sender.send((opaque_mesh_option, transparent_mesh_option));
         });

@@ -1,14 +1,14 @@
+use super::TOTAL_BUFFER_SIZE;
 use crate::prelude::*;
-use crate::simulation_world::block::{BlockRegistryResource, SOLID_BLOCK_ID};
 use crate::simulation_world::{
-    block::block_registry::{BlockId, AIR_BLOCK_ID},
-    chunk::{chunk_blocks::ChunkView, types::ChunkLod, ChunkBlocksComponent},
+    block::block_registry::{BlockId, BlockRegistryResource, AIR_BLOCK_ID},
+    chunk::{ChunkBlocksComponent, ChunkLod, ChunkView, CHUNK_SIDE_LENGTH},
 };
+
+pub const PADDED_SIZE: usize = CHUNK_SIDE_LENGTH + 2;
 
 /// Holds the *original* LODs of all 26 neighbors (and the center)
 /// in a 3x3x3 grid. [1][1][1] is the center.
-///
-/// Needed for visual seam stitching of mismatched LOD chunks.
 pub type NeighborLODs = [[[Option<ChunkLod>; 3]; 3]; 3];
 
 /// Represents the state of neighbor chunk data passed to the mesher.
@@ -23,152 +23,225 @@ pub enum ChunkDataOption {
     Empty,
 }
 
-/// A 3x3x3 view of chunk data, centered on the chunk being meshed.
+/// A flat, cache-optimized buffer containing the chunk + 1 layer of neighbors.
 #[derive(Clone)]
-pub struct PaddedChunkView<'a> {
-    /// A 3x3x3 grid of lightweight views.
-    /// Index [1][1][1] is the center chunk.
-    views: [[[ChunkView<'a>; 3]; 3]; 3],
+pub struct PaddedChunk {
+    /// Padded chunk volume with side-length of size `PADDED_SIZE`.
+    voxels: Vec<BlockId>,
 
-    /// The size of one edge of the *center* chunk (e.g., 32).
-    size: i32,
-
-    /// `size - 1`. Used for fast modulo (x & mask).
-    mask: i32,
-    /// `log2(size)`. Used for fast division (x >> shift).
-    bit_shift: u32,
-
+    /// The LOD of the center chunk
     center_lod: ChunkLod,
+    /// The LOD of all 26 chunk neighbors
     neighbor_lods: NeighborLODs,
+
+    /// Stores the block ID of the center chunk if uniform, or None if dense.
+    center_uniform_block: Option<BlockId>,
 }
 
-impl<'a> PaddedChunkView<'a> {
-    /// Creates a new padded view for a chunk.
-    pub fn new(chunks: &'a [[[ChunkDataOption; 3]; 3]; 3], neighbor_lods: NeighborLODs) -> Self {
-        // extract size/lod from center chunk
-        let (size, center_lod) = match &chunks[1][1][1] {
-            ChunkDataOption::Generated(center_chunk) => {
-                (center_chunk.size() as i32, center_chunk.lod())
-            }
-            _ => panic!("PaddedChunkView::new: Center chunk must be `Generated`."),
+impl PaddedChunk {
+    /// Creates a PaddedChunk using a recycled buffer passed in by the caller.
+    pub fn new(
+        chunks: &[[[ChunkDataOption; 3]; 3]; 3],
+        center_lod: ChunkLod,
+        neighbor_lods: NeighborLODs,
+        mut buffer: Vec<BlockId>,
+    ) -> Self {
+        // save center uniform from input
+        let center_uniform_block = match &chunks[1][1][1] {
+            ChunkDataOption::Generated(comp) => match comp.get_view() {
+                ChunkView::Uniform(id) => Some(id),
+                ChunkView::Dense(_) => None,
+            },
+            _ => Some(AIR_BLOCK_ID),
         };
 
-        // prepare individual chunk views
-        let mut views = [[[ChunkView::Uniform(AIR_BLOCK_ID); 3]; 3]; 3];
-        for x in 0..3 {
-            for y in 0..3 {
-                for z in 0..3 {
-                    views[x][y][z] = match &chunks[x][y][z] {
-                        ChunkDataOption::Generated(comp) => comp.get_view(),
-                        ChunkDataOption::Empty => ChunkView::Uniform(AIR_BLOCK_ID),
-                        ChunkDataOption::OutOfBounds => ChunkView::Uniform(SOLID_BLOCK_ID),
-                    };
+        // clear stale buffer
+        buffer.clear();
+        buffer.resize(TOTAL_BUFFER_SIZE, AIR_BLOCK_ID);
+
+        // util for filling the padded chunk
+        {
+            let mut write_chunk_to_buffer = |offset: IVec3, view: ChunkView| {
+                let x_range = match offset.x {
+                    -1 => 0..1,
+                    0 => 1..CHUNK_SIDE_LENGTH + 1,
+                    1 => CHUNK_SIDE_LENGTH + 1..CHUNK_SIDE_LENGTH + 2,
+                    _ => 0..0,
+                };
+                let y_range = match offset.y {
+                    -1 => 0..1,
+                    0 => 1..CHUNK_SIDE_LENGTH + 1,
+                    1 => CHUNK_SIDE_LENGTH + 1..CHUNK_SIDE_LENGTH + 2,
+                    _ => 0..0,
+                };
+                let z_range = match offset.z {
+                    -1 => 0..1,
+                    0 => 1..CHUNK_SIDE_LENGTH + 1,
+                    1 => CHUNK_SIDE_LENGTH + 1..CHUNK_SIDE_LENGTH + 2,
+                    _ => 0..0,
+                };
+
+                match view {
+                    ChunkView::Uniform(block) => {
+                        for z in z_range.clone() {
+                            for y in y_range.clone() {
+                                for x in x_range.clone() {
+                                    let idx = x + y * PADDED_SIZE + z * PADDED_SIZE * PADDED_SIZE;
+                                    unsafe {
+                                        *buffer.get_unchecked_mut(idx) = block;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    ChunkView::Dense(data) => {
+                        for x in x_range {
+                            for z in z_range.clone() {
+                                for y in y_range.clone() {
+                                    // map padded coords back to source chunk coords
+                                    let src_x = if offset.x == -1 {
+                                        31
+                                    } else if offset.x == 1 {
+                                        0
+                                    } else {
+                                        x - 1
+                                    };
+                                    let src_y = if offset.y == -1 {
+                                        31
+                                    } else if offset.y == 1 {
+                                        0
+                                    } else {
+                                        y - 1
+                                    };
+                                    let src_z = if offset.z == -1 {
+                                        31
+                                    } else if offset.z == 1 {
+                                        0
+                                    } else {
+                                        z - 1
+                                    };
+
+                                    let block = data.get_data(src_x, src_y, src_z);
+                                    let idx = y + z * PADDED_SIZE + x * PADDED_SIZE * PADDED_SIZE;
+                                    unsafe {
+                                        *buffer.get_unchecked_mut(idx) = block;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            };
+
+            // iterate over chunk grid and fill
+            for cx in 0..3 {
+                for cy in 0..3 {
+                    for cz in 0..3 {
+                        let offset = IVec3::new(cx as i32 - 1, cy as i32 - 1, cz as i32 - 1);
+
+                        match &chunks[cx][cy][cz] {
+                            ChunkDataOption::Generated(comp) => {
+                                if comp.lod() != center_lod {
+                                    // Handle LOD mismatch / resampling here if needed
+                                    write_chunk_to_buffer(offset, comp.get_view());
+                                } else {
+                                    write_chunk_to_buffer(offset, comp.get_view());
+                                }
+                            }
+                            ChunkDataOption::OutOfBounds => {
+                                // out of bounds just leave it be
+                            }
+                            _ => {} // Leave as Air
+                        }
+                    }
                 }
             }
         }
 
-        // precompute constants for chunk determinance
-        let mask = size - 1;
-        let bit_shift = (size as u32).trailing_zeros();
-
         Self {
-            views,
-            size,
-            mask,
-            bit_shift,
+            voxels: buffer,
             center_lod,
             neighbor_lods,
+            center_uniform_block,
         }
     }
 
-    /// Helper to get the raw view of the center chunk.
-    pub fn get_center_view(&self) -> ChunkView<'_> {
-        unsafe {
-            self.views
-                .get_unchecked(1)
-                .get_unchecked(1)
-                .get_unchecked(1)
-                .clone()
-        }
+    /// Consumes the PaddedChunk and returns the underlying buffer.
+    pub fn take_buffer(self) -> Vec<BlockId> {
+        self.voxels
     }
 
-    /// Gets the size of one edge of the center chunk.
-    pub fn get_size(&self) -> i32 {
-        self.size
+    /// Hot loop accessor.
+    #[inline(always)]
+    pub fn get_block(&self, x: i32, y: i32, z: i32) -> BlockId {
+        let px = (x + 1) as usize;
+        let py = (y + 1) as usize;
+        let pz = (z + 1) as usize;
+        let idx = py + pz * PADDED_SIZE + px * PADDED_SIZE * PADDED_SIZE;
+        unsafe { *self.voxels.get_unchecked(idx) }
     }
 
-    /// Gets the LOD of the center chunk.
+    /// Gets the center uniform block option.
+    #[inline(always)]
+    pub fn get_center_uniform_block(&self) -> Option<BlockId> {
+        self.center_uniform_block
+    }
+
+    /// The LOD of the center chunk.
     pub fn center_lod(&self) -> ChunkLod {
         self.center_lod
     }
 
-    /// Gets the original LODs of the 6 cardinal neighbors.
+    /// The neighbor lod list.
     pub fn neighbor_lods(&self) -> &NeighborLODs {
         &self.neighbor_lods
     }
 
-    /// Checks if a neighbor is fully solid/opaque (Uniform Solid).
+    /// The size of the padded chunk
+    pub fn get_size(&self) -> usize {
+        CHUNK_SIDE_LENGTH >> *self.center_lod()
+    }
+
+    /// Returns whether or not a particular neighbor offset from the center chunk is fully opaque.
     pub fn is_neighbor_fully_opaque(
         &self,
         offset: IVec3,
-        block_registry: &BlockRegistryResource,
+        registry: &BlockRegistryResource,
     ) -> bool {
-        let nx = (offset.x + 1) as usize;
-        let ny = (offset.y + 1) as usize;
-        let nz = (offset.z + 1) as usize;
-
-        let view = unsafe {
-            self.views
-                .get_unchecked(nx)
-                .get_unchecked(ny)
-                .get_unchecked(nz)
+        let (x_range, y_range, z_range) = match (offset.x, offset.y, offset.z) {
+            (1, 0, 0) => (
+                (CHUNK_SIDE_LENGTH + 1)..(CHUNK_SIDE_LENGTH + 2),
+                1..(CHUNK_SIDE_LENGTH + 1),
+                1..(CHUNK_SIDE_LENGTH + 1),
+            ),
+            (-1, 0, 0) => (0..1, 1..(CHUNK_SIDE_LENGTH + 1), 1..(CHUNK_SIDE_LENGTH + 1)),
+            (0, 1, 0) => (
+                1..(CHUNK_SIDE_LENGTH + 1),
+                (CHUNK_SIDE_LENGTH + 1)..(CHUNK_SIDE_LENGTH + 2),
+                1..(CHUNK_SIDE_LENGTH + 1),
+            ),
+            (0, -1, 0) => (1..(CHUNK_SIDE_LENGTH + 1), 0..1, 1..(CHUNK_SIDE_LENGTH + 1)),
+            (0, 0, 1) => (
+                1..(CHUNK_SIDE_LENGTH + 1),
+                1..(CHUNK_SIDE_LENGTH + 1),
+                (CHUNK_SIDE_LENGTH + 1)..(CHUNK_SIDE_LENGTH + 2),
+            ),
+            (0, 0, -1) => (1..(CHUNK_SIDE_LENGTH + 1), 1..(CHUNK_SIDE_LENGTH + 1), 0..1),
+            _ => return false,
         };
 
-        match view {
-            ChunkView::Uniform(block_id) => {
-                let props = block_registry.get(*block_id);
-                !props.is_transparent && *block_id != AIR_BLOCK_ID
+        for x in x_range {
+            for z in z_range.clone() {
+                for y in y_range.clone() {
+                    let idx = y + z * PADDED_SIZE + x * PADDED_SIZE * PADDED_SIZE;
+                    let block_id = self.voxels[idx];
+                    if registry.get(block_id).is_transparent {
+                        return false;
+                    }
+                }
             }
-            // if neighbor is dense there is no easy way to check full opaque without scanning
-            ChunkView::Dense(_) => false,
-        }
-    }
-
-    /// Gets a block ID from the padded view.
-    ///
-    /// WARN: Assumes valid input for runtime efficiency, but if you exit
-    /// the neighbor chunk undefined behavior will occur.
-    #[inline(always)]
-    pub fn get_block(&self, pos: IVec3) -> BlockId {
-        // determine chunk index (0, 1, 2)
-        let cx = ((pos.x >> self.bit_shift) + 1) as usize;
-        let cy = ((pos.y >> self.bit_shift) + 1) as usize;
-        let cz = ((pos.z >> self.bit_shift) + 1) as usize;
-
-        if cfg!(debug_assertions) && (cx > 2 || cy > 2 || cz > 2) {
-            error!(
-                "get_block: Out of bounds: ({}, {}, {})",
-                pos.x, pos.y, pos.z
-            );
-            return AIR_BLOCK_ID;
         }
 
-        // determine local index
-        let lx = (pos.x & self.mask) as usize;
-        let ly = (pos.y & self.mask) as usize;
-        let lz = (pos.z & self.mask) as usize;
-
-        // fetch from view
-        let view = unsafe {
-            self.views
-                .get_unchecked(cx)
-                .get_unchecked(cy)
-                .get_unchecked(cz)
-        };
-
-        match view {
-            ChunkView::Uniform(id) => *id,
-            ChunkView::Dense(vol) => vol.get_data(lx, ly, lz),
-        }
+        true
     }
 }

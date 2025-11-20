@@ -19,10 +19,11 @@ pub use scheduling::{
 // -----------------------------------
 
 use crate::render_world::{
-    global_extract::utils::initialize_simulation_world_for_extract, textures::TextureRegistry,
+    global_extract::utils::initialize_simulation_world_for_extract,
+    textures::TextureRegistryResource,
 };
 use crate::simulation_world::{
-    asset_management::{AssetManagementPlugin, MeshAsset, TextureMapResource},
+    asset_management::{AssetManagementPlugin, MeshAsset},
     biome::BiomePlugin,
     block::BlockPlugin,
     chunk::ChunkLoadingPlugin,
@@ -64,13 +65,13 @@ impl DerefMut for SimulationWorldInterface {
 }
 
 impl SimulationWorldInterface {
-    pub fn new(window: &Window, registry: TextureRegistry) -> Self {
+    pub fn new(window: &Window, texture_registry_resource: TextureRegistryResource) -> Self {
         let mut builder = EcsBuilder::new();
 
         // add resources built from the app
         builder
             .add_resource(WindowSizeResource::new(window.inner_size()))
-            .add_resource(TextureMapResource { registry });
+            .add_resource(texture_registry_resource);
 
         // configure schedule sets before adding plugins
         builder

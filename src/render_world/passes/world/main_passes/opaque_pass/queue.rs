@@ -91,7 +91,8 @@ pub fn queue_and_prepare_opaque_system(
         as wgpu::BufferAddress;
 
     if required_size_bytes > object_buffer.buffer.size() {
-        info!(
+        debug!(
+            target : "buffer_resize",
             "Resizing opaque object buffer to fit data (current size = {} bytes, required size = {} bytes)",
             object_buffer.buffer.size(),
             required_size_bytes

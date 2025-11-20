@@ -7,13 +7,14 @@ pub mod hull;
 // --------------------------------------
 
 use crate::prelude::*;
+use crate::render_world::textures::registry::TextureRegistryResource;
 use crate::simulation_world::{
-    asset_management::{texture_map_registry::TextureMapResource, MeshAsset},
+    asset_management::MeshAsset,
     block::{
         block_registry::{BlockId, AIR_BLOCK_ID},
         BlockRegistryResource,
     },
-    chunk::{chunk_blocks::ChunkView, PaddedChunkView},
+    chunk::PaddedChunk,
 };
 
 // convenience mesh types
@@ -24,34 +25,29 @@ pub type TransparentMeshData = MeshAsset;
 #[instrument(skip_all, fields(chunk = %name))]
 pub fn build_chunk_mesh(
     name: &str,
-    padded_chunk: PaddedChunkView,
-    texture_map: &TextureMapResource,
+    padded_chunk: &PaddedChunk,
+    texture_map: &TextureRegistryResource,
     block_registry: &BlockRegistryResource,
 ) -> (Option<OpaqueMeshData>, Option<TransparentMeshData>) {
-    let center_view = padded_chunk.get_center_view();
-    match center_view {
-        // air never has a mesh
-        ChunkView::Uniform(block_id) if block_id == AIR_BLOCK_ID => (None, None),
-        // solid does hull meshing since it never has internal mesh
-        ChunkView::Uniform(block_id) => {
-            // fully onccluded by solid neighbors will always be empty
-            if is_fully_occluded(&padded_chunk, block_registry, block_id) {
-                (None, None)
-            } else {
-                hull::build_hull_mesh(name, padded_chunk, texture_map, block_registry, block_id)
+    match padded_chunk.get_center_uniform_block() {
+        Some(block_id) => {
+            if block_id == AIR_BLOCK_ID || is_fully_occluded(padded_chunk, block_registry, block_id)
+            {
+                return (None, None);
             }
+
+            // only need to hull mesh if chunk is not occluded and is not air
+            hull::build_hull_mesh(name, padded_chunk, texture_map, block_registry, block_id)
         }
-        // otherwise run the most expensive mesher
-        ChunkView::Dense(_) => {
-            dense::build_dense_mesh(name, padded_chunk, texture_map, block_registry)
-        }
+        // otherwise do a full dense mesh
+        None => dense::build_dense_mesh(name, padded_chunk, texture_map, block_registry),
     }
 }
 
 /// Helper to check if a chunk is completely hidden (surrounded by solid opaque neighbors).
 #[instrument(skip_all)]
 fn is_fully_occluded(
-    padded: &PaddedChunkView,
+    padded: &PaddedChunk,
     registry: &BlockRegistryResource,
     center_id: BlockId,
 ) -> bool {

@@ -1,31 +1,45 @@
-use criterion::{criterion_group, criterion_main, Criterion};
-use glam::IVec3;
-
+use b::prelude::*;
+use b::render_world::textures::prepare_textures;
+use b::simulation_world::block::SOLID_BLOCK_ID;
+use b::simulation_world::chunk::{build_chunk_mesh, ChunkDataOption, NeighborLODs, PaddedChunk};
 use b::simulation_world::{
     biome::load_biome_defs_from_disk,
-    chunk::{components::chunk_chord::ChunkCoord, ChunkLod},
+    block::block_registry::load_block_defs_from_disk,
+    chunk::{
+        components::{chunk_blocks::ChunkBlocksComponent, chunk_chord::ChunkCoord},
+        thread_buffer_pool::acquire_buffer,
+        types::ChunkLod,
+    },
     terrain::{
-        climate::gentrait::ClimateGenerator,
-        generators::climate::climate_noise_gen::ClimateNoiseGenerator, BiomeGenerator,
-        BiomeMapComponent, BiomeResultBuilder, DefaultBiomeGenerator,
+        BiomeGenerator, BiomeMapComponent, BiomeResultBuilder, ClimateGenerator,
+        ClimateNoiseGenerator, DefaultBiomeGenerator, PaintResultBuilder, ShapeResultBuilder,
+        SimpleSurfacePainter, SinWaveGenerator, TerrainPainter, TerrainShaper,
     },
 };
+use criterion::{criterion_group, criterion_main, Criterion};
+
+const CLIMATE_NOISE_SEED: u32 = 42;
 
 /// Each bench in this benchmark builds off the previous (conceptually speaking).
-fn bench_single_chunk_generation(c: &mut Criterion) {
-    let mut group = c.benchmark_group("Single Chunk Generation");
+fn bench_chunk_generation(c: &mut Criterion) {
+    let mut group = c.benchmark_group("Chunk generation");
+
+    // INFO: ---------------
+    //         setup
+    // ---------------------
+
+    let block_registry = load_block_defs_from_disk();
+    let biome_registry = load_biome_defs_from_disk();
+    let origin_chunk_coord = ChunkCoord {
+        pos: IVec3::new(0, 0, 0),
+    };
 
     // INFO: --------------------------
     //         climate benching
     // --------------------------------
 
-    let climate_noise_generator = ClimateNoiseGenerator::new(12345);
-    let origin_chunk_coord = ChunkCoord {
-        pos: IVec3::new(0, 0, 0),
-    };
-
-    // fixed-seed generator and fixed chunk coord
-    group.bench_function("climate_noise_chunk_generation", |b| {
+    let climate_noise_generator = ClimateNoiseGenerator::new(CLIMATE_NOISE_SEED);
+    group.bench_function("climate_noise", |b| {
         b.iter(|| {
             climate_noise_generator.generate(origin_chunk_coord.clone());
         })
@@ -36,10 +50,9 @@ fn bench_single_chunk_generation(c: &mut Criterion) {
     // ------------------------------
 
     let biome_generator = DefaultBiomeGenerator::default();
-    let biome_registry = load_biome_defs_from_disk();
     let origin_noise = climate_noise_generator.generate(origin_chunk_coord.clone());
 
-    group.bench_function("biome_chunk_generation_full", |b| {
+    group.bench_function("biome_mapping", |b| {
         b.iter(|| {
             // setup
             let biome_map = BiomeMapComponent::new_empty(ChunkLod(0));
@@ -50,8 +63,139 @@ fn bench_single_chunk_generation(c: &mut Criterion) {
         })
     });
 
+    // INFO: --------------------------------
+    //         sinwave shape benching
+    // --------------------------------------
+
+    let sinwave_shaper = SinWaveGenerator::new();
+    group.bench_function("sinwave_shaping", |b| {
+        b.iter(|| {
+            let clim_map = climate_noise_generator.generate(origin_chunk_coord.clone());
+            let chunk_blocks = ChunkBlocksComponent::new_uniform_empty(ChunkLod(0));
+            let shaper = ShapeResultBuilder::new(chunk_blocks, origin_chunk_coord.clone());
+
+            sinwave_shaper.shape_terrain_chunk(&clim_map, shaper)
+        })
+    });
+
+    // INFO: ------------------------
+    //         paint benching
+    // ------------------------------
+
+    let surface_painter = SimpleSurfacePainter::new();
+    group.bench_function("painting", |b| {
+        b.iter(|| {
+            let clim_map = climate_noise_generator.generate(origin_chunk_coord.clone());
+            let biome_map = BiomeMapComponent::new_empty(ChunkLod(0));
+
+            let blocks = ChunkBlocksComponent::new_uniform_solid(ChunkLod(0));
+            let painter =
+                PaintResultBuilder::new(blocks, origin_chunk_coord.clone(), block_registry.clone());
+
+            surface_painter.paint_terrain_chunk(
+                painter,
+                &biome_map,
+                &clim_map,
+                &block_registry,
+                &biome_registry,
+            );
+        })
+    });
+
     group.finish();
 }
 
-criterion_group!(benches, bench_single_chunk_generation);
+fn bench_chunk_meshing(c: &mut Criterion) {
+    let mut group = c.benchmark_group("Chunk meshing");
+
+    let block_registry = load_block_defs_from_disk();
+    let (_, texture_reg) = prepare_textures().unwrap();
+
+    // INFO: ---------------------------------
+    //         dense meshing benchmark
+    // ---------------------------------------
+
+    let mut dense_chunks: [[[ChunkDataOption; 3]; 3]; 3] = Default::default();
+    let solid_chunk =
+        ChunkDataOption::Generated(ChunkBlocksComponent::new_uniform_solid(ChunkLod(0)));
+
+    for x in 0..3 {
+        for y in 0..3 {
+            for z in 0..3 {
+                if x == 1 && y == 1 && z == 1 {
+                    continue;
+                }
+                dense_chunks[x][y][z] = solid_chunk.clone();
+            }
+        }
+    }
+
+    // default to water for more complex meshing with transparency
+    let mut center_chunk =
+        ChunkBlocksComponent::new_uniform(ChunkLod(0), block_registry.get_block_by_name("water"));
+    let size = center_chunk.size();
+    let mut writer = center_chunk.get_writer();
+    // create a y=x "slope" chunk
+    for x in 0..size {
+        for y in 0..=x {
+            for z in 0..size {
+                writer.set_data(x, y, z, SOLID_BLOCK_ID);
+            }
+        }
+    }
+    dense_chunks[1][1][1] = ChunkDataOption::Generated(center_chunk);
+
+    let dense_neighbor_lods = NeighborLODs::default();
+
+    group.bench_function("dense meshing", |b| {
+        b.iter(|| {
+            let buffer = acquire_buffer();
+            let dense_padded_chunk =
+                PaddedChunk::new(&dense_chunks, ChunkLod(0), dense_neighbor_lods, buffer);
+            build_chunk_mesh(
+                "bench_chunk_dense",
+                &dense_padded_chunk,
+                &texture_reg,
+                &block_registry,
+            )
+        })
+    });
+
+    // INFO: --------------------------------
+    //         hull meshing benchmark
+    // --------------------------------------
+
+    let mut hull_chunks: [[[ChunkDataOption; 3]; 3]; 3] = Default::default();
+    let empty_chunk =
+        ChunkDataOption::Generated(ChunkBlocksComponent::new_uniform_empty(ChunkLod(0)));
+
+    for x in 0..3 {
+        for y in 0..3 {
+            for z in 0..3 {
+                hull_chunks[x][y][z] = empty_chunk.clone();
+            }
+        }
+    }
+
+    hull_chunks[1][1][1] =
+        ChunkDataOption::Generated(ChunkBlocksComponent::new_uniform_solid(ChunkLod(0)));
+
+    let hull_neighbor_lods = NeighborLODs::default();
+
+    group.bench_function("hull meshing", |b| {
+        b.iter(|| {
+            let buffer = acquire_buffer();
+            let hull_padded_chunk =
+                PaddedChunk::new(&hull_chunks, ChunkLod(0), hull_neighbor_lods, buffer);
+            build_chunk_mesh(
+                "bench_chunk_hull",
+                &hull_padded_chunk,
+                &texture_reg,
+                &block_registry,
+            )
+        })
+    });
+}
+
+criterion_group!(benches, bench_chunk_generation, bench_chunk_meshing);
 criterion_main!(benches);

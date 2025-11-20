@@ -3,9 +3,7 @@ pub mod block_registry;
 pub mod selected_block;
 
 pub use block_definition::{load_block_from_str, BlockFaceTextures, BlockProperties};
-pub use block_registry::{
-    load_block_definitions_system, BlockId, BlockRegistryResource, AIR_BLOCK_ID, SOLID_BLOCK_ID,
-};
+pub use block_registry::{BlockId, BlockRegistryResource, AIR_BLOCK_ID, SOLID_BLOCK_ID};
 pub use selected_block::TargetedBlock;
 
 // INFO: ----------------------
@@ -14,7 +12,10 @@ pub use selected_block::TargetedBlock;
 
 use crate::{
     ecs_core::{EcsBuilder, Plugin},
-    simulation_world::{scheduling::StartupSet, SimulationSchedule},
+    simulation_world::{
+        block::block_registry::initialize_block_registry_system, scheduling::StartupSet,
+        SimulationSchedule,
+    },
 };
 use bevy_ecs::schedule::IntoScheduleConfigs;
 
@@ -27,6 +28,8 @@ impl Plugin for BlockPlugin {
 
         builder
             .schedule_entry(SimulationSchedule::Startup)
-            .add_systems(load_block_definitions_system.in_set(StartupSet::Tasks));
+            .add_systems(
+                initialize_block_registry_system.in_set(StartupSet::ResourceInitialization),
+            );
     }
 }

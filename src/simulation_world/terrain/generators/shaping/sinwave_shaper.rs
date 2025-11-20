@@ -27,6 +27,10 @@ impl SinWaveGenerator {
 }
 
 impl TerrainShaper for SinWaveGenerator {
+    fn name(&self) -> &str {
+        "SinWave"
+    }
+
     #[instrument(skip_all, fields(chunk = %coord))]
     fn determine_chunk_uniformity(&self, coord: IVec3) -> ChunkUniformity {
         let chunk_y_min = coord.y * CHUNK_SIDE_LENGTH as i32;
@@ -58,13 +62,13 @@ impl TerrainShaper for SinWaveGenerator {
         _climate_map: &ClimateMapComponent,
 
         // output
-        mut shaper: ShapeResultBuilder,
+        mut shape_builder: ShapeResultBuilder,
     ) -> ShapeResultBuilder {
         let base = self.base_height as f32;
         let amp = self.amplitude;
         let freq = self.frequency;
 
-        shaper.fill_from(|_local, world| {
+        shape_builder.fill_from(|_local, world| {
             let wx = world.x as f32;
             let wz = world.z as f32;
 
@@ -74,6 +78,6 @@ impl TerrainShaper for SinWaveGenerator {
             world.y < surface_y
         });
 
-        shaper
+        shape_builder
     }
 }

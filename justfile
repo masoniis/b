@@ -2,9 +2,15 @@
 #         basic cargo aliases
 # -----------------------------------
 
+# runs default debug profile
 run *args:
 	cargo run {{args}}
 
+# runs the max-optimization release profile
+release *args:
+	cargo build --profile distribution --features final_release
+
+# runs benchmarks and opens html report once finished
 bench *args:
 	cargo bench {{args}}
 	echo "Opening Criterion report..."
@@ -16,16 +22,24 @@ check *args:
 clean *args:
 	cargo clean {{args}}
 
+fix *args:
+	cargo fix --allow-dirty
+
+# INFO: ---------------------
+#         small utils
+# ---------------------------
+
 zip:
 	git archive --format=zip -o b.zip HEAD
 
-fix *args:
-	cargo fix --allow-dirty
+fmt:
+	nix fmt
 
 # INFO: ---------------------------
 #         advanced commands
 # ---------------------------------
 
+# Shows the ASM associated with a rust file.
 # requires https://crates.io/crates/cargo-show-asm
 asm path:
     cargo asm --bin b --color {{path}}

@@ -1,9 +1,9 @@
 use super::{common::*, OpaqueMeshData, TransparentMeshData};
 use crate::prelude::*;
+use crate::render_world::textures::registry::TextureRegistryResource;
 use crate::simulation_world::{
-    asset_management::texture_map_registry::TextureMapResource,
     block::{block_registry::BlockId, BlockRegistryResource},
-    chunk::{PaddedChunkView, CHUNK_SIDE_LENGTH},
+    chunk::{PaddedChunk, CHUNK_SIDE_LENGTH},
 };
 
 /// Optimized mesher for uniform solid chunks.
@@ -12,36 +12,56 @@ use crate::simulation_world::{
 #[instrument(skip_all)]
 pub fn build_hull_mesh(
     name: &str,
-    padded_chunk: PaddedChunkView,
-    texture_map: &TextureMapResource,
+    padded_chunk: &PaddedChunk,
+    texture_map: &TextureRegistryResource,
     block_registry: &BlockRegistryResource,
     block_id: BlockId,
 ) -> (Option<OpaqueMeshData>, Option<TransparentMeshData>) {
-    let mut vertices = Vec::new();
-    let mut indices = Vec::new();
-    let size = padded_chunk.get_size() as usize;
-    let scale = (CHUNK_SIDE_LENGTH / size) as f32;
+    let mut vertices = Vec::with_capacity(4096);
+    let mut indices = Vec::with_capacity(6144);
 
-    let i_size = padded_chunk.get_size();
-    let center_lod = padded_chunk.center_lod();
-    let all_lods = padded_chunk.neighbor_lods();
+    let ctx = MesherContext {
+        padded_chunk,
+        block_registry,
+        texture_map,
+        center_lod: padded_chunk.center_lod(),
+        neighbor_lods: padded_chunk.neighbor_lods(),
+        chunk_size: padded_chunk.get_size(),
+        scale: CHUNK_SIDE_LENGTH as f32 / padded_chunk.get_size() as f32,
+    };
 
+    let size = ctx.chunk_size;
     let props = block_registry.get(block_id);
     let is_trans = props.is_transparent;
 
     macro_rules! mesh_plane {
         ($face_idx:expr, $u_range:expr, $v_range:expr, $pos_fn:expr) => {
-            let dir = &FACE_DIRECTIONS[$face_idx];
-            if !padded_chunk.is_neighbor_fully_opaque(dir.offset, block_registry) {
-                let tex_id = (dir.get_texture)(props);
-                let tex_index = texture_map.registry.get(tex_id);
+            let offset = NEIGHBOR_OFFSETS[$face_idx];
+
+            if !ctx
+                .padded_chunk
+                .is_neighbor_fully_opaque(offset, ctx.block_registry)
+            {
+                let tex_id = match $face_idx {
+                    0 => props.textures.top,
+                    1 => props.textures.bottom,
+                    2 => props.textures.left,
+                    3 => props.textures.right,
+                    4 => props.textures.front,
+                    _ => props.textures.back,
+                };
 
                 for u in $u_range {
                     for v in $v_range {
                         let pos = $pos_fn(u, v);
-                        let neighbor_pos = pos + dir.offset;
-                        let neighbor_id = padded_chunk.get_block(neighbor_pos);
-                        let neighbor_props = block_registry.get(neighbor_id);
+
+                        let neighbor_pos = pos + offset;
+                        let neighbor_id = ctx.padded_chunk.get_block(
+                            neighbor_pos.x,
+                            neighbor_pos.y,
+                            neighbor_pos.z,
+                        );
+                        let neighbor_props = ctx.block_registry.get(neighbor_id);
 
                         if should_render_face(
                             block_id,
@@ -49,16 +69,14 @@ pub fn build_hull_mesh(
                             neighbor_id,
                             neighbor_props.is_transparent,
                         ) {
-                            let base_count = vertices.len() as u32;
-                            let ao =
-                                calculate_ao_for_pos(pos, $face_idx, &padded_chunk, block_registry);
-
-                            let (v, i) = create_face_verts(
-                                &dir.face, pos, scale, tex_index, base_count, ao, i_size,
-                                center_lod, all_lods,
+                            let ao = calculate_ao_for_pos(
+                                pos,
+                                $face_idx,
+                                ctx.padded_chunk,
+                                ctx.block_registry,
                             );
-                            vertices.extend(v);
-                            indices.extend(i);
+
+                            ctx.push_face($face_idx, pos, tex_id, ao, &mut vertices, &mut indices);
                         }
                     }
                 }
@@ -67,15 +85,15 @@ pub fn build_hull_mesh(
     }
 
     #[rustfmt::skip]
-    mesh_plane!(0, 0..size, 0..size, |x, z| IVec3::new(x as i32, (size-1) as i32, z as i32));
+    mesh_plane!(0, 0..size, 0..size, |x, z| IVec3::new(x as i32, (size - 1) as i32, z as i32));
     #[rustfmt::skip]
     mesh_plane!(1, 0..size, 0..size, |x, z| IVec3::new(x as i32, 0, z as i32));
     #[rustfmt::skip]
     mesh_plane!(2, 0..size, 0..size, |y, z| IVec3::new(0, y as i32, z as i32));
     #[rustfmt::skip]
-    mesh_plane!(3, 0..size, 0..size, |y, z| IVec3::new((size-1) as i32, y as i32, z as i32));
+    mesh_plane!(3, 0..size, 0..size, |y, z| IVec3::new((size - 1) as i32, y as i32, z as i32));
     #[rustfmt::skip]
-    mesh_plane!(4, 0..size, 0..size, |x, y| IVec3::new(x as i32, y as i32, (size-1) as i32));
+    mesh_plane!(4, 0..size, 0..size, |x, y| IVec3::new(x as i32, y as i32, (size - 1) as i32));
     #[rustfmt::skip]
     mesh_plane!(5, 0..size, 0..size, |x, y| IVec3::new(x as i32, y as i32, 0));
 

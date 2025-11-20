@@ -1,59 +1,126 @@
 use super::{OpaqueMeshData, TransparentMeshData};
 use crate::prelude::*;
+use crate::render_world::textures::TextureRegistryResource;
 use crate::render_world::types::{TextureId, WorldVertex};
 use crate::simulation_world::{
-    block::{BlockId, BlockProperties, BlockRegistryResource},
-    chunk::{types::ChunkLod, NeighborLODs, PaddedChunkView},
+    block::{BlockId, BlockRegistryResource},
+    chunk::{types::ChunkLod, NeighborLODs, PaddedChunk},
 };
 
-#[derive(Clone, Copy)]
-pub enum Face {
-    Top = 0,
-    Bottom = 1,
-    Left = 2,
-    Right = 3,
-    Front = 4,
-    Back = 5,
-}
+// INFO: -----------------------
+//         lookup tables
+// -----------------------------
 
-/// Represents a direction to check for face rendering
-pub struct FaceDirection {
-    pub offset: IVec3,
-    pub face: Face,
-    pub get_texture: fn(&BlockProperties) -> TextureId,
-}
+/// The 6 cardinal neighbor offsets.
+///
+/// Order: Top, Bottom, Left, Right, Front, Back
+pub const NEIGHBOR_OFFSETS: [IVec3; 6] = [
+    IVec3::new(0, 1, 0),  // Top
+    IVec3::new(0, -1, 0), // Bottom
+    IVec3::new(-1, 0, 0), // Left
+    IVec3::new(1, 0, 0),  // Right
+    IVec3::new(0, 0, 1),  // Front
+    IVec3::new(0, 0, -1), // Back
+];
 
-pub const FACE_DIRECTIONS: [FaceDirection; 6] = [
-    FaceDirection {
-        offset: IVec3::new(0, 1, 0),
-        face: Face::Top,
-        get_texture: |props| props.textures.top,
-    },
-    FaceDirection {
-        offset: IVec3::new(0, -1, 0),
-        face: Face::Bottom,
-        get_texture: |props| props.textures.bottom,
-    },
-    FaceDirection {
-        offset: IVec3::new(-1, 0, 0),
-        face: Face::Left,
-        get_texture: |props| props.textures.left,
-    },
-    FaceDirection {
-        offset: IVec3::new(1, 0, 0),
-        face: Face::Right,
-        get_texture: |props| props.textures.right,
-    },
-    FaceDirection {
-        offset: IVec3::new(0, 0, 1),
-        face: Face::Front,
-        get_texture: |props| props.textures.front,
-    },
-    FaceDirection {
-        offset: IVec3::new(0, 0, -1),
-        face: Face::Back,
-        get_texture: |props| props.textures.back,
-    },
+/// Normals for the 6 faces.
+///
+/// Order: Top, Bottom, Left, Right, Front, Back
+pub const FACE_NORMALS: [[f32; 3]; 6] = [
+    [0.0, 1.0, 0.0],  // Top
+    [0.0, -1.0, 0.0], // Bottom
+    [-1.0, 0.0, 0.0], // Left
+    [1.0, 0.0, 0.0],  // Right
+    [0.0, 0.0, 1.0],  // Front
+    [0.0, 0.0, -1.0], // Back
+];
+
+/// Raw unit-cube vertex positions (0.0 to 1.0) for all 6 faces * 4 verts.
+///
+/// Order: Top, Bottom, Left, Right, Front, Back
+pub const UNIT_VERTICES: [[[f32; 3]; 4]; 6] = [
+    // Top (Y+)
+    [
+        [0.0, 1.0, 1.0],
+        [1.0, 1.0, 1.0],
+        [1.0, 1.0, 0.0],
+        [0.0, 1.0, 0.0],
+    ],
+    // Bottom (Y-)
+    [
+        [0.0, 0.0, 0.0],
+        [1.0, 0.0, 0.0],
+        [1.0, 0.0, 1.0],
+        [0.0, 0.0, 1.0],
+    ],
+    // Left (X-)
+    [
+        [0.0, 0.0, 0.0],
+        [0.0, 0.0, 1.0],
+        [0.0, 1.0, 1.0],
+        [0.0, 1.0, 0.0],
+    ],
+    // Right (X+)
+    [
+        [1.0, 0.0, 1.0],
+        [1.0, 0.0, 0.0],
+        [1.0, 1.0, 0.0],
+        [1.0, 1.0, 1.0],
+    ],
+    // Front (Z+)
+    [
+        [0.0, 0.0, 1.0],
+        [1.0, 0.0, 1.0],
+        [1.0, 1.0, 1.0],
+        [0.0, 1.0, 1.0],
+    ],
+    // Back (Z-)
+    [
+        [1.0, 0.0, 0.0],
+        [0.0, 0.0, 0.0],
+        [0.0, 1.0, 0.0],
+        [1.0, 1.0, 0.0],
+    ],
+];
+
+/// Used for LOD stitching checks.
+pub const VERTEX_OFFSETS: [[IVec3; 4]; 6] = [
+    [
+        IVec3::new(-1, 1, 1),
+        IVec3::new(1, 1, 1),
+        IVec3::new(1, 1, -1),
+        IVec3::new(-1, 1, -1),
+    ], // Top
+    [
+        IVec3::new(-1, -1, -1),
+        IVec3::new(1, -1, -1),
+        IVec3::new(1, -1, 1),
+        IVec3::new(-1, -1, 1),
+    ], // Bottom
+    [
+        IVec3::new(-1, -1, -1),
+        IVec3::new(-1, -1, 1),
+        IVec3::new(-1, 1, 1),
+        IVec3::new(-1, 1, -1),
+    ], // Left
+    [
+        IVec3::new(1, -1, 1),
+        IVec3::new(1, -1, -1),
+        IVec3::new(1, 1, -1),
+        IVec3::new(1, 1, 1),
+    ], // Right
+    [
+        IVec3::new(-1, -1, 1),
+        IVec3::new(1, -1, 1),
+        IVec3::new(1, 1, 1),
+        IVec3::new(-1, 1, 1),
+    ], // Front
+    [
+        IVec3::new(1, -1, -1),
+        IVec3::new(-1, -1, -1),
+        IVec3::new(-1, 1, -1),
+        IVec3::new(1, 1, -1),
+    ], // Back
 ];
 
 /// Brightness levels for AO, from 0 (open) to 3 (fully occluded)
@@ -201,50 +268,9 @@ pub const AO_OFFSETS: [[[IVec3; 3]; 4]; 6] = [
     ],
 ];
 
-pub const VERTEX_OFFSETS: [[IVec3; 4]; 6] = [
-    // Top
-    [
-        IVec3::new(-1, 1, 1),
-        IVec3::new(1, 1, 1),
-        IVec3::new(1, 1, -1),
-        IVec3::new(-1, 1, -1),
-    ],
-    // Bottom
-    [
-        IVec3::new(-1, -1, -1),
-        IVec3::new(1, -1, -1),
-        IVec3::new(1, -1, 1),
-        IVec3::new(-1, -1, 1),
-    ],
-    // Left
-    [
-        IVec3::new(-1, -1, -1),
-        IVec3::new(-1, -1, 1),
-        IVec3::new(-1, 1, 1),
-        IVec3::new(-1, 1, -1),
-    ],
-    // Right
-    [
-        IVec3::new(1, -1, 1),
-        IVec3::new(1, -1, -1),
-        IVec3::new(1, 1, -1),
-        IVec3::new(1, 1, 1),
-    ],
-    // Front
-    [
-        IVec3::new(-1, -1, 1),
-        IVec3::new(1, -1, 1),
-        IVec3::new(1, 1, 1),
-        IVec3::new(-1, 1, 1),
-    ],
-    // Back
-    [
-        IVec3::new(1, -1, -1),
-        IVec3::new(-1, -1, -1),
-        IVec3::new(-1, 1, -1),
-        IVec3::new(1, 1, -1),
-    ],
-];
+// INFO: ------------------------
+//         util functions
+// ------------------------------
 
 /// Determine if a face should be rendered based on transparency rules
 #[inline(always)]
@@ -268,17 +294,20 @@ pub fn get_ao(
     side1_off: IVec3,
     side2_off: IVec3,
     corner_off: IVec3,
-    padded_chunk: &PaddedChunkView,
+    padded_chunk: &PaddedChunk,
     block_registry: &BlockRegistryResource,
 ) -> u8 {
+    let s1_pos = pos + side1_off;
     let s1 = !block_registry
-        .get(padded_chunk.get_block(pos + side1_off))
+        .get(padded_chunk.get_block(s1_pos.x, s1_pos.y, s1_pos.z))
         .is_transparent;
+    let s2_pos = pos + side2_off;
     let s2 = !block_registry
-        .get(padded_chunk.get_block(pos + side2_off))
+        .get(padded_chunk.get_block(s2_pos.x, s2_pos.y, s2_pos.z))
         .is_transparent;
+    let c_pos = pos + corner_off;
     let c = !block_registry
-        .get(padded_chunk.get_block(pos + corner_off))
+        .get(padded_chunk.get_block(c_pos.x, c_pos.y, c_pos.z))
         .is_transparent;
 
     if s1 && s2 {
@@ -289,16 +318,15 @@ pub fn get_ao(
 }
 
 /// Calculates the snapped position of a vertex based on the max LOD of all chunks sharing it.
-#[instrument(skip_all)]
 pub fn get_snapped_pos(
     vertex_world_pos: [f32; 3],
     vertex_offset: IVec3,
     block_chunk_pos: IVec3,
-    chunk_size: i32,
+    chunk_size: usize,
     center_lod: ChunkLod,
     all_lods: &NeighborLODs,
 ) -> [f32; 3] {
-    let max_idx = chunk_size - 1;
+    let max_idx = (chunk_size as i32) - 1;
     let x_check_idx = if block_chunk_pos.x == 0 && vertex_offset.x < 0 {
         0
     } else if block_chunk_pos.x == max_idx && vertex_offset.x > 0 {
@@ -361,183 +389,11 @@ pub fn get_snapped_pos(
     }
 }
 
-/// Create the vertices for a specified face at a particular block position
-#[instrument(skip_all)]
-pub fn create_face_verts(
-    face: &Face,
-    block_pos: IVec3,
-    scale: f32,
-    tex_index: u32,
-    base_vertex_count: u32,
-    ao_values: [f32; 4],
-    size: i32,
-    center_lod: ChunkLod,
-    all_lods: &NeighborLODs,
-) -> (Vec<WorldVertex>, [u32; 6]) {
-    let half_s = scale * 0.5;
-    let (fx, fy, fz) = (
-        (block_pos.x as f32 * scale) + half_s,
-        (block_pos.y as f32 * scale) + half_s,
-        (block_pos.z as f32 * scale) + half_s,
-    );
-
-    let (verts, normal): (Vec<[f32; 3]>, [f32; 3]) = match face {
-        Face::Top => (
-            vec![
-                [-half_s + fx, half_s + fy, half_s + fz],
-                [half_s + fx, half_s + fy, half_s + fz],
-                [half_s + fx, half_s + fy, -half_s + fz],
-                [-half_s + fx, half_s + fy, -half_s + fz],
-            ],
-            [0.0, 1.0, 0.0],
-        ),
-        Face::Bottom => (
-            vec![
-                [-half_s + fx, -half_s + fy, -half_s + fz],
-                [half_s + fx, -half_s + fy, -half_s + fz],
-                [half_s + fx, -half_s + fy, half_s + fz],
-                [-half_s + fx, -half_s + fy, half_s + fz],
-            ],
-            [0.0, -1.0, 0.0],
-        ),
-        Face::Left => (
-            vec![
-                [-half_s + fx, -half_s + fy, -half_s + fz],
-                [-half_s + fx, -half_s + fy, half_s + fz],
-                [-half_s + fx, half_s + fy, half_s + fz],
-                [-half_s + fx, half_s + fy, -half_s + fz],
-            ],
-            [-1.0, 0.0, 0.0],
-        ),
-        Face::Right => (
-            vec![
-                [half_s + fx, -half_s + fy, half_s + fz],
-                [half_s + fx, -half_s + fy, -half_s + fz],
-                [half_s + fx, half_s + fy, -half_s + fz],
-                [half_s + fx, half_s + fy, half_s + fz],
-            ],
-            [1.0, 0.0, 0.0],
-        ),
-        Face::Front => (
-            vec![
-                [-half_s + fx, -half_s + fy, half_s + fz],
-                [half_s + fx, -half_s + fy, half_s + fz],
-                [half_s + fx, half_s + fy, half_s + fz],
-                [-half_s + fx, half_s + fy, half_s + fz],
-            ],
-            [0.0, 0.0, 1.0],
-        ),
-        Face::Back => (
-            vec![
-                [half_s + fx, -half_s + fy, -half_s + fz],
-                [-half_s + fx, -half_s + fy, -half_s + fz],
-                [-half_s + fx, half_s + fy, -half_s + fz],
-                [half_s + fx, half_s + fy, -half_s + fz],
-            ],
-            [0.0, 0.0, -1.0],
-        ),
-    };
-
-    let face_idx = *face as usize;
-    let v_offsets = &VERTEX_OFFSETS[face_idx];
-
-    let snapped_verts = [
-        get_snapped_pos(
-            verts[0],
-            v_offsets[0],
-            block_pos,
-            size,
-            center_lod,
-            all_lods,
-        ),
-        get_snapped_pos(
-            verts[1],
-            v_offsets[1],
-            block_pos,
-            size,
-            center_lod,
-            all_lods,
-        ),
-        get_snapped_pos(
-            verts[2],
-            v_offsets[2],
-            block_pos,
-            size,
-            center_lod,
-            all_lods,
-        ),
-        get_snapped_pos(
-            verts[3],
-            v_offsets[3],
-            block_pos,
-            size,
-            center_lod,
-            all_lods,
-        ),
-    ];
-
-    let uvs = [[0.0, 1.0], [1.0, 1.0], [1.0, 0.0], [0.0, 0.0]];
-
-    let final_vertices = vec![
-        WorldVertex::new(
-            snapped_verts[0],
-            normal,
-            [ao_values[0]; 3],
-            uvs[0],
-            tex_index,
-        ),
-        WorldVertex::new(
-            snapped_verts[1],
-            normal,
-            [ao_values[1]; 3],
-            uvs[1],
-            tex_index,
-        ),
-        WorldVertex::new(
-            snapped_verts[2],
-            normal,
-            [ao_values[2]; 3],
-            uvs[2],
-            tex_index,
-        ),
-        WorldVertex::new(
-            snapped_verts[3],
-            normal,
-            [ao_values[3]; 3],
-            uvs[3],
-            tex_index,
-        ),
-    ];
-
-    let indices = if (ao_values[0] + ao_values[2]) > (ao_values[1] + ao_values[3]) {
-        [
-            base_vertex_count,
-            base_vertex_count + 1,
-            base_vertex_count + 2,
-            base_vertex_count + 2,
-            base_vertex_count + 3,
-            base_vertex_count,
-        ]
-    } else {
-        [
-            base_vertex_count,
-            base_vertex_count + 1,
-            base_vertex_count + 3,
-            base_vertex_count + 1,
-            base_vertex_count + 2,
-            base_vertex_count + 3,
-        ]
-    };
-
-    (final_vertices, indices)
-}
-
 /// Calculates the ambient occlusion (ao) for a chunk position
-#[instrument(skip_all)]
 pub fn calculate_ao_for_pos(
     pos: IVec3,
     face_idx: usize,
-    padded_chunk: &PaddedChunkView,
+    padded_chunk: &PaddedChunk,
     block_registry: &BlockRegistryResource,
 ) -> [f32; 4] {
     [
@@ -604,4 +460,78 @@ pub fn build_mesh_assets(
         None
     };
     (opaque, trans)
+}
+
+pub struct MesherContext<'a> {
+    pub padded_chunk: &'a PaddedChunk,
+    pub block_registry: &'a BlockRegistryResource,
+    pub texture_map: &'a TextureRegistryResource,
+    pub center_lod: ChunkLod,
+    pub neighbor_lods: &'a NeighborLODs,
+    pub chunk_size: usize,
+    pub scale: f32,
+}
+
+impl<'a> MesherContext<'a> {
+    #[inline(always)]
+    pub fn push_face(
+        &self,
+        face_idx: usize,
+        block_pos: IVec3,
+        tex_id: TextureId,
+        ao_values: [f32; 4],
+        out_vertices: &mut Vec<WorldVertex>,
+        out_indices: &mut Vec<u32>,
+    ) {
+        let tex_index = self.texture_map.get(tex_id);
+        let base_idx = out_vertices.len() as u32;
+        let normal = FACE_NORMALS[face_idx];
+        let uvs = [[0.0, 1.0], [1.0, 1.0], [1.0, 0.0], [0.0, 0.0]];
+
+        let unit_verts = &UNIT_VERTICES[face_idx];
+        let lod_offsets = &VERTEX_OFFSETS[face_idx];
+
+        for i in 0..4 {
+            let x = (unit_verts[i][0] + block_pos.x as f32) * self.scale;
+            let y = (unit_verts[i][1] + block_pos.y as f32) * self.scale;
+            let z = (unit_verts[i][2] + block_pos.z as f32) * self.scale;
+
+            let snapped = get_snapped_pos(
+                [x, y, z],
+                lod_offsets[i],
+                block_pos,
+                self.chunk_size,
+                self.center_lod,
+                self.neighbor_lods,
+            );
+
+            out_vertices.push(WorldVertex::new(
+                snapped,
+                normal,
+                [ao_values[i]; 3],
+                uvs[i],
+                tex_index,
+            ));
+        }
+
+        if (ao_values[0] + ao_values[2]) > (ao_values[1] + ao_values[3]) {
+            out_indices.extend_from_slice(&[
+                base_idx,
+                base_idx + 1,
+                base_idx + 2,
+                base_idx + 2,
+                base_idx + 3,
+                base_idx,
+            ]);
+        } else {
+            out_indices.extend_from_slice(&[
+                base_idx,
+                base_idx + 1,
+                base_idx + 3,
+                base_idx + 1,
+                base_idx + 2,
+                base_idx + 3,
+            ]);
+        }
+    }
 }

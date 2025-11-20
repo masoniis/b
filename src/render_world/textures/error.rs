@@ -29,7 +29,10 @@ impl fmt::Display for TextureLoadError {
                 )
             }
             TextureLoadError::MissingTextureNotInManifest => {
-                write!(f, "The required TextureId::Missing was not found in the manifest.")
+                write!(
+                    f,
+                    "The required TextureId::Missing was not found in the manifest."
+                )
             }
         }
     }

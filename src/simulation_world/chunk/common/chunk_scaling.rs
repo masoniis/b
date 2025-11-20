@@ -1,8 +1,10 @@
+use crate::prelude::*;
 use crate::simulation_world::chunk::{
     chunk_blocks::ChunkView, types::ChunkLod, ChunkBlocksComponent, CHUNK_SIDE_LENGTH,
 };
 
 /// Upsamples a low-LOD (e.g., 16x16x16) chunk to a higher LOD (e.g., 32x32x32).
+#[instrument(skip_all)]
 pub fn upsample_chunk(
     chunk_to_upsample: &ChunkBlocksComponent,
     target_lod: ChunkLod,
@@ -45,6 +47,7 @@ pub fn upsample_chunk(
 }
 
 /// Downsamples a high-LOD (e.g., 32x32x32) chunk to a lower LOD (e.g., 16x16x16).
+#[instrument(skip_all)]
 pub fn downsample_chunk(
     chunk_to_downsample: &ChunkBlocksComponent,
     target_lod: ChunkLod,

@@ -1,3 +1,4 @@
+pub mod active_gen_text;
 pub mod camera_coords;
 pub mod camera_xyz_coords;
 pub mod fps_counter;

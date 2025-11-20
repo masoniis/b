@@ -12,6 +12,8 @@ use std::fmt::Debug;
 
 /// A trait for chunk shapers to implement.
 pub trait TerrainShaper: Send + Sync + Debug {
+    fn name(&self) -> &str;
+
     /// Takes in empty chunk blocks and fills them in according to the generator's logic.
     fn shape_terrain_chunk(
         &self,
@@ -19,7 +21,7 @@ pub trait TerrainShaper: Send + Sync + Debug {
         climate_map: &ClimateMapComponent,
 
         // output
-        shaper: ShapeResultBuilder,
+        shape_builder: ShapeResultBuilder,
     ) -> ShapeResultBuilder;
 
     /// A fast, cheap check to see if this chunk will be uniform (all air or all solid).
