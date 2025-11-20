@@ -15,6 +15,9 @@ pub fn attach_logger() {
         .with_timer(timer)
         .compact();
 
+    #[cfg(feature = "tracy")]
+    let fmt_layer = fmt_layer.with_ansi(false);
+
     let subscriber = Registry::default().with(env_filter).with(fmt_layer);
 
     #[cfg(feature = "tracy")]

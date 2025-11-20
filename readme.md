@@ -1,16 +1,16 @@
 # 🅱️oxel
 
 [![GitHub Repository](https://img.shields.io/badge/GitHub-Repository-blue?style=flat&logo=github)](https://github.com/masoniis/b)
+![Rust Version](https://img.shields.io/badge/rustc-1.88.0%2B-orange.svg)
 
 ## Table of contents
 
-- [Cool features](#cool-features)
 - [Notes for grading](#notes-for-grading)
   - [Usage warnings](#usage-warnings)
   - [What remains to be done](#what-remains-to-be-done)
 - [How to run the project](#how-to-run-the-project)
   - [Usage guide](#usage-guide)
-- [Cool "technical" things](#cool-technical-notes)
+- [Cool "technical" things](#cool-technical-things)
   - [Graphics stuff](#graphics-stuff)
   - [Other stuff](#other-stuff)
 - [Acknowledgments](#acknowledgments)
@@ -39,18 +39,24 @@
 
 ## How to run the project
 
-Compiling the project requires the **rust toolchain**. If you don't already have rust, installation is platform dependent but very straightforward. See [rust's guide](https://rust-lang.org/tools/install/) for steps. Once the toolchain is ready to go, you should have `cargo` as a command, and building/running the project is very simple:
+Compiling the project requires **Rust 1.88 or newer**.
+
+> [!TIP]
+> If you don't have Rust, check out [the official guide](https://rust-lang.org/tools/install/) for installing it.
+>
+> - Assuming `rustup` is being used (eg, from the official guide above), the project's `rust-toolchain.toml` will automatically handle versioning to match 1.88.
+> - Any other installation method will have to manually ensure the version 1.88 or newer.
+
+To run, `cargo` can be used like any standard Rust project:
 
 - Run `cargo run --release` to compile and run in **release mode** (higher fps, optimized compilation)
 - Run `cargo run` to compile and run in **debug mode** (lower FPS, debug tracing, simplified compilation)
-
-I would recommend release mode unless you want to avoid compliation time as FPS is far higher.
 
 ### Usage guide
 
 | Key(s)        | Action                                                                               |
 | :------------ | :----------------------------------------------------------------------------------- |
-| `Escape`      | Toggle "pause" (unlocks cursor)                                                      |
+| `Escape`      | Toggle "pause" (locks/unlocks cursor, no _real_ pause currently)                     |
 | `W`           | Move forward                                                                         |
 | `S`           | Move backward                                                                        |
 | `A`           | Move left                                                                            |
@@ -62,8 +68,6 @@ I would recommend release mode unless you want to avoid compliation time as FPS 
 | `F1` or `1`   | Toggle diagnostics UI (FPS, vert count, coordinates)                                 |
 | `F2` or `2`   | Toggle opaque wireframe mode                                                         |
 | `F3` or `3`   | Toggle chunk borders                                                                 |
-
-NOTE: The simulation currently doesn't actually pause, but you can still use `Escape` to unlock and unhide the cursor.
 
 ## Cool "technical" things
 

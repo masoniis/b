@@ -21,7 +21,7 @@ pub type OpaqueMeshData = MeshAsset;
 pub type TransparentMeshData = MeshAsset;
 
 /// Main chunk meshing entry point: Build a mesh for a single chunk.
-#[instrument(skip_all)]
+#[instrument(skip_all, fields(chunk = %name))]
 pub fn build_chunk_mesh(
     name: &str,
     padded_chunk: PaddedChunkView,

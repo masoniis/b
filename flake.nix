@@ -30,15 +30,15 @@
           mkShell (
             {
               buildInputs = [
-                # rust
-                pkgs-unstable.cargo
+                # rust stuff
                 pkgs-unstable.tracy-glfw
                 pkgs-unstable.wgsl-analyzer
+                rustup
 
                 # utils
                 just
-                ripgrep
-                gnuplot
+                ripgrep # for justfile
+                gnuplot # for benchmarks
               ]
               ++ (lib.optionals stdenv.isLinux [
                 libGL
@@ -50,11 +50,13 @@
 
               shellHook = ''
                 export PATH="$HOME/.cargo/bin:$PATH"
+                rustup show active-toolchain
               '';
 
             }
             // (lib.optionalAttrs stdenv.isLinux {
-              RUST_SRC_PATH = "${pkgs-unstable.rust.packages.stable.rustPlatform.rustLibSrc}";
+              # untested but probably not needed now that using rustup instead of cargo from nixpkgs
+              # RUST_SRC_PATH = "${pkgs-unstable.rust.packages.stable.rustPlatform.rustLibSrc}";
 
               LD_LIBRARY_PATH = lib.makeLibraryPath [
                 libGL
@@ -67,10 +69,8 @@
     )
     // (
       let
-        # Small tool to iterate over each systems
+        # iterate each system and evaluate
         eachSystem = f: nixpkgs.lib.genAttrs (import systems) (system: f nixpkgs.legacyPackages.${system});
-
-        # Eval the treefmt modules from ./treefmt.nix
         treefmtEval = eachSystem (pkgs: treefmt-nix.lib.evalModule pkgs ./treefmt.nix);
       in
       {
