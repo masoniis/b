@@ -3,7 +3,7 @@ use crate::{
     render_world::{
         global_extract::resources::RenderWindowSizeResource,
         graphics_context::resources::RenderQueue,
-        passes::ui_pass::startup::{UiViewBuffer, UiViewData},
+        passes::ui_pass::gpu_resources::view_binding::{UiViewBuffer, UiViewData},
     },
 };
 use bevy_ecs::prelude::*;

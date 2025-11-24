@@ -19,18 +19,19 @@ LOCAL_CARGO := $(LOCAL_DIR)/bin/cargo
 #         logic
 # ---------------------
 
-.PHONY: all run build clean setup
+.PHONY: default run build clean setup
 
-all: build
+default: build
 
 run: build
 	@echo "executing ./final ..."
 	@./final
 
 build: setup
-	@echo "building Release..."
+	@echo "building binary..."
 	@export PATH=$(LOCAL_DIR)/bin:$(PATH) && \
-	$(LOCAL_CARGO) build --release
+    export LD_LIBRARY_PATH=$(LOCAL_DIR)/lib:$(LD_LIBRARY_PATH) && \
+      $(LOCAL_CARGO) build --release
 	@cp target/release/b final
 	@echo ""
 	@echo "build finished, binary placed at ./final"

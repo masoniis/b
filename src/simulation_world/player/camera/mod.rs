@@ -1,10 +1,8 @@
 pub mod component;
-pub mod default_camera;
 pub mod movement;
 pub mod resource;
 
 pub use component::*;
-pub use default_camera::*;
 pub use movement::*;
 pub use resource::*;
 
@@ -25,9 +23,7 @@ pub struct CameraPlugin;
 
 impl Plugin for CameraPlugin {
     fn build(&self, builder: &mut EcsBuilder) {
-        builder
-            .schedule_entry(SimulationSchedule::Startup)
-            .add_systems(setup_camera_system);
+        builder.init_resource::<ActiveCamera>();
 
         builder
             .schedule_entry(SimulationSchedule::Main)

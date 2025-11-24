@@ -1,4 +1,4 @@
-use super::super::startup::{
+use super::super::gpu_resources::{
     GlyphonAtlasResource, GlyphonCacheResource, GlyphonFontSystemResource, GlyphonRendererResource,
     GlyphonViewportResource,
 };

@@ -1,11 +1,9 @@
 struct EnvironmentUniform {
     sun_direction: vec3<f32>,
+    time: f32,
     horizon_color: vec3<f32>,
     zenith_color: vec3<f32>,
 };
-
-@group(1) @binding(0)
-var<uniform> env_params: EnvironmentUniform;
 
 fn calculate_sky_color(
     /// normalized direction from camera to a point in the sky

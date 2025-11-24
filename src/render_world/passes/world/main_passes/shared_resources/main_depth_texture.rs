@@ -12,56 +12,51 @@ pub struct MainDepthTextureResource {
     pub view: TextureView,
 }
 
-/// Utility function to create the depth texture and its view
-fn create_depth_texture(
-    device: &RenderDevice,
-    width: u32,
-    height: u32,
-) -> MainDepthTextureResource {
-    let depth_texture = device.create_texture(&wgpu::TextureDescriptor {
-        label: Some("Main Depth Texture"),
-        size: wgpu::Extent3d {
-            width,
-            height,
-            depth_or_array_layers: 1,
-        },
-        mip_level_count: 1,
-        sample_count: 1,
-        dimension: wgpu::TextureDimension::D2,
-        format: MAIN_DEPTH_FORMAT,
-        usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
-        view_formats: &[MAIN_DEPTH_FORMAT],
-    });
+impl FromWorld for MainDepthTextureResource {
+    fn from_world(world: &mut World) -> Self {
+        let device = world.resource::<RenderDevice>();
+        let config = world.resource::<RenderSurfaceConfig>();
 
-    let depth_view = depth_texture.create_view(&Default::default());
+        debug!(
+            target : "wgpu_setup",
+            "Inserting main depth texture resource with size {}x{}",
+            config.width,
+            config.height
+        );
 
-    MainDepthTextureResource {
-        texture: depth_texture,
-        view: depth_view,
+        Self::new(device, config.width, config.height)
     }
 }
 
-/// A system that sets up the depth texture used in the opaque and transparent passes.
-///
-/// This system should run once at startup to create the initial depth texture.
-#[instrument(skip_all)]
-pub fn setup_main_depth_texture_system(
-    // Input
-    device: Res<RenderDevice>,
-    config: Res<RenderSurfaceConfig>,
+impl MainDepthTextureResource {
+    pub fn new(device: &RenderDevice, width: u32, height: u32) -> MainDepthTextureResource {
+        let depth_texture = device.create_texture(&wgpu::TextureDescriptor {
+            label: Some("Main Depth Texture"),
+            size: wgpu::Extent3d {
+                width,
+                height,
+                depth_or_array_layers: 1,
+            },
+            mip_level_count: 1,
+            sample_count: 1,
+            dimension: wgpu::TextureDimension::D2,
+            format: MAIN_DEPTH_FORMAT,
+            usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
+            view_formats: &[MAIN_DEPTH_FORMAT],
+        });
 
-    // Output (spawned resource)
-    mut commands: Commands,
-) {
-    debug!(
-        target : "wgpu_setup",
-        "Inserting main depth texture resource with size {}x{}",
-        config.width,
-        config.height
-    );
-    let depth_resource = create_depth_texture(&device, config.width, config.height);
-    commands.insert_resource(depth_resource);
+        let depth_view = depth_texture.create_view(&Default::default());
+
+        Self {
+            texture: depth_texture,
+            view: depth_view,
+        }
+    }
 }
+
+// INFO: --------------------------
+//         updating texture
+// --------------------------------
 
 /// A system that resizes the depth texture if the surface configuration changes.
 ///
@@ -90,6 +85,5 @@ pub fn resize_main_depth_texture_system(
         config.height
     );
 
-    let new_depth_resource = create_depth_texture(&device, config.width, config.height);
-    *depth_texture_res = new_depth_resource;
+    *depth_texture_res = MainDepthTextureResource::new(&device, config.width, config.height);
 }

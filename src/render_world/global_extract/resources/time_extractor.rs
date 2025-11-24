@@ -1,0 +1,35 @@
+use crate::{
+    render_world::global_extract::generic_systems::extract_resource::ExtractResource,
+    simulation_world::time::FrameClock,
+};
+use bevy_ecs::{
+    prelude::Resource,
+    system::{Commands, ResMut},
+};
+
+#[derive(Resource, Debug, Default)]
+pub struct RenderTimeResource {
+    pub total_elapsed_seconds: f32,
+}
+
+/// An extractor that extracts the sun's direction from the simulation world's `WorldClockResource`.
+pub struct RenderTimeExtractor;
+
+impl ExtractResource for RenderTimeExtractor {
+    type Source = FrameClock;
+    type Output = RenderTimeResource;
+
+    /// Extracts the time resource. Because time always changes, this performs
+    /// an unconditional update every frame.
+    fn extract_and_update(
+        commands: &mut Commands,
+        source: &Self::Source,
+        _target: Option<ResMut<Self::Output>>,
+    ) {
+        // since elapsed time always changed we can just insert it and trigger
+        // updates every frame, no point in doing conditional change checking
+        commands.insert_resource(RenderTimeResource {
+            total_elapsed_seconds: source.elapsed.as_secs_f32(),
+        });
+    }
+}

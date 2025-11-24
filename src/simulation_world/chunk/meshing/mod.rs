@@ -51,7 +51,7 @@ fn is_fully_occluded(
     registry: &BlockRegistryResource,
     center_id: BlockId,
 ) -> bool {
-    let center_props = registry.get(center_id);
+    let center_props = registry.get_render_data(center_id);
 
     // if center is transparent can't cull
     if center_props.is_transparent {

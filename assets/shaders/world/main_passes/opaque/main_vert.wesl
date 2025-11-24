@@ -1,26 +1,69 @@
-import super::common::{myTexture, mySampler, objects, VertexOutput};
-import super::super::lib::camera_uniform::{camera};
-import package::world::lib::vertex::{WorldVertex};
+import package::world::main_passes::{
+  lib::camera_uniform::{camera},
+	lib::geometry_bindings::{faces, chunks},
+};
+import package::world::lib::{
+  vertex_pulling::{
+    pull_global_vertex_position,
+    get_voxel_uv,
+    get_voxel_normal,
+		get_ao_color,
+  },
+  face_unpacking::{unpack_face}
+};
+
+struct VertexOutput {
+    @builtin(position) clip_position: vec4<f32>,
+    @location(0) normal: vec3<f32>,
+    @location(1) color: vec3<f32>,
+    @location(2) tex_coords: vec2<f32>,
+    @location(3) @interpolate(flat) texture_index: u32,
+    @location(4) world_pos: vec3<f32>,
+};
 
 @vertex
 fn vs_main(
-    vertex: WorldVertex,
-    @builtin(instance_index) index: u32
+    @builtin(vertex_index) vertex_idx: u32,
+    @builtin(instance_index) instance_idx: u32,
 ) -> VertexOutput {
+    let chunk = chunks[instance_idx];
+
+    // INFO: ---------------------------------------------------
+    //         determine vertex pos form storage buffers
+    // ---------------------------------------------------------
+
+    // unpack face bytes
+    let local_face_idx = vertex_idx / 6u; // unsigned div truncates
+    let global_face_idx = chunk.start_index + local_face_idx;
+    let packed_face = faces[global_face_idx];
+    let face = unpack_face(packed_face);
+
+    // calculate world position of this vertex for this face
+    let vert_idx_in_quad = vertex_idx % 6u;
+    let world_pos_vec3 = pull_global_vertex_position(
+        vec3<u32>(face.position),
+        face.normal_index,
+        vert_idx_in_quad,
+        chunk.world_pos
+    );
+
+    // INFO: -------------------------
+    //         mix in AO value
+    // -------------------------------
+
+    // INFO: -------------------------
+    //         output for frag
+    // -------------------------------
+
     var out: VertexOutput;
 
-    // get model matrix from buffer and apply it
-    let model = objects[index].model_matrix;
-    let world_position = model * vec4<f32>(vertex.position, 1.0);
-    out.clip_position = camera.view_proj * world_position;
+    out.world_pos = world_pos_vec3;
+    out.clip_position = camera.view_proj * vec4<f32>(world_pos_vec3, 1.0);
 
-    // pass other attributes to the fragment shader
-    out.normal = vertex.normal;
-    out.color = vertex.color;
-    out.tex_coords = vertex.tex_coords;
-    out.texture_index = vertex.texture_index;
-    out.distance_from_camera = length(world_position.xyz - camera.world_position);
-    out.world_pos = world_position.xyz;
+    out.normal = get_voxel_normal(face.normal_index);
+    out.color = get_ao_color(face.ao_levels, vert_idx_in_quad);
+    out.tex_coords = get_voxel_uv(vert_idx_in_quad);
+    out.texture_index = face.texture_id;
 
     return out;
 }

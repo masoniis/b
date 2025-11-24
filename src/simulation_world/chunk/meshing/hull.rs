@@ -17,9 +17,7 @@ pub fn build_hull_mesh(
     block_registry: &BlockRegistryResource,
     block_id: BlockId,
 ) -> (Option<OpaqueMeshData>, Option<TransparentMeshData>) {
-    // TODO: bug in hull mesh with neighbor faces needs to be fixed
-    let mut vertices = Vec::with_capacity(4096);
-    let mut indices = Vec::with_capacity(6144);
+    let mut faces = Vec::with_capacity(4096);
 
     let ctx = MesherContext {
         padded_chunk,
@@ -32,8 +30,10 @@ pub fn build_hull_mesh(
     };
 
     let size = ctx.chunk_size;
-    let props = block_registry.get(block_id);
+    let props = block_registry.get_render_data(block_id);
     let is_trans = props.is_transparent;
+
+    let transparency_lut = block_registry.get_transparency_lut();
 
     macro_rules! mesh_plane {
         ($face_idx:expr, $u_range:expr, $v_range:expr, $pos_fn:expr) => {
@@ -62,7 +62,7 @@ pub fn build_hull_mesh(
                             neighbor_pos.y,
                             neighbor_pos.z,
                         );
-                        let neighbor_props = ctx.block_registry.get(neighbor_id);
+                        let neighbor_props = ctx.block_registry.get_render_data(neighbor_id);
 
                         if should_render_face(
                             block_id,
@@ -70,14 +70,14 @@ pub fn build_hull_mesh(
                             neighbor_id,
                             neighbor_props.is_transparent,
                         ) {
-                            let ao = calculate_ao_for_pos(
+                            let ao = calculate_ao_levels_for_face(
                                 pos,
-                                $face_idx,
+                                FaceSide::ALL[$face_idx],
                                 ctx.padded_chunk,
-                                ctx.block_registry,
+                                transparency_lut,
                             );
 
-                            ctx.push_face($face_idx, pos, tex_id, ao, &mut vertices, &mut indices);
+                            ctx.push_face(FaceSide::ALL[$face_idx], pos, tex_id, ao, &mut faces);
                         }
                     }
                 }
@@ -98,11 +98,11 @@ pub fn build_hull_mesh(
     #[rustfmt::skip]
     mesh_plane!(5, 0..size, 0..size, |x, y| IVec3::new(x as i32, y as i32, 0));
 
-    let (o_v, o_i, t_v, t_i) = if is_trans {
-        (Vec::new(), Vec::new(), vertices, indices)
+    let (opaque_faces, transparent_faces) = if is_trans {
+        (Vec::new(), faces)
     } else {
-        (vertices, indices, Vec::new(), Vec::new())
+        (faces, Vec::new())
     };
 
-    build_mesh_assets(name, o_v, o_i, t_v, t_i)
+    build_mesh_assets(name, opaque_faces, transparent_faces)
 }

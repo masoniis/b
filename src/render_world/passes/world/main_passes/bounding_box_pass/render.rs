@@ -1,11 +1,14 @@
+use super::gpu_resources::WireframeObjectBuffer;
 use crate::{
     prelude::*,
     render_world::passes::{
         core::{RenderContext, RenderNode},
         world::main_passes::{
-            bounding_box_pass::startup::{setup_bb_mesh::DebugWireframeMesh, setup_bb_pipeline::*},
+            bounding_box_pass::gpu_resources::{
+                unit_cube_mesh::UnitCubeMesh, wireframe_pipeline::*,
+            },
             shared_resources::main_depth_texture::MainDepthTextureResource,
-            shared_resources::{CentralCameraViewBuffer, EnvironmentBuffer},
+            shared_resources::{CentralCameraViewUniform, EnvironmentUniforms},
         },
     },
 };
@@ -30,10 +33,10 @@ impl RenderNode for BoundingBoxNode {
         ) = (
             world.get_resource::<WireframePipeline>(),
             world.get_resource::<WireframeObjectBuffer>(),
-            world.get_resource::<DebugWireframeMesh>(),
-            world.get_resource::<CentralCameraViewBuffer>(),
+            world.get_resource::<UnitCubeMesh>(),
+            world.get_resource::<CentralCameraViewUniform>(),
             world.get_resource::<MainDepthTextureResource>(),
-            world.get_resource::<EnvironmentBuffer>(),
+            world.get_resource::<EnvironmentUniforms>(),
         )
         else {
             warn!("Missing one or more required resources for the Wireframe Pass. Skipping pass.");
@@ -75,7 +78,7 @@ impl RenderNode for BoundingBoxNode {
                 });
 
         // do render
-        render_pass.set_pipeline(&wireframe_pipeline.inner.pipeline);
+        render_pass.set_pipeline(&wireframe_pipeline);
 
         render_pass.set_bind_group(0, &view_bind_group.bind_group, &[]);
         render_pass.set_bind_group(1, &enironent.bind_group, &[]);

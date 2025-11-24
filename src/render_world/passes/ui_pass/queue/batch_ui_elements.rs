@@ -6,8 +6,8 @@ use crate::{
         graphics_context::resources::RenderQueue,
         passes::ui_pass::{
             extract::{RenderableUiElement, UiElementKind},
+            gpu_resources::{UiMaterialBuffer, UiMaterialData, UiObjectBuffer, UiObjectData},
             prepare::UiChanges,
-            startup::{UiMaterialBuffer, UiMaterialData, UiObjectBuffer, UiObjectData},
         },
     },
 };

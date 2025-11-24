@@ -5,6 +5,7 @@ pub mod scheduling;
 pub mod textures;
 pub mod types;
 
+use crate::render_world::textures::StagingTextureImages;
 pub use scheduling::{RenderSchedule, RenderSet};
 
 // INFO: --------------------------------
@@ -24,7 +25,6 @@ use crate::render_world::{
     },
     graphics_context::{GraphicsContext, GraphicsContextPlugin},
     passes::{core::setup_render_graph, RenderPassManagerPlugin},
-    textures::{GpuTextureArray, TextureArrayResource},
 };
 use bevy_ecs::prelude::*;
 use std::ops::{Deref, DerefMut};
@@ -48,11 +48,11 @@ impl DerefMut for RenderWorldInterface {
 
 impl RenderWorldInterface {
     /// Creates a new render world with a sane default configuration
-    pub fn new(graphics_context: GraphicsContext, texture_array: GpuTextureArray) -> Self {
+    pub fn new(
+        graphics_context: GraphicsContext,
+        staging_texture_images: StagingTextureImages,
+    ) -> Self {
         let mut builder = EcsBuilder::new();
-
-        // TODO: Texture could have it's own module that depends on graphics context instead of
-        // hardcoding it here in the interface potentially
 
         // INFO: -----------------------------------------------------
         //         Set up graphics-context dependent resources
@@ -63,9 +63,7 @@ impl RenderWorldInterface {
 
         // Add any resources that require specific app input
         builder
-            .add_resource(TextureArrayResource {
-                array: texture_array,
-            })
+            .add_resource(staging_texture_images)
             .add_resource(RenderWorldMarker);
 
         // INFO: --------------------------------

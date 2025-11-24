@@ -1,11 +1,12 @@
 use crate::prelude::*;
+use crate::render_world::passes::world::gpu_resources::world_uniforms::ChunkStorageManager;
 use crate::render_world::{
     global_extract::RenderMeshStorageResource,
     passes::core::{RenderContext, RenderNode},
     passes::world::main_passes::opaque_pass::{
-        extract::OpaqueRenderMeshComponent, queue::Opaque3dRenderPhase, startup::OpaqueObjectBuffer,
+        extract::OpaqueRenderMeshComponent, queue::Opaque3dRenderPhase,
     },
-    passes::world::shadow_pass::startup::{
+    passes::world::shadow_pass::gpu_resources::{
         ShadowDepthTextureResource, ShadowPassPipeline, ShadowViewBuffer,
     },
 };
@@ -38,14 +39,14 @@ impl RenderNode for ShadowRenderPassNode {
             // opaque mesh to base shadow depth on
             Some(phase),
             Some(mesh_storage),
-            Some(object_buffer),
+            Some(chunk_memory_manager),
         ) = (
             world.get_resource::<ShadowPassPipeline>(),
             world.get_resource::<ShadowViewBuffer>(),
             world.get_resource::<ShadowDepthTextureResource>(),
             world.get_resource::<Opaque3dRenderPhase>(),
             world.get_resource::<RenderMeshStorageResource>(),
-            world.get_resource::<OpaqueObjectBuffer>(),
+            world.get_resource::<ChunkStorageManager>(),
         )
         else {
             warn!("Missing one or more required resources for the Shadow Pass. Skipping pass.");
@@ -53,7 +54,7 @@ impl RenderNode for ShadowRenderPassNode {
         };
 
         // INFO: --------------------------------
-        //          set up the render pass
+        //         set up the render pass
         // --------------------------------------
         let mut render_pass =
             render_context
@@ -73,30 +74,22 @@ impl RenderNode for ShadowRenderPassNode {
                     occlusion_query_set: None,
                 });
 
-        // INFO: --------------------------------------------
-        //          shadow pipeline: iterate and draw
-        // --------------------------------------------------
-        render_pass.set_pipeline(&pipeline.pipeline.pipeline);
+        // INFO: -------------------------------------------
+        //         shadow pipeline: iterate and draw
+        // -------------------------------------------------
+        render_pass.set_pipeline(&pipeline.pipeline);
 
         render_pass.set_bind_group(0, &shadow_view_buffer.bind_group, &[]);
-        render_pass.set_bind_group(1, &object_buffer.bind_group, &[]);
+        render_pass.set_bind_group(1, &chunk_memory_manager.bind_group, &[]);
 
-        for (i, item) in phase.items.iter().enumerate() {
+        for item in phase.items.iter() {
             if let Ok(render_mesh_comp) = self.mesh_query.get(world, item.entity) {
                 if let Some(gpu_mesh) = mesh_storage.meshes.get(&render_mesh_comp.mesh_handle.id())
                 {
-                    let object_index = i as u32;
+                    let object_index = gpu_mesh.slot_index;
 
-                    // buffers for this specific mesh
-                    render_pass.set_vertex_buffer(0, gpu_mesh.vertex_buffer.slice(..));
-                    render_pass.set_index_buffer(
-                        gpu_mesh.index_buffer.slice(..),
-                        wgpu::IndexFormat::Uint32,
-                    );
-
-                    render_pass.draw_indexed(
-                        0..gpu_mesh.index_count,
-                        0,
+                    render_pass.draw(
+                        0..(gpu_mesh.face_count * 6),
                         object_index..(object_index + 1),
                     );
                 }

@@ -1,11 +1,11 @@
 use crate::prelude::*;
-use crate::render_world::passes::world::shadow_pass::startup::SHADOW_MAP_RESOLUTION;
+use crate::render_world::global_extract::ExtractedSun;
+use crate::render_world::passes::world::shadow_pass::gpu_resources::SHADOW_MAP_RESOLUTION;
 use crate::{
     render_world::{
         global_extract::RenderCameraResource,
         graphics_context::resources::RenderQueue,
-        passes::world::shadow_pass::extract::ExtractedSun,
-        passes::world::shadow_pass::startup::{ShadowViewBuffer, ShadowViewData},
+        passes::world::shadow_pass::gpu_resources::{ShadowViewBuffer, ShadowViewData},
     },
     simulation_world::player::CAMERA_NEAR_PLANE,
 };
@@ -41,7 +41,7 @@ pub fn update_shadow_view_buffer_system(
 
     // view mat
     let sun_target = camera.world_position;
-    let sun_position = sun_target + sun_direction * SHADOW_DISTANCE * 2.0; // sun is "far away" from target
+    let sun_position = sun_target + sun_direction * 1024.0; // sun is "far away" from target
     let sun_view_mat = Mat4::look_at_rh(sun_position, sun_target, light_up);
 
     // camera view and inverse matrices

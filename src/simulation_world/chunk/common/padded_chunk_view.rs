@@ -83,10 +83,10 @@ impl PaddedChunk {
 
                 match view {
                     ChunkView::Uniform(block) => {
-                        for z in z_range.clone() {
-                            for y in y_range.clone() {
-                                for x in x_range.clone() {
-                                    let idx = x + y * PADDED_SIZE + z * PADDED_SIZE * PADDED_SIZE;
+                        for x in x_range.clone() {
+                            for z in z_range.clone() {
+                                for y in y_range.clone() {
+                                    let idx = y + z * PADDED_SIZE + x * PADDED_SIZE * PADDED_SIZE;
                                     unsafe {
                                         *buffer.get_unchecked_mut(idx) = block;
                                     }
@@ -235,7 +235,7 @@ impl PaddedChunk {
                 for y in y_range.clone() {
                     let idx = y + z * PADDED_SIZE + x * PADDED_SIZE * PADDED_SIZE;
                     let block_id = self.voxels[idx];
-                    if registry.get(block_id).is_transparent {
+                    if registry.get_render_data(block_id).is_transparent {
                         return false;
                     }
                 }

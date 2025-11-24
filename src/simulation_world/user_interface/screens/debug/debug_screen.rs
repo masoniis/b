@@ -26,8 +26,7 @@ pub enum StatMarker {
     Fps(FpsCounterTextElementMarker),
     Memory(MemoryCounterTextElementMarker),
     MeshCount(MeshCountTextMarker),
-    VertexCount(VertexCountTextMarker),
-    IndexCount(IndexCountTextMarker),
+    FaceCount(FaceCountTextMarker),
 }
 
 /// A marker component for all entities that are part of the diag UI.
@@ -60,11 +59,7 @@ pub struct MeshCountTextMarker;
 
 /// A marker component for the total vertex count text element.
 #[derive(Component)]
-pub struct VertexCountTextMarker;
-
-/// A marker component for the total triangle count text element.
-#[derive(Component)]
-pub struct IndexCountTextMarker;
+pub struct FaceCountTextMarker;
 
 // INFO: -------------------------------------
 //         Toggling and creation logic
@@ -229,16 +224,10 @@ fn spawn_diagnostic_ui(
                             marker: StatMarker::MeshCount(MeshCountTextMarker),
                         },
                         StatLineElement {
-                            prefix: " Verts: ".to_string(),
-                            content: mesh_stats.total_vertices.to_string(),
+                            prefix: " Faces: ".to_string(),
+                            content: mesh_stats.total_faces.to_string(),
                             color: [0.6, 0.8, 0.6, 1.0],
-                            marker: StatMarker::VertexCount(VertexCountTextMarker),
-                        },
-                        StatLineElement {
-                            prefix: " Idxs: ".to_string(),
-                            content: mesh_stats.total_indices.to_string(),
-                            color: [0.6, 0.6, 0.9, 1.0],
-                            marker: StatMarker::IndexCount(IndexCountTextMarker),
+                            marker: StatMarker::FaceCount(FaceCountTextMarker),
                         },
                     ];
                     spawn_stats_line(parent, mesh_line_elements, font_size, align);
@@ -319,8 +308,7 @@ fn spawn_stats_line(
                     StatMarker::Fps(marker) => text_entity.insert(marker),
                     StatMarker::Memory(marker) => text_entity.insert(marker),
                     StatMarker::MeshCount(marker) => text_entity.insert(marker),
-                    StatMarker::VertexCount(marker) => text_entity.insert(marker),
-                    StatMarker::IndexCount(marker) => text_entity.insert(marker),
+                    StatMarker::FaceCount(marker) => text_entity.insert(marker),
                 };
             }
         });

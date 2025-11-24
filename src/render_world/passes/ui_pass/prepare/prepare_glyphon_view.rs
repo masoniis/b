@@ -3,7 +3,7 @@ use crate::{
     render_world::{
         global_extract::resources::RenderWindowSizeResource,
         graphics_context::resources::RenderQueue,
-        passes::ui_pass::startup::GlyphonViewportResource,
+        passes::ui_pass::gpu_resources::GlyphonViewportResource,
     },
 };
 use bevy_ecs::prelude::*;

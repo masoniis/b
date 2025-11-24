@@ -1,5 +1,8 @@
+pub mod gpu_resources;
 pub mod main_passes;
 pub mod shadow_pass;
+
+pub use gpu_resources::*;
 
 // INFO: ---------------------------
 //         Plugin definition
@@ -18,9 +21,14 @@ pub struct WorldRenderPassesPlugin;
 
 impl Plugin for WorldRenderPassesPlugin {
     fn build(&self, builder: &mut EcsBuilder) {
+        // shared world uniform resources
+        builder
+            .init_resource::<ChunkStorageBindGroupLayout>()
+            .init_resource::<ChunkStorageManager>();
+
         // renderpass plugins
         builder
-            .add_plugin(PlayerCentricRenderPassPlugin)
-            .add_plugin(ShadowRenderPassPlugin);
+            .add_plugin(ShadowRenderPassPlugin)
+            .add_plugin(PlayerCentricRenderPassPlugin);
     }
 }

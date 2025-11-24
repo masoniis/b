@@ -1,7 +1,7 @@
 use crate::ecs_core::SimToRenderSender;
 use crate::prelude::*;
 use crate::{
-    render_world::types::WorldVertex,
+    render_world::types::PackedFace,
     simulation_world::{
         asset_management::AssetStorageResource,
         asset_management::{Asset, Handle},
@@ -19,8 +19,7 @@ use std::collections::{hash_map::Entry, HashMap};
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct MeshAsset {
     pub name: String,
-    pub vertices: Vec<WorldVertex>,
-    pub indices: Vec<u32>,
+    pub faces: Vec<PackedFace>,
 }
 impl Asset for MeshAsset {
     fn name(&self) -> &str {
@@ -81,7 +80,7 @@ impl MeshRefCounts {
 }
 
 // INFO: -----------------------
-//          Update system
+//         update system
 // -----------------------------
 
 /// A message requesting deletion of a mesh asset from the asset storage.

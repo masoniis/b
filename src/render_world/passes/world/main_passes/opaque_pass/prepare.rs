@@ -1,28 +1,31 @@
+use crate::render_world::passes::world::gpu_resources::world_uniforms::ChunkStorageManager;
 use crate::{
     ecs_core::SimToRenderReceiver,
     prelude::*,
     render_world::{
         global_extract::resources::RenderMeshStorageResource,
-        graphics_context::resources::RenderDevice,
-        passes::world::main_passes::opaque_pass::extract::OpaqueRenderMeshComponent,
-        types::mesh::create_gpu_mesh_from_data,
+        graphics_context::resources::RenderQueue,
+        passes::world::main_passes::opaque_pass::extract::{
+            OpaqueRenderMeshComponent, RenderTransformComponent,
+        },
+        types::mesh::upload_voxel_mesh,
     },
     simulation_world::asset_management::{AssetStorageResource, MeshAsset},
 };
 use bevy_ecs::prelude::*;
-use std::sync::Arc;
-use tracing::warn;
 
+/// A system to read all render meshes and initialize GPU buffers if they don't have one yet.
 #[instrument(skip_all)]
 pub fn prepare_opaque_meshes_system(
-    device: Res<RenderDevice>,
+    queue: Res<RenderQueue>,
     cpu_mesh_assets: Res<AssetStorageResource<MeshAsset>>,
-    meshes_to_prepare: Query<&OpaqueRenderMeshComponent>,
+    mut chunk_memory_manager: ResMut<ChunkStorageManager>,
+    meshes_to_prepare: Query<(&OpaqueRenderMeshComponent, &RenderTransformComponent)>,
 
     // Output (storage insertion)
     mut gpu_mesh_storage: ResMut<RenderMeshStorageResource>,
 ) {
-    for render_mesh in meshes_to_prepare.iter() {
+    for (render_mesh, transform) in meshes_to_prepare.iter() {
         let handle = render_mesh.mesh_handle;
 
         // if the GPU mesh for this handle doesn't exist yet, create it.
@@ -30,18 +33,23 @@ pub fn prepare_opaque_meshes_system(
             // get the asset data
             if let Some(mesh_asset) = cpu_mesh_assets.get(handle) {
                 // create the GPU buffer
-                let gpu_mesh =
-                    create_gpu_mesh_from_data(&device, &mesh_asset.vertices, &mesh_asset.indices);
+                let world_pos = transform.transform.w_axis.truncate().to_array();
+                if let Some(gpu_mesh) = upload_voxel_mesh(
+                    &mut chunk_memory_manager,
+                    &queue,
+                    &mesh_asset.faces,
+                    world_pos,
+                ) {
+                    debug!(
+                        target : "gpu_mesh_prepared",
+                        "Prepared opaque GPU mesh for handle ID {}",
+                        handle.id()
+                    );
 
-                debug!(
-                    target : "gpu_mesh_prepared",
-                    "Prepared opaque GPU mesh for handle ID {}",
-                    handle.id()
-                );
-
-                gpu_mesh_storage
-                    .meshes
-                    .insert(handle.id(), Arc::new(gpu_mesh));
+                    gpu_mesh_storage
+                        .meshes
+                        .insert(handle.id(), Arc::new(gpu_mesh));
+                }
             } else {
                 warn!(
                     "Mesh asset for handle ID {} not found in AssetStorage (opaque pass).",
@@ -57,11 +65,15 @@ pub fn prepare_opaque_meshes_system(
 #[instrument(skip_all)]
 pub fn delete_gpu_buffers_system(
     receiver_res: Res<SimToRenderReceiver>,
+    mut chunk_memory_manager: ResMut<ChunkStorageManager>,
     mut gpu_mesh_storage: ResMut<RenderMeshStorageResource>,
 ) {
     for command in receiver_res.0.try_iter() {
         let handle_id = command.mesh_handle.id();
-        if let Some(_) = gpu_mesh_storage.meshes.remove(&handle_id) {
+        if let Some(mesh) = gpu_mesh_storage.meshes.remove(&handle_id) {
+            // free the allocation
+            chunk_memory_manager.free_chunk(*mesh);
+
             debug!(
                 target: "gpu_mesh_cleanup",
                 "Successfully removed and implicitly dropped GPU mesh for handle ID {}.",

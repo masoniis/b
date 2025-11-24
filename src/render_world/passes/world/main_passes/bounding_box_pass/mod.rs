@@ -1,7 +1,7 @@
 pub mod extract;
+pub mod gpu_resources;
 pub mod queue;
 pub mod render;
-pub mod startup;
 
 pub use render::BoundingBoxNode;
 
@@ -13,38 +13,35 @@ use crate::{
     ecs_core::{EcsBuilder, Plugin},
     render_world::{
         global_extract::{clone_resource_system, extract_resource_system},
-        passes::world::main_passes::{
-            bounding_box_pass::{
-                extract::WireframeToggleExtractor,
-                queue::queue_wireframe_system,
-                startup::{setup_bb_pipeline_and_buffers, setup_unit_bounding_box_mesh_system},
-            },
-            shared_resources,
+        passes::world::main_passes::bounding_box_pass::{
+            extract::WireframeToggleExtractor, queue::queue_wireframe_system,
         },
         RenderSchedule, RenderSet,
     },
     simulation_world::block::TargetedBlock,
 };
 use bevy_ecs::schedule::IntoScheduleConfigs;
+use gpu_resources::{
+    object_binding::WireframeObjectBindGroupLayout, UnitCubeMesh, WireframeObjectBuffer,
+    WireframePipeline,
+};
 
 pub struct WireframeRenderPassPlugin;
 
 impl Plugin for WireframeRenderPassPlugin {
     fn build(&self, builder: &mut EcsBuilder) {
         // INFO: -----------------
-        //         Startup
+        //         startup
         // -----------------------
 
         builder
-            .schedule_entry(RenderSchedule::Startup)
-            .add_systems((
-                setup_unit_bounding_box_mesh_system,
-                setup_bb_pipeline_and_buffers
-                    .after(shared_resources::setup_central_camera_layout_system),
-            ));
+            .init_resource::<WireframeObjectBindGroupLayout>()
+            .init_resource::<WireframeObjectBuffer>()
+            .init_resource::<WireframePipeline>()
+            .init_resource::<UnitCubeMesh>();
 
         // INFO: -----------------
-        //         Extract
+        //         extract
         // -----------------------
 
         builder
@@ -55,7 +52,7 @@ impl Plugin for WireframeRenderPassPlugin {
             ));
 
         // INFO: ---------------
-        //         Queue
+        //         queue
         // ---------------------
 
         builder

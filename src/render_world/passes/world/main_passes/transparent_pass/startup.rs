@@ -1,74 +1,79 @@
 use super::super::shared_resources::{
     CentralCameraViewBindGroupLayout, EnvironmentBindGroupLayout,
 };
-use crate::prelude::*;
-use crate::render_world::{
-    graphics_context::resources::{RenderDevice, RenderSurfaceConfig},
-    passes::core::{create_render_pipeline_from_def, CreatedPipeline},
-    textures::resource::TextureArrayResource,
-    types::WorldVertex,
-};
+use crate::render_world::graphics_context::resources::{RenderDevice, RenderSurfaceConfig};
+use crate::render_world::passes::world::gpu_resources::world_uniforms::ChunkStorageBindGroupLayout;
+use crate::render_world::passes::world::main_passes::shared_resources::main_depth_texture::MAIN_DEPTH_FORMAT;
+use crate::render_world::passes::world::main_passes::shared_resources::TextureArrayBindGroupLayout;
 use bevy_ecs::prelude::*;
-use bytemuck::{Pod, Zeroable};
 use wesl::include_wesl;
 
-// INFO: -------------------------------------------------
-//         Resources for the Transparent Rendering Pass
-// -------------------------------------------------------
+// INFO: -------------------
+//         resources
+// -------------------------
 
 #[derive(Resource)]
 pub struct TransparentPipeline {
-    pub pipeline: CreatedPipeline,
+    pub pipeline: wgpu::RenderPipeline,
 }
 
-#[derive(Resource)]
-pub struct TransparentMaterialBindGroup(pub wgpu::BindGroup);
+impl FromWorld for TransparentPipeline {
+    fn from_world(world: &mut World) -> Self {
+        // deps
+        let device = world.resource::<RenderDevice>();
+        let config = world.resource::<RenderSurfaceConfig>();
 
-#[derive(Resource)]
-pub struct TransparentObjectBuffer {
-    pub buffer: wgpu::Buffer,
-    pub bind_group: wgpu::BindGroup,
-    pub objects: Vec<TransparentObjectData>,
-}
+        // layouts
+        let view_layout = world.resource::<CentralCameraViewBindGroupLayout>();
+        let environment_layout = world.resource::<EnvironmentBindGroupLayout>();
+        let texture_layout = world.resource::<TextureArrayBindGroupLayout>();
+        let chunk_storage_layout = world.resource::<ChunkStorageBindGroupLayout>();
 
-#[repr(C)]
-#[derive(Debug, Copy, Clone, Pod, Zeroable)]
-pub struct TransparentObjectData {
-    pub model_matrix: [f32; 16],
-}
+        let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+            label: Some("Transparent Pipeline Layout"),
+            bind_group_layouts: &[
+                &view_layout.0,
+                &environment_layout.0,
+                &texture_layout.0,
+                &chunk_storage_layout.0,
+            ],
+            push_constant_ranges: &[],
+        });
 
-// INFO: -------------------------------------------------
-//         System for Initializing the Transparent Pass
-// -------------------------------------------------------
+        let vs_shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
+            label: Some("Transparent Vertex Shader"),
+            source: wgpu::ShaderSource::Wgsl(include_wesl!("transparent_vert").into()),
+        });
 
-#[instrument(skip_all)]
-pub fn setup_transparent_pass_system(
-    mut commands: Commands,
-    device: Res<RenderDevice>,
-    config: Res<RenderSurfaceConfig>,
-    texture_array_resource: Res<TextureArrayResource>,
-    view_bind_group_layout: Res<CentralCameraViewBindGroupLayout>,
-    environment_layout: Res<EnvironmentBindGroupLayout>,
-) {
-    let created_pipeline = create_render_pipeline_from_def(
-        &device,
-        &[&view_bind_group_layout.0, &environment_layout.0],
-        crate::render_world::passes::core::create_render_pipeline::PipelineDefinition {
-            label: "Transparent Render Pipeline",
-            material_path: "assets/shaders/world/main_passes/transparent/main.material.ron",
-            vs_shader_source: wgpu::ShaderSource::Wgsl(include_wesl!("transparent_vert").into()),
-            fs_shader_source: Some(wgpu::ShaderSource::Wgsl(
-                include_wesl!("transparent_frag").into(),
-            )),
-            vertex_buffers: &[WorldVertex::desc()],
-            fragment_targets: &[Some(wgpu::ColorTargetState {
-                format: config.0.format,
-                blend: Some(wgpu::BlendState::ALPHA_BLENDING),
-                write_mask: wgpu::ColorWrites::ALL,
-            })],
+        let fs_shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
+            label: Some("Transparent Fragment Shader"),
+            source: wgpu::ShaderSource::Wgsl(include_wesl!("transparent_frag").into()),
+        });
+
+        // define pipelene
+        let pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+            label: Some("Transparent Render Pipeline"),
+            layout: Some(&pipeline_layout),
+            cache: None,
+            vertex: wgpu::VertexState {
+                module: &vs_shader,
+                entry_point: Some("vs_main"),
+                buffers: &[],
+                compilation_options: Default::default(),
+            },
+            fragment: Some(wgpu::FragmentState {
+                module: &fs_shader,
+                entry_point: Some("fs_main"),
+                targets: &[Some(wgpu::ColorTargetState {
+                    format: config.0.format,
+                    blend: Some(wgpu::BlendState::ALPHA_BLENDING),
+                    write_mask: wgpu::ColorWrites::ALL,
+                })],
+                compilation_options: Default::default(),
+            }),
             depth_stencil: Some(wgpu::DepthStencilState {
-                format: wgpu::TextureFormat::Depth32Float,
-                depth_write_enabled: false,
+                format: MAIN_DEPTH_FORMAT,
+                depth_write_enabled: false, // transparent objects don't write depth
                 depth_compare: wgpu::CompareFunction::GreaterEqual,
                 stencil: wgpu::StencilState::default(),
                 bias: wgpu::DepthBiasState::default(),
@@ -82,55 +87,10 @@ pub fn setup_transparent_pass_system(
                 unclipped_depth: false,
                 conservative: false,
             },
-        },
-    );
+            multisample: wgpu::MultisampleState::default(),
+            multiview: None,
+        });
 
-    // bind group
-
-    let material_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
-        label: Some("Transparent Material Bind Group"),
-        layout: &created_pipeline.get_layout(2),
-        entries: &[
-            wgpu::BindGroupEntry {
-                binding: 0,
-                resource: wgpu::BindingResource::TextureView(&texture_array_resource.array.view),
-            },
-            wgpu::BindGroupEntry {
-                binding: 1,
-                resource: wgpu::BindingResource::Sampler(&texture_array_resource.array.sampler),
-            },
-        ],
-    });
-    commands.insert_resource(TransparentMaterialBindGroup(material_bind_group));
-
-    // buffer
-
-    let initial_capacity = 100; // Start with a reasonable capacity
-    let initial_size = (initial_capacity * std::mem::size_of::<TransparentObjectData>()) as u64;
-
-    let object_buffer = device.create_buffer(&wgpu::BufferDescriptor {
-        label: Some("Transparent Object Buffer"),
-        size: initial_size,
-        usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_DST,
-        mapped_at_creation: false,
-    });
-
-    let object_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
-        label: Some("Transparent Object Bind Group"),
-        layout: &created_pipeline.get_layout(3),
-        entries: &[wgpu::BindGroupEntry {
-            binding: 0,
-            resource: object_buffer.as_entire_binding(),
-        }],
-    });
-
-    commands.insert_resource(TransparentObjectBuffer {
-        buffer: object_buffer,
-        bind_group: object_bind_group,
-        objects: Vec::with_capacity(initial_capacity),
-    });
-
-    commands.insert_resource(TransparentPipeline {
-        pipeline: created_pipeline,
-    });
+        Self { pipeline }
+    }
 }

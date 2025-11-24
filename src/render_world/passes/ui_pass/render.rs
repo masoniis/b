@@ -3,17 +3,17 @@ use crate::{
     render_world::passes::{
         core::{RenderContext, RenderNode},
         ui_pass::{
-            queue::{PreparedUiBatches, UiRenderBatch},
-            startup::{
+            gpu_resources::{
                 GlyphonAtlasResource, GlyphonRendererResource, GlyphonViewportResource,
-                UiMaterialBuffer, UiObjectBuffer, UiPipeline, UiViewBuffer,
+                UiMaterialBuffer, UiObjectBuffer, UiPipeline,
             },
+            queue::{PreparedUiBatches, UiRenderBatch},
         },
     },
 };
 use bevy_ecs::world::World;
 
-use super::startup::ScreenQuadResource;
+use super::gpu_resources::{view_binding::UiViewBuffer, ScreenQuadResource};
 
 pub struct UiRenderPassNode;
 impl RenderNode for UiRenderPassNode {
@@ -63,7 +63,7 @@ impl RenderNode for UiRenderPassNode {
             match batch {
                 UiRenderBatch::Panel(panel_batch) => {
                     if !is_panel_pipeline_set {
-                        render_pass.set_pipeline(&pipeline.pipeline);
+                        render_pass.set_pipeline(&pipeline);
                         render_pass.set_bind_group(0, &view_bind_group.bind_group, &[]);
                         render_pass.set_vertex_buffer(0, quad.vertex_buffer.slice(..));
                         render_pass.set_index_buffer(

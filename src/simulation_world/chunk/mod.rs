@@ -13,7 +13,7 @@ pub use tasks::*;
 pub use types::*;
 
 // INFO: ------------------------------
-//         Chunk loading plugin
+//         chunk loading plugin
 // ------------------------------------
 
 use crate::{

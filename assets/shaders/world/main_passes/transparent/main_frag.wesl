@@ -1,5 +1,6 @@
-import super::common::{myTexture, mySampler};
-import super::super::lib::environment_uniform::{env_params};
+import package::world::main_passes::lib::geometry_bindings::{
+  environment, texture_array, texture_sampler, camera
+};
 
 @fragment
 fn fs_main(
@@ -7,17 +8,24 @@ fn fs_main(
     @location(1) color: vec3<f32>,
     @location(2) tex_coords: vec2<f32>,
     @location(3) @interpolate(flat) texture_index: u32,
-    @location(4) distance_from_camera: f32,
+    @location(4) world_pos: vec3<f32>,
 ) -> @location(0) vec4<f32> {
-    let texture_color: vec4<f32> = textureSample(myTexture, mySampler, tex_coords, texture_index);
+    // INFO: --------------------------
+    //         texture sampling
+    // --------------------------------
 
+    let texture_color: vec4<f32> = textureSample(texture_array, texture_sampler, tex_coords, texture_index);
     if texture_color.a < 0.01 {
       discard;
     }
 
-    // TODO: smoothstep params should be placed sky params so that it can be adjusted by things like render distance
-    let fog_amount = smoothstep(200.0, 256.0, distance_from_camera);
-    let final_color = mix(texture_color, vec4(env_params.horizon_color, 1.0), fog_amount);
+    // INFO: -------------
+    //         fog
+    // -------------------
+
+    let distance_from_camera = distance(world_pos, camera.world_position);
+    let fog_amount = smoothstep(camera.render_distance * 0.75, camera.render_distance, distance_from_camera);
+    let final_color = mix(texture_color, vec4(environment.horizon_color, 1.0), fog_amount);
 
     return final_color;
 }

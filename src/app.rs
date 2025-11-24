@@ -7,7 +7,7 @@ use crate::{
     prelude::*,
     render_world::{
         global_extract::utils::run_extract_schedule, graphics_context::GraphicsContext,
-        scheduling::RenderSchedule, textures::load_and_upload_textures, RenderWorldInterface,
+        scheduling::RenderSchedule, textures::load_voxel_texture_assets, RenderWorldInterface,
     },
     simulation_world::{
         input::{
@@ -34,14 +34,17 @@ use winit::{
 /// The main application container, responsible for orchestrating OS
 /// events as well as the creation and scheduling of the ECS worlds.
 pub struct App {
-    // Window is an Arc because the surface created by wgpu needs to hold
-    // a window reference with a static lifetime (like Arc) for safety.
+    /// The window the surface attaches to for rendering.
+    ///
+    /// The window is an Arc so that the surface can hold a reference with a static
+    /// lifetime ensuring the window outlasts the surface the GPU draws to.
     window: Option<Arc<Window>>,
 
-    // The worlds
+    /// The ECS world responsible for simulation logic
     simulation_world: Option<Arc<Mutex<SimulationWorldInterface>>>,
+    /// The ECS world responsible for rendering logic
     render_world: Option<Arc<Mutex<RenderWorldInterface>>>,
-    // + a loading tracker to orchestrate async tasks between the two worlds
+    /// A loading tracker necessary to orchestrate async tasks between both worlds.
     loading_tracker: LoadingTracker,
 
     // World parallelization
@@ -78,7 +81,7 @@ impl ApplicationHandler for App {
             info!("App started/resumed, creating window and renderer...");
 
             // INFO: --------------------------
-            //         Setup the window
+            //         setup the window
             // --------------------------------
 
             let window = Arc::new(
@@ -97,17 +100,15 @@ impl ApplicationHandler for App {
             }
 
             // INFO: ----------------------------------------
-            //         Create and initiate the worlds
+            //         create and initiate the worlds
             // ----------------------------------------------
 
             // world dependencies that the app must create (due to window)
             let graphics_context = block_on(GraphicsContext::new(window.clone()));
-            let (texture_array, texture_registry) =
-                load_and_upload_textures(&graphics_context.device, &graphics_context.queue)
-                    .unwrap();
+            let (texture_images, texture_registry) = load_voxel_texture_assets().unwrap();
 
             let mut simulation_world = SimulationWorldInterface::new(&window, texture_registry);
-            let mut render_world = RenderWorldInterface::new(graphics_context, texture_array);
+            let mut render_world = RenderWorldInterface::new(graphics_context, texture_images);
 
             // add loading trackers
             simulation_world.add_resource(self.loading_tracker.clone());
@@ -125,7 +126,7 @@ impl ApplicationHandler for App {
             render_world.run_schedule(RenderSchedule::Startup);
 
             // INFO: ----------------------------------------------
-            //         Spawn and setup the rendering thread
+            //         spawn and setup the rendering thread
             // ----------------------------------------------------
 
             let render_world = Arc::new(Mutex::new(render_world));
@@ -173,7 +174,7 @@ impl ApplicationHandler for App {
                 .expect("Failed to spawn RenderThread");
 
             // INFO: ------------------------------
-            //         Update the App state
+            //         update the app state
             // ------------------------------------
 
             self.window = Some(window.clone());

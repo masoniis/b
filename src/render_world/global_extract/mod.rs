@@ -10,6 +10,7 @@ pub use utils::*;
 //         Plugin definition
 // ---------------------------------
 
+use self::time_extractor::RenderTimeExtractor;
 use crate::{
     ecs_core::{
         state_machine::{AppState, GameState},
@@ -36,10 +37,14 @@ impl Plugin for SimulationExtractionPlugin {
             .schedule_entry(RenderSchedule::Extract)
             .add_systems((
                 (
-                    clone_resource_system::<AssetStorageResource<MeshAsset>>,
-                    extract_resource_system::<RenderTimeResource>,
+                    // resource extractors
+                    extract_resource_system::<SunExtractor>,
+                    extract_resource_system::<RenderTimeExtractor>,
                     (extract_resource_system::<RenderWindowSizeResource>)
                         .run_if(simulation_world_resource_changed::<WindowSizeResource>),
+                    // shared sim clone
+                    clone_resource_system::<AssetStorageResource<MeshAsset>>,
+                    // shared sim state extracting
                     extract_state_system::<GameState>,
                     extract_state_system::<AppState>,
                 ),

@@ -22,6 +22,9 @@ check *args:
 clean *args:
 	cargo clean {{args}}
 
+clippy *args:
+	cargo clippy {{args}}
+
 fix *args:
 	cargo fix --allow-dirty
 

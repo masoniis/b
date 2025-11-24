@@ -75,9 +75,6 @@ glyphon = { git = "https://github.com/grovesNL/glyphon.git", rev = "724ab57edbd6
 ## shaders
 wesl = "0.2.0" # preprocessor
 
-# not used for now, but may add it later for shader verification
-# naga = { version = "27.0.0", features = ["wgsl-in"] } # for shader reflection
-
 ## utils 
 image = { version = "0.25.6", default-features = false, features = ["png"] }
 bytemuck = { version = "1.13", features = ["derive"] }                       # gpu friendly data

@@ -3,7 +3,7 @@ import super::sun_camera_uniform::{SunCameraUniform};
 /// Calculates a shadow value based on a fragment world pos and the sun camera.
 ///
 /// Returns 1.0 if area is lit, 0.0 if it is shadowed.
-fn calculate_shadow(
+fn calculate_shadow_from_world(
     world_pos: vec3<f32>,
     shadow_cam: SunCameraUniform,
     shadow_tex: texture_depth_2d,
@@ -17,12 +17,12 @@ fn calculate_shadow(
     let uv = shadow_coords.xy * 0.5 + 0.5;
     let uv_flipped = vec2<f32>(uv.x, 1.0 - uv.y); // flip Y for texture coordinates
 
-    // check if we are outside the shadow frustum in ANY dimension.
+    // check if fragment is outside the shadow frustum in ANY dimension.
     var shadow_factor = 1.0;
     if uv.x > 1.0 || uv.x < 0.0 || uv.y > 1.0 || uv.y < 0.0 || shadow_coords.z > 1.0 {
-        // we are outside the frustum, so leave shadow_factor at 1.0 (lit)
+        // outside the frustum, so leave shadow_factor at 1.0 (lit)
     } else {
-        // we are inside the frustum. Do the normal depth comparison.
+        // inside the frustum, perform depth comparison
         shadow_factor = textureSampleCompare(
             shadow_tex,
             shadow_samp,

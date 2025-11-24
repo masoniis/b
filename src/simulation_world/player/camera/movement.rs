@@ -14,7 +14,7 @@ use tracing::{instrument, warn};
 
 /// The distance the near plane is set to for the camera frustum.
 pub const CAMERA_NEAR_PLANE: f32 = 1.0;
-const MOVEMENT_SPEED: f32 = 32.0;
+const MOVEMENT_SPEED: f32 = 16.0;
 const MOUSE_SENSITIVITY: f32 = 0.1;
 
 /// A system that updates the active camera's position and orientation based on user input.

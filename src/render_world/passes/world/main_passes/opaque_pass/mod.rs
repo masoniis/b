@@ -5,6 +5,7 @@ pub mod render;
 pub mod startup;
 
 pub use render::OpaquePassRenderNode;
+use startup::OpaquePipelines;
 
 // INFO: ---------------------------
 //         Plugin definition
@@ -17,13 +18,8 @@ use crate::{
     },
     render_world::{
         global_extract::{extract_resource_system, ExtractComponentPlugin},
-        passes::world::main_passes::{
-            opaque_pass::{
-                extract::OpaqueRenderModeExtractor,
-                queue::Opaque3dRenderPhase,
-                startup::{setup_opaque_buffers_and_bind_groups, setup_opaque_pipelines},
-            },
-            shared_resources::setup_central_camera_layout_system,
+        passes::world::main_passes::opaque_pass::{
+            extract::OpaqueRenderModeExtractor, queue::Opaque3dRenderPhase,
         },
         scheduling::{RenderSchedule, RenderSet},
     },
@@ -39,13 +35,7 @@ impl Plugin for OpaqueRenderPassPlugin {
         //         Startup
         // -----------------------
 
-        builder.schedule_entry(RenderSchedule::Startup).add_systems(
-            (
-                setup_opaque_pipelines.after(setup_central_camera_layout_system),
-                setup_opaque_buffers_and_bind_groups,
-            )
-                .chain(),
-        );
+        builder.init_resource::<OpaquePipelines>();
 
         // INFO: -----------------
         //         Extract
@@ -77,6 +67,6 @@ impl Plugin for OpaqueRenderPassPlugin {
             .init_resource::<Opaque3dRenderPhase>()
             // systems
             .schedule_entry(RenderSchedule::Main)
-            .add_systems(queue::queue_and_prepare_opaque_system.in_set(RenderSet::Queue));
+            .add_systems(queue::queue_opaque_system.in_set(RenderSet::Queue));
     }
 }

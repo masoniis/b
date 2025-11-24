@@ -5,9 +5,10 @@ pub mod render;
 pub mod startup;
 
 pub use render::TransparentPassRenderNode;
+use startup::TransparentPipeline;
 
 // INFO: ---------------------------
-//         Plugin definition
+//         plugin definition
 // ---------------------------------
 
 use crate::{
@@ -18,7 +19,6 @@ use crate::{
         passes::world::main_passes::transparent_pass::{
             prepare::prepare_transparent_meshes_system,
             queue::{queue_and_prepare_transparent_system, Transparent3dRenderPhase},
-            startup::setup_transparent_pass_system,
         },
         RenderSchedule, RenderSet,
     },
@@ -35,9 +35,7 @@ impl Plugin for TransparentRenderPassPlugin {
         //         Startup
         // -----------------------
 
-        builder
-            .schedule_entry(RenderSchedule::Startup)
-            .add_systems(setup_transparent_pass_system);
+        builder.init_resource::<TransparentPipeline>();
 
         // INFO: -----------------
         //         Extract

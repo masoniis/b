@@ -1,10 +1,11 @@
+use crate::render_world::passes::world::main_passes::bounding_box_pass::gpu_resources::object_binding::WireframeObjectBindGroupLayout;
 use crate::prelude::*;
 use crate::render_world::passes::world::main_passes::bounding_box_pass::extract::WireframeToggleState;
 use crate::render_world::{
     graphics_context::resources::{RenderDevice, RenderQueue},
     passes::world::main_passes::{
-        bounding_box_pass::startup::{
-            WireframeObjectBuffer, WireframeObjectData, WireframePipeline,
+        bounding_box_pass::gpu_resources::{
+            WireframeObjectBuffer, WireframeObjectData,
         },
         opaque_pass::extract::RenderTransformComponent,
     },
@@ -18,7 +19,8 @@ pub fn queue_wireframe_system(
     // input
     queue: Res<RenderQueue>,
     device: Res<RenderDevice>,
-    wireframe_pipeline: Res<WireframePipeline>,
+
+    object_layout: Res<WireframeObjectBindGroupLayout>,
 
     chunk_query: Query<&RenderTransformComponent>,
     active_bounds: Res<WireframeToggleState>,
@@ -63,8 +65,7 @@ pub fn queue_wireframe_system(
             block_pos.z as f32 + 0.5,
         );
         let block_translation_matrix = Mat4::from_translation(block_translation);
-        let block_scale_matrix = Mat4::from_scale(glam::vec3(1.01, 1.01, 1.01));
-        let model_matrix = Mat4::IDENTITY * block_translation_matrix * block_scale_matrix;
+        let model_matrix = Mat4::IDENTITY * block_translation_matrix;
 
         wireframe_buffer.objects.push(WireframeObjectData {
             model_matrix: model_matrix.to_cols_array(),
@@ -86,7 +87,7 @@ pub fn queue_wireframe_system(
 
         wireframe_buffer.bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
             label: Some("Wireframe Object Bind Group"),
-            layout: &wireframe_pipeline.inner.get_layout(2),
+            layout: &object_layout.0,
             entries: &[wgpu::BindGroupEntry {
                 binding: 0,
                 resource: wireframe_buffer.buffer.as_entire_binding(),

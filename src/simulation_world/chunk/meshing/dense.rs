@@ -16,10 +16,8 @@ pub fn build_dense_mesh(
 ) -> (Option<OpaqueMeshData>, Option<TransparentMeshData>) {
     // TODO: using a buffer pool is probably better than this alloc guesswork
     // even though we ultimately need a personal copy of the data at the end
-    let mut opaque_vertices = Vec::with_capacity(20_000);
-    let mut opaque_indices = Vec::with_capacity(30_000);
-    let mut transparent_vertices = Vec::with_capacity(5_000);
-    let mut transparent_indices = Vec::with_capacity(7_500);
+    let mut opaque_faces = Vec::with_capacity(20_000);
+    let mut transparent_faces = Vec::with_capacity(5_000);
 
     let ctx = MesherContext {
         padded_chunk,
@@ -30,6 +28,8 @@ pub fn build_dense_mesh(
         chunk_size: padded_chunk.get_size(),
         scale: (CHUNK_SIDE_LENGTH / padded_chunk.get_size()) as f32,
     };
+
+    let transparency_lut = block_registry.get_transparency_lut();
 
     let size = ctx.chunk_size;
 
@@ -43,21 +43,22 @@ pub fn build_dense_mesh(
                     continue;
                 }
 
-                let props = block_registry.get(current_block_id);
+                let props = block_registry.get_render_data(current_block_id);
 
-                let (verts, idxs) = if props.is_transparent {
-                    (&mut transparent_vertices, &mut transparent_indices)
+                let faces = if props.is_transparent {
+                    &mut transparent_faces
                 } else {
-                    (&mut opaque_vertices, &mut opaque_indices)
+                    &mut opaque_faces
                 };
 
                 // iterate each face checking and generating face verts
-                for face_i in 0..6 {
+                for &face_side in &FaceSide::ALL {
+                    let face_i = face_side as usize;
                     let offset = NEIGHBOR_OFFSETS[face_i];
                     let neighbor_pos = pos + offset;
                     let neighbor_id =
                         padded_chunk.get_block(neighbor_pos.x, neighbor_pos.y, neighbor_pos.z);
-                    let neighbor_props = block_registry.get(neighbor_id);
+                    let neighbor_props = block_registry.get_render_data(neighbor_id);
 
                     if should_render_face(
                         current_block_id,
@@ -66,19 +67,18 @@ pub fn build_dense_mesh(
                         neighbor_props.is_transparent,
                     ) {
                         let tex_id = props.textures.get(face_i);
-                        let ao = calculate_ao_for_pos(pos, face_i, &padded_chunk, block_registry);
-                        ctx.push_face(face_i, pos, tex_id, ao, verts, idxs);
+                        let ao = calculate_ao_levels_for_face(
+                            pos,
+                            face_side,
+                            padded_chunk,
+                            transparency_lut,
+                        );
+                        ctx.push_face(face_side, pos, tex_id, ao, faces);
                     }
                 }
             }
         }
     }
 
-    build_mesh_assets(
-        name,
-        opaque_vertices,
-        opaque_indices,
-        transparent_vertices,
-        transparent_indices,
-    )
+    build_mesh_assets(name, opaque_faces, transparent_faces)
 }

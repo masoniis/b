@@ -1,9 +1,14 @@
 pub mod extract;
+pub mod gpu_resources;
 pub mod prepare;
 pub mod queue;
 pub mod render;
-pub mod startup;
 
+use gpu_resources::{
+    view_binding::{UiViewBindGroupLayout, UiViewBuffer},
+    UiMaterialBindGroupLayout, UiMaterialBuffer, UiObjectBindGroupLayout, UiObjectBuffer,
+    UiPipeline,
+};
 pub use render::UiRenderPassNode;
 
 // INFO: ---------------------------
@@ -14,15 +19,12 @@ use crate::{
     ecs_core::{EcsBuilder, Plugin},
     render_world::{
         global_extract::resources::RenderWindowSizeResource,
-        passes::{
-            ui_pass::{
-                extract::ExtractedUiEvents,
-                prepare::UiChanges,
-                queue::{
-                    IsGlyphonDirty, PreparedUiBatches, UiElementCache, UiElementSortBufferResource,
-                },
+        passes::ui_pass::{
+            extract::ExtractedUiEvents,
+            prepare::UiChanges,
+            queue::{
+                IsGlyphonDirty, PreparedUiBatches, UiElementCache, UiElementSortBufferResource,
             },
-            world::main_passes::shared_resources::setup_central_camera_layout_system,
         },
         scheduling::{RenderSchedule, RenderSet},
     },
@@ -34,21 +36,32 @@ pub struct UiRenderPassPlugin;
 impl Plugin for UiRenderPassPlugin {
     fn build(&self, builder: &mut EcsBuilder) {
         // INFO: -----------------
-        //         Startup
+        //         startup
         // -----------------------
+
+        builder
+            // ui view uniform
+            .init_resource::<UiViewBindGroupLayout>()
+            .init_resource::<UiViewBuffer>()
+            // ui material uniform
+            .init_resource::<UiMaterialBindGroupLayout>()
+            .init_resource::<UiMaterialBuffer>()
+            // ui object uniform
+            .init_resource::<UiObjectBindGroupLayout>()
+            .init_resource::<UiObjectBuffer>()
+            // pipeline
+            .init_resource::<UiPipeline>();
 
         builder.schedule_entry(RenderSchedule::Startup).add_systems(
             (
-                startup::setup_ui_pipeline.after(setup_central_camera_layout_system),
-                startup::setup_ui_unit_quad_system,
-                startup::setup_ui_buffers,
-                startup::setup_glyphon_resources,
+                gpu_resources::setup_ui_unit_quad_system,
+                gpu_resources::setup_glyphon_resources,
             )
                 .chain(),
         );
 
         // INFO: -----------------
-        //         Extract
+        //         extract
         // -----------------------
 
         builder
@@ -59,7 +72,7 @@ impl Plugin for UiRenderPassPlugin {
             .add_systems(extract::extract_ui_events_system);
 
         // INFO: -----------------
-        //         Prepare
+        //         prepare
         // -----------------------
 
         builder

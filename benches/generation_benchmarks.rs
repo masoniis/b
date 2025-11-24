@@ -1,14 +1,14 @@
 use b::prelude::*;
-use b::render_world::textures::prepare_textures;
-use b::simulation_world::block::SOLID_BLOCK_ID;
-use b::simulation_world::chunk::{build_chunk_mesh, ChunkDataOption, NeighborLODs, PaddedChunk};
+use b::render_world::textures::load_voxel_texture_assets;
 use b::simulation_world::{
-    biome::load_biome_defs_from_disk,
-    block::block_registry::load_block_defs_from_disk,
+    biome::biome_registry::BiomeRegistryResource,
+    block::{BlockRegistryResource, SOLID_BLOCK_ID},
     chunk::{
-        components::{chunk_blocks::ChunkBlocksComponent, chunk_chord::ChunkCoord},
+        build_chunk_mesh,
+        components::{ChunkBlocksComponent, ChunkCoord},
         thread_buffer_pool::acquire_buffer,
         types::ChunkLod,
+        ChunkDataOption, NeighborLODs, PaddedChunk,
     },
     terrain::{
         BiomeGenerator, BiomeMapComponent, BiomeResultBuilder, ClimateGenerator,
@@ -16,6 +16,7 @@ use b::simulation_world::{
         SimpleSurfacePainter, SinWaveGenerator, TerrainPainter, TerrainShaper,
     },
 };
+use bevy_ecs::prelude::World;
 use criterion::{criterion_group, criterion_main, Criterion};
 
 const CLIMATE_NOISE_SEED: u32 = 42;
@@ -28,8 +29,13 @@ fn bench_chunk_generation(c: &mut Criterion) {
     //         setup
     // ---------------------
 
-    let block_registry = load_block_defs_from_disk();
-    let biome_registry = load_biome_defs_from_disk();
+    let mut world = World::new();
+    world.init_resource::<BlockRegistryResource>();
+    world.init_resource::<BiomeRegistryResource>();
+
+    let block_registry = world.resource::<BlockRegistryResource>().clone();
+    let biome_registry = world.resource::<BiomeRegistryResource>().clone();
+
     let origin_chunk_coord = ChunkCoord {
         pos: IVec3::new(0, 0, 0),
     };
@@ -108,8 +114,15 @@ fn bench_chunk_generation(c: &mut Criterion) {
 fn bench_chunk_meshing(c: &mut Criterion) {
     let mut group = c.benchmark_group("Chunk meshing");
 
-    let block_registry = load_block_defs_from_disk();
-    let (_, texture_reg) = prepare_textures().unwrap();
+    // INFO: ---------------
+    //         setup
+    // ---------------------
+
+    let mut world = World::new();
+    world.init_resource::<BlockRegistryResource>();
+
+    let block_registry = world.resource::<BlockRegistryResource>().clone();
+    let texture_registry = load_voxel_texture_assets().unwrap().1;
 
     // INFO: ---------------------------------
     //         dense meshing benchmark
@@ -131,8 +144,10 @@ fn bench_chunk_meshing(c: &mut Criterion) {
     }
 
     // default to water for more complex meshing with transparency
-    let mut center_chunk =
-        ChunkBlocksComponent::new_uniform(ChunkLod(0), block_registry.get_block_by_name("water"));
+    let mut center_chunk = ChunkBlocksComponent::new_uniform(
+        ChunkLod(0),
+        block_registry.get_block_id_by_name("water").unwrap(),
+    );
     let size = center_chunk.size();
     let mut writer = center_chunk.get_writer();
     // create a y=x "slope" chunk
@@ -155,7 +170,7 @@ fn bench_chunk_meshing(c: &mut Criterion) {
             build_chunk_mesh(
                 "bench_chunk_dense",
                 &dense_padded_chunk,
-                &texture_reg,
+                &texture_registry,
                 &block_registry,
             )
         })
@@ -190,7 +205,7 @@ fn bench_chunk_meshing(c: &mut Criterion) {
             build_chunk_mesh(
                 "bench_chunk_hull",
                 &hull_padded_chunk,
-                &texture_reg,
+                &texture_registry,
                 &block_registry,
             )
         })

@@ -2,7 +2,7 @@ use crate::prelude::*;
 use crate::simulation_world::terrain::climate::ClimateMapComponent;
 use crate::simulation_world::{
     biome::BiomeRegistryResource,
-    block::{BlockId, BlockRegistryResource},
+    block::{BlockId, BlockRegistryResource, BlockRenderData},
     chunk::{ChunkBlocksComponent, ChunkCoord, ChunkMetadata, VolumeDataWriter},
     terrain::BiomeMapComponent,
 };
@@ -148,11 +148,8 @@ impl<'a> PaintWriter<'a> {
 
     /// Helper to get block properties via registry if needed for logic decisions
     #[inline(always)]
-    pub fn get_block_properties(
-        &self,
-        block_id: BlockId,
-    ) -> &crate::simulation_world::block::BlockProperties {
-        self.registry.get(block_id)
+    pub fn get_block_render_data(&self, block_id: BlockId) -> &BlockRenderData {
+        self.registry.get_render_data(block_id)
     }
 
     #[inline(always)]
@@ -171,7 +168,7 @@ impl<'a> PaintWriter<'a> {
 
         // transparency
         if !self.metadata.contains_transparent {
-            let props = self.registry.get(block_id);
+            let props = self.registry.get_render_data(block_id);
             if props.is_transparent {
                 self.metadata.contains_transparent = true;
             }

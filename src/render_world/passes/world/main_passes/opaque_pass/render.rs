@@ -1,4 +1,6 @@
 use crate::prelude::*;
+use crate::render_world::passes::world::gpu_resources::world_uniforms::ChunkStorageManager;
+use crate::render_world::passes::world::main_passes::shared_resources::TextureArrayUniforms;
 use crate::render_world::{
     global_extract::RenderMeshStorageResource,
     passes::core::{RenderContext, RenderNode},
@@ -6,13 +8,11 @@ use crate::render_world::{
         opaque_pass::{
             extract::OpaqueRenderMeshComponent,
             queue::Opaque3dRenderPhase,
-            startup::{
-                OpaqueMaterialBindGroup, OpaqueObjectBuffer, OpaquePipelines, OpaqueRenderMode,
-            },
+            startup::{OpaquePipelines, OpaqueRenderMode},
         },
         shared_resources::{
-            main_depth_texture::MainDepthTextureResource, CentralCameraViewBuffer,
-            EnvironmentBuffer,
+            main_depth_texture::MainDepthTextureResource, CentralCameraViewUniform,
+            EnvironmentUniforms,
         },
     },
 };
@@ -42,21 +42,21 @@ impl RenderNode for OpaquePassRenderNode {
             Some(mesh_storage),
             Some(view_buffer),
             Some(material_bind_group),
-            Some(object_buffer),
             Some(depth_texture),
             Some(pipelines),
             Some(render_mode),
             Some(skybox_params),
+            Some(chunk_memory_manager),
         ) = (
             world.get_resource::<Opaque3dRenderPhase>(),
             world.get_resource::<RenderMeshStorageResource>(),
-            world.get_resource::<CentralCameraViewBuffer>(),
-            world.get_resource::<OpaqueMaterialBindGroup>(),
-            world.get_resource::<OpaqueObjectBuffer>(),
+            world.get_resource::<CentralCameraViewUniform>(),
+            world.get_resource::<TextureArrayUniforms>(),
             world.get_resource::<MainDepthTextureResource>(),
             world.get_resource::<OpaquePipelines>(),
             world.get_resource::<OpaqueRenderMode>(),
-            world.get_resource::<EnvironmentBuffer>(),
+            world.get_resource::<EnvironmentUniforms>(),
+            world.get_resource::<ChunkStorageManager>(),
         )
         else {
             warn!("Missing one or more required resources for the Opaque Pass. Skipping pass.");
@@ -64,8 +64,8 @@ impl RenderNode for OpaquePassRenderNode {
         };
 
         let active_pipeline = match *render_mode {
-            OpaqueRenderMode::Fill => &pipelines.fill.pipeline,
-            OpaqueRenderMode::Wireframe => &pipelines.wireframe.pipeline,
+            OpaqueRenderMode::Fill => &pipelines.fill,
+            OpaqueRenderMode::Wireframe => &pipelines.wireframe,
         };
 
         // INFO: --------------------------------
@@ -105,7 +105,7 @@ impl RenderNode for OpaquePassRenderNode {
         // INFO: -------------------------
         //         skybox pipeline
         // -------------------------------
-        render_pass.set_pipeline(&pipelines.skybox.pipeline);
+        render_pass.set_pipeline(&pipelines.skybox);
         render_pass.set_bind_group(0, &view_buffer.bind_group, &[]);
         render_pass.set_bind_group(1, &skybox_params.bind_group, &[]);
 
@@ -118,25 +118,17 @@ impl RenderNode for OpaquePassRenderNode {
 
         render_pass.set_bind_group(0, &view_buffer.bind_group, &[]);
         render_pass.set_bind_group(1, &skybox_params.bind_group, &[]);
-        render_pass.set_bind_group(2, &material_bind_group.0, &[]);
-        render_pass.set_bind_group(3, &object_buffer.bind_group, &[]);
+        render_pass.set_bind_group(2, &material_bind_group.bind_group, &[]);
+        render_pass.set_bind_group(3, &chunk_memory_manager.bind_group, &[]);
 
-        for (i, item) in phase.items.iter().enumerate() {
+        for item in phase.items.iter() {
             if let Ok(render_mesh_comp) = self.mesh_query.get(world, item.entity) {
                 if let Some(gpu_mesh) = mesh_storage.meshes.get(&render_mesh_comp.mesh_handle.id())
                 {
-                    let object_index = i as u32;
+                    let object_index = gpu_mesh.slot_index;
 
-                    // buffers for this specific mesh
-                    render_pass.set_vertex_buffer(0, gpu_mesh.vertex_buffer.slice(..));
-                    render_pass.set_index_buffer(
-                        gpu_mesh.index_buffer.slice(..),
-                        wgpu::IndexFormat::Uint32,
-                    );
-
-                    render_pass.draw_indexed(
-                        0..gpu_mesh.index_count,
-                        0,
+                    render_pass.draw(
+                        0..(gpu_mesh.face_count * 6),
                         object_index..(object_index + 1),
                     );
                 }

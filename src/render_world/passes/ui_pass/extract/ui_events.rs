@@ -61,7 +61,7 @@ pub fn extract_ui_events_system(
     extracted_events.text_events.clear();
 
     // INFO: ------------------------------
-    //         Extract panel events
+    //         extract panel events
     // ------------------------------------
 
     // removed panel events
@@ -102,7 +102,7 @@ pub fn extract_ui_events_system(
     }
 
     // INFO: -----------------------------
-    //         Extract text events
+    //         extract text events
     // -----------------------------------
 
     // removed text events

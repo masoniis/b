@@ -3,17 +3,14 @@ use crate::simulation_world::{
     asset_management::{AssetStorageResource, MeshAsset},
     chunk::OpaqueMeshComponent,
     user_interface::components::UiText,
-    user_interface::screens::debug_screen::{
-        IndexCountTextMarker, MeshCountTextMarker, VertexCountTextMarker,
-    },
+    user_interface::screens::debug::debug_screen::{FaceCountTextMarker, MeshCountTextMarker},
 };
 use bevy_ecs::prelude::*;
 
 #[derive(Resource, Default, Debug)]
 pub struct MeshCounterResource {
     pub total_meshes: usize,
-    pub total_vertices: usize,
-    pub total_indices: usize,
+    pub total_faces: usize,
 }
 
 /// Observes the removal of MeshComponent and updates the MeshCounterResource accordingly.
@@ -34,10 +31,7 @@ pub fn mesh_remove_observer(
         if let Some(mesh) = asset_storage.get(mesh_component.mesh_handle) {
             // use saturating_sub to prevent panicking
             mesh_count.total_meshes = mesh_count.total_meshes.saturating_sub(1);
-            mesh_count.total_vertices = mesh_count
-                .total_vertices
-                .saturating_sub(mesh.vertices.len());
-            mesh_count.total_indices = mesh_count.total_indices.saturating_sub(mesh.indices.len());
+            mesh_count.total_faces = mesh_count.total_faces.saturating_sub(mesh.faces.len());
         } else {
             warn!(
                 "MeshComponentRemovedMessage received for an invalid handle: {:?}",
@@ -64,8 +58,7 @@ pub fn mesh_add_observer(
     if let Ok(mesh_component) = mesh_query.get(entity) {
         if let Some(mesh) = asset_storage.get(mesh_component.mesh_handle) {
             mesh_count.total_meshes += 1;
-            mesh_count.total_vertices += mesh.vertices.len();
-            mesh_count.total_indices += mesh.indices.len();
+            mesh_count.total_faces += mesh.faces.len();
         } else {
             warn!(
                 "MeshComponent added with an invalid handle: {:?}",
@@ -85,17 +78,14 @@ pub fn update_mesh_counter_screen_text_system(
     mut text_query: Query<(
         &mut UiText,
         Option<&MeshCountTextMarker>,
-        Option<&VertexCountTextMarker>,
-        Option<&IndexCountTextMarker>,
+        Option<&FaceCountTextMarker>,
     )>,
 ) {
-    for (mut text, mesh_marker, vertex_marker, index_marker) in text_query.iter_mut() {
+    for (mut text, mesh_marker, face_marker) in text_query.iter_mut() {
         if mesh_marker.is_some() {
             text.content = format!("{}", mesh_counter.total_meshes);
-        } else if vertex_marker.is_some() {
-            text.content = format!("{}", mesh_counter.total_vertices);
-        } else if index_marker.is_some() {
-            text.content = format!("{}", mesh_counter.total_indices);
+        } else if face_marker.is_some() {
+            text.content = format!("{}", mesh_counter.total_faces);
         }
     }
 }

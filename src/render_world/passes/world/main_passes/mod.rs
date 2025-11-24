@@ -3,8 +3,12 @@ pub mod opaque_pass;
 pub mod shared_resources;
 pub mod transparent_pass;
 
+use shared_resources::{
+    CentralCameraViewBindGroupLayout, EnvironmentBindGroupLayout, TextureArrayBindGroupLayout,
+    TextureArrayUniforms,
+};
 pub use shared_resources::{
-    CentralCameraViewBuffer, EnvironmentBuffer, MainDepthTextureResource, MAIN_DEPTH_FORMAT,
+    CentralCameraViewUniform, EnvironmentUniforms, MainDepthTextureResource, MAIN_DEPTH_FORMAT,
 };
 
 // INFO: ---------------------------
@@ -19,19 +23,14 @@ use crate::{
     render_world::{
         global_extract::RenderWindowSizeResource,
         graphics_context::reconfigure_wgpu_surface_system,
-        passes::world::{
-            main_passes::{
-                bounding_box_pass::WireframeRenderPassPlugin,
-                opaque_pass::OpaqueRenderPassPlugin,
-                shared_resources::{
-                    resize_main_depth_texture_system, setup_central_camera_buffer_system,
-                    setup_central_camera_layout_system, setup_environment_buffer_system,
-                    setup_environment_layout_system, setup_main_depth_texture_system,
-                    update_camera_view_buffer_system, update_environment_buffer_system,
-                },
-                transparent_pass::TransparentRenderPassPlugin,
+        passes::world::main_passes::{
+            bounding_box_pass::WireframeRenderPassPlugin,
+            opaque_pass::OpaqueRenderPassPlugin,
+            shared_resources::{
+                resize_main_depth_texture_system, update_camera_view_buffer_system,
+                update_environment_uniform_buffer_system,
             },
-            shadow_pass::startup::setup_shadow_view_buffer_system,
+            transparent_pass::TransparentRenderPassPlugin,
         },
         scheduling::{RenderSchedule, RenderSet},
     },
@@ -44,37 +43,22 @@ pub struct PlayerCentricRenderPassPlugin;
 
 impl Plugin for PlayerCentricRenderPassPlugin {
     fn build(&self, builder: &mut EcsBuilder) {
-        // INFO: --------------------------------------
-        //         subplugins for render passes
-        // --------------------------------------------
-
-        builder
-            .add_plugin(TransparentRenderPassPlugin)
-            .add_plugin(OpaqueRenderPassPlugin)
-            .add_plugin(WireframeRenderPassPlugin);
-
         // INFO: ----------------------------------------------------
         //         startup (shared resources for main passes)
         // ----------------------------------------------------------
 
         builder
-            .schedule_entry(RenderSchedule::Startup)
-            .add_systems((
-                // shared depth texture
-                setup_main_depth_texture_system,
-                (
-                    // camera uniform
-                    setup_central_camera_layout_system,
-                    setup_central_camera_buffer_system.after(setup_shadow_view_buffer_system),
-                )
-                    .chain(),
-                (
-                    // environment uniform
-                    setup_environment_layout_system,
-                    setup_environment_buffer_system,
-                )
-                    .chain(),
-            ));
+            // camera view uniform resources
+            .init_resource::<CentralCameraViewBindGroupLayout>()
+            .init_resource::<CentralCameraViewUniform>()
+            // environment uniform resources
+            .init_resource::<EnvironmentBindGroupLayout>()
+            .init_resource::<EnvironmentUniforms>()
+            // texture uniform resources
+            .init_resource::<TextureArrayBindGroupLayout>()
+            .init_resource::<TextureArrayUniforms>()
+            // main depth texture
+            .init_resource::<MainDepthTextureResource>();
 
         // INFO: -----------------------------------------
         //         prepare (also shared resources)
@@ -87,11 +71,20 @@ impl Plugin for PlayerCentricRenderPassPlugin {
                     .after(reconfigure_wgpu_surface_system),
                 (
                     update_camera_view_buffer_system,
-                    update_environment_buffer_system,
+                    update_environment_uniform_buffer_system,
                 )
                     .run_if(in_state(AppState::Running)),
             )
                 .in_set(RenderSet::Prepare),
         );
+
+        // INFO: --------------------------------------
+        //         subplugins for render passes
+        // --------------------------------------------
+
+        builder
+            .add_plugin(TransparentRenderPassPlugin)
+            .add_plugin(OpaqueRenderPassPlugin)
+            .add_plugin(WireframeRenderPassPlugin);
     }
 }

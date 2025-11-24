@@ -1,12 +1,13 @@
 use crate::{
-    render_world::types::mesh::GpuMesh, simulation_world::asset_management::asset_storage::AssetId,
+    render_world::passes::world::gpu_resources::VoxelMesh,
+    simulation_world::asset_management::asset_storage::AssetId,
 };
 use bevy_ecs::prelude::Resource;
 use std::{collections::HashMap, sync::Arc};
 
 #[derive(Resource, Default)]
 pub struct RenderMeshStorageResource {
-    pub meshes: HashMap<AssetId, Arc<GpuMesh>>,
+    pub meshes: HashMap<AssetId, Arc<VoxelMesh>>,
 }
 
 impl std::fmt::Debug for RenderMeshStorageResource {
