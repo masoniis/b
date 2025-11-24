@@ -17,6 +17,7 @@ pub fn build_hull_mesh(
     block_registry: &BlockRegistryResource,
     block_id: BlockId,
 ) -> (Option<OpaqueMeshData>, Option<TransparentMeshData>) {
+    // TODO: bug in hull mesh with neighbor faces needs to be fixed
     let mut vertices = Vec::with_capacity(4096);
     let mut indices = Vec::with_capacity(6144);
 

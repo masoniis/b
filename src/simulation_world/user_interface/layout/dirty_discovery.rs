@@ -41,7 +41,7 @@ pub fn handle_structural_changes_system(
 ) {
     let _span = info_span!("handle_structural_changes_system").entered();
 
-    // Handle additions
+    // handle added ui nodes
     if !add_query.is_empty() {
         debug!(
             target: "ui_efficiency",
@@ -62,7 +62,7 @@ pub fn handle_structural_changes_system(
         }
     }
 
-    // Handle removals
+    // handle removed ui nodes
     if !removed_components.is_empty() {
         debug!(
             target: "ui_efficiency",
@@ -73,7 +73,7 @@ pub fn handle_structural_changes_system(
         is_dirty.0 = true;
         for entity in removed_components.read() {
             if let Some(node_id) = entity_to_node.remove(&entity) {
-                // Taffy's remove is smart and handles reparenting children to the grandparent
+                // taffy's remove is smart so it handles reparenting children to the grandparent
                 ui_tree.remove(node_id).unwrap();
             }
         }
@@ -101,21 +101,19 @@ pub fn handle_hierarchy_changes_system(
 
         is_dirty.0 = true;
         for (parent_entity, children) in &hierarchy_query {
-            // Get the Taffy node for the parent entity.
+            // get the Taffy node for the parent entity.
             if let Some(&parent_node) = entity_to_node.get(&parent_entity) {
-                // Get the Taffy nodes for all of the children.
+                // get the Taffy nodes for all of the children.
                 let child_nodes: Vec<taffy::NodeId> = children
                     .iter()
                     .filter_map(|child_entity| entity_to_node.get(&child_entity).copied())
                     .collect();
 
-                // If the number of resolved child nodes matches the number of children,
+                // if the number of resolved child nodes matches the number of children,
                 // it means all child nodes have been created and we can set the hierarchy.
                 if child_nodes.len() == children.len() {
                     ui_tree.set_children(parent_node, &child_nodes).unwrap();
                 } else {
-                    // This can happen if this system runs before the `add` system
-                    // has created the nodes for newly added children. System ordering will fix this.
                     warn!("Could not set children for {:?}; some child nodes were not yet in the Taffy tree.", parent_entity);
                 }
             }
@@ -135,7 +133,7 @@ pub fn update_changed_styles_system(
     mut ui_tree: NonSendMut<UiLayoutTree>,
     mut is_dirty: ResMut<IsLayoutDirty>,
 ) {
-    // Update styles for nodes where the Style component changed
+    // update styles for nodes where the Style component changed
     for (entity, style) in &style_query {
         if let Some(node) = entity_to_node.get(&entity) {
             debug!(
@@ -150,7 +148,7 @@ pub fn update_changed_styles_system(
         }
     }
 
-    // For text changes, we don't need to update the style, but we MUST tell Taffy
+    // for text changes, we don't need to update the style, but we MUST tell Taffy
     // that the node's intrinsic size may have changed. `mark_dirty` does exactly this.
     for entity in &text_query {
         if let Some(node) = entity_to_node.get(&entity) {
@@ -176,8 +174,6 @@ pub fn handle_window_resize_system(
             target: "ui_efficiency",
             "Window size changed. Marking layout as dirty.",
         );
-        // If the window size is different from the last time this system ran,
-        // the entire layout must be re-calculated.
-        is_dirty.0 = true;
+        is_dirty.0 = true; // ui needs recalc
     }
 }

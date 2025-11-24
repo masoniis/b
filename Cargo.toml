@@ -73,22 +73,25 @@ taffy = "0.9.1"                                                                 
 glyphon = { git = "https://github.com/grovesNL/glyphon.git", rev = "724ab57edbd6c59ba219cd99cf89925d056392db" } # text vectorization/prep
 
 ## shaders
-naga = { version = "27.0.0", features = ["wgsl-in"] } # for shader reflection
-wesl = "0.2.0"                                        # preprocessor
+wesl = "0.2.0" # preprocessor
+
+# not used for now, but may add it later for shader verification
+# naga = { version = "27.0.0", features = ["wgsl-in"] } # for shader reflection
 
 ## utils 
-bytemuck = { version = "1.13", features = ["derive"] } # gpu friendly data
-glam = "0.30.5"                                        # linear algebra
-image = "0.25.6"                                       # texture loading
+image = { version = "0.25.6", default-features = false, features = ["png"] }
+bytemuck = { version = "1.13", features = ["derive"] }                       # gpu friendly data
+glam = "0.30.5"                                                              # linear algebra
+offset-allocator = "0.2.0"                                                   # gpu buffer allocation
 
 # INFO: --------------------------
 #         simulation logic
 # --------------------------------
 
 ## core ecs library
-bevy_ecs = "0.17.2"
+bevy_ecs = { version = "0.17.2", default-features = false }
 
-## necessary for multi-threaded tasks
+## for multi-threaded tasks
 rayon = "1.11.0"       # multi threaded pooling
 futures-lite = "2.6.1" # future utils
 
@@ -96,11 +99,14 @@ futures-lite = "2.6.1" # future utils
 #         utils
 # ---------------------
 
+# tracking memory usage
+sysinfo = { version = "0.37.2", default-features = false, features = [
+  "system",
+] }
+
 derive_more = { version = "2.0.1", features = ["deref", "deref_mut"] }
 serde = { version = "1.0.228", features = ["derive"] }                 # serializing
-
-rand = "0.9.2"      # rng
-ron = "0.11.0"      # parsing RON files
-sysinfo = "0.37.2"  # memory usage
-noise = "0.9.0"     # gen random noise
-crossbeam = "0.8.4" # thread comms
+rand = "0.9.2"                                                         # rng
+ron = "0.11.0"                                                         # parsing RON files
+noise = { version = "0.9.0", default-features = false }                # gen random noise
+crossbeam = "0.8.4"                                                    # thread comms

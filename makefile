@@ -1,47 +1,65 @@
+# INFO: ----------------
+#         config
+# ----------------------
+
 OUTPUT_EXE_NAME := final_project_mason_bott
 REQUIRED_RUST_VERSION := 1.88.0
 
-.PHONY: all build run clean check_version
+# INFO: --------------------
+#         rust setup
+# --------------------------
 
-all: $(OUTPUT_EXE_NAME)
+TAR_NAME := rust-1.88.0-x86_64-unknown-linux-gnu.tar.gz
+EXTRACT_DIR := rust-1.88.0-x86_64-unknown-linux-gnu
 
-build: check_version $(OUTPUT_EXE_NAME)
+LOCAL_DIR := $(shell pwd)/.local_rust
+LOCAL_CARGO := $(LOCAL_DIR)/bin/cargo
 
-$(OUTPUT_EXE_NAME): check_version
-	cargo build --release
-	cp target/release/b $(OUTPUT_EXE_NAME)
+# INFO: ---------------
+#         logic
+# ---------------------
+
+.PHONY: all run build clean setup
+
+all: build
+
+run: build
+	@echo "executing ./final ..."
+	@./final
+
+build: setup
+	@echo "building Release..."
+	@export PATH=$(LOCAL_DIR)/bin:$(PATH) && \
+	$(LOCAL_CARGO) build --release
+	@cp target/release/b final
 	@echo ""
-	@echo "Compiled executable placed at ./$(OUTPUT_EXE_NAME)"
-	@echo "\`make run\` is available to execute it."
+	@echo "build finished, binary placed at ./final"
+	@echo ""
 
-check_version:
-	@echo -n "Checking Rust version... "
-	@VER=$$(rustc --version 2>/dev/null | cut -d ' ' -f 2); \
-	if [ -z "$$VER" ]; then VER="unknown"; fi; \
-	if command -v sort >/dev/null 2>&1 && command -v printf >/dev/null 2>&1; then \
-			if [ "$$VER" = "unknown" ] || [ "$$(printf '%s\n' "$(REQUIRED_RUST_VERSION)" "$$VER" | sort -V | head -n1)" != "$(REQUIRED_RUST_VERSION)" ]; then \
-			echo ""; \
-			echo "    WARNING: FOUND RUST VERSION $$VER, BUT REQUIRED >= $(REQUIRED_RUST_VERSION)"; \
-			echo "    Please run 'rustup update' to fix this, or update Rust through your package manager if you don't use rustup."; \
-			echo ""; \
-			echo "Continuing to compile just in case the version check was inaccurate..."; \
-			echo ""; \
-		else \
-			echo "$$VER ✓"; \
+setup:
+	@if [ ! -f "$(LOCAL_CARGO)" ]; then \
+		echo "unpacking bundled toolchain..."; \
+		if [ ! -f "deps/$(TAR_NAME)" ]; then \
+			echo "error: deps/$(TAR_NAME) not found!"; \
+			exit 1; \
 		fi \
+		\
+		# extract tarbell \
+		tar -xzf deps/$(TAR_NAME); \
+		\
+		# run install script outputting to local dir \
+		echo "installing toolchain locally to $(LOCAL_DIR)..."; \
+		./$(EXTRACT_DIR)/install.sh --prefix=$(LOCAL_DIR) --components=cargo,rustc,rust-std-x86_64-unknown-linux-gnu --disable-ldconfig; \
+		\
+		# cleanup the extracted folder \
+		rm -rf $(EXTRACT_DIR); \
 	else \
-		echo ""; \
-		echo "$$VER (version check skipped due to missing tools)"; \
+		echo "rust toolchain detected."; \
 	fi
-
-run:
-	@if [ ! -f $(OUTPUT_EXE_NAME) ]; then \
-		echo "Executable not found. Building first..."; \
-		$(MAKE) build; \
-	fi
-	@echo "Running the compiled executable at ./$(OUTPUT_EXE_NAME)..."
-	./$(OUTPUT_EXE_NAME)
 
 clean:
-	@rm -f $(OUTPUT_EXE_NAME)
-	@cargo clean
+	@if [ -f "$(LOCAL_CARGO)" ]; then \
+		$(LOCAL_CARGO) clean; \
+	fi
+	rm -rf .local_rust
+	rm -f final

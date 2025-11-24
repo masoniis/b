@@ -1,7 +1,7 @@
 .direnv
-.zig-cache
 .DS_Store
-
+deps
+.local_rust
 
 # Added by cargo
 /target
