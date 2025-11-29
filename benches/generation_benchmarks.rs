@@ -1,3 +1,4 @@
+use b::ecs_core::config::load_config;
 use b::prelude::*;
 use b::render_world::textures::load_voxel_texture_assets;
 use b::simulation_world::{
@@ -29,7 +30,10 @@ fn bench_chunk_generation(c: &mut Criterion) {
     //         setup
     // ---------------------
 
+    let app_config = load_config();
+
     let mut world = World::new();
+    world.insert_resource(load_voxel_texture_assets(&app_config).unwrap().1);
     world.init_resource::<BlockRegistryResource>();
     world.init_resource::<BiomeRegistryResource>();
 
@@ -118,11 +122,13 @@ fn bench_chunk_meshing(c: &mut Criterion) {
     //         setup
     // ---------------------
 
+    let app_config = load_config();
+
     let mut world = World::new();
+    world.insert_resource(load_voxel_texture_assets(&app_config).unwrap().1);
     world.init_resource::<BlockRegistryResource>();
 
     let block_registry = world.resource::<BlockRegistryResource>().clone();
-    let texture_registry = load_voxel_texture_assets().unwrap().1;
 
     // INFO: ---------------------------------
     //         dense meshing benchmark
@@ -167,12 +173,7 @@ fn bench_chunk_meshing(c: &mut Criterion) {
             let buffer = acquire_buffer();
             let dense_padded_chunk =
                 PaddedChunk::new(&dense_chunks, ChunkLod(0), dense_neighbor_lods, buffer);
-            build_chunk_mesh(
-                "bench_chunk_dense",
-                &dense_padded_chunk,
-                &texture_registry,
-                &block_registry,
-            )
+            build_chunk_mesh("bench_chunk_dense", &dense_padded_chunk, &block_registry)
         })
     });
 
@@ -202,12 +203,7 @@ fn bench_chunk_meshing(c: &mut Criterion) {
             let buffer = acquire_buffer();
             let hull_padded_chunk =
                 PaddedChunk::new(&hull_chunks, ChunkLod(0), hull_neighbor_lods, buffer);
-            build_chunk_mesh(
-                "bench_chunk_hull",
-                &hull_padded_chunk,
-                &texture_registry,
-                &block_registry,
-            )
+            build_chunk_mesh("bench_chunk_hull", &hull_padded_chunk, &block_registry)
         })
     });
 }

@@ -1,7 +1,7 @@
 (
 	display_name: "Dirt",
 	textures: (
-		fallback: dirt,
+		fallback: "dirt",
 	),
 	is_transparent: false,
 )

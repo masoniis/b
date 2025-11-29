@@ -1,5 +1,4 @@
 use crate::prelude::*;
-use crate::render_world::textures::registry::TextureRegistryResource;
 use crate::simulation_world::chunk::chunk_state_manager::NEIGHBOR_OFFSETS;
 use crate::simulation_world::chunk::common::padded_chunk_view::{
     ChunkDataOption, NeighborLODs, PaddedChunk,
@@ -58,7 +57,6 @@ pub fn start_pending_meshing_tasks_system(
     // Resources needed to start meshing
     mut commands: Commands,
     mut chunk_manager: ResMut<ChunkStateManager>,
-    texture_map: Res<TextureRegistryResource>,
     block_registry: Res<BlockRegistryResource>,
 ) {
     'chunk_loop: for (entity, chunk_comp, chunk_coord) in pending_chunks_query.iter_mut() {
@@ -155,7 +153,6 @@ pub fn start_pending_meshing_tasks_system(
         //         Spawn the mesh task
         // -----------------------------------
 
-        let texture_map_clone = texture_map.clone();
         let block_registry_clone = block_registry.clone();
         let coord_clone = chunk_coord.clone();
 
@@ -170,7 +167,6 @@ pub fn start_pending_meshing_tasks_system(
             let (opaque_mesh_option, transparent_mesh_option) = build_chunk_mesh(
                 &coord_clone.to_string(),
                 &padded_view,
-                &texture_map_clone,
                 &block_registry_clone,
             );
 

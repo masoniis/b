@@ -1,8 +1,8 @@
 (
 	display_name: "Grass",
 	textures: (
-		fallback: dirt,
-		top: Some(grass),
+		fallback: "grass_side",
+		top: Some("grass_top"),
 	),
 	is_transparent: false,
 )

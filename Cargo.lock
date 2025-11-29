@@ -197,7 +197,6 @@ dependencies = [
  "rayon",
  "ron",
  "serde",
- "serde_derive",
  "sysinfo",
  "taffy",
  "time",

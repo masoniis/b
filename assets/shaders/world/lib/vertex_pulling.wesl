@@ -18,8 +18,8 @@ const QUAD_UVS: array<vec2<f32>, 6> = array<vec2<f32>, 6>(
 const CUBE_NORMALS: array<vec3<f32>, 6> = array<vec3<f32>, 6>(
     vec3<f32>(0.0, 1.0, 0.0),  // top face
     vec3<f32>(0.0, -1.0, 0.0), // bottom
-    vec3<f32>(-1.0, 0.0, 0.0), // left
     vec3<f32>(1.0, 0.0, 0.0),  // right
+    vec3<f32>(-1.0, 0.0, 0.0), // left
     vec3<f32>(0.0, 0.0, 1.0),  // front
     vec3<f32>(0.0, 0.0, -1.0), // back
 );
@@ -37,10 +37,10 @@ const CUBE_VERTICES: array<vec3<f32>, 8> = array<vec3<f32>, 8>(
 const CUBE_INDICES: array<u32, 36> = array<u32, 36>(
     7, 6, 2, 2, 3, 7, // top face (front to back winding)
     0, 1, 5, 5, 4, 0, // bottom   (back to front winding)
-    0, 4, 7, 7, 3, 0, // left
     5, 1, 2, 2, 6, 5, // right
-    7, 4, 5, 5, 6, 7, // front
-    2, 1, 0, 0, 3, 2, // back
+    0, 4, 7, 7, 3, 0, // left
+		4, 5, 6, 6, 7, 4, // front
+		1, 0, 3, 3, 2, 1, // back
 );
 
 /// Maps the integer AO level (0-3) to a brightness float (0.0-1.0).

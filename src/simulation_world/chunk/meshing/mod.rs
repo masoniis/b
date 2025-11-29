@@ -7,7 +7,6 @@ pub mod hull;
 // --------------------------------------
 
 use crate::prelude::*;
-use crate::render_world::textures::registry::TextureRegistryResource;
 use crate::simulation_world::{
     asset_management::MeshAsset,
     block::{
@@ -26,7 +25,6 @@ pub type TransparentMeshData = MeshAsset;
 pub fn build_chunk_mesh(
     name: &str,
     padded_chunk: &PaddedChunk,
-    texture_map: &TextureRegistryResource,
     block_registry: &BlockRegistryResource,
 ) -> (Option<OpaqueMeshData>, Option<TransparentMeshData>) {
     match padded_chunk.get_center_uniform_block() {
@@ -37,10 +35,10 @@ pub fn build_chunk_mesh(
             }
 
             // only need to hull mesh if chunk is not occluded and is not air
-            hull::build_hull_mesh(name, padded_chunk, texture_map, block_registry, block_id)
+            hull::build_hull_mesh(name, padded_chunk, block_registry, block_id)
         }
         // otherwise do a full dense mesh
-        None => dense::build_dense_mesh(name, padded_chunk, texture_map, block_registry),
+        None => dense::build_dense_mesh(name, padded_chunk, block_registry),
     }
 }
 

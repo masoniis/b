@@ -1,6 +1,5 @@
 use super::{common::*, OpaqueMeshData, TransparentMeshData};
 use crate::prelude::*;
-use crate::render_world::textures::registry::TextureRegistryResource;
 use crate::simulation_world::{
     block::{block_registry::BlockId, BlockRegistryResource},
     chunk::{PaddedChunk, CHUNK_SIDE_LENGTH},
@@ -13,7 +12,6 @@ use crate::simulation_world::{
 pub fn build_hull_mesh(
     name: &str,
     padded_chunk: &PaddedChunk,
-    texture_map: &TextureRegistryResource,
     block_registry: &BlockRegistryResource,
     block_id: BlockId,
 ) -> (Option<OpaqueMeshData>, Option<TransparentMeshData>) {
@@ -22,18 +20,17 @@ pub fn build_hull_mesh(
     let ctx = MesherContext {
         padded_chunk,
         block_registry,
-        texture_map,
         center_lod: padded_chunk.center_lod(),
         neighbor_lods: padded_chunk.neighbor_lods(),
         chunk_size: padded_chunk.get_size(),
         scale: CHUNK_SIDE_LENGTH as f32 / padded_chunk.get_size() as f32,
     };
 
-    let size = ctx.chunk_size;
-    let props = block_registry.get_render_data(block_id);
-    let is_trans = props.is_transparent;
-
     let transparency_lut = block_registry.get_transparency_lut();
+    let texture_lut = block_registry.get_texture_lut();
+
+    let is_trans = transparency_lut[block_id as usize];
+    let size = ctx.chunk_size;
 
     macro_rules! mesh_plane {
         ($face_idx:expr, $u_range:expr, $v_range:expr, $pos_fn:expr) => {
@@ -43,14 +40,8 @@ pub fn build_hull_mesh(
                 .padded_chunk
                 .is_neighbor_fully_opaque(offset, ctx.block_registry)
             {
-                let tex_id = match $face_idx {
-                    0 => props.textures.top,
-                    1 => props.textures.bottom,
-                    2 => props.textures.left,
-                    3 => props.textures.right,
-                    4 => props.textures.front,
-                    _ => props.textures.back,
-                };
+                // 3. OPTIMIZATION: Direct array index for texture ID (No matching/branching)
+                let tex_id = texture_lut[block_id as usize][$face_idx];
 
                 for u in $u_range {
                     for v in $v_range {
@@ -62,14 +53,10 @@ pub fn build_hull_mesh(
                             neighbor_pos.y,
                             neighbor_pos.z,
                         );
-                        let neighbor_props = ctx.block_registry.get_render_data(neighbor_id);
 
-                        if should_render_face(
-                            block_id,
-                            is_trans,
-                            neighbor_id,
-                            neighbor_props.is_transparent,
-                        ) {
+                        let is_neighbor_trans = transparency_lut[neighbor_id as usize];
+
+                        if should_render_face(block_id, is_trans, neighbor_id, is_neighbor_trans) {
                             let ao = calculate_ao_levels_for_face(
                                 pos,
                                 FaceSide::ALL[$face_idx],

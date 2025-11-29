@@ -1,6 +1,7 @@
 use crate::{
     ecs_core::{
         async_loading::LoadingTracker,
+        config,
         cross_world_communication::{SimToRenderReceiver, SimToRenderSender},
         frame_sync::FrameSync,
     },
@@ -103,12 +104,20 @@ impl ApplicationHandler for App {
             //         create and initiate the worlds
             // ----------------------------------------------
 
+            // load config
+            let app_config = config::load_config();
+
             // world dependencies that the app must create (due to window)
             let graphics_context = block_on(GraphicsContext::new(window.clone()));
-            let (texture_images, texture_registry) = load_voxel_texture_assets().unwrap();
+            let (texture_images, texture_registry) =
+                load_voxel_texture_assets(&app_config).unwrap();
 
             let mut simulation_world = SimulationWorldInterface::new(&window, texture_registry);
             let mut render_world = RenderWorldInterface::new(graphics_context, texture_images);
+
+            // add config
+            simulation_world.add_resource(app_config.clone());
+            render_world.add_resource(app_config);
 
             // add loading trackers
             simulation_world.add_resource(self.loading_tracker.clone());

@@ -1,7 +1,9 @@
-use crate::prelude::*;
-use crate::render_world::types::TextureId;
-use crate::simulation_world::block::{
-    load_block_from_str, BlockDescription, BlockFaceTextures, BlockRenderData,
+use crate::{
+    prelude::*,
+    render_world::textures::{registry::TextureId, TextureRegistryResource},
+    simulation_world::block::{
+        load_block_from_str, BlockDescription, BlockFaceTextures, BlockRenderData,
+    },
 };
 use bevy_ecs::prelude::*;
 use std::collections::HashMap;
@@ -21,6 +23,10 @@ pub struct BlockRegistryResource {
     /// Direct access to transparency data from BlockRenderData
     /// to optimize super hot loops (meshing).
     transparency_lut: Arc<Vec<bool>>,
+    /// Direct access to slices of TextureIds (Hot Array)
+    /// to optimize super hot loops (meshing).
+    /// Layout: [Top, Bottom, Left, Right, Front, Back]
+    texture_lut: Arc<Vec<[TextureId; 6]>>,
 
     /// All loaded block descriptors from disc.
     descriptions: Arc<Vec<BlockDescription>>,
@@ -63,28 +69,61 @@ impl BlockRegistryResource {
     pub fn get_transparency_lut(&self) -> &[bool] {
         &self.transparency_lut
     }
+
+    /// Returns a slice of texture arrays for all blocks.
+    /// Index is BlockId.
+    ///
+    /// Use this for meshing to ensure O(1) array indexing without branching.
+    #[inline(always)]
+    pub fn get_texture_lut(&self) -> &[[TextureId; 6]] {
+        &self.texture_lut
+    }
 }
 
 impl FromWorld for BlockRegistryResource {
     #[instrument(skip_all)]
-    fn from_world(_world: &mut World) -> Self {
+    fn from_world(world: &mut World) -> Self {
         info!("Loading block definitions from disk...");
 
-        let mut render_data_vec: Vec<BlockRenderData> = Vec::new();
+        let texture_registry = world.get_resource::<TextureRegistryResource>().unwrap();
+
+        let mut render_data_vec: Vec<BlockRenderData<TextureId>> = Vec::new();
         let mut descriptions_vec: Vec<BlockDescription> = Vec::new();
+        // This vector stores the hot path [u16; 6] arrays
+        let mut texture_lut_vec: Vec<[TextureId; 6]> = Vec::new();
         let mut name_to_id: HashMap<String, BlockId> = HashMap::new();
 
         let block_dir = Path::new("assets/blocks");
 
         // closure to insert split data into parallel vectors
         let mut register =
-            |name: String, render: BlockRenderData, desc: BlockDescription| -> BlockId {
+            |name: String, render: BlockRenderData<String>, desc: BlockDescription| -> BlockId {
                 let id = render_data_vec.len() as BlockId;
 
-                render_data_vec.push(render);
+                // resolve strings from parsed ron to textures
+                let resolved_textures = render.textures.map(|n| texture_registry.get_id(&n));
+
+                let render_with_ids = BlockRenderData {
+                    is_transparent: render.is_transparent,
+                    textures: resolved_textures.clone(),
+                };
+
+                // hot texture array
+                let texture_array = [
+                    resolved_textures.top,
+                    resolved_textures.bottom,
+                    resolved_textures.right,
+                    resolved_textures.left,
+                    resolved_textures.front,
+                    resolved_textures.back,
+                ];
+
+                render_data_vec.push(render_with_ids);
                 descriptions_vec.push(desc);
+                texture_lut_vec.push(texture_array);
 
                 name_to_id.insert(name.to_lowercase(), id);
+
                 id
             };
 
@@ -95,12 +134,12 @@ impl FromWorld for BlockRegistryResource {
         let air_render = BlockRenderData {
             is_transparent: true,
             textures: BlockFaceTextures {
-                front: TextureId::Missing,
-                back: TextureId::Missing,
-                right: TextureId::Missing,
-                left: TextureId::Missing,
-                top: TextureId::Missing,
-                bottom: TextureId::Missing,
+                front: "missing".to_string(),
+                back: "missing".to_string(),
+                right: "missing".to_string(),
+                left: "missing".to_string(),
+                top: "missing".to_string(),
+                bottom: "missing".to_string(),
             },
         };
 
@@ -147,7 +186,7 @@ impl FromWorld for BlockRegistryResource {
                     if name == "air" {
                         error!("Skipping 'air.ron' (Reserved).");
                         continue;
-                    } else if name.starts_with("_") {
+                    } else if name.starts_with('_') {
                         continue;
                     }
 
@@ -184,6 +223,7 @@ impl FromWorld for BlockRegistryResource {
         Self {
             render_data: Arc::new(render_data_vec),
             transparency_lut: Arc::new(transparency_lut),
+            texture_lut: Arc::new(texture_lut_vec),
             descriptions: Arc::new(descriptions_vec),
             name_to_id: Arc::new(name_to_id),
         }

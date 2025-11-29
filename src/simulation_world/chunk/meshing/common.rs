@@ -1,11 +1,10 @@
 use super::{OpaqueMeshData, TransparentMeshData};
-use crate::prelude::*;
-use crate::render_world::textures::TextureRegistryResource;
-use crate::render_world::types::{PackedFace, TextureId};
+use crate::render_world::types::PackedFace;
 use crate::simulation_world::{
     block::{BlockId, BlockRegistryResource},
     chunk::{types::ChunkLod, NeighborLODs, PaddedChunk},
 };
+use crate::{prelude::*, render_world::textures::registry::TextureId};
 
 // INFO: -----------------------
 //         lookup tables
@@ -17,8 +16,8 @@ use crate::simulation_world::{
 pub const NEIGHBOR_OFFSETS: [IVec3; 6] = [
     IVec3::new(0, 1, 0),  // top
     IVec3::new(0, -1, 0), // bottom
-    IVec3::new(-1, 0, 0), // left
     IVec3::new(1, 0, 0),  // right
+    IVec3::new(-1, 0, 0), // left
     IVec3::new(0, 0, 1),  // front
     IVec3::new(0, 0, -1), // back
 ];
@@ -33,7 +32,7 @@ pub const AO_OFFSETS: [[[IVec3; 3]; 4]; 6] = [
         [IVec3::new(1, 1, 0), IVec3::new(0, 1, 1), IVec3::new(1, 1, 1)],
         // back-right
         [IVec3::new(1, 1, 0), IVec3::new(0, 1, -1), IVec3::new(1, 1, -1)],
-        // back-left (needs to check relative blocks -X, -Z)
+        // back-left
         [IVec3::new(-1, 1, 0), IVec3::new(0, 1, -1), IVec3::new(-1, 1, -1)],
     ],
     [ // bottom face
@@ -46,12 +45,6 @@ pub const AO_OFFSETS: [[[IVec3; 3]; 4]; 6] = [
         // front-left
         [IVec3::new(-1, -1, 0), IVec3::new(0, -1, 1), IVec3::new(-1, -1, 1)],
     ],
-    [ // left face
-        [IVec3::new(-1, -1, 0), IVec3::new(-1, 0, -1), IVec3::new(-1, -1, -1)],
-        [IVec3::new(-1, -1, 0), IVec3::new(-1, 0, 1), IVec3::new(-1, -1, 1)],
-        [IVec3::new(-1, 1, 0), IVec3::new(-1, 0, 1), IVec3::new(-1, 1, 1)],
-        [IVec3::new(-1, 1, 0), IVec3::new(-1, 0, -1), IVec3::new(-1, 1, -1)],
-    ],
     [ // right face
         // bottom-left (starts at cube vertex 5 in shader)
         [IVec3::new(1, -1, 0), IVec3::new(1, 0, 1), IVec3::new(1, -1, 1)],
@@ -62,17 +55,23 @@ pub const AO_OFFSETS: [[[IVec3; 3]; 4]; 6] = [
         // top-left
         [IVec3::new(1, 1, 0), IVec3::new(1, 0, 1), IVec3::new(1, 1, 1)],
     ],
+    [ // left face
+        [IVec3::new(-1, -1, 0), IVec3::new(-1, 0, -1), IVec3::new(-1, -1, -1)],
+        [IVec3::new(-1, -1, 0), IVec3::new(-1, 0, 1), IVec3::new(-1, -1, 1)],
+        [IVec3::new(-1, 1, 0), IVec3::new(-1, 0, 1), IVec3::new(-1, 1, 1)],
+        [IVec3::new(-1, 1, 0), IVec3::new(-1, 0, -1), IVec3::new(-1, 1, -1)],
+    ],
     [ // front face
-        [IVec3::new(-1, 0, 1), IVec3::new(0, 1, 1), IVec3::new(-1, 1, 1)],
         [IVec3::new(-1, 0, 1), IVec3::new(0, -1, 1), IVec3::new(-1, -1, 1)],
         [IVec3::new(1, 0, 1), IVec3::new(0, -1, 1), IVec3::new(1, -1, 1)],
         [IVec3::new(1, 0, 1), IVec3::new(0, 1, 1), IVec3::new(1, 1, 1)],
+        [IVec3::new(-1, 0, 1), IVec3::new(0, 1, 1), IVec3::new(-1, 1, 1)],
     ],
     [ // back face
-        [IVec3::new(-1, 0, -1), IVec3::new(0, -1, -1), IVec3::new(-1, -1, -1)],
         [IVec3::new(1, 0, -1), IVec3::new(0, -1, -1), IVec3::new(1, -1, -1)],
-        [IVec3::new(1, 0, -1), IVec3::new(0, 1, -1), IVec3::new(1, 1, -1)],
+        [IVec3::new(-1, 0, -1), IVec3::new(0, -1, -1), IVec3::new(-1, -1, -1)],
         [IVec3::new(-1, 0, -1), IVec3::new(0, 1, -1), IVec3::new(-1, 1, -1)],
+        [IVec3::new(1, 0, -1), IVec3::new(0, 1, -1), IVec3::new(1, 1, -1)],
     ],
 ];
 
@@ -109,8 +108,8 @@ impl From<u8> for AoLevel {
 pub enum FaceSide {
     Top = 0,    // +Y
     Bottom = 1, // -Y
-    Left = 2,   // -X
-    Right = 3,  // +X
+    Right = 2,  // +X
+    Left = 3,   // -X
     Front = 4,  // +Z
     Back = 5,   // -Z
 }
@@ -120,8 +119,8 @@ impl FaceSide {
     pub const ALL: [FaceSide; 6] = [
         FaceSide::Top,
         FaceSide::Bottom,
-        FaceSide::Left,
         FaceSide::Right,
+        FaceSide::Left,
         FaceSide::Front,
         FaceSide::Back,
     ];
@@ -131,8 +130,8 @@ impl FaceSide {
         match self {
             FaceSide::Top => [0, 1, 0],
             FaceSide::Bottom => [0, -1, 0],
-            FaceSide::Left => [-1, 0, 0],
             FaceSide::Right => [1, 0, 0],
+            FaceSide::Left => [-1, 0, 0],
             FaceSide::Front => [0, 0, 1],
             FaceSide::Back => [0, 0, -1],
         }
@@ -261,7 +260,6 @@ pub fn build_mesh_assets(
 pub struct MesherContext<'a> {
     pub padded_chunk: &'a PaddedChunk,
     pub block_registry: &'a BlockRegistryResource,
-    pub texture_map: &'a TextureRegistryResource,
     pub center_lod: ChunkLod,
     pub neighbor_lods: &'a NeighborLODs,
     pub chunk_size: usize,
@@ -278,15 +276,13 @@ impl<'a> MesherContext<'a> {
         ao_levels: [AoLevel; 4],
         out_faces: &mut Vec<PackedFace>,
     ) {
-        let tex_index = self.texture_map.get(tex_id);
-
         let face = PackedFace::new(
             block_pos.x as u32,
             block_pos.y as u32,
             block_pos.z as u32,
             face_side,
             ao_levels,
-            tex_index,
+            tex_id,
         );
 
         out_faces.push(face);

@@ -1,19 +1,25 @@
 use std::fmt;
+use std::io::Error;
 
 #[derive(Debug)]
 pub enum TextureLoadError {
-    DirectoryRead(String, std::io::Error),
+    IoError(Error),
     ImageError(String, image::ImageError),
     NoTexturesFound,
     DimensionMismatch(String, u32, u32, u32, u32),
-    MissingTextureNotInManifest,
+}
+
+impl From<Error> for TextureLoadError {
+    fn from(err: Error) -> Self {
+        TextureLoadError::IoError(err)
+    }
 }
 
 impl fmt::Display for TextureLoadError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            TextureLoadError::DirectoryRead(path, err) => {
-                write!(f, "Failed to read texture directory at '{}': {}", path, err)
+            TextureLoadError::IoError(err) => {
+                write!(f, "Texture loading IO error: {}", err)
             }
             TextureLoadError::ImageError(path, err) => {
                 write!(f, "Failed to open or decode image at '{}': {}", path, err)
@@ -28,12 +34,6 @@ impl fmt::Display for TextureLoadError {
                     name, w, h, exp_w, exp_h
                 )
             }
-            TextureLoadError::MissingTextureNotInManifest => {
-                write!(
-                    f,
-                    "The required TextureId::Missing was not found in the manifest."
-                )
-            }
         }
     }
 }
@@ -41,7 +41,7 @@ impl fmt::Display for TextureLoadError {
 impl std::error::Error for TextureLoadError {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         match self {
-            TextureLoadError::DirectoryRead(_, err) => Some(err),
+            TextureLoadError::IoError(err) => Some(err),
             TextureLoadError::ImageError(_, err) => Some(err),
             _ => None,
         }
