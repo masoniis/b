@@ -74,23 +74,20 @@ impl ClimateNoiseGenerator {
         }
     }
 
-    /// Calculates all 5 climate values in a batch for a whole buffer
-    // NOTE: This function has been renamed and simplified to focus on the noise loop
+    /// Calculates all 5 climate values in a batch for a whole buffer efficiently.
     fn generate_single_map(
         &self,
         coords: &[[f64; 2]],
         target_buffer: &mut [f32],
         noise_fn: &Fbm<OpenSimplex>,
     ) {
-        // This loop is what the compiler sees and vectorizes.
         for (i, point) in coords.iter().enumerate() {
             let raw = noise_fn.get(*point);
             target_buffer[i] = ((raw + 1.0) * 0.5) as f32;
         }
     }
 
-    /// ORCHESTRATOR: Handles the coordinate preparation and sequential borrowing
-    /// of the climate pool buffers to perform the SIMD batch generation.
+    /// Orchestrates the filling of all 5 climate buffers
     fn orchestrate_fill(
         &self,
         buffers: &mut super::climate_buffer_pool::ClimateBufferPool,
@@ -100,7 +97,7 @@ impl ClimateNoiseGenerator {
     ) {
         let area = size * size;
 
-        // 1. Calculate Coordinates (Hoisted)
+        // calculate coordinates
         let mut coords = vec![[0.0; 2]; area];
         for z in 0..size {
             for x in 0..size {
@@ -111,8 +108,6 @@ impl ClimateNoiseGenerator {
             }
         }
 
-        // 2. Perform sequential, non-overlapping mutable borrows.
-        // Rust allows this because the fields are separate Vecs.
         self.generate_single_map(
             &coords,
             buffers.temperature.as_mut_slice(),
@@ -148,14 +143,13 @@ impl ClimateGenerator for ClimateNoiseGenerator {
             let mut buffers = cell.borrow_mut();
             buffers.prepare(size);
 
-            // CALL ORCHESTRATOR: Zero mutable borrow errors.
+            // fill all buffers
             self.orchestrate_fill(&mut *buffers, base_pos.x, base_pos.z, size);
 
-            // --- WRITE PHASE (AoS Struct Merging) ---
             let mut writer = climate_map.get_data_writer();
             let area = size * size;
 
-            // Get immutable slices from the buffers to read the results
+            // read results and populate into ClimateData
             let temp = buffers.temperature.as_slice();
             let precip = buffers.precipitation.as_slice();
             let cont = buffers.continentalness.as_slice();
@@ -171,7 +165,6 @@ impl ClimateGenerator for ClimateNoiseGenerator {
                     weirdness: weird[i],
                 };
 
-                // writer.set_at_index is cleaner here
                 writer.set_at_index(i, climate_data);
             }
         });

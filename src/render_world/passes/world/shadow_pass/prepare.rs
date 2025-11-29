@@ -30,7 +30,7 @@ pub fn update_shadow_view_buffer_system(
     // -------------------------------
     // NOTE: goal is to create a view matrix of the sun "looking at the world"
 
-    let sun_direction = Vec3::from_array(sun.direction).normalize_or_zero();
+    let sun_direction = Vec3::from_array(sun.main_light_direction).normalize_or_zero();
 
     // stable up direction
     let light_up = if sun_direction.y.abs() > 0.999 {

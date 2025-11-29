@@ -135,10 +135,11 @@ fn generate_missing_texture_image(width: u32, height: u32) -> RgbaImage {
             let checker_y = y / checker_size;
             let is_even = (checker_x + checker_y) % 2 == 0;
 
+            // defaults to transparent so that it works for both opaque and transparency
             let color = if is_even {
-                [255, 0, 255, 255] // magenta/purple
+                [255, 0, 255, 200] // magenta/purple
             } else {
-                [0, 0, 0, 255] // black
+                [0, 0, 0, 200] // black
             };
 
             img.put_pixel(x, y, image::Rgba(color));

@@ -1,6 +1,11 @@
 struct EnvironmentUniform {
-    sun_direction: vec3<f32>,
+    main_light_direction: vec3<f32>,
     time: f32,
+    main_light_color: vec3<f32>,
+    ambient_strength: f32,
+    sun_direction: vec3<f32>,
+    sun_disk_color: vec3<f32>,
+    moon_direction: vec3<f32>,
     horizon_color: vec3<f32>,
     zenith_color: vec3<f32>,
 };

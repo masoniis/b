@@ -24,9 +24,12 @@ fn fs_main(
     //         directional lighting
     // ------------------------------------
 
-    let L = normalize(environment.sun_direction);
+    let L = normalize(environment.main_light_direction);
     let N = normalize(normal);
-    let ambient_strength = 0.2;
+
+    let ambient_strength = environment.ambient_strength;
+    let diff_amount = max(dot(N, L), 0.0);
+    let diffuse_color = environment.main_light_color * diff_amount;
 
     var lit_color: vec3<f32>;
 
@@ -35,9 +38,8 @@ fn fs_main(
     );
     if shadow_factor == 1.0 {
         // not in shadow, apply full lighting
-        let diffuse_factor = max(dot(N, L), 0.0);
-        let lighting_factor = ambient_strength + (1.0 - ambient_strength) * diffuse_factor;
-        lit_color = base_color * lighting_factor;
+        let light_contribution = vec3<f32>(ambient_strength) + diffuse_color;
+        lit_color = base_color * light_contribution;
     } else {
         // in shadow, apply only ambient light
         lit_color = base_color * ambient_strength;

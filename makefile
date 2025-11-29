@@ -31,7 +31,7 @@ build: setup
 	@echo "building binary..."
 	@export PATH=$(LOCAL_DIR)/bin:$(PATH) && \
     export LD_LIBRARY_PATH=$(LOCAL_DIR)/lib:$(LD_LIBRARY_PATH) && \
-      $(LOCAL_CARGO) build --release
+      $(LOCAL_CARGO) build --profile distribution --features final_release
 	@cp target/release/b final
 	@echo ""
 	@echo "build finished, binary placed at ./final"

@@ -3,7 +3,7 @@ use crate::simulation_world::time::simulation_tick::SimulationTick;
 use bevy_ecs::prelude::*;
 use std::time::Duration;
 
-pub const SECONDS_IN_A_DAY: f32 = 180.0;
+pub const SECONDS_IN_A_DAY: f32 = 600.0;
 
 /// A resource that tracks the in-game date and time.
 #[derive(Resource, Debug)]
@@ -20,7 +20,7 @@ impl Default for WorldClockResource {
     fn default() -> Self {
         Self {
             total_days: 0,
-            time_of_day: Duration::from_secs_f32(SECONDS_IN_A_DAY * 0.25),
+            time_of_day: Duration::from_secs_f32(SECONDS_IN_A_DAY * 0.70),
             day_duration: Duration::from_secs_f32(SECONDS_IN_A_DAY),
         }
     }

@@ -11,28 +11,61 @@ use bytemuck::{Pod, Zeroable};
 #[repr(C)]
 #[derive(Clone, Copy, Pod, Zeroable, Default)]
 pub struct EnvironmentData {
+    pub main_light_direction: [f32; 3],
+    pub time: f32,
+
+    pub main_light_color: [f32; 3],
+    pub ambient_strength: f32,
+
     pub sun_direction: [f32; 3],
-    pub time: f32, // no padding since time fills slot
+    pub _padding1: u32,
+
+    pub sun_disk_color: [f32; 3],
+    pub _padding2: u32,
+
+    pub moon_direction: [f32; 3],
+    pub _padding3: u32,
+
     pub horizon_color: [f32; 3],
-    _padding2: u32,
+    pub _padding4: u32,
+
     pub zenith_color: [f32; 3],
-    _padding3: u32,
+    pub _padding5: u32,
 }
 
 impl EnvironmentData {
     pub fn new(
+        main_light_direction: [f32; 3],
+        time: f32,
+        main_light_color: [f32; 3],
+        ambient_strength: f32,
         sun_direction: [f32; 3],
-        world_time: f32,
+        sun_disk_color: [f32; 3],
+        moon_direction: [f32; 3],
         horizon_color: [f32; 3],
         zenith_color: [f32; 3],
     ) -> Self {
         Self {
+            main_light_direction,
+            time,
+
+            main_light_color,
+            ambient_strength,
+
             sun_direction,
-            time: world_time,
-            horizon_color,
+            _padding1: 0,
+
+            sun_disk_color,
             _padding2: 0,
-            zenith_color,
+
+            moon_direction,
             _padding3: 0,
+
+            horizon_color,
+            _padding4: 0,
+
+            zenith_color,
+            _padding5: 0,
         }
     }
 }
@@ -104,9 +137,9 @@ impl FromWorld for EnvironmentUniforms {
     }
 }
 
-// INFO: ------------------------
-//         update systems
-// ------------------------------
+// INFO: -----------------------
+//         update system
+// -----------------------------
 
 /// A system to prepare the environment buffer data for centric passes.
 #[instrument(skip_all)]
@@ -120,10 +153,15 @@ pub fn update_environment_uniform_buffer_system(
     queue: Res<RenderQueue>,
 ) {
     let environtment_data = EnvironmentData::new(
-        extracted_sun.direction,
+        extracted_sun.main_light_direction,
         extracted_time.total_elapsed_seconds,
-        [0.08, 0.12, 0.45],
-        [0.3, 0.5, 0.8],
+        extracted_sun.main_light_color,
+        extracted_sun.ambient_strength,
+        extracted_sun.sun_direction,
+        extracted_sun.sun_disk_color,
+        extracted_sun.moon_direction,
+        extracted_sun.horizon,
+        extracted_sun.zenith,
     );
 
     queue.write_buffer(

@@ -39,8 +39,8 @@ const CUBE_INDICES: array<u32, 36> = array<u32, 36>(
     0, 1, 5, 5, 4, 0, // bottom   (back to front winding)
     5, 1, 2, 2, 6, 5, // right
     0, 4, 7, 7, 3, 0, // left
-		4, 5, 6, 6, 7, 4, // front
-		1, 0, 3, 3, 2, 1, // back
+    4, 5, 6, 6, 7, 4, // front
+    1, 0, 3, 3, 2, 1, // back
 );
 
 /// Maps the integer AO level (0-3) to a brightness float (0.0-1.0).

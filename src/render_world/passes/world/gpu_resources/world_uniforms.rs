@@ -4,7 +4,7 @@ use crate::render_world::types::PackedFace;
 use bevy_ecs::prelude::*;
 use offset_allocator::{Allocation, Allocator};
 
-/// 128 MB = Enough for ~30,000 average chunks (4KB each)
+/// 128 MB
 const MEGA_BUFFER_SIZE: u64 = 128 * 1024 * 1024;
 /// The max number of chunks for storing metadata
 const MAX_CHUNKS: u64 = 10_000;
@@ -13,22 +13,20 @@ const MAX_CHUNKS: u64 = 10_000;
 //         data types
 // --------------------------
 
-/// The raw data written to the Metadata Buffer.
-/// Represents "Where is this chunk in the world" + "Where is its geometry".
+/// A representation of raw chunk data used in the chunk metadata storage buffer.
 #[repr(C)]
 #[derive(Debug, Clone, Copy, bytemuck::Pod, bytemuck::Zeroable)]
 pub struct ChunkRenderData {
-    pub world_pos: [f32; 3], // 12 bytes
-    pub start_index: u32,    // 4 bytes (Total 16 bytes, perfectly aligned)
+    pub world_pos: [f32; 3],
+    pub start_index: u32,
 }
 
-/// The Handle returned to the ECS.
-/// Holds the tickets for both the Geometry memory and the Metadata slot.
+/// A voxel mesh handle holding the GPU allocation and index.
 #[derive(Clone, Copy)]
 pub struct VoxelMesh {
-    /// Ticket for the variable-sized geometry buffer
+    /// Handle for the geometry (face) buffer
     pub geometry_allocation: Allocation,
-    /// Ticket for the fixed-size metadata buffer (instance index)
+    /// Handle for metadata buffer (instance index)
     pub slot_index: u32,
     /// Number of faces to draw
     pub face_count: u32,
@@ -55,17 +53,17 @@ impl SlotAllocator {
     }
 
     fn allocate(&mut self) -> Option<u32> {
-        // 1. Recycle used slot
+        // recycle used slot if possible
         if let Some(idx) = self.free_indices.pop() {
             return Some(idx);
         }
-        // 2. Mint new slot
+        // else create a new one
         if self.next_index < self.capacity {
             let idx = self.next_index;
             self.next_index += 1;
             return Some(idx);
         }
-        // 3. Full
+        // or full
         None
     }
 
@@ -119,26 +117,22 @@ impl FromWorld for ChunkStorageBindGroupLayout {
 
 #[derive(Resource)]
 pub struct ChunkStorageManager {
-    /// The Bind Group used in the Render Pass (Group 3)
     pub bind_group: wgpu::BindGroup,
 
-    // GPU Buffers (Private to ensure data integrity via API)
+    // buffers
     meta_buffer: wgpu::Buffer,
     face_buffer: wgpu::Buffer,
 
-    // CPU Allocators (Private)
+    // allocators for buffers
     geometry_allocator: Allocator,
     slot_allocator: SlotAllocator,
 }
 
 impl FromWorld for ChunkStorageManager {
     fn from_world(world: &mut World) -> Self {
-        // 1. Get Dependencies
         let device = world.resource::<RenderDevice>();
-        // We retrieve the layout we created in the Layout Setup System
         let layout = world.resource::<ChunkStorageBindGroupLayout>();
 
-        // 2. Create Buffers
         let face_buffer = device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("Global Voxel SSBO"),
             size: MEGA_BUFFER_SIZE,
@@ -153,7 +147,6 @@ impl FromWorld for ChunkStorageManager {
             mapped_at_creation: false,
         });
 
-        // 3. Create Bind Group using the Shared Layout
         let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
             label: Some("Global Voxel Bind Group"),
             layout: &layout.0,
@@ -169,7 +162,6 @@ impl FromWorld for ChunkStorageManager {
             ],
         });
 
-        // 4. Initialize Allocators
         Self {
             face_buffer,
             meta_buffer,
@@ -181,9 +173,7 @@ impl FromWorld for ChunkStorageManager {
 }
 
 impl ChunkStorageManager {
-    /// The unified API to upload a chunk.
-    /// Handles finding space for geometry, finding a metadata slot,
-    /// uploading bytes, and returning a safe Handle.
+    /// Upload a chunk to the GPU buffer.
     pub fn allocate_chunk(
         &mut self,
         queue: &wgpu::Queue,
@@ -194,30 +184,26 @@ impl ChunkStorageManager {
             return None;
         }
 
-        // 1. Allocate Geometry (Variable size)
+        // allocate faces (variable in size)
         let size_bytes = (faces.len() * std::mem::size_of::<PackedFace>()) as u32;
-        let geo_alloc = self.geometry_allocator.allocate(size_bytes)?;
+        let geometry_allocation = self.geometry_allocator.allocate(size_bytes)?;
 
-        // 2. Allocate Slot (Fixed size)
+        // allocate slot (fixed size)
         let slot_index = match self.slot_allocator.allocate() {
             Some(s) => s,
             None => {
-                // Rollback: If we can't find a slot, free the geometry we just took!
-                self.geometry_allocator.free(geo_alloc);
+                self.geometry_allocator.free(geometry_allocation);
                 return None;
             }
         };
 
-        // 3. Upload Geometry Data
         queue.write_buffer(
             &self.face_buffer,
-            geo_alloc.offset as u64,
+            geometry_allocation.offset as u64,
             bytemuck::cast_slice(faces),
         );
 
-        // 4. Upload Metadata
-        // Convert byte offset to index offset (bytes / 4)
-        let start_index = geo_alloc.offset / 4;
+        let start_index = geometry_allocation.offset / 4;
 
         let meta_data = ChunkRenderData {
             world_pos,
@@ -231,9 +217,8 @@ impl ChunkStorageManager {
             bytemuck::bytes_of(&meta_data),
         );
 
-        // 5. Return Handle
         Some(VoxelMesh {
-            geometry_allocation: geo_alloc,
+            geometry_allocation,
             slot_index,
             face_count: faces.len() as u32,
         })
