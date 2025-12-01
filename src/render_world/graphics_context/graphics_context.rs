@@ -30,12 +30,12 @@ impl GraphicsContext {
         let adapter = Arc::new(
             instance
                 .request_adapter(&RequestAdapterOptions {
-                    power_preference: PowerPreference::default(),
+                    power_preference: PowerPreference::HighPerformance,
                     compatible_surface: Some(&surface),
                     force_fallback_adapter: false,
                 })
                 .await
-                .unwrap(),
+                .expect("Failed to find an appropriate adapter to use."),
         );
 
         let (device, queue) = adapter
@@ -45,7 +45,7 @@ impl GraphicsContext {
                 ..Default::default()
             })
             .await
-            .unwrap();
+            .expect("Failed to create a WGPU device with necessary features.");
         let device = Arc::new(device);
         let queue = Arc::new(queue);
 
