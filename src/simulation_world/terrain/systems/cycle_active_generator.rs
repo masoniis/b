@@ -1,6 +1,7 @@
 use crate::prelude::*;
+use crate::simulation_world::terrain::shaping::SimplexShaper;
 use crate::simulation_world::terrain::{
-    ActiveTerrainGenerator, SinWaveGenerator, SuperflatShaper, TerrainShaper,
+    ActiveTerrainGenerator, NoisyShaper, SinwaveShaper, SuperflatShaper, TerrainShaper,
 };
 use bevy_ecs::{
     resource::Resource,
@@ -16,8 +17,10 @@ pub struct TerrainGeneratorLibrary {
 /// A system that sets up the terrain generator by loading a default set of generators
 /// into it.
 pub fn setup_terrain_gen_library(mut lib: ResMut<TerrainGeneratorLibrary>) {
-    lib.generators.push(Arc::new(SinWaveGenerator::new()));
+    lib.generators.push(Arc::new(SinwaveShaper::new()));
     lib.generators.push(Arc::new(SuperflatShaper::new()));
+    lib.generators.push(Arc::new(NoisyShaper::new()));
+    lib.generators.push(Arc::new(SimplexShaper::new()));
 }
 
 /// A simple startup system that sets the default terrain generator to avoid confusion

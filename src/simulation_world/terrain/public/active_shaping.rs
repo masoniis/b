@@ -1,4 +1,4 @@
-use crate::simulation_world::terrain::{generators::shaping::lib::TerrainShaper, SinWaveGenerator};
+use crate::simulation_world::terrain::{generators::shaping::lib::TerrainShaper, SinwaveShaper};
 use bevy_ecs::prelude::Resource;
 use std::sync::Arc;
 
@@ -8,6 +8,6 @@ pub struct ActiveTerrainGenerator(pub Arc<dyn TerrainShaper + Send + Sync>);
 
 impl Default for ActiveTerrainGenerator {
     fn default() -> Self {
-        ActiveTerrainGenerator(Arc::new(SinWaveGenerator::new()))
+        ActiveTerrainGenerator(Arc::new(SinwaveShaper::new()))
     }
 }

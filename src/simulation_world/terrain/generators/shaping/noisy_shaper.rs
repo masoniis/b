@@ -1,34 +1,38 @@
 use crate::prelude::*;
+use crate::simulation_world::chunk::CHUNK_SIDE_LENGTH;
 use crate::simulation_world::terrain::climate::ClimateMapComponent;
-use crate::simulation_world::{
-    chunk::CHUNK_SIDE_LENGTH,
-    terrain::generators::shaping::{ChunkUniformity, ShapeResultBuilder, TerrainShaper},
+use crate::simulation_world::terrain::generators::shaping::{
+    ChunkUniformity, ShapeResultBuilder, TerrainShaper,
 };
+use noise::{Fbm, MultiFractal, NoiseFn, Perlin};
 
-/// Generates a simple, rolling terrain using two sine waves.
+/// Generates terrain using a noise function.
 #[derive(Debug, Clone)]
-pub struct SinwaveShaper {
-    /// The average "sea level" height of the terrain.
+pub struct NoisyShaper {
+    noise: Fbm<Perlin>,
     base_height: i32,
-    /// Controls how high the hills and valleys are.
-    amplitude: f32,
-    /// Controls how "spread out" the hills are. Smaller values = wider hills.
-    frequency: f32,
+    amplitude: f64,
 }
 
-impl SinwaveShaper {
+impl NoisyShaper {
     pub fn new() -> Self {
+        let mut noise = Fbm::new(1234);
+        noise = noise.set_frequency(0.05);
+        noise = noise.set_octaves(5);
+        noise = noise.set_lacunarity(2.2);
+        noise = noise.set_persistence(0.55);
+
         Self {
-            base_height: 32, // average world height
-            amplitude: 12.0,
-            frequency: 0.04,
+            noise,
+            base_height: 32,
+            amplitude: 24.0,
         }
     }
 }
 
-impl TerrainShaper for SinwaveShaper {
+impl TerrainShaper for NoisyShaper {
     fn name(&self) -> &str {
-        "SinWave"
+        "NoisyAmplitude"
     }
 
     #[instrument(skip_all, fields(chunk = %coord))]
@@ -36,15 +40,15 @@ impl TerrainShaper for SinwaveShaper {
         let chunk_y_min = coord.y * CHUNK_SIDE_LENGTH as i32;
         let chunk_y_max = (coord.y + 1) * CHUNK_SIDE_LENGTH as i32 - 1;
 
-        let max_variation = self.amplitude * 2.0;
-        let max_possible_y = (self.base_height as f32 + max_variation).round() as i32;
+        let max_variation = self.amplitude;
+        let max_possible_y = (self.base_height as f64 + max_variation).round() as i32;
 
         // if above max y, all empty
         if chunk_y_min > max_possible_y {
             return ChunkUniformity::Empty;
         }
 
-        let min_possible_y = (self.base_height as f32 - max_variation).round() as i32;
+        let min_possible_y = (self.base_height as f64 - max_variation).round() as i32;
         let effective_terrain_floor = min_possible_y.max(1);
 
         // if below sin variation, all solid
@@ -58,22 +62,16 @@ impl TerrainShaper for SinwaveShaper {
     #[instrument(skip_all)]
     fn shape_terrain_chunk(
         &self,
-        // input
         _climate_map: &ClimateMapComponent,
-
-        // output
         mut shape_builder: ShapeResultBuilder,
     ) -> ShapeResultBuilder {
-        let base = self.base_height as f32;
+        let base = self.base_height as f64;
         let amp = self.amplitude;
-        let freq = self.frequency;
 
         shape_builder.fill_from(|_local, world| {
-            let wx = world.x as f32;
-            let wz = world.z as f32;
-
-            let wave = amp * ((freq * wx).sin() + (freq * wz).sin());
-            let surface_y = (base + wave).round() as i32;
+            let p = [world.x as f64, world.z as f64];
+            let noise_val = self.noise.get(p);
+            let surface_y = (base + (noise_val * amp)).round() as i32;
 
             world.y < surface_y
         });

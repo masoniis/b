@@ -14,7 +14,7 @@ use b::simulation_world::{
     terrain::{
         BiomeGenerator, BiomeMapComponent, BiomeResultBuilder, ClimateGenerator,
         ClimateNoiseGenerator, DefaultBiomeGenerator, PaintResultBuilder, ShapeResultBuilder,
-        SimpleSurfacePainter, SinWaveGenerator, TerrainPainter, TerrainShaper,
+        SimpleSurfacePainter, SinwaveShaper, TerrainPainter, TerrainShaper,
     },
 };
 use bevy_ecs::prelude::World;
@@ -77,7 +77,7 @@ fn bench_chunk_generation(c: &mut Criterion) {
     //         sinwave shape benching
     // --------------------------------------
 
-    let sinwave_shaper = SinWaveGenerator::new();
+    let sinwave_shaper = SinwaveShaper::new();
     group.bench_function("sinwave_shaping", |b| {
         b.iter(|| {
             let clim_map = climate_noise_generator.generate(origin_chunk_coord.clone());
