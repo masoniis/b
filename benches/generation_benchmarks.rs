@@ -12,8 +12,8 @@ use b::simulation_world::{
         ChunkDataOption, NeighborLODs, PaddedChunk,
     },
     terrain::{
-        BiomeGenerator, BiomeMapComponent, BiomeResultBuilder, ClimateGenerator,
-        ClimateNoiseGenerator, DefaultBiomeGenerator, PaintResultBuilder, ShapeResultBuilder,
+        BasicBiomeGenerator, BiomeGenerator, BiomeMapComponent, BiomeResultBuilder,
+        ClimateGenerator, ClimateNoiseGenerator, PaintResultBuilder, ShapeResultBuilder,
         SimpleSurfacePainter, SinwaveShaper, TerrainPainter, TerrainShaper,
     },
 };
@@ -59,7 +59,7 @@ fn bench_chunk_generation(c: &mut Criterion) {
     //         biome benching
     // ------------------------------
 
-    let biome_generator = DefaultBiomeGenerator::default();
+    let biome_generator = BasicBiomeGenerator::default();
     let origin_noise = climate_noise_generator.generate(origin_chunk_coord.clone());
 
     group.bench_function("biome_mapping", |b| {

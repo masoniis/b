@@ -9,9 +9,9 @@ use crate::simulation_world::{
 
 // A default implementation
 #[derive(Debug, Default)]
-pub struct DefaultBiomeGenerator;
+pub struct BasicBiomeGenerator;
 
-impl BiomeGenerator for DefaultBiomeGenerator {
+impl BiomeGenerator for BasicBiomeGenerator {
     #[instrument(skip_all)]
     fn generate_biome_chunk(
         &self,

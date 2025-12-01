@@ -9,7 +9,7 @@ pub fn attach_logger() {
     let default_level = if cfg!(debug_assertions) {
         "info"
     } else {
-        "warn"
+        "error"
     };
 
     let env_filter =

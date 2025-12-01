@@ -80,6 +80,62 @@ impl BlockRegistryResource {
     }
 }
 
+fn register_block(
+    name: String,
+    render: BlockRenderData<String>,
+    desc: BlockDescription,
+    force_id: Option<BlockId>,
+    texture_registry: &TextureRegistryResource,
+    render_data_vec: &mut Vec<BlockRenderData<TextureId>>,
+    descriptions_vec: &mut Vec<BlockDescription>,
+    texture_lut_vec: &mut Vec<[TextureId; 6]>,
+    name_to_id: &mut HashMap<String, BlockId>,
+) -> BlockId {
+    // resolve strings from parsed ron to textures
+    let resolved_textures = render.textures.map(|n| texture_registry.get_id(&n));
+
+    let render_with_ids = BlockRenderData {
+        is_transparent: render.is_transparent,
+        textures: resolved_textures.clone(),
+    };
+
+    // hot texture array
+    let texture_array = [
+        resolved_textures.top,
+        resolved_textures.bottom,
+        resolved_textures.right,
+        resolved_textures.left,
+        resolved_textures.front,
+        resolved_textures.back,
+    ];
+
+    // force id into slot
+    if let Some(target_id) = force_id {
+        let idx = target_id as usize;
+        if idx < render_data_vec.len() {
+            render_data_vec[idx] = render_with_ids;
+            descriptions_vec[idx] = desc;
+            texture_lut_vec[idx] = texture_array;
+            name_to_id.insert(name.to_lowercase(), target_id);
+            return target_id;
+        } else {
+            panic!(
+                "Critical: Attempted to force block '{}' to ID {} but registry length is {}",
+                name,
+                target_id,
+                render_data_vec.len()
+            );
+        }
+    } else {
+        let id = render_data_vec.len() as BlockId;
+        render_data_vec.push(render_with_ids);
+        descriptions_vec.push(desc);
+        texture_lut_vec.push(texture_array);
+        name_to_id.insert(name.to_lowercase(), id);
+        return id;
+    }
+}
+
 impl FromWorld for BlockRegistryResource {
     #[instrument(skip_all)]
     fn from_world(world: &mut World) -> Self {
@@ -95,40 +151,8 @@ impl FromWorld for BlockRegistryResource {
 
         let block_dir = Path::new("assets/blocks");
 
-        // closure to insert split data into parallel vectors
-        let mut register =
-            |name: String, render: BlockRenderData<String>, desc: BlockDescription| -> BlockId {
-                let id = render_data_vec.len() as BlockId;
-
-                // resolve strings from parsed ron to textures
-                let resolved_textures = render.textures.map(|n| texture_registry.get_id(&n));
-
-                let render_with_ids = BlockRenderData {
-                    is_transparent: render.is_transparent,
-                    textures: resolved_textures.clone(),
-                };
-
-                // hot texture array
-                let texture_array = [
-                    resolved_textures.top,
-                    resolved_textures.bottom,
-                    resolved_textures.right,
-                    resolved_textures.left,
-                    resolved_textures.front,
-                    resolved_textures.back,
-                ];
-
-                render_data_vec.push(render_with_ids);
-                descriptions_vec.push(desc);
-                texture_lut_vec.push(texture_array);
-
-                name_to_id.insert(name.to_lowercase(), id);
-
-                id
-            };
-
         // INFO: ---------------------------------------
-        //         manual air block registration
+        //          manual air block registration (ID 0)
         // ---------------------------------------------
 
         let air_render = BlockRenderData {
@@ -147,15 +171,53 @@ impl FromWorld for BlockRegistryResource {
             display_name: "Air".to_string(),
         };
 
-        let air_id = register("air".to_string(), air_render, air_desc);
-        if air_id != 0 {
+        let air_id = register_block(
+            "air".to_string(),
+            air_render,
+            air_desc,
+            None,
+            texture_registry,
+            &mut render_data_vec,
+            &mut descriptions_vec,
+            &mut texture_lut_vec,
+            &mut name_to_id,
+        );
+        if air_id != AIR_BLOCK_ID {
             panic!("Critical: Air block was not registered as ID 0.");
         }
         info!("Registered default block 'air' as ID 0");
 
+        // INFO: ----------------------------------------
+        //          reserve stone block ID (ID 1)
+        // ----------------------------------------------
+
+        // placeholder for stone later
+        let missing_texture_id = texture_registry.get_id("missing");
+        let placeholder_render_data_ids = BlockRenderData {
+            is_transparent: false,
+            textures: BlockFaceTextures {
+                front: missing_texture_id,
+                back: missing_texture_id,
+                right: missing_texture_id,
+                left: missing_texture_id,
+                top: missing_texture_id,
+                bottom: missing_texture_id,
+            },
+        };
+
+        let placeholder_desc = BlockDescription {
+            display_name: "Stone (Placeholder)".to_string(),
+        };
+
+        render_data_vec.push(placeholder_render_data_ids);
+        descriptions_vec.push(placeholder_desc);
+        texture_lut_vec.push([missing_texture_id; 6]);
+
         // INFO: ------------------------------------------
         //         parse remaining blocks from disc
         // ------------------------------------------------
+
+        let mut stone_was_loaded = false;
 
         if block_dir.is_dir() {
             let entries = fs::read_dir(block_dir).unwrap_or_else(|e| {
@@ -201,8 +263,39 @@ impl FromWorld for BlockRegistryResource {
 
                     match load_block_from_str(&ron_string) {
                         Ok((render_props, desc_props)) => {
-                            let id = register(name.clone(), render_props, desc_props);
-                            info!("Loaded block '{}' (id={})", name, id);
+                            if name == "stone" {
+                                // overwrite first slot
+                                register_block(
+                                    name.clone(),
+                                    render_props,
+                                    desc_props,
+                                    Some(SOLID_BLOCK_ID),
+                                    texture_registry,
+                                    &mut render_data_vec,
+                                    &mut descriptions_vec,
+                                    &mut texture_lut_vec,
+                                    &mut name_to_id,
+                                );
+                                stone_was_loaded = true;
+                                info!(
+                                    "Loaded 'stone' and assigned to reserved ID {}",
+                                    SOLID_BLOCK_ID
+                                );
+                            } else {
+                                // otherwise append
+                                let id = register_block(
+                                    name.clone(),
+                                    render_props,
+                                    desc_props,
+                                    None,
+                                    texture_registry,
+                                    &mut render_data_vec,
+                                    &mut descriptions_vec,
+                                    &mut texture_lut_vec,
+                                    &mut name_to_id,
+                                );
+                                info!("Loaded block '{}' (id={})", name, id);
+                            }
                         }
                         Err(e) => {
                             error!("Failed to parse {:?}: {}", path, e);
@@ -214,6 +307,12 @@ impl FromWorld for BlockRegistryResource {
             warn!(
                 "Block directory not found at: {:?}. Only 'Air' loaded.",
                 block_dir
+            );
+        }
+
+        if !stone_was_loaded {
+            warn!(
+                "'stone.ron' was not found in assets! ID 1 remains a placeholder 'missing' block."
             );
         }
 

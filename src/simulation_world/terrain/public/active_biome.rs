@@ -1,5 +1,5 @@
-use crate::simulation_world::terrain::generators::biome::{
-    default_biomes::DefaultBiomeGenerator, lib::BiomeGenerator,
+use crate::simulation_world::terrain::{
+    biome::MultiNoiseBiomeGenerator, generators::biome::lib::BiomeGenerator,
 };
 use bevy_ecs::prelude::Resource;
 use std::sync::Arc;
@@ -10,6 +10,6 @@ pub struct ActiveBiomeGenerator(pub Arc<dyn BiomeGenerator + Send + Sync>);
 
 impl Default for ActiveBiomeGenerator {
     fn default() -> Self {
-        Self(Arc::new(DefaultBiomeGenerator::default()))
+        Self(Arc::new(MultiNoiseBiomeGenerator::default()))
     }
 }

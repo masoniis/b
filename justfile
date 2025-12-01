@@ -8,7 +8,7 @@ run *args:
 
 # runs the max-optimization release profile
 release *args:
-	cargo build --profile distribution --features final_release
+	cargo run --profile distribution --features final_release
 
 # runs benchmarks and opens html report once finished
 bench *args:
