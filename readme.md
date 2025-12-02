@@ -1,29 +1,12 @@
-# 🅱️oxel
-
-[![GitHub Repository](https://img.shields.io/badge/GitHub-Repository-blue?style=flat&logo=github)](https://github.com/masoniis/b)
-![Rust Version](https://img.shields.io/badge/rustc-1.88.0%2B-orange.svg)
-
-## Table of contents
-
-- [Notes for grading](#notes-for-grading)
-  - [Usage warnings](#usage-warnings)
-  - [What remains to be done](#what-remains-to-be-done)
-- [How to run the project](#how-to-run-the-project)
-  - [Usage guide](#usage-guide)
-- [Cool "technical" things](#cool-technical-things)
-  - [Graphics stuff](#graphics-stuff)
-  - [Other stuff](#other-stuff)
-- [Acknowledgments](#acknowledgments)
+# Voxel engine
 
 ## Notes for grading
 
 ### Important usage warnings/notes
 
-1. MOUSE CAN BE UNLOCKED WITH `ESCAPE`
-
-2. UI is EXPENSIVE. I recommend turning it off when you aren't actively paying attention to it.
-3. Shadows have very low render distance of 32 voxels (didn't have time for cascaded shadow maps) and also have some other small issues.
-4. Chunk generation speed is not extremely fast (swap generator type with `T`). It is easy to overwhelm it by moving fast depending on hardware.
+1. UI is EXPENSIVE. I recommend turning it off when you aren't actively paying attention to it.
+2. Shadows have very low render distance of 32 voxels (didn't have time for cascaded shadow maps) and also have some other small issues.
+3. Chunk generation speed is not extremely fast (swap generator type with `T`). It is easy to overwhelm it by moving fast depending on hardware.
 
 ### Cool things I'm proud of (things to pay attention to)
 
@@ -44,9 +27,21 @@
 2. ECS architecture for data-oriented design of the entire system
 3. Rendering and simulation run in parallel (only with a max of 1-frame delta though)
 
+### AI usage
+
+1. AI wrote the texture converter in [tools/texture_processor](./tools/texture_processor.rs) (though some adjustments and fixes were made) to add tints to existing pngs and generate a water clear texture.
+2. I had AI use my shaping API to create a "realistic" shaper to see what it comes up with. It wrote "[realistic_shaper.rs](./src/simulation_world/terrain/generators/shaping/realistic_shaper.rs)" (called ClimateRealistic in the program UI), though I had to make some adjustments there too for efficiency.
+3. AI was very useful for debugging/fixing some indexing errors regarding ambient occlusion and shader winding order regarding consts seen in the shader code and mesher.
+4. AI helped with determinance of some thresholds regarding biomes that are typical of other voxel engines (see [multinoise_biomes.rs](./src/simulation_world/terrain/generators/biome/multinoise_biomes.rs)) though I didn't have enough time to fully incorporate biomes in the terrain painter so we don't really see biomes anyway.
+5. AI helped with writing the makefile to (hopefully) work on ubuntu since I don't have access to a ubuntu machine.
+
+### Time spent
+
+Not exactly sure but a lot, likely greater than 100 hours
+
 ## How to run the project
 
-1. On linux, simply running `make` should work (since a bundled version of rust has been included locally)
+On most Linux distros, simply running `make` should work (since a bundled version of rust has been included locally)
 
 Otherwise...
 

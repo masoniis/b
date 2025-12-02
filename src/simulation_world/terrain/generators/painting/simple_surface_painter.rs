@@ -24,18 +24,15 @@ impl TerrainPainter for SimpleSurfacePainter {
         block_registry: &BlockRegistryResource,
         _biome_registry: &BiomeRegistryResource,
     ) -> PaintResultBuilder {
-        let air_id = block_registry.get_block_id_by_name("air");
-        let water_id = block_registry.get_block_id_by_name("water");
-        let grass_id = block_registry.get_block_id_by_name("grass");
-
-        if air_id.is_none() || water_id.is_none() || grass_id.is_none() {
-            error!("Could not find essential blocks in registry. Aborting paint.");
-            return painter;
-        }
-
-        let air_id = air_id.unwrap();
-        let water_id = water_id.unwrap();
-        let grass_id = grass_id.unwrap();
+        let air_id = block_registry
+            .get_block_id_by_name("air")
+            .expect("Painter couldn't get air");
+        let water_id = block_registry
+            .get_block_id_by_name("water")
+            .expect("Painter couldn't get water");
+        let grass_id = block_registry
+            .get_block_id_by_name("grass")
+            .expect("Painter couldn't get grass");
 
         let size = painter.size();
         let base_world_pos = painter.chunk_coord.as_world_pos();

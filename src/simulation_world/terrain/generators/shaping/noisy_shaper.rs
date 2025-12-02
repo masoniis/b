@@ -6,7 +6,6 @@ use crate::simulation_world::terrain::generators::shaping::{
 };
 use noise::{Fbm, MultiFractal, NoiseFn, Perlin};
 
-/// Generates terrain using a noise function.
 #[derive(Debug, Clone)]
 pub struct NoisyShaper {
     noise: Fbm<Perlin>,
@@ -17,7 +16,7 @@ pub struct NoisyShaper {
 impl NoisyShaper {
     pub fn new() -> Self {
         let mut noise = Fbm::new(1234);
-        noise = noise.set_frequency(0.05);
+        noise = noise.set_frequency(0.01);
         noise = noise.set_octaves(5);
         noise = noise.set_lacunarity(2.2);
         noise = noise.set_persistence(0.55);

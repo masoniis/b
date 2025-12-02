@@ -17,11 +17,11 @@ pub struct TerrainGeneratorLibrary {
 /// A system that sets up the terrain generator by loading a default set of generators
 /// into it.
 pub fn setup_terrain_gen_library(mut lib: ResMut<TerrainGeneratorLibrary>) {
-    lib.generators.push(Arc::new(SinwaveShaper::new()));
     lib.generators.push(Arc::new(SuperflatShaper::new()));
+    lib.generators.push(Arc::new(SinwaveShaper::new()));
     lib.generators.push(Arc::new(NoisyShaper::new()));
-    lib.generators.push(Arc::new(SimplexShaper::new()));
     lib.generators.push(Arc::new(RealisticShaper::new()));
+    lib.generators.push(Arc::new(SimplexShaper::new()));
 }
 
 /// A simple startup system that sets the default terrain generator to avoid confusion
