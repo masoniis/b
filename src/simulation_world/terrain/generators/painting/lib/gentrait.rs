@@ -1,5 +1,4 @@
 use crate::prelude::*;
-use crate::simulation_world::terrain::climate::ClimateMapComponent;
 use crate::simulation_world::{
     biome::BiomeRegistryResource,
     block::{BlockId, BlockRegistryResource, BlockRenderData},
@@ -18,7 +17,6 @@ pub trait TerrainPainter: Send + Sync + Debug {
         painter: PaintResultBuilder,
 
         biome_map: &BiomeMapComponent,
-        climate_map: &ClimateMapComponent,
 
         block_registry: &BlockRegistryResource,
         biome_registry: &BiomeRegistryResource,

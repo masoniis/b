@@ -1,7 +1,6 @@
 use crate::prelude::*;
 use crate::simulation_world::biome::BiomeRegistryResource;
 use crate::simulation_world::block::BlockRegistryResource;
-use crate::simulation_world::terrain::climate::ClimateMapComponent;
 use crate::simulation_world::terrain::generators::painting::{PaintResultBuilder, TerrainPainter};
 use crate::simulation_world::terrain::BiomeMapComponent;
 
@@ -22,7 +21,6 @@ impl TerrainPainter for SimpleSurfacePainter {
         &self,
         mut painter: PaintResultBuilder,
         _biome_map: &BiomeMapComponent,
-        _climate_map: &ClimateMapComponent,
         block_registry: &BlockRegistryResource,
         _biome_registry: &BiomeRegistryResource,
     ) -> PaintResultBuilder {

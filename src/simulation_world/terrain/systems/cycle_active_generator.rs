@@ -1,5 +1,5 @@
 use crate::prelude::*;
-use crate::simulation_world::terrain::shaping::SimplexShaper;
+use crate::simulation_world::terrain::shaping::{RealisticShaper, SimplexShaper};
 use crate::simulation_world::terrain::{
     ActiveTerrainGenerator, NoisyShaper, SinwaveShaper, SuperflatShaper, TerrainShaper,
 };
@@ -21,6 +21,7 @@ pub fn setup_terrain_gen_library(mut lib: ResMut<TerrainGeneratorLibrary>) {
     lib.generators.push(Arc::new(SuperflatShaper::new()));
     lib.generators.push(Arc::new(NoisyShaper::new()));
     lib.generators.push(Arc::new(SimplexShaper::new()));
+    lib.generators.push(Arc::new(RealisticShaper::new()));
 }
 
 /// A simple startup system that sets the default terrain generator to avoid confusion

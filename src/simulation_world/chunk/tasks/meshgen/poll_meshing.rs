@@ -80,7 +80,7 @@ pub fn poll_chunk_meshing_tasks(
                                     .entity(entity)
                                     .remove::<ChunkMeshingTaskComponent>();
                                 chunk_manager.mark_as_loaded(coord.pos, entity);
-                                return; // return to avoid adding transform component
+                                continue; // continue to avoid adding transform component
                             }
                         }
 

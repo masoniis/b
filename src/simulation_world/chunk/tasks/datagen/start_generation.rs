@@ -132,13 +132,7 @@ pub fn start_pending_generation_tasks_system(
                 blocks_clone.clone(),
             );
             let (painted_chunk_blocks, chunk_metadata) = terrain_paint
-                .paint_terrain_chunk(
-                    painter_builder,
-                    &biome_map,
-                    &climate_map,
-                    &blocks_clone,
-                    &biomes_clone,
-                )
+                .paint_terrain_chunk(painter_builder, &biome_map, &blocks_clone, &biomes_clone)
                 .finish();
 
             trace!(

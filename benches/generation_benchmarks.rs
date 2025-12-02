@@ -95,7 +95,6 @@ fn bench_chunk_generation(c: &mut Criterion) {
     let surface_painter = SimpleSurfacePainter::new();
     group.bench_function("painting", |b| {
         b.iter(|| {
-            let clim_map = climate_noise_generator.generate(origin_chunk_coord.clone());
             let biome_map = BiomeMapComponent::new_empty(ChunkLod(0));
 
             let blocks = ChunkBlocksComponent::new_uniform_solid(ChunkLod(0));
@@ -105,7 +104,6 @@ fn bench_chunk_generation(c: &mut Criterion) {
             surface_painter.paint_terrain_chunk(
                 painter,
                 &biome_map,
-                &clim_map,
                 &block_registry,
                 &biome_registry,
             );

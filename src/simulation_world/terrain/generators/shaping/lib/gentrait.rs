@@ -119,4 +119,49 @@ impl ShapeResultBuilder {
             }
         });
     }
+
+    /// Iterates over the chunk in columns (X, Z), allowing hoisted 2D calculations before
+    /// iterating the Y axis.
+    ///
+    /// The `setup_col` closure is called once per column. It receives (local_xz, world_xz).
+    /// It must return a closure that takes (local_y, world_y) and returns `true` if solid.
+    #[inline(always)]
+    pub fn fill_columns<F, G>(&mut self, mut setup_col: F)
+    where
+        // outer closure: input 2D coords, returns inner closure
+        F: FnMut(IVec2, IVec2) -> G,
+        // inner closure: takes Y coords, returns bool (is_solid)
+        G: FnMut(i32, i32) -> bool,
+    {
+        let size = self.blocks.size() as i32;
+        let base_world = self.chunk_coord.as_world_pos();
+        let step = 1 << self.blocks.lod().0;
+
+        self.edit_arbitrary(|writer| {
+            let base_x = base_world.x;
+            let base_y = base_world.y;
+            let base_z = base_world.z;
+
+            for x in 0..size {
+                let world_x = base_x + (x * step);
+                for z in 0..size {
+                    let world_z = base_z + (z * step);
+
+                    let local_xz = IVec2::new(x, z);
+                    let world_xz = IVec2::new(world_x, world_z);
+
+                    // hoisted setup
+                    let mut column_filler = setup_col(local_xz, world_xz);
+
+                    // run column logic
+                    for y in 0..size {
+                        let world_y = base_y + (y * step);
+                        if column_filler(y, world_y) {
+                            writer.mark_solid(x as usize, y as usize, z as usize);
+                        }
+                    }
+                }
+            }
+        });
+    }
 }
