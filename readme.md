@@ -17,7 +17,7 @@
 
 ## Notes for grading
 
-### Usage warnings
+### Important usage warnings/notes
 
 1. MOUSE CAN BE UNLOCKED WITH `ESCAPE`
 
@@ -25,17 +25,18 @@
 3. Shadows have very low render distance of 32 voxels (didn't have time for cascaded shadow maps) and also have some other small issues.
 4. Chunk generation speed is not extremely fast (swap generator type with `T`). It is easy to overwhelm it by moving fast depending on hardware.
 
-### Cool things I'm proud of
+### Cool things I'm proud of (things to pay attention to)
 
 #### Graphics stuff
 
-1. Vertex pulling. Each group of 6 vertices that make up a face share a single 32 bit float in a GPU buffer.
+1. "Vertex pulling." Each group of 6 vertices that make up a face share a single 32 bit float in a GPU buffer.
 2. Global illumination via the "Sun" with directional lighting, and a shadow pass that adds (somewhat scuffed) shadows
 3. Approximate ambient occlusion based on nearby voxels to a vertex.
 4. Full transparency support via a separate render pass.
 5. Custom UI implementation (with `taffy` for computing flexbox layouts and `glyphon` for text heavylifting)
 6. Custom fog and sky shaders that define the sky and horizon blending with sun/moon.
 7. Convenient texture and voxel definition loading enabling swapping voxel textures easily in the `assets/blocks` folder.
+8. Water vertices "wave" up and down if you look at them closer
 
 #### Other stuff
 

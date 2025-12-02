@@ -28,6 +28,9 @@ clippy *args:
 fix *args:
 	cargo fix --allow-dirty
 
+texture:
+	cargo run --bin texture_processor
+
 # INFO: ---------------------
 #         small utils
 # ---------------------------

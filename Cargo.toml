@@ -2,6 +2,7 @@
 name = "b"
 version = "0.0.1"
 edition = "2021"
+default-run = "b"
 
 [lib]
 path = "src/lib.rs"
@@ -13,6 +14,7 @@ path = "src/main.rs"
 [[bench]]
 name = "generation_benchmarks"
 harness = false
+
 
 [features]
 tracy = ["dep:tracy-client", "dep:tracing-tracy"]
@@ -40,6 +42,14 @@ wesl = "0.2.0" # shader compliation from WESL to WGSL
 [dev-dependencies]
 criterion = { version = "0.5", features = ["html_reports"] }
 b = { path = "." }
+
+# INFO: --------------------------
+#         util bin scripts
+# --------------------------------
+
+[[bin]]
+name = "texture_processor"
+path = "tools/texture_processor.rs"
 
 [dependencies]
 
