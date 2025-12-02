@@ -15,6 +15,11 @@ pub enum SimulationAction {
     // Terrain interactions
     CycleActiveTerrainGenerator,
 
+    // Time control interactions
+    JumpGameTimeForward,
+    JumpGameTimeBackward,
+    PauseGameTime,
+
     // Misc
     ToggleDiagnostics,
     ToggleOpaqueWireframeMode,

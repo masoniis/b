@@ -70,6 +70,19 @@ impl Default for InputActionMapResource {
                     Input::Key(PhysicalKey::Code(KeyCode::KeyT)),
                     SimulationAction::CycleActiveTerrainGenerator,
                 ),
+                // Game time control
+                (
+                    Input::Key(PhysicalKey::Code(KeyCode::ArrowRight)),
+                    SimulationAction::JumpGameTimeForward,
+                ),
+                (
+                    Input::Key(PhysicalKey::Code(KeyCode::ArrowLeft)),
+                    SimulationAction::JumpGameTimeBackward,
+                ),
+                (
+                    Input::Key(PhysicalKey::Code(KeyCode::Space)),
+                    SimulationAction::PauseGameTime,
+                ),
                 // Misc
                 (
                     Input::Key(PhysicalKey::Code(KeyCode::Escape)),

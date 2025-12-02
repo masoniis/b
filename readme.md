@@ -12,9 +12,9 @@
 
 #### Graphics stuff
 
-1. "Vertex pulling." Each group of 6 vertices that make up a face share a single 32 bit float in a GPU buffer.
-2. Global illumination via the "Sun" with directional lighting, and a shadow pass that adds (somewhat scuffed) shadows
-3. Approximate ambient occlusion based on nearby voxels to a vertex.
+1. "Vertex pulling." Each group of 6 vertices that make up a face share a single 32 bit float in a GPU buffer. This required cool GPU stuff and packing/unpacking face data in shaders.
+2. Global illumination via the "Sun" with directional lighting, and a shadow pass that adds (somewhat scuffed) shadows using shadow mapping.
+3. Approximate ambient occlusion based on nearby voxels to a vertex. Provides some depth to the world.
 4. Full transparency support via a separate render pass.
 5. Custom UI implementation (with `taffy` for computing flexbox layouts and `glyphon` for text heavylifting)
 6. Custom fog and sky shaders that define the sky and horizon blending with sun/moon.
@@ -68,9 +68,11 @@ To run, `cargo` can be used like any standard Rust project:
 | `A`           | Move left                                                                            |
 | `D`           | Move right                                                                           |
 | `Left Shift`  | Move faster                                                                          |
-| `Mouse Left`  | Break voxel                                                                          |
-| `Mouse right` | Place voxel                                                                          |
+| `Mouse Left`  | Break targeted voxel                                                                 |
+| `Mouse right` | Place voxel against targeted face                                                    |
 | `T`           | Switch terrain generator (only applies to new chunks that generate e.g. from moving) |
+| `Left Arrow`  | Jump time backwards (by 30 seconds)                                                  |
+| `Right Arrow` | Jump time forwards (by 30 seconds)                                                   |
 | `F1` or `1`   | Toggle diagnostics UI (FPS, vert count, coordinates)                                 |
 | `F2` or `2`   | Toggle opaque wireframe mode                                                         |
 | `F3` or `3`   | Toggle chunk borders                                                                 |

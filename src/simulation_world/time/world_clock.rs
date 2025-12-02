@@ -3,7 +3,10 @@ use crate::simulation_world::time::simulation_tick::SimulationTick;
 use bevy_ecs::prelude::*;
 use std::time::Duration;
 
+/// Number of seconds it takes for a day/night cycle to complete
 pub const SECONDS_IN_A_DAY: f32 = 600.0;
+/// number of seconds to jump when using jump forward/backward commands
+const JUMP_CLOCK_DISTANCE: f32 = 30.0;
 
 /// A resource that tracks the in-game date and time.
 #[derive(Resource, Debug)]
@@ -34,7 +37,7 @@ impl WorldClockResource {
 }
 
 // INFO: ----------------------------
-//         Update world clock
+//         update world clock
 // ----------------------------------
 
 /// A system that runs every tick to advance the in-game calendar.
@@ -48,8 +51,50 @@ pub fn update_world_clock_system(
 ) {
     world_clock.time_of_day += sim_tick.tick_duration;
 
-    if world_clock.time_of_day.as_secs_f32() >= SECONDS_IN_A_DAY {
-        world_clock.time_of_day -= Duration::from_secs_f32(SECONDS_IN_A_DAY);
+    if world_clock.time_of_day >= world_clock.day_duration {
+        let day_dur = world_clock.day_duration;
+        world_clock.time_of_day -= day_dur;
         world_clock.total_days += 1;
+    }
+}
+
+/// A system that jumps the in game world clock forward
+///
+/// Should run before update_world_clock_system
+#[instrument(skip_all)]
+pub fn jump_world_clock_forward_system(
+    // Output
+    mut world_clock: ResMut<WorldClockResource>,
+) {
+    world_clock.time_of_day += Duration::from_secs_f32(JUMP_CLOCK_DISTANCE);
+
+    if world_clock.time_of_day >= world_clock.day_duration {
+        let day_dur = world_clock.day_duration;
+        world_clock.time_of_day -= day_dur;
+        world_clock.total_days += 1;
+    }
+}
+
+/// A system that jumps the in game world clock backwards
+///
+/// Should run before update_world_clock_system
+#[instrument(skip_all)]
+pub fn jump_world_clock_backwards_system(
+    // Output
+    mut world_clock: ResMut<WorldClockResource>,
+) {
+    let jump_dist = Duration::from_secs_f32(JUMP_CLOCK_DISTANCE);
+
+    // subtract 30 seconds, wrapping day if needed
+    if let Some(new_time) = world_clock.time_of_day.checked_sub(jump_dist) {
+        world_clock.time_of_day = new_time;
+    } else {
+        if world_clock.total_days > 0 {
+            world_clock.total_days -= 1;
+            let underflow_by = jump_dist - world_clock.time_of_day;
+            world_clock.time_of_day = world_clock.day_duration - underflow_by;
+        } else {
+            world_clock.time_of_day = Duration::ZERO;
+        }
     }
 }

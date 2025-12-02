@@ -4,6 +4,7 @@ pub mod world_clock;
 
 pub use frame_clock::FrameClock;
 pub use world_clock::WorldClockResource;
+use world_clock::{jump_world_clock_backwards_system, jump_world_clock_forward_system};
 
 // INFO: ---------------------
 //         Time plugin
@@ -13,11 +14,14 @@ use crate::ecs_core::state_machine::AppState;
 use crate::simulation_world::time::frame_clock::update_frame_clock_system;
 use crate::simulation_world::time::simulation_tick::{run_fixed_update_schedule, SimulationTick};
 use crate::simulation_world::time::world_clock::update_world_clock_system;
+use crate::SimulationAction;
 use crate::{
     ecs_core::{state_machine::utils::in_state, EcsBuilder, Plugin},
     simulation_world::{SimulationSchedule, SimulationSet},
 };
 use bevy_ecs::prelude::*;
+
+use super::input::ActionStateResource;
 
 pub struct TimeControlPlugin;
 
@@ -50,5 +54,19 @@ impl Plugin for TimeControlPlugin {
             .add_resource(WorldClockResource::default())
             .schedule_entry(SimulationSchedule::FixedUpdate)
             .add_systems(update_world_clock_system);
+        // controls for world clock
+        builder
+            .add_resource(WorldClockResource::default())
+            .schedule_entry(SimulationSchedule::Main)
+            .add_systems((
+                jump_world_clock_backwards_system.run_if(
+                    |action_state: Res<ActionStateResource>| {
+                        action_state.just_happened(SimulationAction::JumpGameTimeBackward)
+                    },
+                ),
+                jump_world_clock_forward_system.run_if(|action_state: Res<ActionStateResource>| {
+                    action_state.just_happened(SimulationAction::JumpGameTimeForward)
+                }),
+            ));
     }
 }

@@ -49,7 +49,6 @@ impl Plugin for TerrainGenerationPlugin {
         //         keybind-based actions below
         // -------------------------------------------
 
-        // set desired cursor state on pause action
         builder
             .schedule_entry(SimulationSchedule::Main)
             .add_systems(cycle_active_generator.run_if(
