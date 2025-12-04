@@ -69,21 +69,32 @@ pub fn execute_render_graph_system(world: &mut World) {
     let surface = surface.0.clone();
 
     // INFO: --------------------------------------
-    //         Set up the rendering context
+    //         set up the rendering context
     // --------------------------------------------
 
     let output_texture = match surface.get_current_texture() {
         Ok(texture) => texture,
-        Err(wgpu::SurfaceError::Lost | wgpu::SurfaceError::Outdated) => {
-            warn!("Surface lost or outdated. Reconfiguring...");
-            surface.configure(&device, &config.0);
+        Err(wgpu::SurfaceError::Lost) => {
+            warn!("Surface lost. Reconfiguring...");
+            if config.0.width > 0 && config.0.height > 0 {
+                surface.configure(&device, &config.0);
+            }
             world.insert_resource(render_graph);
             return;
         }
-        Err(e) => {
-            error!("Error acquiring surface texture: {:?}", e);
+        Err(wgpu::SurfaceError::Outdated) => {
+            if config.0.width > 0 && config.0.height > 0 {
+                surface.configure(&device, &config.0);
+            }
             world.insert_resource(render_graph);
             return;
+        }
+        Err(wgpu::SurfaceError::Timeout) | Err(wgpu::SurfaceError::Other) => {
+            world.insert_resource(render_graph);
+            return;
+        }
+        Err(wgpu::SurfaceError::OutOfMemory) => {
+            panic!("Fatal: GPU Out of Memory");
         }
     };
 
@@ -96,7 +107,7 @@ pub fn execute_render_graph_system(world: &mut World) {
     });
 
     // INFO: -----------------------------------
-    //         Execute the render pipeline
+    //         execute the render pipeline
     // -----------------------------------------
 
     render_graph.run(
