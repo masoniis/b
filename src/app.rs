@@ -95,11 +95,6 @@ impl ApplicationHandler for App {
                     .unwrap(),
             );
 
-            window.set_cursor_visible(false);
-            if let Err(err) = window.set_cursor_grab(CursorGrabMode::Confined) {
-                error!("Failed to grab cursor: {:?}", err);
-            }
-
             // INFO: ----------------------------------------
             //         create and initiate the worlds
             // ----------------------------------------------
