@@ -25,4 +25,9 @@ pub enum SimulationAction {
     ToggleOpaqueWireframeMode,
     ToggleChunkBorders,
     TogglePause,
+
+    // Showcase actions
+    Showcase1,
+    Showcase2,
+    Showcase3,
 }

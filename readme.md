@@ -2,19 +2,20 @@
 
 ## Notes for grading
 
+Easiest way to navigate is the showcase keybinds (number keys 1, 2, and 3!), note that after pressing one it may take a bit for terrain to load in so be patient.
+
 ### Important usage warnings/notes
 
-1. UI is EXPENSIVE. I recommend turning it off when you aren't actively paying attention to it.
+1. UI is EXPENSIVE and may cause lag so be weary of that.
 2. Shadows have very low render distance of 32 voxels (didn't have time for cascaded shadow maps) and also have some other small issues.
-3. Chunk generation speed is not extremely fast (swap generator type with `T`). It is easy to overwhelm it by moving fast depending on hardware.
 
 ### Cool things I'm proud of (things to pay attention to)
 
 #### Graphics stuff
 
-1. "Vertex pulling." Each group of 6 vertices that make up a face share a single 32 bit float in a GPU buffer. This required cool GPU stuff and packing/unpacking face data in shaders.
-2. Global illumination via the "Sun" with directional lighting, and a shadow pass that adds (somewhat scuffed) shadows using shadow mapping.
-3. Approximate ambient occlusion based on nearby voxels to a vertex. Provides some depth to the world.
+1. "Vertex pulling." Each group of 6 vertices that make up a face share a **single 32 bit uint** in a GPU buffer. This required cool GPU stuff and unpacking face data in shaders (packing on CPU of course).
+2. Global illumination via the "sun" with directional lighting, and a shadow pass that adds basic hard-shadows using shadow mapping.
+3. Approximate **ambient occlusion** based on nearby voxels to a vertex. Provides some depth to the world.
 4. Full transparency support via a separate render pass.
 5. Custom UI implementation (with `taffy` for computing flexbox layouts and `glyphon` for text heavylifting)
 6. Custom fog and sky shaders that define the sky and horizon blending with sun/moon.
@@ -30,10 +31,9 @@
 ### AI usage
 
 1. AI wrote the texture converter in [tools/texture_processor](./tools/texture_processor.rs) (though some adjustments and fixes were made) to add tints to existing pngs and generate a water clear texture.
-2. I had AI use my shaping API to create a "realistic" shaper to see what it comes up with. It wrote "[realistic_shaper.rs](./src/simulation_world/terrain/generators/shaping/realistic_shaper.rs)" (called ClimateRealistic in the program UI), though I had to make some adjustments there too for efficiency.
-3. AI was very useful for debugging/fixing some indexing errors regarding ambient occlusion and shader winding order regarding consts seen in the shader code and mesher.
-4. AI helped with determinance of some thresholds regarding biomes that are typical of other voxel engines (see [multinoise_biomes.rs](./src/simulation_world/terrain/generators/biome/multinoise_biomes.rs)) though I didn't have enough time to fully incorporate biomes in the terrain painter so we don't really see biomes anyway.
-5. AI helped with writing the makefile to (hopefully) work on ubuntu since I don't have access to a ubuntu machine.
+2. AI was very useful for debugging/fixing some indexing errors regarding ambient occlusion and shader winding order regarding consts seen in the shader code and mesher.
+3. AI helped with determinance of some thresholds regarding biomes that are typical of other voxel engines (see [multinoise_biomes.rs](./src/simulation_world/terrain/generators/biome/multinoise_biomes.rs)) though I didn't have enough time to fully incorporate biomes in the terrain painter so we don't really see biomes anyway.
+4. AI helped with writing the makefile to (hopefully) work on ubuntu since I don't have access to a ubuntu machine.
 
 ### Time spent
 
@@ -62,20 +62,23 @@ To run, `cargo` can be used like any standard Rust project:
 
 | Key(s)        | Action                                                                               |
 | :------------ | :----------------------------------------------------------------------------------- |
-| `Escape`      | Toggle "pause" (locks/unlocks cursor, no _real_ pause currently)                     |
 | `W`           | Move forward                                                                         |
 | `S`           | Move backward                                                                        |
 | `A`           | Move left                                                                            |
 | `D`           | Move right                                                                           |
+| `1`           | Jump to scene showcase 1 (water bobbing, shadow showing, sinwave gen)                |
+| `2`           | Jump to scene showcase 2 (realistic gen, sunset transition happening)                |
+| `3`           | Jump to scene showcase 3 (showcase of 3D gen capabilities, 3D simplex area)          |
 | `Left Shift`  | Move faster                                                                          |
 | `Mouse Left`  | Break targeted voxel                                                                 |
 | `Mouse right` | Place voxel against targeted face                                                    |
 | `T`           | Switch terrain generator (only applies to new chunks that generate e.g. from moving) |
 | `Left Arrow`  | Jump time backwards (by 30 seconds)                                                  |
 | `Right Arrow` | Jump time forwards (by 30 seconds)                                                   |
-| `F1` or `1`   | Toggle diagnostics UI (FPS, vert count, coordinates)                                 |
-| `F2` or `2`   | Toggle opaque wireframe mode                                                         |
-| `F3` or `3`   | Toggle chunk borders                                                                 |
+| `F1` or `u`   | Toggle diagnostics UI (FPS, vert count, coordinates)                                 |
+| `F2` or `o`   | Toggle opaque wireframe mode                                                         |
+| `F3` or `b`   | Toggle chunk borders                                                                 |
+| `Escape`      | Toggle "pause" (locks/unlocks cursor, no _real_ pause currently)                     |
 
 ## Acknowledgments
 

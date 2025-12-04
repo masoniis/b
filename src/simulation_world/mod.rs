@@ -9,6 +9,7 @@ pub mod scheduling;
 pub mod terrain;
 pub mod time;
 pub mod user_interface;
+pub mod showcase;
 
 pub use scheduling::{
     FixedUpdateSet, OnEnter, OnExit, SimulationSchedule, SimulationSet, StartupSet,
@@ -29,6 +30,7 @@ use crate::simulation_world::{
     chunk::ChunkLoadingPlugin,
     input::{InputModulePlugin, WindowSizeResource},
     player::PlayerPlugin,
+    showcase::ShowcasePlugin,
     terrain::TerrainGenerationPlugin,
     time::TimeControlPlugin,
     user_interface::UiPlugin,
@@ -151,6 +153,7 @@ impl PluginGroup for ClientOnlyPlugins {
         builder
             .add_plugin(PlayerPlugin)
             .add_plugin(UiPlugin)
-            .add_plugin(InputModulePlugin);
+            .add_plugin(InputModulePlugin)
+            .add_plugin(ShowcasePlugin);
     }
 }

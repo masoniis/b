@@ -94,24 +94,49 @@ impl Default for InputActionMapResource {
                     SimulationAction::ToggleDiagnostics,
                 ),
                 (
-                    Input::Key(PhysicalKey::Code(KeyCode::Digit1)),
+                    Input::Key(PhysicalKey::Code(KeyCode::KeyU)),
                     SimulationAction::ToggleDiagnostics,
                 ),
+                // (
+                //     Input::Key(PhysicalKey::Code(KeyCode::Digit1)),
+                //     SimulationAction::ToggleDiagnostics,
+                // ),
                 (
                     Input::Key(PhysicalKey::Code(KeyCode::F2)),
                     SimulationAction::ToggleOpaqueWireframeMode,
                 ),
                 (
-                    Input::Key(PhysicalKey::Code(KeyCode::Digit2)),
+                    Input::Key(PhysicalKey::Code(KeyCode::KeyO)),
                     SimulationAction::ToggleOpaqueWireframeMode,
                 ),
+                // (
+                //     Input::Key(PhysicalKey::Code(KeyCode::Digit2)),
+                //     SimulationAction::ToggleOpaqueWireframeMode,
+                // ),
                 (
                     Input::Key(PhysicalKey::Code(KeyCode::F3)),
                     SimulationAction::ToggleChunkBorders,
                 ),
                 (
-                    Input::Key(PhysicalKey::Code(KeyCode::Digit3)),
+                    Input::Key(PhysicalKey::Code(KeyCode::KeyB)),
                     SimulationAction::ToggleChunkBorders,
+                ),
+                // (
+                //     Input::Key(PhysicalKey::Code(KeyCode::Digit3)),
+                //     SimulationAction::ToggleChunkBorders,
+                // ),
+                // Showcase actions
+                (
+                    Input::Key(PhysicalKey::Code(KeyCode::Digit1)),
+                    SimulationAction::Showcase1,
+                ),
+                (
+                    Input::Key(PhysicalKey::Code(KeyCode::Digit2)),
+                    SimulationAction::Showcase2,
+                ),
+                (
+                    Input::Key(PhysicalKey::Code(KeyCode::Digit3)),
+                    SimulationAction::Showcase3,
                 ),
             ]),
         }
