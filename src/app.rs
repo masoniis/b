@@ -29,7 +29,7 @@ use winit::{
     application::ApplicationHandler,
     event::{DeviceEvent, WindowEvent},
     event_loop::{ActiveEventLoop, EventLoop},
-    window::{CursorGrabMode, Window, WindowId},
+    window::{Window, WindowId},
 };
 
 /// The main application container, responsible for orchestrating OS

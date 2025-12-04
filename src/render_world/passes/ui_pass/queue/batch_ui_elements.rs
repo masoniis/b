@@ -69,14 +69,13 @@ pub struct IsGlyphonDirty(pub bool);
 //         Systems
 // -----------------------
 
-// The system now needs the UiChanges resource to make decisions
 #[instrument(skip_all)]
 pub fn rebuild_ui_batches_system(
     // Inputs
     queue: Res<RenderQueue>,
     element_cache: Res<UiElementCache>,
     mut sort_buffer: ResMut<UiElementSortBufferResource>,
-    ui_changes: Res<UiChanges>, // The decider
+    ui_changes: Res<UiChanges>,
 
     // Outputs
     mut material_buffer: ResMut<UiMaterialBuffer>,

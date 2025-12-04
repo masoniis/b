@@ -22,7 +22,7 @@ fn calculate_shadow_from_world(
     if uv.x > 1.0 || uv.x < 0.0 || uv.y > 1.0 || uv.y < 0.0 || shadow_coords.z > 1.0 {
         // outside the frustum, so leave shadow_factor at 1.0 (lit)
     } else {
-        // inside the frustum, perform depth comparison
+        // inside the frustum, perform depth comparison to see if frag shadow Z is LEQ shadow texture Z
         shadow_factor = textureSampleCompare(
             shadow_tex,
             shadow_samp,

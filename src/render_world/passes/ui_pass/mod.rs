@@ -6,8 +6,8 @@ pub mod render;
 
 use gpu_resources::{
     view_binding::{UiViewBindGroupLayout, UiViewBuffer},
-    UiMaterialBindGroupLayout, UiMaterialBuffer, UiObjectBindGroupLayout, UiObjectBuffer,
-    UiPipeline,
+    ScreenQuadResource, UiMaterialBindGroupLayout, UiMaterialBuffer, UiObjectBindGroupLayout,
+    UiObjectBuffer, UiPipeline,
 };
 pub use render::UiRenderPassNode;
 
@@ -39,6 +39,7 @@ impl Plugin for UiRenderPassPlugin {
         //         startup
         // -----------------------
 
+        // pipeline setup
         builder
             // ui view uniform
             .init_resource::<UiViewBindGroupLayout>()
@@ -52,13 +53,11 @@ impl Plugin for UiRenderPassPlugin {
             // pipeline
             .init_resource::<UiPipeline>();
 
-        builder.schedule_entry(RenderSchedule::Startup).add_systems(
-            (
-                gpu_resources::setup_ui_unit_quad_system,
-                gpu_resources::setup_glyphon_resources,
-            )
-                .chain(),
-        );
+        // general resources
+        builder.init_resource::<ScreenQuadResource>();
+        builder
+            .schedule_entry(RenderSchedule::Startup)
+            .add_systems(gpu_resources::setup_glyphon_resources);
 
         // INFO: -----------------
         //         extract
