@@ -79,6 +79,12 @@ pub fn queue_wireframe_system(
         if wireframe_buffer.buffer.size() < buffer_size {
             let new_size = (buffer_size as f64 * 1.5).ceil() as u64;
 
+            debug!(
+                target : "gpu_memory",
+                "Resizing wireframe object buffer to {} KB",
+                new_size / 1024
+            );
+
             let new_buffer = device.create_buffer(&wgpu::BufferDescriptor {
                 label: Some("Wireframe Object Buffer"),
                 size: new_size,

@@ -1,5 +1,11 @@
 use crate::{
-    render_world::passes::world::{ChunkStorageManager, VoxelMesh},
+    render_world::{
+        graphics_context::resources::RenderDevice,
+        passes::world::{
+            gpu_resources::world_uniforms::ChunkStorageBindGroupLayout, ChunkStorageManager,
+            VoxelMesh,
+        },
+    },
     simulation_world::chunk::meshing::common::{AoLevel, FaceSide},
 };
 use wgpu::Queue;
@@ -61,9 +67,11 @@ impl PackedFace {
 /// Uploads a voxel mesh to the SSBO and returns its handle.
 pub fn upload_voxel_mesh(
     manager: &mut ChunkStorageManager,
+    device: &RenderDevice,
     queue: &Queue,
+    layout: &ChunkStorageBindGroupLayout,
     faces: &[PackedFace],
     world_pos: [f32; 3],
 ) -> Option<VoxelMesh> {
-    manager.allocate_chunk(queue, faces, world_pos)
+    manager.allocate_chunk(device, queue, layout, faces, world_pos)
 }
