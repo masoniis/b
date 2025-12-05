@@ -18,6 +18,14 @@ struct Showcase {
 
 const SHOWCASES: &[Showcase] = &[
     Showcase {
+        // basic flat area for introduction
+        generator_idx: 0,
+        time_of_day: 0.25, // showcase sun shining from left
+        position: Vec3::new(0.0, 36.5, 0.0),
+        yaw: 85.0,
+        pitch: -12.0,
+    },
+    Showcase {
         // sinwave with vertex waving and shadows
         generator_idx: 1,
         time_of_day: 0.3, // showcase sun shining from left
@@ -52,16 +60,43 @@ pub fn apply_showcase_system(
     mut world_clock: ResMut<WorldClockResource>,
 ) {
     let showcase_idx = if action_state.just_happened(SimulationAction::Showcase1) {
-        0
-    } else if action_state.just_happened(SimulationAction::Showcase2) {
         1
-    } else if action_state.just_happened(SimulationAction::Showcase3) {
+    } else if action_state.just_happened(SimulationAction::Showcase2) {
         2
+    } else if action_state.just_happened(SimulationAction::Showcase3) {
+        3
+    } else if action_state.just_happened(SimulationAction::Showcase0) {
+        0
     } else {
         return;
     };
 
     let showcase = &SHOWCASES[showcase_idx];
+
+    // set shaper
+    if let Some(generator) = terrain_gen_lib.generators.get(showcase.generator_idx) {
+        active_generator.0 = generator.clone();
+    }
+
+    // set time of day
+    world_clock.time_of_day = Duration::from_secs_f32(SECONDS_IN_A_DAY * showcase.time_of_day);
+
+    // set camera position and rotation
+    if let Ok(mut cam) = active_cam_q.get_mut(active_camera.0) {
+        cam.position = showcase.position;
+        cam.yaw = showcase.yaw;
+        cam.pitch = showcase.pitch;
+    }
+}
+
+pub fn apply_default_showcase_system(
+    mut active_cam_q: Query<&mut CameraComponent>,
+    active_camera: Res<ActiveCamera>,
+    mut active_generator: ResMut<ActiveTerrainGenerator>,
+    terrain_gen_lib: Res<TerrainGeneratorLibrary>,
+    mut world_clock: ResMut<WorldClockResource>,
+) {
+    let showcase = &SHOWCASES[1];
 
     // set shaper
     if let Some(generator) = terrain_gen_lib.generators.get(showcase.generator_idx) {

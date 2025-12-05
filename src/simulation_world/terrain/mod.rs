@@ -8,7 +8,7 @@ pub use generators::*;
 pub use public::*;
 
 // INFO: ----------------------------
-//         Terrain gen plugin
+//         terrain gen plugin
 // ----------------------------------
 
 use crate::prelude::*;
@@ -17,37 +17,23 @@ use crate::{
     simulation_world::input::ActionStateResource,
 };
 use bevy_ecs::prelude::{IntoScheduleConfigs, Res};
-pub use systems::{
-    cycle_active_generator, set_default_terrain_generator, setup_terrain_gen_library,
-    TerrainGeneratorLibrary,
-};
+pub use systems::{cycle_active_generator, TerrainGeneratorLibrary};
 
 pub struct TerrainGenerationPlugin;
 
 impl Plugin for TerrainGenerationPlugin {
     fn build(&self, builder: &mut EcsBuilder) {
         builder
-            .add_resource(ClimateNoiseGenerator::new(0)) // hardcode seed 0 for now
+            .add_resource(ClimateNoiseGenerator::new(0)) // hardcode seed 0 for presentation reproducibility
             .add_resource(ActiveClimateGenerator::default())
             .add_resource(ActiveBiomeGenerator::default())
             .add_resource(ActiveTerrainGenerator::default())
-            .add_resource(ActiveTerrainPainter::default());
+            .add_resource(ActiveTerrainPainter::default())
+            .init_resource::<TerrainGeneratorLibrary>();
 
-        // INFO: -----------------------
-        //         startup stuff
-        // -----------------------------
-        builder
-            .init_resource::<TerrainGeneratorLibrary>()
-            .schedule_entry(SimulationSchedule::Startup)
-            .add_systems(
-                (setup_terrain_gen_library, set_default_terrain_generator)
-                    .chain()
-                    .in_set(StartupSet::ResourceInitialization),
-            );
-
-        // INFO: -------------------------------------
-        //         keybind-based actions below
-        // -------------------------------------------
+        // INFO: -------------------------------
+        //         keybind-based actions
+        // -------------------------------------
 
         builder
             .schedule_entry(SimulationSchedule::Main)

@@ -30,4 +30,5 @@ pub enum SimulationAction {
     Showcase1,
     Showcase2,
     Showcase3,
+    Showcase0, // personal reset to flat
 }

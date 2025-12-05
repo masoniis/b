@@ -2,7 +2,11 @@
 
 ## Notes for grading
 
-Easiest way to navigate is the showcase keybinds (number keys 1, 2, and 3!), note that after pressing one it may take a bit for terrain to load in so be patient.
+Easiest way to navigate for grading is the simple **showcase keybinds**, which are numkeys 1, 2, and 3:
+
+1. Numkey 1: showcases water bobbing, shadows visible, and sinwave terrain gen
+2. Numkey 2: showcases a more realistic terrain, sunset transition happening
+3. Numkey 3: showcases more powerful 3D terrain capabilities (proving that terrain is not a mere heightmap) with 3D simplex noise!
 
 ### Important usage warnings/notes
 
@@ -13,14 +17,14 @@ Easiest way to navigate is the showcase keybinds (number keys 1, 2, and 3!), not
 
 #### Graphics stuff
 
-1. "Vertex pulling." Each group of 6 vertices that make up a face share a **single 32 bit uint** in a GPU buffer. This required cool GPU stuff and unpacking face data in shaders (packing on CPU of course).
+1. "Vertex pulling." Each group of 6 vertices that make up a face share a **single 32 bit uint** in a GPU buffer. This required cool GPU stuff and unpacking face data in shaders (packing on CPU of course). The shader code where this data is unpacked is seen [here](./assets/shaders/world/lib/face_unpacking.wesl) if you are curious about what/how data is packed into a single uint.
 2. Global illumination via the "sun" with directional lighting, and a shadow pass that adds basic hard-shadows using shadow mapping.
-3. Approximate **ambient occlusion** based on nearby voxels to a vertex. Provides some depth to the world.
+3. Approximate **ambient occlusion** based on nearby voxels to a vertex. Provides some depth to the world even where there is no lighting.
 4. Full transparency support via a separate render pass.
 5. Custom UI implementation (with `taffy` for computing flexbox layouts and `glyphon` for text heavylifting)
 6. Custom fog and sky shaders that define the sky and horizon blending with sun/moon.
 7. Convenient texture and voxel definition loading enabling swapping voxel textures easily in the `assets/blocks` folder.
-8. Water vertices "wave" up and down if you look at them closer
+8. Water vertices "wave" up and down if you look at them closely!
 
 #### Other stuff
 
@@ -58,7 +62,7 @@ To run, `cargo` can be used like any standard Rust project:
 - Run `cargo run --release` to compile and run in **release mode** (higher fps, optimized compilation)
 - Run `cargo run` to compile and run in **debug mode** (lower FPS, debug tracing, simplified compilation)
 
-### Usage guide
+### Full keybind list
 
 | Key(s)        | Action                                                                               |
 | :------------ | :----------------------------------------------------------------------------------- |

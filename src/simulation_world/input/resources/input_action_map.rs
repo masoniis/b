@@ -127,6 +127,10 @@ impl Default for InputActionMapResource {
                 // ),
                 // Showcase actions
                 (
+                    Input::Key(PhysicalKey::Code(KeyCode::Digit0)),
+                    SimulationAction::Showcase0,
+                ),
+                (
                     Input::Key(PhysicalKey::Code(KeyCode::Digit1)),
                     SimulationAction::Showcase1,
                 ),
