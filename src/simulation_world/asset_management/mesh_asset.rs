@@ -114,36 +114,27 @@ pub fn opaque_mesh_removed_observer(
     trigger: On<Remove, OpaqueMeshComponent>,
 
     // Input
-    mesh_query: Query<&OpaqueMeshComponent>,
+    mut shadow: ResMut<OpaqueMeshShadow>,
 
     // Output
-    mut shadow: ResMut<OpaqueMeshShadow>,
     mut mesh_ref_counts: ResMut<MeshRefCounts>,
     mut stale_mesh_writer: MessageWriter<MeshDeletionRequest>,
 ) {
     let entity = trigger.entity;
 
-    match mesh_query.get(entity) {
-        Ok(mesh_component) => {
-            let handle = mesh_component.mesh_handle;
-
-            shadow.entity_to_handle.remove(&entity);
-
-            if let Some(new_count) = mesh_ref_counts.decrement(handle) {
-                if new_count == 0 {
-                    debug!(target: "asset_management", "Ref count zero (via Query). Deleting {:?}", handle.id());
-                    stale_mesh_writer.write(MeshDeletionRequest {
-                        mesh_handle: handle,
-                    });
-                }
+    if let Some(handle) = shadow.entity_to_handle.remove(&entity) {
+        if let Some(new_count) = mesh_ref_counts.decrement(handle) {
+            if new_count == 0 {
+                stale_mesh_writer.write(MeshDeletionRequest {
+                    mesh_handle: handle,
+                });
             }
         }
-        Err(_) => {
-            error!(
-                "Component missing from Query. This is a Memory Leak for entity {:?}",
-                entity
-            );
-        }
+    } else {
+        warn!(
+            "Opaque mesh removed from {:?}, but no shadow handle found.",
+            entity
+        );
     }
 }
 

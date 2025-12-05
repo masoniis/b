@@ -79,10 +79,7 @@ pub fn queue_wireframe_system(
         if wireframe_buffer.buffer.size() < buffer_size {
             let new_size = (buffer_size as f64 * 1.5).ceil() as u64;
 
-            // destroy old buffer, it is being replaced
-            wireframe_buffer.buffer.destroy();
-
-            wireframe_buffer.buffer = device.create_buffer(&wgpu::BufferDescriptor {
+            let new_buffer = device.create_buffer(&wgpu::BufferDescriptor {
                 label: Some("Wireframe Object Buffer"),
                 size: new_size,
                 usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_DST,
@@ -94,9 +91,11 @@ pub fn queue_wireframe_system(
                 layout: &object_layout.0,
                 entries: &[wgpu::BindGroupEntry {
                     binding: 0,
-                    resource: wireframe_buffer.buffer.as_entire_binding(),
+                    resource: new_buffer.as_entire_binding(),
                 }],
             });
+
+            wireframe_buffer.buffer = new_buffer;
         }
 
         // write data to the buffer (which might be new/resized)
