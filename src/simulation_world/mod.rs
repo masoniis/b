@@ -6,10 +6,10 @@ pub mod chunk;
 pub mod input;
 pub mod player;
 pub mod scheduling;
+pub mod showcase;
 pub mod terrain;
 pub mod time;
 pub mod user_interface;
-pub mod showcase;
 
 pub use scheduling::{
     FixedUpdateSet, OnEnter, OnExit, SimulationSchedule, SimulationSet, StartupSet,

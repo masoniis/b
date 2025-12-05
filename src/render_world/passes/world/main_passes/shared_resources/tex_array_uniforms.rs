@@ -108,9 +108,9 @@ impl FromWorld for TextureArrayUniforms {
         }
     }
 }
-
 /// Creates the WGPU texture array and writes the image data to it.
-/// Returns raw WGPU types.
+///
+/// Returns the raw WGPU types.
 fn create_wgpu_texture_array(
     device: &Device,
     queue: &Queue,
@@ -118,11 +118,21 @@ fn create_wgpu_texture_array(
     width: u32,
     height: u32,
 ) -> (Texture, TextureView, Sampler) {
+    let mut effective_images = images.to_vec();
+
+    // on WGPU -> vulkan, a heuristic is assumed about the texture array dimensions (being a Cube or a HyperCube)
+    // but the heurisitc is incorrect if we are mod 6 == 0, so pad with an image to ensure textures work in this case.
+    if !effective_images.is_empty() && effective_images.len() % 6 == 0 {
+        if let Some(last) = effective_images.last() {
+            effective_images.push(last.clone());
+        }
+    }
+
     // size of the texture array
     let texture_size = Extent3d {
         width,
         height,
-        depth_or_array_layers: images.len() as u32,
+        depth_or_array_layers: effective_images.len() as u32,
     };
 
     // create the (empty) array on the gpu
@@ -138,7 +148,7 @@ fn create_wgpu_texture_array(
     });
 
     // load each image into its respective layer in the array
-    for (i, img) in images.iter().enumerate() {
+    for (i, img) in effective_images.iter().enumerate() {
         queue.write_texture(
             TexelCopyTextureInfo {
                 texture: &texture,

@@ -32,6 +32,7 @@
               buildInputs = [
                 # rust stuff
                 pkgs-unstable.tracy-glfw
+                pkgs-unstable.rust-analyzer
                 pkgs-unstable.wgsl-analyzer
                 rustup
 
