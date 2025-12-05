@@ -1,7 +1,5 @@
-pub mod mesh;
-pub mod packed_face;
-pub mod wireframe_vertex;
+mod packed_face;
+mod wireframe_vertex;
 
-pub use mesh::GpuMesh;
-pub use packed_face::PackedFace;
+pub use packed_face::{upload_voxel_mesh, PackedFace};
 pub use wireframe_vertex::WireframeVertex;

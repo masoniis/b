@@ -9,7 +9,7 @@ use crate::render_world::textures::StagingTextureImages;
 pub use scheduling::{RenderSchedule, RenderSet};
 
 // INFO: --------------------------------
-//         Render world interface
+//         render world interface
 // --------------------------------------
 
 use crate::ecs_core::{
@@ -55,7 +55,7 @@ impl RenderWorldInterface {
         let mut builder = EcsBuilder::new();
 
         // INFO: -----------------------------------------------------
-        //         Set up graphics-context dependent resources
+        //         set up graphics-context dependent resources
         // -----------------------------------------------------------
 
         // Setup render graph runs as an early system since it needs mutable world access
@@ -67,7 +67,7 @@ impl RenderWorldInterface {
             .add_resource(RenderWorldMarker);
 
         // INFO: --------------------------------
-        //         Non-mod specific setup
+        //         non-mod specific setup
         // --------------------------------------
 
         builder

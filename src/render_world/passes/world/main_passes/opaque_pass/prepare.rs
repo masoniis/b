@@ -8,7 +8,7 @@ use crate::{
         passes::world::main_passes::opaque_pass::extract::{
             OpaqueRenderMeshComponent, RenderTransformComponent,
         },
-        types::mesh::upload_voxel_mesh,
+        types::upload_voxel_mesh,
     },
     simulation_world::asset_management::{AssetStorageResource, MeshAsset},
 };

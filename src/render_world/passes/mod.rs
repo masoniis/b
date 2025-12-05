@@ -3,7 +3,7 @@ pub mod ui_pass;
 pub mod world;
 
 // INFO: ---------------------------
-//         Plugin definition
+//         plugin definition
 // ---------------------------------
 
 use crate::{
@@ -29,7 +29,7 @@ impl Plugin for RenderPassManagerPlugin {
             .add_plugin(UiRenderPassPlugin);
 
         // INFO: ----------------
-        //         Render
+        //         render
         // ----------------------
 
         builder

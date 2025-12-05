@@ -3,7 +3,8 @@ use bevy_ecs::schedule::{ScheduleLabel, SystemSet};
 #[derive(ScheduleLabel, Debug, Clone, PartialEq, Eq, Hash)]
 pub enum RenderSchedule {
     /// A schedule that runs once when the render world is first created.
-    /// Needed for the one-time wgpu initialization.
+    ///
+    /// Needed for systems such as the one-time wgpu initialization.
     Startup,
 
     /// A schedule that runs every frame, before the main schedule. It is
@@ -11,7 +12,6 @@ pub enum RenderSchedule {
     Extract,
 
     /// The main, per-frame schedule for the render world.
-    /// This will contain our ordered system sets.
     Main,
 }
 

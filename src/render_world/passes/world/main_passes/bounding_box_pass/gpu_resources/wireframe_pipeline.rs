@@ -7,7 +7,7 @@ use crate::{
             main_depth_texture::MAIN_DEPTH_FORMAT, CentralCameraViewBindGroupLayout,
             EnvironmentBindGroupLayout,
         },
-        types::wireframe_vertex::WireframeVertex,
+        types::WireframeVertex,
     },
 };
 use bevy_ecs::prelude::*;

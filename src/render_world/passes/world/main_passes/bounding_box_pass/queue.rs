@@ -72,33 +72,38 @@ pub fn queue_wireframe_system(
         });
     }
 
-    let buffer_size =
-        (wireframe_buffer.objects.len() * std::mem::size_of::<WireframeObjectData>()) as u64;
+    if !wireframe_buffer.objects.is_empty() {
+        let buffer_size =
+            (wireframe_buffer.objects.len() * std::mem::size_of::<WireframeObjectData>()) as u64;
 
-    if wireframe_buffer.buffer.size() < buffer_size {
-        let new_size = (buffer_size as f64 * 1.5).ceil() as u64;
+        if wireframe_buffer.buffer.size() < buffer_size {
+            let new_size = (buffer_size as f64 * 1.5).ceil() as u64;
 
-        wireframe_buffer.buffer = device.create_buffer(&wgpu::BufferDescriptor {
-            label: Some("Wireframe Object Buffer"),
-            size: new_size,
-            usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_DST,
-            mapped_at_creation: false,
-        });
+            // destroy old buffer, it is being replaced
+            wireframe_buffer.buffer.destroy();
 
-        wireframe_buffer.bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
-            label: Some("Wireframe Object Bind Group"),
-            layout: &object_layout.0,
-            entries: &[wgpu::BindGroupEntry {
-                binding: 0,
-                resource: wireframe_buffer.buffer.as_entire_binding(),
-            }],
-        });
+            wireframe_buffer.buffer = device.create_buffer(&wgpu::BufferDescriptor {
+                label: Some("Wireframe Object Buffer"),
+                size: new_size,
+                usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_DST,
+                mapped_at_creation: false,
+            });
+
+            wireframe_buffer.bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+                label: Some("Wireframe Object Bind Group"),
+                layout: &object_layout.0,
+                entries: &[wgpu::BindGroupEntry {
+                    binding: 0,
+                    resource: wireframe_buffer.buffer.as_entire_binding(),
+                }],
+            });
+        }
+
+        // write data to the buffer (which might be new/resized)
+        queue.write_buffer(
+            &wireframe_buffer.buffer,
+            0,
+            bytemuck::cast_slice(&wireframe_buffer.objects),
+        );
     }
-
-    // write data to the buffer (which might be new/resized)
-    queue.write_buffer(
-        &wireframe_buffer.buffer,
-        0,
-        bytemuck::cast_slice(&wireframe_buffer.objects),
-    );
 }

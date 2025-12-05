@@ -5,7 +5,7 @@ pub mod shadow_pass;
 pub use gpu_resources::*;
 
 // INFO: ---------------------------
-//         Plugin definition
+//         plugin definition
 // ---------------------------------
 
 use crate::{
