@@ -21,6 +21,7 @@ pub enum StatMarker {
     // information
     CameraXYZ(CameraXYZCoordTextMarker),
     CameraChunk(CameraChunkCoordTextMarker),
+    Biome(CurrentBiomeTextMarker),
     ActiveGen(ActiveGenTextMarker),
     // performance
     Fps(FpsCounterTextElementMarker),
@@ -40,6 +41,10 @@ pub struct CameraXYZCoordTextMarker;
 /// A marker component for the camera XYZ text element.
 #[derive(Component)]
 pub struct CameraChunkCoordTextMarker;
+
+/// A marker component for the current biome text element.
+#[derive(Component)]
+pub struct CurrentBiomeTextMarker;
 
 /// A marker component for the active generator text element.
 #[derive(Component)]
@@ -159,7 +164,7 @@ fn spawn_diagnostic_ui(
                         content: format!(
                             "{:.2}, {:.2}, {:.2}",
                             camera.position.x, camera.position.y, camera.position.z
-                        ), // Initial value
+                        ), // initial value
                         color: [0.8, 0.8, 0.8, 1.0],
                         marker: StatMarker::CameraXYZ(CameraXYZCoordTextMarker),
                     }];
@@ -173,6 +178,15 @@ fn spawn_diagnostic_ui(
                         marker: StatMarker::CameraChunk(CameraChunkCoordTextMarker),
                     }];
                     spawn_stats_line(parent, chord_line_elements, font_size, align);
+
+                    // biome line
+                    let biome_line_elements = vec![StatLineElement {
+                        prefix: "Biome: ".to_string(),
+                        content: "Unknown".to_string(), // initial value
+                        color: [0.2, 0.8, 0.2, 1.0],
+                        marker: StatMarker::Biome(CurrentBiomeTextMarker),
+                    }];
+                    spawn_stats_line(parent, biome_line_elements, font_size, align);
 
                     // active generator line
                     let gen_line_elements = vec![StatLineElement {
@@ -304,6 +318,7 @@ fn spawn_stats_line(
                 match element.marker {
                     StatMarker::CameraXYZ(marker) => text_entity.insert(marker),
                     StatMarker::CameraChunk(marker) => text_entity.insert(marker),
+                    StatMarker::Biome(marker) => text_entity.insert(marker),
                     StatMarker::ActiveGen(marker) => text_entity.insert(marker),
                     StatMarker::Fps(marker) => text_entity.insert(marker),
                     StatMarker::Memory(marker) => text_entity.insert(marker),

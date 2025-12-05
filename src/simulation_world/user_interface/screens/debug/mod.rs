@@ -3,11 +3,12 @@ pub mod elements;
 
 pub use debug_screen::{diagnostic_ui_is_visible, toggle_debug_diagnostics_system};
 pub use elements::active_gen_text::update_active_gen_text_system;
+pub use elements::current_biome::update_current_biome_text_system;
 pub use elements::fps_counter::update_fps_counter_screen_text_system;
 pub use elements::mesh_counter::{update_mesh_counter_screen_text_system, MeshCounterResource};
 
 // INFO: ----------------
-//         Plugin
+//         plugin
 // ----------------------
 
 use crate::prelude::*;
@@ -59,6 +60,7 @@ impl Plugin for DebugScreenPlugin {
                 (
                     update_camera_xyz_coord_screen_text,
                     update_camera_chunk_coord_screen_text,
+                    update_current_biome_text_system,
                     update_fps_counter_screen_text_system,
                     update_memory_counter_screen_text,
                     update_active_gen_text_system,
