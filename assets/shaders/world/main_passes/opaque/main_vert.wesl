@@ -19,6 +19,7 @@ struct VertexOutput {
     @location(2) tex_coords: vec2<f32>,
     @location(3) @interpolate(flat) texture_index: u32,
     @location(4) world_pos: vec3<f32>,
+    @location(5) clip_pos_for_fog: vec4<f32>,
 };
 
 @vertex
@@ -55,6 +56,7 @@ fn vs_main(
 
     out.world_pos = world_pos_vec3;
     out.clip_position = camera.view_proj * vec4<f32>(world_pos_vec3, 1.0);
+    out.clip_pos_for_fog = out.clip_position;
 
     out.normal = get_voxel_normal(face.normal_index);
     out.color = get_ao_color(face.ao_levels, vert_idx_in_quad);

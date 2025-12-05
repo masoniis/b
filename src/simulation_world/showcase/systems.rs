@@ -36,7 +36,7 @@ const SHOWCASES: &[Showcase] = &[
     Showcase {
         // realistic terrain gen with horizon
         generator_idx: 2,
-        time_of_day: 0.71, // showcase sunset and sky shaders in a more realistic terrain
+        time_of_day: 0.74, // showcase sunset and sky shaders in a more realistic terrain
         position: Vec3::new(1017.0, 46.2, 993.0),
         yaw: -189.0,
         pitch: -3.0,

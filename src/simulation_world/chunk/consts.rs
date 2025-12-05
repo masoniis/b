@@ -2,9 +2,11 @@
 //         chunk sizing
 // ----------------------------
 
-// the number of bitshifts to apply to the chunk_width and height
-//
-// 2^CHUNK_DIM_SHIFT will be the size of each side of the chunks
+/// The number of bitshifts to apply to the chunk_width and height
+///
+/// 2^CHUNK_DIM_SHIFT will be the size of each side of the chunks
+///
+/// Due to vertex pulling, 32 (shift of 4) should be he only choice that will work here
 const CHUNK_DIM_SHIFT: usize = 4;
 
 pub const CHUNK_SIDE_LENGTH: usize = 2 << CHUNK_DIM_SHIFT;
