@@ -1,0 +1,7 @@
+(
+	display_name: "Snow",
+	textures: (
+		fallback: "snow",
+	),
+	is_transparent: false,
+)

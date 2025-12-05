@@ -1,0 +1,8 @@
+(
+    name: "Desert",
+    tint_colors: None,
+    terrain: (
+        surface_material: "sand",
+        subsurface_material: "sand",
+    ),
+)

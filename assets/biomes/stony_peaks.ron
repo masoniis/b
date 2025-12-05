@@ -1,0 +1,8 @@
+(
+    name: "Stony Peaks",
+    tint_colors: None,
+    terrain: (
+        surface_material: "stone",
+        subsurface_material: "stone",
+    ),
+)
