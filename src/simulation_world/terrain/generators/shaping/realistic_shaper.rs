@@ -29,6 +29,7 @@ impl RealisticShaper {
         }
     }
 
+    /// Remaps a value from a source range to a target range using linear interpolation.
     fn map_range(val: f64, in_min: f64, in_max: f64, out_min: f64, out_max: f64) -> f64 {
         (val - in_min) * (out_max - out_min) / (in_max - in_min) + out_min
     }
@@ -70,13 +71,25 @@ impl TerrainShaper for RealisticShaper {
 
             let climate = climate_map.get_data_unchecked(local.x as usize, local.z as usize);
 
-            let target_height = Self::map_range(
-                climate.continentalness as f64,
-                -1.0,
-                1.0,
-                self.sea_level - 40.0,
-                self.sea_level + 140.0,
-            );
+            // assume under water
+            let target_height = if climate.continentalness < -0.1 {
+                Self::map_range(
+                    climate.continentalness as f64,
+                    -1.0,
+                    -0.1,
+                    self.floor_y as f64 + 10.0,
+                    self.sea_level,
+                )
+            } else {
+                // land
+                Self::map_range(
+                    climate.continentalness as f64,
+                    -0.1,
+                    1.0,
+                    self.sea_level,
+                    self.sea_level + 140.0,
+                )
+            };
 
             let noise_amplitude = Self::map_range(climate.erosion as f64, -1.0, 1.0, 1.5, 0.1);
             let weirdness_factor = climate.weirdness as f64 * 0.2;

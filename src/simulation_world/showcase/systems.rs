@@ -53,17 +53,25 @@ const SHOWCASES: &[Showcase] = &[
         // cool bump thing
         generator_idx: 3,
         time_of_day: 0.223,
-        position: Vec3::new(3693.0, 140.0, 507.0),
+        position: Vec3::new(3696.0, 105.0, 474.0),
         yaw: 0.0,
         pitch: -3.0,
     },
     Showcase {
-        // cool mountain hole thing
+        // beach scenery
         generator_idx: 3,
         time_of_day: 0.25,
-        position: Vec3::new(37252.0, 138.0, -2488.0),
-        yaw: -147.0,
-        pitch: -3.0,
+        position: Vec3::new(37239.0, 75.1, -2423.0),
+        yaw: 30.0,
+        pitch: 6.0,
+    },
+    Showcase {
+        // badlands
+        generator_idx: 3,
+        time_of_day: 0.25,
+        position: Vec3::new(38250.0, 136.5, 416.6),
+        yaw: -197.0,
+        pitch: -33.0,
     },
 ];
 
@@ -75,7 +83,9 @@ pub fn apply_showcase_system(
     terrain_gen_lib: Res<TerrainGeneratorLibrary>,
     mut world_clock: ResMut<WorldClockResource>,
 ) {
-    let showcase_idx = if action_state.just_happened(SimulationAction::Showcase1) {
+    let showcase_idx = if action_state.just_happened(SimulationAction::Showcase0) {
+        0
+    } else if action_state.just_happened(SimulationAction::Showcase1) {
         1
     } else if action_state.just_happened(SimulationAction::Showcase2) {
         2
@@ -85,8 +95,8 @@ pub fn apply_showcase_system(
         4
     } else if action_state.just_happened(SimulationAction::Showcase5) {
         5
-    } else if action_state.just_happened(SimulationAction::Showcase0) {
-        0
+    } else if action_state.just_happened(SimulationAction::Showcase6) {
+        6
     } else {
         return;
     };

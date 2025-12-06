@@ -150,6 +150,22 @@ impl Default for InputActionMapResource {
                     Input::Key(PhysicalKey::Code(KeyCode::Digit5)),
                     SimulationAction::Showcase5,
                 ),
+                (
+                    Input::Key(PhysicalKey::Code(KeyCode::Digit6)),
+                    SimulationAction::Showcase6,
+                ),
+                (
+                    Input::Key(PhysicalKey::Code(KeyCode::Digit7)),
+                    SimulationAction::Showcase7,
+                ),
+                (
+                    Input::Key(PhysicalKey::Code(KeyCode::Digit8)),
+                    SimulationAction::Showcase8,
+                ),
+                (
+                    Input::Key(PhysicalKey::Code(KeyCode::Digit9)),
+                    SimulationAction::Showcase9,
+                ),
             ]),
         }
     }

@@ -88,13 +88,13 @@ fn resolve_biome(h: &BiomeHandles, c: &ClimateData) -> u8 {
     //         continentalness (ocean vs land)
     // -----------------------------------------------
 
-    if c.continentalness < -0.75 {
+    if c.continentalness < -0.6 {
         return h.deep_ocean;
     }
-    if c.continentalness < -0.25 {
+    if c.continentalness < -0.15 {
         return h.ocean;
     }
-    if c.continentalness < -0.15 {
+    if c.continentalness < -0.05 {
         return h.beach;
     }
 
@@ -102,8 +102,8 @@ fn resolve_biome(h: &BiomeHandles, c: &ClimateData) -> u8 {
     //         erosion (mountains)
     // -----------------------------------
 
-    if c.erosion < -0.6 {
-        if c.temperature < -0.3 {
+    if c.erosion < -0.375 || (c.erosion < -0.25 && c.weirdness > 0.5) {
+        if c.temperature < -0.2 {
             return h.snowy_peaks;
         } else {
             return h.stony_peaks;
@@ -114,20 +114,20 @@ fn resolve_biome(h: &BiomeHandles, c: &ClimateData) -> u8 {
     //         temp/humidity
     // -----------------------------
 
-    if c.temperature < -0.5 {
+    if c.temperature < -0.2 {
         // cold
-        if c.weirdness > 0.6 {
+        if c.precipitation > 0.0 && c.weirdness > 0.4 {
             return h.ice_spikes;
         }
         return h.snowy_plains;
     } else if c.temperature < 0.2 {
         // temperate
-        if c.precipitation < -0.3 {
+        if c.precipitation < -0.1 {
             // dry
             return h.plains;
-        } else if c.precipitation > 0.4 {
-            // det
-            if c.weirdness > 0.5 {
+        } else if c.precipitation > 0.1 {
+            // wet
+            if c.weirdness > 0.4 {
                 return h.swamp;
             }
             return h.forest;
@@ -141,12 +141,12 @@ fn resolve_biome(h: &BiomeHandles, c: &ClimateData) -> u8 {
         }
     } else {
         // hot
-        if c.precipitation < -0.4 {
-            if c.erosion < 0.0 && c.weirdness > 0.3 {
+        if c.precipitation < -0.1 {
+            if c.weirdness > 0.2 {
                 return h.badlands;
             }
             return h.desert;
-        } else if c.precipitation > 0.4 {
+        } else if c.precipitation > 0.1 {
             // wet
             return h.jungle;
         } else {

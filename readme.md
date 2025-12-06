@@ -2,13 +2,14 @@
 
 ## Notes for grading
 
-Easiest way to navigate for grading is the simple **showcase keybinds**, which are numkeys 1, 2, and 3:
+Easiest way to navigate for grading is the simple **showcase keybinds**, which are numkeys 1, 2, etc:
 
 1. Numkey 1: showcases water bobbing, shadows visible, and sinwave terrain gen
 2. Numkey 2: showcases a more realistic terrain, sunset transition happening
 3. Numkey 3: showcases more powerful 3D terrain capabilities (proving that terrain is not a mere heightmap) with 3D simplex noise!
 4. Numkey 4: showcases a wider terrain with clearer biomes
-5. Numkey 5: showcases a cool hole in a mountain (nothing else in particular)
+5. Numkey 5: showcases some beach scenery
+6. Numkey 6: showcases a mini badlands biome
 
 ### Important usage warnings/notes
 
